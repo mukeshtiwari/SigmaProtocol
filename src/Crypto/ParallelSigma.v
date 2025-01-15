@@ -63,7 +63,31 @@ Section DL.
         end.
 
 
-      
+      (*
+        Construct parallel Sigma protocol for a 
+        the relation R : h = g^x
+      *)
+      (* input: x g us cs *)
+      (* secret x, generator g, commitments us, challenges cs *)
+      Definition construct_parallel_conversations_schnorr :
+        forall {n : nat},  F -> G ->  Vector.t F n -> Vector.t F n ->
+        @sigma_proto F G n n n.
+      Proof.
+        refine(fix Fn n {struct n} := 
+        match n with 
+        | 0 => fun x g us cs => _
+        | S n' => fun x g us cs  => _
+        end).
+        + 
+          (* base case. *)
+          refine ([]; []; []).
+        + 
+          destruct (vector_inv_S us) as (ush & ustl & _).
+          destruct (vector_inv_S cs) as (csh & cstl & _).
+          exact (@compose_two_parallel_sigma_protocols _ _ _ _ _ _ 
+            (@schnorr_protocol F add mul G gpow x g ush csh)
+            (Fn _ x g ustl cstl)).
+      Defined.
 
     End Def.
       
