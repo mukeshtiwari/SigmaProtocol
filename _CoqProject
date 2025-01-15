@@ -1,6 +1,7 @@
 -R _build/default/src/Algebra Algebra
 -R _build/default/src/Utility Utility
--R _build/default/src/Probability Probability 
+-R _build/default/src/Probability Probability
+-R _build/default/src/Crypto Crypto 
 
 _build/default/src/Algebra/Hierarchy.v 
 _build/default/src/Algebra/Monoid.v
