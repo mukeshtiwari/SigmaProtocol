@@ -67,6 +67,7 @@ Section DL.
 
   End SigmaDefinition.
 
+
   #[local] Notation "( a ; c ; r )" := 
     (@mk_sigma _ _ _ a c r).
 

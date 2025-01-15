@@ -45,8 +45,31 @@ Section DL.
   #[local] Infix "/" := div.
   #[local] Infix "+" := add.
   #[local] Infix "-" := sub.
+
   
+  #[local] Notation "( a ; c ; r )" := (mk_sigma _ _ _ a c r).
+
+  Section Parallel.
+
+    Section Def. 
+
   
+      Definition compose_two_parallel_sigma_protocols {n m r u v w : nat} 
+        (s₁ : @sigma_proto F G n m r) (s₂ : @sigma_proto F G u v w) :
+        @sigma_proto F G (n + u) (m + v) (r + w) :=
+        match s₁, s₂ with 
+        | (a₁; c₁; r₁), (a₂; c₂; r₂) =>
+          (a₁ ++ a₂; c₁ ++ c₂; r₁ ++ r₂)
+        end.
 
 
+      
+
+    End Def.
+      
+    Section Proofs.
+
+
+    End Proofs.
+  End Parallel.
 End DL.
