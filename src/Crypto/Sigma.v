@@ -616,5 +616,4 @@ Section DL.
     *)
 
   End Basic_sigma.
-
 End DL.
