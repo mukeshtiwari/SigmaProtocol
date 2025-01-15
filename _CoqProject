@@ -12,5 +12,8 @@ _build/default/src/Utility/Util.v
 _build/default/src/Utility/Sha256.v
 _build/default/src/Utility/Functions.v
 _build/default/src/Utility/Fermat.v
+_build/default/src/Utility/Zpstar.v
 _build/default/src/Probability/Prob.v
 _build/default/src/Probability/Distr.v
+_build/default/src/Crypto/Elgamal.v
+_build/default/src/Crypto/Sigma.v

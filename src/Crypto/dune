@@ -1,6 +1,6 @@
 (include_subdirs qualified)
 (coq.theory
- (name Utility)
+ (name Crypto)
  (synopsis "Formalisation of utility functions")
  (modules (:standard))
- (theories Algebra))
+ (theories Algebra Utility Probability))
