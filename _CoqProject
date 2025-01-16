@@ -20,3 +20,4 @@ _build/default/src/Crypto/Elgamal.v
 _build/default/src/Crypto/Sigma.v
 _build/default/src/Crypto/ParallelSigma.v
 _build/default/src/Crypto/AndSigma.v
+_build/default/src/Crypto/EqSigma.v
