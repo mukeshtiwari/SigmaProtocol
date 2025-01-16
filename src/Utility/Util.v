@@ -629,3 +629,82 @@ Section Modutil.
   Qed.
 
 End Modutil. 
+
+Section TransProofs. 
+
+    (* begin proofs for computations *)
+    (* Just to make sure  that my proofs are transparent *)
+    Definition nat_succ_eq : 
+      ∀ (n m : nat), S (Nat.add n (S m)) = Nat.add n (S (S m)).
+    Proof.
+      refine(fix Fn n {struct n} :=
+        match n with 
+        | 0%nat => fun m => eq_refl 
+        | S n' => fun m => eq_ind_r 
+          (fun w => S w = S (n' + S (S m))) eq_refl (Fn n' m)
+        end).
+    Defined.
+        
+    
+    #[local]
+    Definition nat_eq_succ : 
+      ∀ (n m : nat), S (Nat.add n (S m)) = S (S (Nat.add n m)).
+    Proof.
+      refine(fix Fn n {struct n} :=
+        match n with 
+        | 0%nat => fun m => eq_refl 
+        | S n' => fun m => @eq_ind_r _ _  
+          (λ x : nat, S x = S (S (S (n' + m)))) eq_refl _ (Fn n' m)
+        end).
+    Defined.
+  
+
+    #[local]
+    Theorem subst_vector {A : Type} : forall {n m : nat},
+      Vector.t A n -> n = m -> Vector.t A m.
+    Proof.
+      intros * u Ha.
+      exact (@eq_rect nat n (fun x => Vector.t A x) u m Ha).
+    Defined.
+
+
+  
+
+    Lemma divmod_simplification : 
+      forall (x y q u : nat),
+      fst (Nat.divmod x y q u) = (q + fst (Nat.divmod x y 0 u))%nat.
+    Proof.
+      induction x;
+      intros *; simpl;
+      [ | destruct u; rewrite IHx;
+      [erewrite IHx with (q := 1%nat) | erewrite IHx]];
+      try nia.
+    Defined.
+
+
+    Lemma nat_divmod : 
+      forall (n : nat),
+      fst (Nat.divmod (n + S (S (n + S (S (n + n * S (S n)))))) 1 1 1) =
+      (1 + S n + fst (Nat.divmod (n + S (n + n * S n)) 1 0 0))%nat.
+    Proof.
+      intros n.
+      rewrite divmod_simplification;
+      simpl; f_equal. 
+      assert (Ha : (1 <= 1)%nat) by nia.
+      pose proof PeanoNat.Nat.divmod_spec 
+      (n + S (S (n + S (S (n + n * S (S n))))))%nat 1 0 1 Ha as Hb.
+      destruct (PeanoNat.Nat.divmod 
+        (n + S (S (n + S (S (n + n * S (S n)))))) 1 0 1) as 
+      (qa & qb) eqn:Hc; simpl.
+      assert (Hd : (0 <= 1)%nat) by nia. 
+      pose proof PeanoNat.Nat.divmod_spec
+      (n + S (n + n * S n)) 1 0 0 Hd as He. 
+      destruct (Nat.divmod (n + S (n + n * S n)) 1 0 0) as 
+      (qaa & qbb) eqn:Hf; simpl. 
+      nia.
+    Defined.
+      
+    (* end of proofs *)
+
+
+  End TransProofs.
