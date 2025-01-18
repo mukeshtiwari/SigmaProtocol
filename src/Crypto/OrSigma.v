@@ -217,23 +217,21 @@ Section DL.
             end.
         Defined.
 
-
+        (* Dependent types cannot be used with Qed! *)
         (* Berry suggested to run the schnorr simulator for the first element *)
+        (* 
         Definition construct_or_conversations_simulator_gen {m n : nat} :
           Vector.t G (m + (1 + n)) -> Vector.t G (m + (1 + n)) ->
           Vector.t F ((m + (1 + n)) + (m + n)) -> 
           F -> @sigma_proto F G (m + (1 + n)) (1 + (m + (1 + n))) (m + (1 + n)).
         Proof.
           intros gs' hs' usrs' c.
-          assert (Ha : (m + (1 + n) = 1 + (m + n))%nat) by nia.
-          set (gs := subst_vector gs' Ha);
+          set (gs := subst_vector gs' (nat_succ m n));
           clearbody gs.
-          set (hs := subst_vector hs' Ha);
-          clearbody hs; clear Ha.
-          assert (Ha : (((m + (1 + n)) + (m + n)) = ((1 + (m + n)) + (m + n)))%nat) 
-            by nia. 
-          set (usrs := subst_vector usrs' Ha);
-          clearbody usrs; clear Ha.
+          set (hs := subst_vector hs' (nat_succ m n));
+          clearbody hs.
+          set (usrs := subst_vector usrs' (nat_succ_p m n (m + n)));
+          clearbody usrs.
           clear gs' hs' usrs'.
           destruct (splitat (1 + (m + n)) usrs) as (us & rs).
           destruct (vector_inv_S gs) as (g & gsr & _).
@@ -259,7 +257,7 @@ Section DL.
           refine (c :: (cl ++ c₁ ++ cr)).
           refine (rl ++ r₁ ++ rr).
         Defined.
-
+        *)
         (* End of simulator *)
 
 
@@ -336,6 +334,17 @@ Section DL.
           Ret (construct_or_conversations_simulator gs hs usrs c).
 
 
+        (* simulator distribution *)
+        (* 
+        Definition generalised_or_simulator_distribution_gen  
+          {n m : nat} (lf : list F) (Hlfn : lf <> List.nil) 
+          (gs hs : Vector.t G (m + (1 + n))) (c : F) : 
+          dist (@sigma_proto F G (m + (1 + n)) (1 + (m + (1 + n))) (m + (1 + n))) :=
+          (* draw ((m + (1 + n)) + (m + n)) random elements *)
+          usrs <- repeat_dist_ntimes_vector 
+            (uniform_with_replacement lf Hlfn) ((m + (1 + n)) + (m + n)) ;;
+          Ret (construct_or_conversations_simulator_gen gs hs usrs c).
+        *)
     End Def.
 
     Section Proofs.
@@ -1167,6 +1176,26 @@ Section DL.
           eapply construct_or_conversations_simulator_completeness_supplement.
           congruence.
         Qed.
+
+      (* 
+         Lemma construct_or_conversations_simulator_completeness_gen : 
+          ∀ (uscs : Vector.t F (m + (1 + n) + (m + n))) (c : F),
+          generalised_or_accepting_conversations 
+            (gsl ++ [g] ++ gsr) (hsl ++ [h] ++ hsr)
+            (construct_or_conversations_simulator_gen
+              (gsl ++ [g] ++ gsr) (hsl ++ [h] ++ hsr)
+              uscs c) = true.
+        Proof using -(x R).
+          clear x R.
+          intros *.
+          unfold generalised_or_accepting_conversations,
+          construct_or_conversations_simulator_gen.
+          repeat rewrite VectorSpec.splitat_append.
+          destruct (splitat (1 + (m + n))
+            (subst_vector uscs (nat_succ_p m n (m + n)))) as (us, cs) eqn:Ha.
+          
+        Admitted.
+      *)
 
         (* end of completeness *)
 
