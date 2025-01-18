@@ -644,6 +644,29 @@ Section TransProofs.
           (fun w => S w = S (n' + S (S m))) eq_refl (Fn n' m)
         end).
     Defined.
+
+    
+    Definition nat_succ : 
+      forall (m n : nat), ((m + (1 + n) = 1 + (m + n)))%nat.
+    Proof.
+      induction m as [|m Ihm];
+      intro n.
+      +
+        cbn; reflexivity.
+      +
+        cbn; rewrite Ihm.
+        reflexivity.
+    Defined.
+
+    Definition nat_succ_p : 
+      forall (m n p : nat), (((m + (1 + n)) + p) = ((1 + (m + n)) + p))%nat.
+    Proof.
+      intros *.
+      rewrite nat_succ.
+      reflexivity.
+    Qed.
+
+
         
     
     
