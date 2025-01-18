@@ -98,7 +98,7 @@ Section DL.
         Defined.
 
 
-         (* Prover knows the ith relation *)
+        (* Prover knows the ith relation *)
         (* The way out is that the verifier may let the prover “cheat” a 
           little bit by allowing the prover to use the simulator of the 
           Σ-protocol for the relation Ri for which the prover does not 
@@ -133,15 +133,10 @@ Section DL.
           x is secret  
           gs and hs are public group elements 
           and prover knows the (m + 1)th relation.
-          us and cs --verifier let prover cheat -- are randomness 
+          us and rs -- verifier let prover cheat -- are randomness 
           c is challenge
 
-          One way to simplify this API is 
-          to combine us and cs into a single Vector. 
-          In that case, in our DSL we don't need to 
-          think about OR as an special case because 
-          all our API will be uniform. 
-          Important:Discuss this with Berry. 
+          Important: discuss this with Berry. 
         *)
 
          Definition construct_or_conversations_schnorr {m n : nat} :
@@ -156,7 +151,7 @@ Section DL.
           destruct (splitat m hs) as (hsl & hsrt).
           (* discard h because it is not needed in schnorr protocol *)
           destruct (vector_inv_S hsrt) as (_ & hsr & _).
-          (* us := usl ++ [r_i] ++ usr *)
+          (* us := usl ++ [u_i] ++ usr *)
           destruct (splitat m us) as (usl & rurt).
           destruct (vector_inv_S rurt) as (u_i & usr & _).
           (* rs := rsl ++ [_] ++ rsr *)
@@ -196,7 +191,7 @@ Section DL.
           destruct (vector_inv_S gsrt) as (g & gsr & _).
           destruct (splitat m hs) as (hsl & hsrt).
           destruct (vector_inv_S hsrt) as (h & hsr & _).
-          (* us := usl ++ [r_i] ++ usr *)
+          (* us := usl ++ [u_i] ++ usr *)
           destruct (splitat m us) as (usl & rurt).
           destruct (vector_inv_S rurt) as (u_i & usr & _).
           (* rs := rsl ++ [_] ++ rsr *)
@@ -223,15 +218,50 @@ Section DL.
         Defined.
 
 
-        (* Todo: Berry suggested to run the simulator for the first element*)
-        (* 
+        (* Berry suggested to run the schnorr simulator for the first element *)
         Definition construct_or_conversations_simulator_gen {m n : nat} :
-          Vector.t G (1 + (m + n)) -> Vector.t G (1 + (m + n)) ->
-          Vector.t F ((1 + (m + n)) + (m + n)) -> 
+          Vector.t G (m + (1 + n)) -> Vector.t G (m + (1 + n)) ->
+          Vector.t F ((m + (1 + n)) + (m + n)) -> 
           F -> @sigma_proto F G (m + (1 + n)) (1 + (m + (1 + n))) (m + (1 + n)).
         Proof.
-        Admitted.
-        *)
+          intros gs' hs' usrs' c.
+          assert (Ha : (m + (1 + n) = 1 + (m + n))%nat) by nia.
+          set (gs := subst_vector gs' Ha);
+          clearbody gs.
+          set (hs := subst_vector hs' Ha);
+          clearbody hs; clear Ha.
+          assert (Ha : (((m + (1 + n)) + (m + n)) = ((1 + (m + n)) + (m + n)))%nat) 
+            by nia. 
+          set (usrs := subst_vector usrs' Ha);
+          clearbody usrs; clear Ha.
+          clear gs' hs' usrs'.
+          destruct (splitat (1 + (m + n)) usrs) as (us & rs).
+          destruct (vector_inv_S gs) as (g & gsr & _).
+          destruct (vector_inv_S hs) as (h & hsr & _).
+          (* us := [u_i] ++ usr *)
+          destruct (vector_inv_S us) as (u_i & usr & _).
+          (* compute r_i  *)
+          set (r_i := c - (Vector.fold_right add rs zero));
+          clearbody r_i.
+          set (Ha := @schnorr_simulator F opp G gop gpow g h u_i r_i);
+          clearbody Ha.
+          set (Hb := construct_or_conversations_simulator_supplement 
+            gsr hsr usr rs);
+          clearbody Hb.
+          refine 
+            match Ha, Hb with 
+            | (a₁; c₁; r₁), (a₂; c₂; r₂) => _ 
+            end. 
+          destruct (splitat m a₂) as (al & ar).
+          destruct (splitat m c₂) as (cl & cr).
+          destruct (splitat m r₂) as (rl & rr).
+          refine (al ++ a₁ ++ ar; _; _).
+          refine (c :: (cl ++ c₁ ++ cr)).
+          refine (rl ++ r₁ ++ rr).
+        Defined.
+
+        (* End of simulator *)
+
 
 
         #[local]
@@ -703,6 +733,7 @@ Section DL.
             gs hs (a; c₁ :: cs₁; r₁) = true ->
           @generalised_or_accepting_conversations _ _
             gs hs (a; c₂ :: cs₂; r₂) = true ->
+          (* c₁ and c₂ are verifier's challenges *)
           c₁ <> c₂ -> 
           (* There is an index where relation R is true and I can 
             extract a witness out of it *)

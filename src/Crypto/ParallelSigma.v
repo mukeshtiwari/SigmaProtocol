@@ -351,7 +351,7 @@ Section DL.
         Lemma generalise_parallel_sigma_soundness_supplement : 
           ∀ (n : nat) (s₁ s₂ : @sigma_proto F G (S n) (S n) (S n)),
           (match s₁, s₂ with 
-          | (a₁ ; c₁; _), (a₂ ; c₂; _) => 
+          | (a₁; c₁; _), (a₂; c₂; _) => 
             two_challenge_vectors_same_everyelem a₁ a₂ ->
             two_challenge_vectors_disjoint_someelem c₁ c₂ ->
             (* accepting conversatation*)

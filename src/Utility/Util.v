@@ -646,7 +646,7 @@ Section TransProofs.
     Defined.
         
     
-    #[local]
+    
     Definition nat_eq_succ : 
       ∀ (n m : nat), S (Nat.add n (S m)) = S (S (Nat.add n m)).
     Proof.
@@ -659,7 +659,7 @@ Section TransProofs.
     Defined.
   
 
-    #[local]
+    
     Theorem subst_vector {A : Type} : forall {n m : nat},
       Vector.t A n -> n = m -> Vector.t A m.
     Proof.

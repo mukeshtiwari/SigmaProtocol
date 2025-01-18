@@ -67,8 +67,9 @@ Section DL.
             xs : List F (* list of secres*)
             gh and hs : List G (* list of public values *)
             c : single challenge 
+          Note: this is slightly different from Berry's notes. 
+          In this notes, h₁ = g^x₁ ∧ h₂ = g^x₂. 
         *)
-
         (* input: xs gs us c *)
         Definition construct_and_conversations_schnorr :
           forall {n : nat}, Vector.t F n -> Vector.t G n -> 
