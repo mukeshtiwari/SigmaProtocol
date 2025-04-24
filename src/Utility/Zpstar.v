@@ -1,4 +1,4 @@
-From Coq Require Import 
+From Stdlib Require Import 
   PArith ZArith Lia
   Znumtheory
   Eqdep_dec Arith

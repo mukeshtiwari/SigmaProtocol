@@ -1,4 +1,4 @@
-From Coq Require Import 
+From Stdlib Require Import 
   Morphisms Integral_domain (* this one from Coq.setoid_ring.Integral_domain *)
   Ncring Cring.
 From Algebra Require Import 

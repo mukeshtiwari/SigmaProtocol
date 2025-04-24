@@ -1,4 +1,4 @@
-From Coq Require Import 
+From Stdlib Require Import 
   Morphisms Lia Field_theory 
   Field_tac. 
 From Algebra Require Import   

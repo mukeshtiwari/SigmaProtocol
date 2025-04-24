@@ -1,4 +1,4 @@
-From Coq Require Import 
+From Stdlib Require Import 
   Vector Fin Bool Utf8
   Psatz BinIntDef.
 
@@ -361,7 +361,7 @@ Section Vect.
 
 End Vect. 
 
-Require Import List.
+From Stdlib Require Import List.
 Section ListUtil.
 
  
@@ -397,9 +397,9 @@ Section ListUtil.
 
 End ListUtil.
 
-Require Import Coq.PArith.PArith 
-  Coq.ZArith.ZArith Lia
-  Coq.ZArith.Znumtheory
+From Stdlib Require Import PArith.PArith 
+  ZArith.ZArith Lia
+  ZArith.Znumtheory
   Arith 
   Zpow_facts.
 

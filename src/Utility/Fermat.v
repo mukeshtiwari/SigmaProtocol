@@ -1,6 +1,6 @@
-From Coq Require Import 
+From Stdlib Require Import 
   NArith Znumtheory Lia
-  Zdiv Zpow_facts List
+  Zdiv Znat Zpow_facts List
   Peano PeanoNat.
 From Utility Require Import 
   Functions Util.

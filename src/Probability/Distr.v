@@ -1,4 +1,4 @@
-From Coq Require Import 
+From Stdlib Require Import 
   Utf8 PeanoNat FunctionalExtensionality
   BinNatDef List Pnat BinPos Lia 
   Morphisms SetoidClass Permutation 
@@ -845,8 +845,6 @@ Section Distr.
   Qed.
 
 
-  
-
 
   Lemma uniform_probability {A : Type} : 
     forall (lf : list A)  (Hlf : lf <> []) a b, 
@@ -879,7 +877,10 @@ Section Distr.
     assert (Hb : ∃ lfh lft, lf = lfh :: lft).
     destruct lf as [|lfh lft];
     [congruence | exists lfh, lft; reflexivity].
-    destruct Hb as (lfh & lft & Hb); subst.
+    destruct Hb as (lfh & lft & Hb);
+    generalize dependent Hlf.
+    rewrite Hb.
+    intros * Ha.
     eapply repeat_dist_ntimes_vector_prob with 
     (d := (uniform_with_replacement (lfh :: lft) Hlf))
     (p := lfh) (d' := map
@@ -897,6 +898,7 @@ Section Distr.
     eapply uniform_probability.
     exact Ha.
   Qed.
+
 
   Theorem distribution_length : 
     forall (A B : Type) (f : A -> B) (d : dist A) , 
@@ -1333,9 +1335,10 @@ Section Example.
       reflexivity.
     Qed.
 
+
     Eval compute in 
       (repeat_dist_ntimes_vector
-        (uniform_with_replacement [1; 2; 3; 4] Hneq) 1).
+        (uniform_with_replacement [1; 2; 3; 4] Hneq) 2).
 
    
     (*

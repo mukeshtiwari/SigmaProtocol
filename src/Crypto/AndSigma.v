@@ -1,4 +1,4 @@
-From Coq Require Import Setoid
+From Stdlib Require Import Setoid
   setoid_ring.Field Lia Vector Utf8
   Psatz Bool Pnat BinNatDef 
   BinPos. 
@@ -397,7 +397,7 @@ Section DL.
               rewrite Hd in Heqs.
               eapply construct_and_conversations_schnorr_challenge in Heqs.
               rewrite <-Heqs.
-              exact IHn. 
+              exact IHn.
         Qed.
 
 

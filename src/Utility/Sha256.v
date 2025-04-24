@@ -1,7 +1,7 @@
 (* Implementation of SHA 256. *)
 (* https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.180-4.pdf *)
 (* https://www.rfc-editor.org/rfc/rfc4634 *)
-From Coq Require Import Lia
+From Stdlib Require Import Lia
   Utf8 Bool Init.Byte
   NArith Strings.Byte
   ZArith Lists.List.
@@ -841,7 +841,7 @@ Section Sha256.
 
 End Sha256.
 
-From Coq Require Import String Ascii.
+From Stdlib Require Import String Ascii.
 
 
 Definition concat_bytes (bs : list byte) : N :=

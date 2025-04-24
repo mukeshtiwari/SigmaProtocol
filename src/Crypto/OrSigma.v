@@ -1,4 +1,4 @@
-From Coq Require Import Setoid
+From Stdlib Require Import Setoid
   setoid_ring.Field Lia Vector Utf8
   Psatz Bool Pnat BinNatDef 
   BinPos. 
@@ -216,6 +216,7 @@ Section DL.
               ((a₁ ++ (a₂ ++ a₃)); c :: c₁ ++ (c₂ ++ c₃); (r₁ ++ (r₂ ++ r₃)))
             end.
         Defined.
+        
 
         (* Dependent types cannot be used with Qed! *)
         (* Berry suggested to run the schnorr simulator for the first element *)

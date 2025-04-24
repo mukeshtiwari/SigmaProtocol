@@ -1,4 +1,4 @@
-From Coq Require Import 
+From Stdlib Require Import 
   Setoid Morphisms Utf8.
 From Algebra Require Import 
   Hierarchy.

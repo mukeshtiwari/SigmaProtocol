@@ -1,4 +1,4 @@
-From Coq Require Import 
+From Stdlib Require Import 
   Morphisms Lia.
 From Algebra Require Import 
   Hierarchy Monoid Group

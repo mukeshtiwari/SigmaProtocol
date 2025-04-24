@@ -1,4 +1,4 @@
-From Coq Require Import Setoid
+From Stdlib Require Import Setoid
   setoid_ring.Field Lia Vector Utf8
   Psatz Bool Pnat BinNatDef 
   BinPos. 
@@ -143,7 +143,7 @@ Section DL.
           (apply (@dec_true _ Gdec) in Ha; 
           exact Ha).
       Qed.
-
+      
       (* end of properties *)
 
       (* Vector Space *)

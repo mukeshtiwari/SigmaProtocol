@@ -1,4 +1,4 @@
-From Coq Require Import 
+From Stdlib Require Import 
   Morphisms.
 
 Local Close Scope nat_scope. 

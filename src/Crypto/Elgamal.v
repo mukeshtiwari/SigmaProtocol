@@ -1,4 +1,4 @@
-From Coq Require Import Setoid
+From Stdlib Require Import Setoid
   Lia Vector Utf8 Fin. 
 From Algebra Require Import
   Hierarchy Group Monoid

@@ -1,4 +1,4 @@
-From Coq Require Import 
+From Stdlib Require Import 
   Ncring Cring ZArith 
   PArith Morphisms Lia.
 From Algebra Require Import 

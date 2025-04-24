@@ -1,6 +1,6 @@
-From Coq Require Import 
-  NArith Znumtheory Lia
-  Zdiv Zpow_facts
+From Stdlib Require Import 
+  NArith Nnat Znumtheory Lia
+  Zdiv Znat Zpow_facts
   BinNat PeanoNat.
 
 
