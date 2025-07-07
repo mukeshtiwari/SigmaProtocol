@@ -2,7 +2,7 @@
 -R _build/default/src/Utility Utility
 -R _build/default/src/Probability Probability
 -R _build/default/src/Crypto Crypto
--R _build/default/src/Examples Examples 
+-R _build/default/src/Frontend Frontend 
 
 _build/default/src/Algebra/Hierarchy.v 
 _build/default/src/Algebra/Monoid.v
@@ -23,4 +23,5 @@ _build/default/src/Crypto/AndSigma.v
 _build/default/src/Crypto/EqSigma.v
 _build/default/src/Crypto/OrSigma.v
 _build/default/src/Crypto/NeqSigma.v
-_build/default/src/Examples/Elgamal.v
+_build/default/src/Frontend/Elgamal.v
+_build/default/src/Frontend/Approval.v
