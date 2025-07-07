@@ -218,50 +218,7 @@ Section DL.
         Defined.
         
 
-        (* Dependent types cannot be used with Qed! *)
-        (* Berry suggested to run the schnorr simulator for the first element *)
-        (* 
-        Definition construct_or_conversations_simulator_gen {m n : nat} :
-          Vector.t G (m + (1 + n)) -> Vector.t G (m + (1 + n)) ->
-          Vector.t F ((m + (1 + n)) + (m + n)) -> 
-          F -> @sigma_proto F G (m + (1 + n)) (1 + (m + (1 + n))) (m + (1 + n)).
-        Proof.
-          intros gs' hs' usrs' c.
-          set (gs := subst_vector gs' (nat_succ m n));
-          clearbody gs.
-          set (hs := subst_vector hs' (nat_succ m n));
-          clearbody hs.
-          set (usrs := subst_vector usrs' (nat_succ_p m n (m + n)));
-          clearbody usrs.
-          clear gs' hs' usrs'.
-          destruct (splitat (1 + (m + n)) usrs) as (us & rs).
-          destruct (vector_inv_S gs) as (g & gsr & _).
-          destruct (vector_inv_S hs) as (h & hsr & _).
-          (* us := [u_i] ++ usr *)
-          destruct (vector_inv_S us) as (u_i & usr & _).
-          (* compute r_i  *)
-          set (r_i := c - (Vector.fold_right add rs zero));
-          clearbody r_i.
-          set (Ha := @schnorr_simulator F opp G gop gpow g h u_i r_i);
-          clearbody Ha.
-          set (Hb := construct_or_conversations_simulator_supplement 
-            gsr hsr usr rs);
-          clearbody Hb.
-          refine 
-            match Ha, Hb with 
-            | (a₁; c₁; r₁), (a₂; c₂; r₂) => _ 
-            end. 
-          destruct (splitat m a₂) as (al & ar).
-          destruct (splitat m c₂) as (cl & cr).
-          destruct (splitat m r₂) as (rl & rr).
-          refine (al ++ a₁ ++ ar; _; _).
-          refine (c :: (cl ++ c₁ ++ cr)).
-          refine (rl ++ r₁ ++ rr).
-        Defined.
-        *)
-        (* End of simulator *)
-
-
+        
 
         #[local]
         Definition generalised_or_accepting_conversations_supplement : 
@@ -335,6 +292,50 @@ Section DL.
           Ret (construct_or_conversations_simulator gs hs usrs c).
 
 
+        (* Dependent types cannot be used with Qed! *)
+        (* Berry suggested to run the schnorr simulator for the first element *)
+        (* 
+        Definition construct_or_conversations_simulator_gen {m n : nat} :
+          Vector.t G (m + (1 + n)) -> Vector.t G (m + (1 + n)) ->
+          Vector.t F ((m + (1 + n)) + (m + n)) -> 
+          F -> @sigma_proto F G (m + (1 + n)) (1 + (m + (1 + n))) (m + (1 + n)).
+        Proof.
+          intros gs' hs' usrs' c.
+          set (gs := subst_vector gs' (nat_succ m n));
+          clearbody gs.
+          set (hs := subst_vector hs' (nat_succ m n));
+          clearbody hs.
+          set (usrs := subst_vector usrs' (nat_succ_p m n (m + n)));
+          clearbody usrs.
+          clear gs' hs' usrs'.
+          destruct (splitat (1 + (m + n)) usrs) as (us & rs).
+          destruct (vector_inv_S gs) as (g & gsr & _).
+          destruct (vector_inv_S hs) as (h & hsr & _).
+          (* us := [u_i] ++ usr *)
+          destruct (vector_inv_S us) as (u_i & usr & _).
+          (* compute r_i  *)
+          set (r_i := c - (Vector.fold_right add rs zero));
+          clearbody r_i.
+          set (Ha := @schnorr_simulator F opp G gop gpow g h u_i r_i);
+          clearbody Ha.
+          set (Hb := construct_or_conversations_simulator_supplement 
+            gsr hsr usr rs);
+          clearbody Hb.
+          refine 
+            match Ha, Hb with 
+            | (a₁; c₁; r₁), (a₂; c₂; r₂) => _ 
+            end. 
+          destruct (splitat m a₂) as (al & ar).
+          destruct (splitat m c₂) as (cl & cr).
+          destruct (splitat m r₂) as (rl & rr).
+          refine (al ++ a₁ ++ ar; _; _).
+          refine (c :: (cl ++ c₁ ++ cr)).
+          refine (rl ++ r₁ ++ rr).
+        Defined.
+        *)
+        (* End of simulator *)
+
+
         (* simulator distribution *)
         (* 
         Definition generalised_or_simulator_distribution_gen  
@@ -347,6 +348,8 @@ Section DL.
           Ret (construct_or_conversations_simulator_gen gs hs usrs c).
         *)
     End Def.
+
+    
 
     Section Proofs.
 

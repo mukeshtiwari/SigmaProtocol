@@ -58,35 +58,39 @@ Section Vect.
     {Hdec : forall x y : R, {x = y} + {x <> y}}.
 
 
-  
-
-
   Lemma vector_inv_0 (v : Vector.t R 0) :
     v = @Vector.nil R.
   Proof.
-    refine (match v with
-            | @Vector.nil _ => _
-            end).
-    reflexivity.
+    refine 
+      (match v as v' in Vector.t _ n' return 
+        (match n' return Vector.t R n' -> Type 
+        with 
+        | 0 => fun (ve : Vector.t R 0) => ve = []
+        | _ => fun _ => IDProp 
+        end v')
+      with
+      | @Vector.nil _ => eq_refl
+      end).
   Defined.
 
 
   Lemma vector_inv_S : 
-      forall {n : nat} (v : Vector.t R (S n)), {h & {t | v = h :: t}}.
+      forall {n : nat} (v : Vector.t R (S n)), {h & {t & v = h :: t}}.
   Proof.
     intros n v.
     refine 
-    (match v as v' in Vector.t _ (S n') return 
-      forall (pf : n' = n),
-        v = eq_rect n' (fun w => Vector.t R (S w))
-              v' n pf -> {h : R & {t | v' = h :: t}}
-    with
-    | cons _ h _ t => fun pf Hv => _ 
-    end eq_refl eq_refl).
-    exists h, t.
-    exact eq_refl.
+      (match v as v' in Vector.t _ n' return
+        (match n' return Vector.t R n' -> Type  
+        with 
+        | 0 => fun _ => IDProp
+        | S n'' => fun (ea : Vector.t R (S n'')) => 
+          {h : R & {t : Vector.t R n'' & ea = h :: t}}
+        end v')
+      with
+      | cons _ h _ t => existT _ h (existT _ t eq_refl)
+      end).
   Defined.
-  
+
 
   Lemma fin_inv_0 (i : Fin.t 0) : False.
   Proof. refine (match i with end). Defined.
