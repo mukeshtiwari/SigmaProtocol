@@ -60,10 +60,8 @@ Section Elgamal.
   
   End EncDecDef.
 
-  Section Ballot.
-
-
-    Section BallotDef.
+  
+  Section BallotDef.
 
 
       Definition encrypted_ballot {n : nat} 
@@ -87,7 +85,9 @@ Section Elgamal.
         (ms : Vector.t F n) : Vector.t G n := 
         map (fun m => g^m) ms.
     
-    End BallotDef.
+  End BallotDef.
+
+  Section Proofs.
 
     Section EncDecProof.
       
@@ -336,12 +336,9 @@ Section Elgamal.
 
     End BallotProof.
 
-  End Ballot.
+  End Proofs.
 
 End Elgamal.
-
-(* Implement security proof of Elgamal Method? *)
-(* I need encryption proof and decryption proof. *)
 
 
 

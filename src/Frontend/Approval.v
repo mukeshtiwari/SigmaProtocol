@@ -32,9 +32,18 @@ Section Approval.
   Local Infix "*" := mul.
   Local Infix "+" := add.
 
+
   Section Definitions.
 
-    (* Encryption Proof *)
+    (* Generate Encryption Proof *)
+    Definition generate_encryption_proof (h : G) (c : G * G) := True.
+
+    (* Simulate Encryption Proof *)
+    Definition simulate_encryption_proof := False.
+
+
+
+
     
 
   End Definitions.
