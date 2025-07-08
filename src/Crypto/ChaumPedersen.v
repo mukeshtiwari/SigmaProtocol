@@ -121,8 +121,17 @@ Section DL.
         subst; cbn. exact eq_refl.
         refine match (fin_inv_0 fii) with end.
       Qed.
-      
 
+      (* simulator completeness *)
+      Lemma construct_cp_conversations_simulator_completeness : 
+        forall (u c : F),
+        generalised_cp_accepting_conversations g h c₁ c₂
+          (construct_cp_conversations_simulator g h c₁ c₂ u c) = true.
+      Proof.
+        intros *.
+        eapply construct_eq_conversations_simulator_completeness.
+        Unshelve. eapply Fdec.
+      Qed.
 
       (* Soundness (POK) *)
 
