@@ -79,9 +79,19 @@ Section DL.
         @generalised_eq_accepting_conversations F G gop gpow Gdec 1 [g; h]
         [c₁; c₂] s.
 
+      (* distribution involving witness *)
+      Definition generalised_cp_schnorr_distribution  
+        (lf : list F) (Hlfn : lf <> List.nil) (x : F)
+        (g h : G) (c : F) : dist (@sigma_proto F G 2 1 1) :=
+        @generalised_eq_schnorr_distribution F add mul G gpow 1 
+          lf Hlfn x [g; h] c.
 
-        
-
+      (* Without secret *)
+      Definition generalised_cp_simulator_distribution 
+        (lf : list F) (Hlfn : lf <> List.nil) (g h : G)
+        (c₁ c₂ : G) c : dist (@sigma_proto F G 2 1 1) :=
+        @generalised_eq_simulator_distribution  F opp G gop 
+        gpow 1 lf Hlfn [g; h] [c₁; c₂] c.
 
 
     End Def.
