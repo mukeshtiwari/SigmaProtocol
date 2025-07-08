@@ -98,6 +98,36 @@ Section DL.
 
     Section Proofs.
 
+      Context
+        {Hvec: @vector_space F (@eq F) zero one add mul sub 
+          div opp inv G (@eq G) gid ginv gop gpow}
+        {n : nat}
+        (x : F) (* randomness used for encryption  *)
+        (g h c₁ c₂ : G)
+        (R : g^x = c₁ ∧ h^x = c₂).
+
+      (* Completeness *)
+      Lemma construct_cp_conversations_schnorr_completeness : 
+        forall (u c : F),
+        generalised_cp_accepting_conversations g h c₁ c₂
+          (construct_cp_conversations_schnorr x g h u c) = true.
+      Proof.
+        intros *. destruct R as (Ra & Rb).
+        eapply construct_eq_conversations_schnorr_completeness.
+        intro f. 
+        destruct (fin_inv_S _ f) as [ea | (fi & ea)].
+        subst; cbn. exact eq_refl.
+        destruct (fin_inv_S _ fi) as [eaa | (fii & eaa)].
+        subst; cbn. exact eq_refl.
+        refine match (fin_inv_0 fii) with end.
+      Qed.
+      
+
+
+      (* Soundness (POK) *)
+
+      (* zero-knowledge *)
+
     End Proofs.
   End CP.
 End DL.
