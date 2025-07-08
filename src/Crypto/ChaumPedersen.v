@@ -151,7 +151,27 @@ Section DL.
         Unshelve. eapply Fdec.
       Qed.
 
+
       (* zero-knowledge *)
+      Lemma generalised_cp_special_honest_verifier_zkp : 
+        forall (lf : list F) (Hlfn : lf <> List.nil) (c : F),
+        List.map (fun '(a, p) => 
+          (generalised_cp_accepting_conversations g h c₁ c₂ a, p))
+          (@generalised_cp_schnorr_distribution lf Hlfn x g h c) = 
+        List.map (fun '(a, p) => 
+          (generalised_cp_accepting_conversations g h c₁ c₂ a, p))
+          (@generalised_cp_simulator_distribution lf Hlfn g h c₁ c₂ c).
+      Proof.
+        intros *. destruct R as (Ra & Rb).
+        eapply generalised_eq_special_honest_verifier_zkp.
+        intro f. 
+        destruct (fin_inv_S _ f) as [ea | (fi & ea)].
+        subst; cbn.  exact eq_refl.
+        destruct (fin_inv_S _ fi) as [eaa | (fii & eaa)].
+        subst; cbn. exact eq_refl.
+        refine match (fin_inv_0 fii) with end.
+        Unshelve. eapply Fdec.
+      Qed.
 
     End Proofs.
   End CP.
