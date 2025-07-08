@@ -134,6 +134,22 @@ Section DL.
       Qed.
 
       (* Soundness (POK) *)
+      Lemma generalise_cp_sigma_soundness :
+        forall (a : Vector.t G 2) 
+        (cr₁ cr₂ : F) (r₁ r₂ : F),
+        generalised_cp_accepting_conversations g h c₁ c₂ (a; [cr₁]; [r₁]) = true ->
+        generalised_cp_accepting_conversations g h c₁ c₂ (a; [cr₂]; [r₂]) = true ->
+        cr₁ <> cr₂ ->
+        ∃ y : F, (forall (f : Fin.t 2),
+          (nth [g; h] f)^y = (nth [c₁; c₂] f)).
+      Proof.
+        intros * ha hb hc.
+        eapply generalise_eq_sigma_soundness
+        with (a := a) (c₁ := cr₁)
+        (c₂ := cr₂) (r₁ := r₁) (r₂ := r₂).
+        exact ha. exact hb. exact hc.
+        Unshelve. eapply Fdec.
+      Qed.
 
       (* zero-knowledge *)
 
