@@ -1048,7 +1048,7 @@ Section DL.
               (gsl ++ [g] ++ gsr) (hsl ++ [h] ++ hsr)
               uscs c) = true.
         Proof using -(x R).
-          clear x R. 
+          clear x R.
           intros *.
           unfold generalised_or_accepting_conversations,
           construct_or_conversations_simulator.

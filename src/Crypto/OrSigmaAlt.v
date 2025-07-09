@@ -59,16 +59,18 @@ Section DL.
     *)
 
     Section Def.
-      
+
         (* simulator *)
         (* does not involve secret x *)
         (* Berry suggested to run the schnorr simulator for the first element *)
-        Definition construct_or_conversations_simulator {m n : nat} :
+        Definition construct_or_conversations_simulator_alt {m n : nat} :
           Vector.t G (m + (1 + n)) -> Vector.t G (m + (1 + n)) ->
           Vector.t F ((m + (1 + n)) + (m + n)) -> 
           F -> @sigma_proto F G (m + (1 + n)) (1 + (m + (1 + n))) (m + (1 + n)).
         Proof.
           intros gs hs usrs c.
+          (* separate us and rs *)
+          destruct (splitat (m + (1 + n)) usrs) as (us & rs).
           destruct m as [|m].
           +
             cbn in * |- .
@@ -76,17 +78,15 @@ Section DL.
             destruct (vector_inv_S gs) as (g & (gsr & _)).
             (* hs = h :: hsr *)
             destruct (vector_inv_S hs) as (h & (hsr & _)).
-            (* usrs = u :: usrsr *)
-            destruct (vector_inv_S usrs) as (u & (usrsr & _)).
+            (* us = u :: ust *)
+            destruct (vector_inv_S us) as (u & (usr & _)).
             (* compute r  *)
-            remember (c - (Vector.fold_right add usrsr zero)) 
+            remember (c - (Vector.fold_right add rs zero)) 
             as r.
             (* run schnorr simulator for the first element *)
             remember (@schnorr_simulator F opp G gop gpow g h u r) as Ha.
-            (* run simulator on gsr hsr usr rsr *)
-            destruct (splitat n usrsr) as (usr & rsr).
             remember (@OrSigma.construct_or_conversations_simulator_supplement 
-              F opp G gop gpow n gsr hsr usr rsr) as Hb.
+              F opp G gop gpow n gsr hsr usr rs) as Hb.
             (* now combine all and put the 
             c at front of challenges *)
             refine 
@@ -101,16 +101,14 @@ Section DL.
             (* hs = h :: hsr *)
             destruct (vector_inv_S hs) as (h & (hsr & _)).
             (* usrs = u :: usrsr *)
-            destruct (vector_inv_S usrs) as (u & (usrsr & _)).
+            destruct (vector_inv_S us) as (u & (usr & _)).
             (* compute r  *)
-            remember (c - (Vector.fold_right add usrsr zero)) 
+            remember (c - (Vector.fold_right add rs zero)) 
             as r.
             (* run schnorr simulator for the first element *)
             remember (@schnorr_simulator F opp G gop gpow g h u r) as Ha.
-            (* run simulator on gsr hsr usr rsr *)
-            destruct (splitat (m + S n) usrsr) as (usr & rsr).
             remember (@OrSigma.construct_or_conversations_simulator_supplement 
-              F opp G gop gpow _ gsr hsr usr (rew [Vector.t F] (plus_n_Sm m n) in rsr)) as Hb.
+              F opp G gop gpow _ gsr hsr usr (rew [Vector.t F] (plus_n_Sm m n) in rs)) as Hb.
             (* now combine all and put the 
               c at front of challenges *)
             refine 
@@ -129,14 +127,81 @@ Section DL.
           (* draw ((m + (1 + n)) + (m + n)) random elements *)
           usrs <- repeat_dist_ntimes_vector 
             (uniform_with_replacement lf Hlfn) ((m + (1 + n)) + (m + n)) ;;
-          Ret (construct_or_conversations_simulator gs hs usrs c).
+          Ret (construct_or_conversations_simulator_alt gs hs usrs c).
 
     End Def.
 
     Section Proofs.
 
-      (* prove that simulator is correct and it's distribution is same Schnorr one *)
 
+        Context
+          {Hvec: @vector_space F (@eq F) zero one add mul sub 
+            div opp inv G (@eq G) gid ginv gop gpow}.
+
+        (* add field *)
+        Add Field field : (@field_theory_for_stdlib_tactic F
+          eq zero one opp add mul sub inv div vector_space_field).
+
+
+        (* prove that simulator is correct and it's distribution is same Schnorr one *)
+           
+        Context
+          {m n : nat}
+          (gsl : Vector.t G m) 
+          (gsr : Vector.t G n)
+          (x : F) (* secret witness *)
+          (g h : G) (* public values *)
+          (hsl : Vector.t G m) 
+          (hsr : Vector.t G n) 
+          (R : h = g ^ x).  (* Prover knows (m + 1)th relation *)
+      
+
+        (*alt simulator completeness*)
+
+        Lemma construct_or_conversations_simulator_completeness : 
+          ∀ (usrs : Vector.t F (m + (1 + n) + (m + n))) (c : F),
+          @OrSigma.generalised_or_accepting_conversations F zero add Fdec 
+            G gop gpow Gdec m n (gsl ++ [g] ++ gsr) (hsl ++ [h] ++ hsr)
+            (construct_or_conversations_simulator_alt
+              (gsl ++ [g] ++ gsr) (hsl ++ [h] ++ hsr)
+              usrs c) = true.
+        Proof using -(x R).
+          clear x R.
+          intros *.
+          destruct m as [|m'].
+          +
+            unfold generalised_or_accepting_conversations,
+            construct_or_conversations_simulator_alt.
+            cbn in * |- *.
+            assert (hb : gsl = []). eapply vector_inv_0.
+            assert (hc : hsl = []). eapply vector_inv_0.
+            subst. cbn in * |- *.  
+            destruct (vector_inv_S usrs) as (u & usrsr & ha).
+            rewrite ha. cbn.
+            destruct (splitat n usrsr) as (usr & rs) eqn:hb.
+            cbn.
+            remember (@OrSigma.construct_or_conversations_simulator_supplement F opp G gop 
+              gpow _ gsr hsr usr rs) as sa.
+            refine
+            (match sa as s'
+            return sa = s' -> _ with 
+            |(a₁; c₁; r₁) => fun Hg => _  
+            end eq_refl).
+            cbn.
+            assert (hc : c = (c - fold_right add rs zero + fold_right add c₁ zero)).
+            rewrite Hg in Heqsa.
+            eapply construct_or_conversations_simulator_challenge in Heqsa.
+            rewrite <-Heqsa. field.
+            rewrite <-hc.
+            destruct (Fdec c c) as [Hk | Hk]; try congruence.
+            eapply andb_true_iff; split.
+            ++ admit.
+            ++
+              rewrite <-Hg, Heqsa.  
+              eapply OrSigma.construct_or_conversations_simulator_completeness_supplement. 
+        +
+        admit.
+    Admitted.
 
     End Proofs.
   End Or.
