@@ -59,7 +59,6 @@ Section DL.
     *)
 
     Section Def.
-
       
         (* simulator *)
         (* does not involve secret x *)
@@ -121,10 +120,23 @@ Section DL.
             end.
         Defined.
 
+
+        (* simulator distribution *)
+        Definition generalised_or_simulator_distribution  
+          {n m : nat} (lf : list F) (Hlfn : lf <> List.nil) 
+          (gs hs : Vector.t G (m + (1 + n))) (c : F) : 
+          dist (@sigma_proto F G (m + (1 + n)) (1 + (m + (1 + n))) (m + (1 + n))) :=
+          (* draw ((m + (1 + n)) + (m + n)) random elements *)
+          usrs <- repeat_dist_ntimes_vector 
+            (uniform_with_replacement lf Hlfn) ((m + (1 + n)) + (m + n)) ;;
+          Ret (construct_or_conversations_simulator gs hs usrs c).
+
     End Def.
 
-
     Section Proofs.
+
+      (* prove that simulator is correct and it's distribution is same Schnorr one *)
+
 
     End Proofs.
   End Or.
