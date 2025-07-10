@@ -55,7 +55,8 @@ Section DL.
       ∃ x : g₁^x = h₁ ∨ g₂^x = h₂ ∨ g₃^x= h₃ ... 
       
       Only difference between this and OrSigma.v is the simulator 
-      definition and thereby proofs. 
+      definition. It only contains simulator completenss and zero-knowledge proof 
+      for alternate simulator definition.  
     *)
 
     Section Def.
