@@ -133,6 +133,13 @@ Section DL.
 
     Section Proofs.
 
+        Theorem fold_righ_rew : forall (n m : nat) (rs : Vector.t F n) (e : n = m), 
+          fold_right add rs zero = fold_right add (rew [t F] e in rs) zero.
+        Proof.
+          intros *. subst. 
+          exact eq_refl.
+        Qed.
+        
 
         Context
           {Hvec: @vector_space F (@eq F) zero one add mul sub 
@@ -222,7 +229,8 @@ Section DL.
             assert (hc : c = (c - fold_right add rs zero + fold_right add c₁ zero)).
             rewrite Hg in Heqsa.
             eapply construct_or_conversations_simulator_challenge in Heqsa.
-            rewrite <-Heqsa. admit.
+            rewrite <-Heqsa, <-fold_righ_rew.
+            field.
             rewrite <-hc.
             destruct (Fdec c c) as [Hk | Hk]; try congruence.
             eapply andb_true_iff; split.
