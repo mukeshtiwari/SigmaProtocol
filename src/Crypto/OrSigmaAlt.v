@@ -119,8 +119,8 @@ Section DL.
         Defined.
 
 
-        (* simulator distribution *)
-        Definition generalised_or_simulator_distribution  
+        (* alternate simulator distribution *)
+        Definition generalised_or_simulator_distribution_alt 
           {n m : nat} (lf : list F) (Hlfn : lf <> List.nil) 
           (gs hs : Vector.t G (m + (1 + n))) (c : F) : 
           dist (@sigma_proto F G (m + (1 + n)) (1 + (m + (1 + n))) (m + (1 + n))) :=
@@ -139,7 +139,7 @@ Section DL.
           intros *. subst. 
           exact eq_refl.
         Qed.
-        
+
 
         Context
           {Hvec: @vector_space F (@eq F) zero one add mul sub 
@@ -202,7 +202,18 @@ Section DL.
             rewrite <-hc.
             destruct (Fdec c c) as [Hk | Hk]; try congruence.
             eapply andb_true_iff; split.
-            ++ admit.
+            ++ 
+              rewrite dec_true.
+              remember (c - fold_right add rs zero) as ct.
+              rewrite <-associative.
+              rewrite <-(@vector_space_smul_distributive_fadd F (@eq F) 
+              zero one add mul sub div 
+              opp inv G (@eq G) gid ginv gop gpow).
+              rewrite field_zero_iff_left,
+              vector_space_field_zero,
+              monoid_is_right_identity.
+              reflexivity.
+              typeclasses eauto.
             ++
               rewrite <-Hg, Heqsa.  
               eapply OrSigma.construct_or_conversations_simulator_completeness_supplement. 
@@ -234,11 +245,25 @@ Section DL.
             rewrite <-hc.
             destruct (Fdec c c) as [Hk | Hk]; try congruence.
             eapply andb_true_iff; split.
-            ++ admit.
+            ++ 
+              rewrite dec_true.
+              remember (c - fold_right add rs zero) as ct.
+              rewrite <-associative.
+              rewrite <-(@vector_space_smul_distributive_fadd F (@eq F) 
+              zero one add mul sub div 
+              opp inv G (@eq G) gid ginv gop gpow).
+              rewrite field_zero_iff_left,
+              vector_space_field_zero,
+              monoid_is_right_identity.
+              reflexivity.
+              typeclasses eauto.
             ++
               rewrite <-Hg, Heqsa.  
-              eapply OrSigma.construct_or_conversations_simulator_completeness_supplement. 
-        Admitted.
+              eapply OrSigma.construct_or_conversations_simulator_completeness_supplement.
+          Unshelve. 
+          eapply Fdec.
+          eapply Fdec.
+        Qed.
 
     End Proofs.
   End Or.
