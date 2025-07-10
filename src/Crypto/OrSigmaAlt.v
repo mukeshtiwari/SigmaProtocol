@@ -165,7 +165,7 @@ Section DL.
 
         (*alt simulator completeness*)
 
-        Lemma construct_or_conversations_simulator_completeness : 
+        Lemma construct_or_conversations_simulator_completeness_alt : 
           ∀ (usrs : Vector.t F (m + (1 + n) + (m + n))) (c : F),
           @OrSigma.generalised_or_accepting_conversations F zero add Fdec 
             G gop gpow Gdec m n (gsl ++ [g] ++ gsr) (hsl ++ [h] ++ hsr)
@@ -268,6 +268,75 @@ Section DL.
 
         #[local] Notation "p / q" := (mk_prob p (Pos.of_nat q)).
 
+        Lemma generalised_or_simulator_distribution_probability_generic_alt : 
+          forall (l : dist (t F (m + (1 + n) + (m + n)))) 
+          (trans : sigma_proto) (pr : prob) (c : F) (q : nat),
+          (∀ (trx : Vector.t F (m + (1 + n) + (m + n))) (prx : prob), 
+            List.In (trx, prx) l → prx = 1 / q) -> 
+          List.In (trans, pr)
+            (Bind l (λ uscs :  Vector.t F (m + (1 + n) + (m + n)),
+              Ret (construct_or_conversations_simulator_alt 
+              (gsl ++ [g] ++ gsr) (hsl ++ [h] ++ hsr) uscs c))) → 
+          pr = 1 / q.
+        Proof.
+           induction l as [|(a, p) l IHl].
+          + intros * Ha Hin.
+            simpl in Hin.
+            inversion Hin.
+          + intros * Ha Hin.
+            pose proof (Ha a p (or_introl eq_refl)).
+            destruct Hin as [Hwa | Hwb].
+            inversion Hwa; subst; 
+            clear Hwa.
+            unfold mul_prob, 
+            Prob.one; simpl.
+            f_equal.
+            nia.
+            simpl in Hwb.
+            eapply IHl.
+            intros ? ? Hinn.
+            exact (Ha trx prx (or_intror Hinn)).
+            exact Hwb.
+        Qed.
+
+
+        Lemma generalised_or_simulator_distribution_transcript_generic_alt : 
+          forall (l : dist (t F (m + (1 + n) + (m + n)))) 
+          (trans : sigma_proto) (pr : prob) (c : F),
+          List.In (trans, pr)
+            (Bind l (λ uscs : Vector.t F (m + (1 + n) + (m + n)),
+              Ret (construct_or_conversations_simulator_alt
+              (gsl ++ [g] ++ gsr) (hsl ++ [h] ++ hsr) uscs c))) → 
+         @OrSigma.generalised_or_accepting_conversations F zero add Fdec 
+            G gop gpow Gdec _ _  (gsl ++ [g] ++ gsr) (hsl ++ [h] ++ hsr) trans = true.
+        Proof.
+          induction l as [|(a, p) l IHl].
+          +
+            intros * Ha.
+            cbn in Ha; 
+            inversion Ha.
+          +
+            (* destruct l *)
+            destruct l as [|(la, lp) l].
+            ++
+              intros * Ha.
+              cbn in Ha.
+              destruct Ha as [Ha | Ha];
+              inversion Ha.
+              eapply construct_or_conversations_simulator_completeness_alt.
+            ++
+              intros * Ha.
+              remember (((la, lp) :: l)%list) as ls.
+              cbn in Ha.
+              destruct Ha as [Ha | Ha].
+              +++
+                inversion Ha.
+                eapply construct_or_conversations_simulator_completeness_alt.
+              +++
+                eapply IHl; try assumption.
+                exact Ha.
+        Qed.
+
 
         Lemma generalised_or_special_honest_verifier_simulator_dist_alt : 
           forall (lf : list F) (Hlfn : lf <> List.nil) 
@@ -280,10 +349,19 @@ Section DL.
              G gop gpow Gdec _ _  (gsl ++ [g] ++ gsr) (hsl ++ [h] ++ hsr) a = true ∧ 
           b = 1 / (Nat.pow (List.length lf) (m + (1 + n) + (m + n))).
         Proof.
-        Admitted.
-
+          intros * Ha.
+          refine(conj _ _).
+          +
+            eapply generalised_or_simulator_distribution_transcript_generic_alt.
+            exact Ha.
+          +
+            eapply generalised_or_simulator_distribution_probability_generic_alt.
+            intros * Hc.
+            eapply uniform_probability_multidraw_prob; exact Hc.
+            exact Ha.
+        Qed.
         
-        (* zero-knowledge proof *)
+        (* zero-knowledge proof for alternate simulator *)
         (* Information theoretic proofs *)
         Lemma generalised_or_special_honest_verifier_zkp_alt : 
           forall (lf : list F) (Hlfn : lf <> List.nil) (c : F),
@@ -315,9 +393,6 @@ Section DL.
             eapply generalised_or_special_honest_verifier_simulator_dist_alt.
             exact Ha.
         Qed.
-
-
-
 
     End Proofs.
   End Or.
