@@ -216,7 +216,9 @@ Section DL.
               typeclasses eauto.
             ++
               rewrite <-Hg, Heqsa.  
-              eapply OrSigma.construct_or_conversations_simulator_completeness_supplement. 
+              eapply OrSigma.construct_or_conversations_simulator_completeness_supplement.
+              Unshelve.
+              eapply Fdec. 
           +
             unfold generalised_or_accepting_conversations,
             construct_or_conversations_simulator_alt.
@@ -260,10 +262,62 @@ Section DL.
             ++
               rewrite <-Hg, Heqsa.  
               eapply OrSigma.construct_or_conversations_simulator_completeness_supplement.
-          Unshelve. 
-          eapply Fdec.
-          eapply Fdec.
+              Unshelve. 
+              eapply Fdec.
         Qed.
+
+        #[local] Notation "p / q" := (mk_prob p (Pos.of_nat q)).
+
+
+        Lemma generalised_or_special_honest_verifier_simulator_dist_alt : 
+          forall (lf : list F) (Hlfn : lf <> List.nil) 
+          (c : F) a b, 
+          List.In (a, b) 
+            (generalised_or_simulator_distribution_alt lf Hlfn 
+            (gsl ++ [g] ++ gsr) (hsl ++ [h] ++ hsr) c) ->
+            (* it's an accepting conversation and probability is *)
+          @OrSigma.generalised_or_accepting_conversations F zero add Fdec 
+             G gop gpow Gdec _ _  (gsl ++ [g] ++ gsr) (hsl ++ [h] ++ hsr) a = true ∧ 
+          b = 1 / (Nat.pow (List.length lf) (m + (1 + n) + (m + n))).
+        Proof.
+        Admitted.
+
+        
+        (* zero-knowledge proof *)
+        (* Information theoretic proofs *)
+        Lemma generalised_or_special_honest_verifier_zkp_alt : 
+          forall (lf : list F) (Hlfn : lf <> List.nil) (c : F),
+          List.map (fun '(a, p) => 
+            (@OrSigma.generalised_or_accepting_conversations F zero add Fdec 
+              G gop gpow Gdec _ _ (gsl ++ [g] ++ gsr) (hsl ++ [h] ++ hsr) a, p))
+            (@OrSigma.generalised_or_schnorr_distribution F zero add mul sub opp G 
+              gop gpow _ _ lf Hlfn x (gsl ++ [g] ++ gsr) (hsl ++ [h] ++ hsr) c) = 
+          List.map (fun '(a, p) => 
+            (@OrSigma.generalised_or_accepting_conversations F zero add Fdec 
+              G gop gpow Gdec _ _ (gsl ++ [g] ++ gsr) (hsl ++ [h] ++ hsr) a, p))
+            (generalised_or_simulator_distribution_alt lf Hlfn (gsl ++ [g] ++ gsr) 
+              (hsl ++ [h] ++ hsr) c).
+        Proof.
+          intros ? ? ?.
+          eapply map_ext_eq.
+          +
+            unfold generalised_or_schnorr_distribution,
+            generalised_or_simulator_distribution; cbn.
+            repeat rewrite distribution_length.
+            reflexivity.
+          +
+            intros (aa, cc, rr) y Ha.
+            eapply generalised_or_special_honest_verifier_schnorr_dist. 
+            exact R.
+            exact Ha.
+          +
+            intros (aa, cc, rr) y Ha.
+            eapply generalised_or_special_honest_verifier_simulator_dist_alt.
+            exact Ha.
+        Qed.
+
+
+
 
     End Proofs.
   End Or.
