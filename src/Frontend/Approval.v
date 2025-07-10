@@ -6,7 +6,7 @@ From Algebra Require Import
   Ring Vector_space.
 From Utility Require Import 
   Util.
-From Frontend Require Import 
+From Crypto Require Import 
   Elgamal.
 
 Section Approval.
