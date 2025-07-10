@@ -199,9 +199,38 @@ Section DL.
             ++
               rewrite <-Hg, Heqsa.  
               eapply OrSigma.construct_or_conversations_simulator_completeness_supplement. 
-        +
-        admit.
-    Admitted.
+          +
+            unfold generalised_or_accepting_conversations,
+            construct_or_conversations_simulator_alt.
+            cbn in * |- *.
+            destruct (vector_inv_S gsl) as (gh & gslr & ha).
+            destruct (vector_inv_S hsl) as (hh & hslr & hb).
+            subst. cbn.
+            destruct (vector_inv_S usrs) as (u & usrsr & ha).
+            rewrite ha. cbn.
+            destruct (splitat (m' + S n) usrsr) as (usr & rs) eqn:hb.
+            cbn.
+            remember (OrSigma.construct_or_conversations_simulator_supplement
+            (gslr ++ g :: gsr) (hslr ++ h :: hsr) usr
+            (rew [t F] plus_n_Sm m' n in rs))  as sa.
+            refine
+            (match sa as s'
+            return sa = s' -> _ with 
+            |(a₁; c₁; r₁) => fun Hg => _  
+            end eq_refl).
+            cbn.
+            assert (hc : c = (c - fold_right add rs zero + fold_right add c₁ zero)).
+            rewrite Hg in Heqsa.
+            eapply construct_or_conversations_simulator_challenge in Heqsa.
+            rewrite <-Heqsa. admit.
+            rewrite <-hc.
+            destruct (Fdec c c) as [Hk | Hk]; try congruence.
+            eapply andb_true_iff; split.
+            ++ admit.
+            ++
+              rewrite <-Hg, Heqsa.  
+              eapply OrSigma.construct_or_conversations_simulator_completeness_supplement. 
+        Admitted.
 
     End Proofs.
   End Or.
