@@ -612,9 +612,217 @@ Section DL.
             exact Hi.
       Qed.
 
-      
-           
-          
+      #[local] Notation "p / q" := (mk_prob p (Pos.of_nat q)).
+
+      (* zero-knowledge *)
+      Lemma generalised_eq_schnorr_distribution_transcript_generic : 
+        forall (l : dist F) (trans : sigma_proto) (pr : prob) (c : F ),
+        List.In (trans, pr)
+          (Bind l (λ u,
+            Ret (construct_eq_conversations_schnorr x gs u c))) → 
+        generalised_eq_accepting_conversations gs hs trans = true.
+      Proof.
+        induction l as [|(a, p) l IHl].
+        +
+          intros * Ha.
+          cbn in Ha; 
+          inversion Ha.
+        +
+          (* destruct l *)
+          destruct l as [|(la, lp) l].
+          ++
+            intros * Ha.
+            cbn in Ha.
+            destruct Ha as [Ha | Ha];
+            inversion Ha.
+            eapply construct_eq_conversations_schnorr_completeness.
+          ++
+            intros * Ha.
+            remember (((la, lp) :: l)%list) as ls.
+            cbn in Ha.
+            destruct Ha as [Ha | Ha].
+            +++
+              inversion Ha.
+              eapply construct_eq_conversations_schnorr_completeness.
+            +++
+              eapply IHl; try assumption.
+              exact Ha.
+      Qed.
+
+      Lemma generalised_eq_schnorr_distribution_probability_generic : 
+        forall (l :  dist F) (trans : sigma_proto) 
+        (pr : prob) (c : F) (m : nat),
+        (∀ (trx : F) (prx : prob), 
+          List.In (trx, prx) l → prx = 1 / m) -> 
+        List.In (trans, pr)
+          (Bind l (λ u : F,
+            Ret (construct_eq_conversations_schnorr x gs u c))) → 
+          pr = 1 / m.
+      Proof.
+        induction l as [|(a, p) l IHl].
+        + intros * Ha Hin.
+          simpl in Hin.
+          inversion Hin.
+        + intros * Ha Hin.
+          pose proof (Ha a p (or_introl eq_refl)).
+          destruct Hin as [Hwa | Hwb].
+          inversion Hwa; subst; 
+          clear Hwa.
+          unfold mul_prob, 
+          Prob.one; simpl.
+          f_equal.
+          nia.
+          simpl in Hwb.
+          eapply IHl.
+          intros ? ? Hinn.
+          exact (Ha trx prx (or_intror Hinn)).
+          exact Hwb.
+      Qed.
+
+      (* Every element in generalised schnorr distribution 
+        is an accepting conversation and it's probability 1 / |lf| 
+        Maybe probabilistic notations but this one is more intuitive.
+      *)
+      Lemma generalised_eq_special_honest_verifier_schnorr_dist : 
+        forall (lf : list F) (Hlfn : lf <> List.nil) 
+        (c : F) a b, 
+        List.In (a, b) 
+          (generalised_eq_schnorr_distribution lf Hlfn x gs c) ->
+          (* it's an accepting conversation and probability is *)
+        generalised_eq_accepting_conversations gs hs a = true ∧ 
+        b = 1 / (List.length lf).
+      Proof.
+        intros * Ha.
+        refine(conj _ _).
+        + 
+          eapply generalised_eq_schnorr_distribution_transcript_generic; 
+          exact Ha.
+        +
+          eapply generalised_eq_schnorr_distribution_probability_generic;
+          [intros * Hc;
+          eapply uniform_probability; exact Hc|
+          exact Ha].
+      Qed.
+
+
+      (* fact about simultor *)
+      Lemma generalised_eq_simulator_distribution_transcript_generic : 
+        forall (l :  dist F) 
+        (trans : sigma_proto) (pr : prob) (c : F),
+        List.In (trans, pr)
+          (Bind l (λ u : F,
+            Ret (construct_eq_conversations_simulator gs hs u c))) → 
+        generalised_eq_accepting_conversations gs hs trans = true.
+      Proof.
+        induction l as [|(a, p) l IHl].
+        +
+          intros * Ha.
+          cbn in Ha; 
+          inversion Ha.
+        +
+          (* destruct l *)
+          destruct l as [|(la, lp) l].
+          ++
+            intros * Ha.
+            cbn in Ha.
+            destruct Ha as [Ha | Ha];
+            inversion Ha.
+            eapply construct_eq_conversations_simulator_completeness.
+          ++
+            intros * Ha.
+            remember (((la, lp) :: l)%list) as ls.
+            cbn in Ha.
+            destruct Ha as [Ha | Ha].
+            +++
+              inversion Ha.
+              eapply construct_eq_conversations_simulator_completeness.
+            +++
+              eapply IHl; try assumption.
+              exact Ha.
+      Qed.
+
+      Lemma generalised_eq_simulator_distribution_probability_generic : 
+        forall (l :  dist F) (trans : sigma_proto) 
+        (pr : prob) (c : F) (m : nat),
+        (∀ (trx : F) (prx : prob), 
+          List.In (trx, prx) l → prx = 1 / m) -> 
+        List.In (trans, pr)
+          (Bind l (λ u : F,
+            Ret (construct_eq_conversations_simulator gs hs u c))) → 
+        pr = 1 / m.
+      Proof.
+        induction l as [|(a, p) l IHl].
+        + intros * Ha Hin.
+          simpl in Hin.
+          inversion Hin.
+        + intros * Ha Hin.
+          pose proof (Ha a p (or_introl eq_refl)).
+          destruct Hin as [Hwa | Hwb].
+          inversion Hwa; subst; 
+          clear Hwa.
+          unfold mul_prob, 
+          Prob.one; simpl.
+          f_equal.
+          nia.
+          simpl in Hwb.
+          eapply IHl.
+          intros ? ? Hinn.
+          exact (Ha trx prx (or_intror Hinn)).
+          exact Hwb.
+      Qed.
+
+
+      (* special honest verifier zero-knowledge *)
+      (* Every element in generalised schnorr distribution 
+        is an accepting conversation and it's probability 1 / |lf|
+      *)
+      Lemma generalised_eq_special_honest_verifier_simulator_dist : 
+        forall (lf : list F) (Hlfn : lf <> List.nil) 
+        (c : F) a b, 
+        List.In (a, b) 
+          (generalised_eq_simulator_distribution lf Hlfn gs hs c) ->
+          (* first component is true and probability is *)
+        generalised_eq_accepting_conversations gs hs a = true ∧ 
+        b = 1 / (List.length lf).
+      Proof.
+        intros * Ha.
+        refine(conj _ _).
+        + 
+          eapply generalised_eq_simulator_distribution_transcript_generic; 
+          exact Ha.
+        +
+          eapply generalised_eq_simulator_distribution_probability_generic;
+          [intros * Hc;
+          eapply uniform_probability; exact Hc|
+          exact Ha].
+      Qed.
+
+
+      Lemma generalised_eq_special_honest_verifier_zkp : 
+        forall (lf : list F) (Hlfn : lf <> List.nil) (c : F),
+        List.map (fun '(a, p) => 
+          (generalised_eq_accepting_conversations gs hs a, p))
+          (@generalised_eq_schnorr_distribution n lf Hlfn x gs c) = 
+        List.map (fun '(a, p) => 
+          (generalised_eq_accepting_conversations gs hs a, p))
+          (@generalised_eq_simulator_distribution n lf Hlfn gs hs c).
+      Proof.
+        intros ? ? ?.
+        eapply map_ext_eq.
+        +
+          unfold generalised_eq_schnorr_distribution, 
+          generalised_eq_simulator_distribution;
+          cbn. repeat rewrite distribution_length. 
+          reflexivity. 
+        +
+          intros (aa, cc, rr) y Ha.
+          eapply generalised_eq_special_honest_verifier_schnorr_dist.
+          exact Ha. 
+        +
+          intros (aa, cc, rr) y Ha.
+          eapply generalised_eq_special_honest_verifier_simulator_dist.
+          exact Ha.
+      Qed.
       
     End Proofs. 
   End EQ.
