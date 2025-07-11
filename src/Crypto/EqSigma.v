@@ -52,16 +52,6 @@ Section DL.
   Section EQ.
 
     Section Def. 
-
-      Definition compose_two_eq_sigma_protocols {n : nat} 
-        (s₁ : @sigma_proto F G 1 1 1) (s₂ : @sigma_proto F G n 1 1) :
-        @sigma_proto F G (1 + n) 1 1 :=
-      match s₁, s₂ with 
-      |(a₁; c₁; r₁), (a₂; _; _) =>
-        (a₁ ++ a₂; c₁; r₁)
-      end.
-
-
       
       (* 
         

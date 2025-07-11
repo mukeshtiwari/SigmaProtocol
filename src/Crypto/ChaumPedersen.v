@@ -63,27 +63,27 @@ Section DL.
       *)
       Definition construct_cp_conversations_schnorr 
         (x : F) (g h : G) (u c : F) : @sigma_proto F G 2 1 1 := 
-        @construct_eq_conversations_schnorr F add mul G gpow 1 x 
+        @construct_eq_conversations_schnorr F add mul G gpow _ x 
           [g; h] u c.
     
       (* simulator *)
       (* c₁ = g^x, c₂ = h^x *)
       Definition construct_cp_conversations_simulator 
         (g h : G) (c₁ c₂ : G) (u c : F) : @sigma_proto F G 2 1 1 := 
-        @construct_eq_conversations_simulator F opp G gop gpow 1 
+        @construct_eq_conversations_simulator F opp G gop gpow _ 
         [g; h] [c₁; c₂] u c.
 
       (* verifier *)
       Definition generalised_cp_accepting_conversations (g h : G) (c₁ c₂ : G) 
         (s : @sigma_proto F G 2 1 1) : bool := 
-        @generalised_eq_accepting_conversations F G gop gpow Gdec 1 [g; h]
+        @generalised_eq_accepting_conversations F G gop gpow Gdec _ [g; h]
         [c₁; c₂] s.
 
       (* distribution involving witness *)
       Definition generalised_cp_schnorr_distribution  
         (lf : list F) (Hlfn : lf <> List.nil) (x : F)
         (g h : G) (c : F) : dist (@sigma_proto F G 2 1 1) :=
-        @generalised_eq_schnorr_distribution F add mul G gpow 1 
+        @generalised_eq_schnorr_distribution F add mul G gpow _ 
           lf Hlfn x [g; h] c.
 
       (* Without secret *)
@@ -91,7 +91,7 @@ Section DL.
         (lf : list F) (Hlfn : lf <> List.nil) (g h : G)
         (c₁ c₂ : G) c : dist (@sigma_proto F G 2 1 1) :=
         @generalised_eq_simulator_distribution  F opp G gop 
-        gpow 1 lf Hlfn [g; h] [c₁; c₂] c.
+        gpow _ lf Hlfn [g; h] [c₁; c₂] c.
 
 
     End Def.
