@@ -76,6 +76,7 @@ Section DL.
           F -> Vector.t G (1 + n) -> F  -> 
           F -> @sigma_proto F G (1 + n) 1 1. (* @sigma_proto n 1 1 *)
         Proof.
+          
           refine(
             fix Fn n :=
             match n with 
@@ -176,7 +177,7 @@ Section DL.
     Section Proofs.
 
 
-      (* properties about generalised_eq_accepting_conversations *)
+        (* properties about generalised_eq_accepting_conversations *)
 
         Lemma generalised_eq_accepting_conversations_correctness_forward : 
           forall (n : nat) (gs hs : Vector.t G (1 + n)) 
@@ -673,7 +674,7 @@ Section DL.
         Qed.
 
 
-         Lemma generalised_eq_schnorr_distribution_probability_generic : 
+        Lemma generalised_eq_schnorr_distribution_probability_generic : 
           forall (l :  dist F) (trans : sigma_proto) 
           (pr : prob) (c : F) (m : nat),
           (∀ (trx : F) (prx : prob), 
@@ -731,7 +732,7 @@ Section DL.
 
 
 
-          (* fact about simultor *)
+        (* fact about simultor *)
         Lemma generalised_eq_simulator_distribution_transcript_generic : 
           forall (l :  dist F) 
           (trans : sigma_proto) (pr : prob) (c : F),
