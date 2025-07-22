@@ -224,7 +224,7 @@ Section DL.
         monoid_is_right_identity.
         reflexivity.
         typeclasses eauto.
-        Qed.
+      Qed.
       
       (* it's same as above but more clear. 
           It explicitly binds the accepting 
