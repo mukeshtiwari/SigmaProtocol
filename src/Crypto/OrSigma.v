@@ -14,7 +14,7 @@ From Crypto Require Import Sigma.
   
 
 Import MonadNotation 
-  VectorNotations.
+  VectorNotations EqNotations.
 
 #[local] Open Scope monad_scope.
 
@@ -50,76 +50,40 @@ Section DL.
   #[local] Notation "( a ; c ; r )" := (mk_sigma _ _ _ a c r).
 
 
-  Section Or. 
+  Section Or.
+    Section Defs.
 
-
-    (* Generalised Or composition where you know 1 out of n statements
-      ∃ x : g₁^x = h₁ ∨ g₂^x = h₂ ∨ g₃^x= h₃ ... 
-            
-      One witness out of n statements but if you want to prove 
-      that you know k out of n statements then 
-      use the following paper https://www.win.tue.nl/~berry/papers/crypto94.pdf
-    
-    *)
-
-    Section Def.
-
-
-        Definition compose_two_or_sigma_protocols {n m r u v w : nat} 
-          (s₁ : @sigma_proto F G n m r) (s₂ : @sigma_proto F G u v w) :
-          @sigma_proto F G (n + u) (m + v) (r + w) :=
-        match s₁, s₂ with 
-        |(a₁; c₁; r₁), (a₂; c₂; r₂) =>
-          (a₁ ++ a₂; c₁ ++ c₂; r₁ ++ r₂)
-        end.
-
-        (* Does not involve the secret x *)
-        (* gs hs us rs *)
-        #[local]
-        Definition construct_or_conversations_simulator_supplement :
-          forall {n : nat}, 
-          Vector.t G n ->  Vector.t G n -> Vector.t F n -> 
-          Vector.t F n -> @sigma_proto F G n n n.
-        Proof.
-          refine(fix Fn n {struct n} := 
-          match n with 
-          | 0 => fun gs hs us rs => _
-          | S n' => fun gs hs us rs  => _
-          end).
-          + refine (mk_sigma _ _ _ [] [] []).
-          + 
-            destruct (vector_inv_S gs) as (gsh & gstl & _).
-            destruct (vector_inv_S hs) as (hsh & hstl & _).
-            destruct (vector_inv_S us) as (ush & ustl & _).
-            destruct (vector_inv_S rs) as (rsh & rstl & _).
-            exact (compose_two_or_sigma_protocols 
-              (@schnorr_simulator F opp G gop gpow gsh hsh ush rsh)
-              (Fn _ gstl hstl ustl rstl)).
-        Defined.
-
-
-        (* Prover knows the ith relation *)
-        (* The way out is that the verifier may let the prover “cheat” a 
-          little bit by allowing the prover to use the simulator of the 
-          Σ-protocol for the relation Ri for which the prover does not 
-          know witness wi (i = 1 or i = 2). The verifier will do so by 
-          providing a single challenge c which the prover is allowed to 
-          split into two challenges c1, c2 provided c1, c2 satisfy a 
-          linear constraint in terms of c. For example, the constraint 
-          may be c = c1 ⊕ c2 if the challenges happen to be bit strings. 
-          Essentially, the prover gets one degree of freedom to cheat. 
-        *)
+      (* Generalised Or composition where you know 1 out of n statements
+        g^x₁ = h₁ ∨ g^x₂ = h₂ ∨ g^x₃ = h₃ ... 
+              
+        One witness out of n statements but if you want to prove 
+        that you know k out of n statements then 
+        use the following paper https://www.win.tue.nl/~berry/papers/crypto94.pdf
+      
+      *)
+      (* Prover knows the ith relation *)
+      (* The way out is that the verifier may let the prover “cheat” a 
+        little bit by allowing the prover to use the simulator of the 
+        Σ-protocol for the relation Ri for which the prover does not 
+        know witness wi (i = 1 or i = 2). The verifier will do so by 
+        providing a single challenge c which the prover is allowed to 
+        split into two challenges c1, c2 provided c1, c2 satisfy a 
+        linear constraint in terms of c. For example, the constraint 
+        may be c = c1 ⊕ c2 if the challenges happen to be bit strings. 
+        Essentially, the prover gets one degree of freedom to cheat. 
+      *)
         (* 
           prover knowns ith relation 
           x is the secret 
-          rs is randomly generated scalors 
-          us = usl ++ [u_i] ++ usr
-          rs = rsl ++ [_] ++ rsr 
+          us is random scalors for commitment 
+          cs is random scalors for prover to cheat
+          us = usl ++ [u] ++ usr
+          cs = csl ++ [_] ++ csr 
           Prover recomputes: 
-          r_i := c - Σ rsl + rsr 
+          cb := c - Σ rsl + rsr 
 
-          Uses simulator on (usl ++ usr) (rsl ++ rsr)
-          Uses Schnorr protocol u_i r_i 
+          Uses simulator on (usl ++ usr) (csl ++ csr)
+          Uses Schnorr protocol u cb
           Package them together.
 
           Verifier check the if all the individual 
@@ -127,178 +91,157 @@ Section DL.
           challenges sum up to c.
         *)
 
-
         (* 
-          x gs hs us rs c. 
-          x is secret  
-          gs and hs are public group elements 
-          and prover knows the (m + 1)th relation.
-          us and rs -- verifier let prover cheat -- are randomness 
-          c is challenge
-
-          Important: discuss this with Berry. 
+        1. **Commitment**:
+          - Let k be the index for which the prover knows the witness x_k (so y_k = g^{x_k}).
+          - For statement k (real):
+            - Choose random r_k, compute t_k = g^{r_k}.
+          - For each statement i ≠ k (simulated):
+            - Choose random s_i and c_i.
+            - Compute t_i = g^{s_i} * y_i^{-c_i}.
+        2. **Send commitments**: The prover sends (t_1, t_2, ..., t_n) to the verifier.
+        3. **Challenge**: The verifier sends a random challenge c.
+        4. **Response**:
+          - The prover sets c_k = c - (sum of c_i for i≠k) mod q.
+          - For the real statement k: compute s_k = r_k + c_k * x_k mod q.
+          - The responses for the simulated statements are already known (s_i for i≠k).
+          - The prover sends (s_1, s_2, ..., s_n) and (c_1, c_2, ..., c_n).
+        
         *)
 
-         Definition construct_or_conversations_schnorr {m n : nat} :
-          F -> Vector.t G (m + (1 + n)) -> Vector.t G (m + (1 + n)) ->
-          Vector.t F ((m + (1 + n)) + (m + n)) -> 
-          F -> @sigma_proto F G (m + (1 + n)) (1 + (m + (1 + n))) (m + (1 + n)).
+        (* 
+          x g hs us cs c. 
+          x is secret  
+          g and hs are public group elements 
+          and prover knows the (m + 1)-th relation.
+          us and cs -- verifier let prover cheat -- are randomness 
+          c is challenge.
+        *)
+
+        (*  {(x₁, x₂ … xₙ) : h₁ = g^x₁ ∨ h₂ = g^x₂ ∨ … hₙ = g^xₙ} *)
+        (* Prover knows (m + 1)-th relation g^x = hₘ *)
+        Definition construct_or_conversations_schnorr {m n : nat} 
+          (x : F) (g : G) (hs : Vector.t G (m + (1 + n)))
+          (uscs : Vector.t F ((m + (1 + n)) + (m + n))) (c : F) : 
+          @sigma_proto F G (m + (1 + n)) (1 + (m + (1 + n))) (m + (1 + n)).
         Proof.
-          intros x gs hs usrs c.
-          destruct (splitat (m + (1 + n)) usrs) as (us & rs).
-          destruct (splitat m gs) as (gsl & gsrt).
-          destruct (vector_inv_S gsrt) as (g & gsr & _).
-          destruct (splitat m hs) as (hsl & hsrt).
-          (* discard h because it is not needed in schnorr protocol *)
-          destruct (vector_inv_S hsrt) as (_ & hsr & _).
-          (* us := usl ++ [u_i] ++ usr *)
-          destruct (splitat m us) as (usl & rurt).
-          destruct (vector_inv_S rurt) as (u_i & usr & _).
-          (* rs := rsl ++ [_] ++ rsr *)
-          destruct (splitat m rs) as (rsl & rsr).
-          (* compute r_i  *)
-          remember (c - (Vector.fold_right add (rsl ++ rsr) zero)) 
-          as r_i.
-          (* we will return rsl ++ [r_i] ++ rsr in c field *)
-          (* run simulator on gsl hsl usl rsl *)
-          remember (construct_or_conversations_simulator_supplement 
-            gsl hsl usl rsl) as Ha.
-          (* run protocol for known relation *)
-          remember (@schnorr_protocol F add mul G gpow x g u_i r_i) as Hb.
-          (* run simulator on gsr hsr usr rsr *)
-          remember (construct_or_conversations_simulator_supplement 
-            gsr hsr usr rsr) as Hc.
-          (* now combine all and put the 
-            c at front of challenges *)
-          refine 
-            match Ha, Hb, Hc with 
-            |(a₁; c₁; r₁), (a₂; c₂; r₂), (a₃; c₃; r₃) => 
-              ((a₁ ++ (a₂ ++ a₃)); c :: c₁ ++ (c₂ ++ c₃); (r₁ ++ (r₂ ++ r₃)))
-            end.
+          (* commitment *)
+          destruct (splitat (m + (1 + n)) uscs) as (us & cs).
+          (* us is the randomness for commitment and cs is the degree of freedom *)
+          (* split us for simulation  *)
+          destruct (splitat m us) as (usl & usrh).
+          destruct (vector_inv_S usrh) as (u & usr & _).
+          (* split cs for simulation *)
+          destruct (splitat m cs) as (csl & csr).
+          destruct (splitat m hs) as (hsl & hsrh).
+          destruct (vector_inv_S hsrh) as (_ & hsr & _).
+          (* left simulate commitments *)
+          set (comml := zip_with (fun ui ci => (ui, ci)) usl csl).
+          set (commitl := zip_with (fun hi '(ui, ci) => gop (g^ui) (hi^(opp ci))) hsl comml).
+          (* real commitment *)
+          set (com := g^u). 
+          (* right simulate commitment *)
+          set (commr := zip_with (fun ui ci => (ui, ci)) usr csr).
+          set (commitr := zip_with (fun hi '(ui, ci) => gop (g^ui) (hi^(opp ci))) hsr commr).
+          (* put c at front of challenges *)
+          remember (c - (Vector.fold_right add (csl ++ csr) zero)) as cb.
+          (* response *)
+          remember (u + cb * x) as res.
+          refine((commitl ++ [com] ++ commitr); c :: csl ++ [cb] ++ csr ; usl ++ [res] ++ usr).
         Defined.
 
+        
 
         (* simulator *)
         (* does not involve secret x *)
-        Definition construct_or_conversations_simulator {m n : nat} :
-          Vector.t G (m + (1 + n)) -> Vector.t G (m + (1 + n)) ->
-          Vector.t F ((m + (1 + n)) + (m + n)) -> 
-          F -> @sigma_proto F G (m + (1 + n)) (1 + (m + (1 + n))) (m + (1 + n)).
+        Definition construct_or_conversations_simulator {m n : nat} 
+          (g : G) (hs : Vector.t G (m + (1 + n))) 
+          (uscs : Vector.t F ((m + (1 + n)) + (m + n)))  
+          (c : F) :  @sigma_proto F G (m + (1 + n)) (1 + (m + (1 + n))) (m + (1 + n)).
         Proof.
-          intros gs hs usrs c.
-          destruct (splitat (m + (1 + n)) usrs) as (us & rs).
-          destruct (splitat m gs) as (gsl & gsrt).
-          destruct (vector_inv_S gsrt) as (g & gsr & _).
-          destruct (splitat m hs) as (hsl & hsrt).
-          destruct (vector_inv_S hsrt) as (h & hsr & _).
-          (* us := usl ++ [u_i] ++ usr *)
-          destruct (splitat m us) as (usl & rurt).
-          destruct (vector_inv_S rurt) as (u_i & usr & _).
-          (* rs := rsl ++ [_] ++ rsr *)
-          destruct (splitat m rs) as (rsl & rsr).
-          (* compute r_i  *)
-          remember (c - (Vector.fold_right add (rsl ++ rsr) zero)) 
-          as r_i.
-          (* we will return rsl ++ [r_i] ++ rsr in c field *)
-          (* run simulator on gsl hsl usl rsl *)
-          remember (construct_or_conversations_simulator_supplement 
-            gsl hsl usl rsl) as Ha.
-          (* run protocol for known relation *)
-          remember (@schnorr_simulator F opp G gop gpow g h u_i r_i) as Hb.
-          (* run simulator on gsr hsr usr rsr *)
-          remember (construct_or_conversations_simulator_supplement 
-            gsr hsr usr rsr) as Hc.
-          (* now combine all and put the 
-            c at front of challenges *)
-          refine 
-            match Ha, Hb, Hc with 
-            |(a₁; c₁; r₁), (a₂; c₂; r₂), (a₃; c₃; r₃) => 
-              ((a₁ ++ (a₂ ++ a₃)); c :: c₁ ++ (c₂ ++ c₃); (r₁ ++ (r₂ ++ r₃)))
-            end.
+          destruct (splitat (m + (1 + n)) uscs) as (us & cs).
+          (* (c - Σcs) :: cs *)
+          set (cm := rew [Vector.t F] (plus_n_Sm m n) in 
+            (c - (Vector.fold_right add cs zero) :: cs)).
+          set (comm := zip_with (fun ui ci => (ui, ci)) us cm).
+          set(commitment := zip_with (fun hi '(ui, ci) => gop (g^ui) (hi^(opp ci))) hs comm).
+          refine(commitment; c :: cm; us).
         Defined.
-        
-
-        
+          
 
         #[local]
         Definition generalised_or_accepting_conversations_supplement : 
-          forall {n : nat}, 
-          Vector.t G n -> Vector.t G n ->
-          @sigma_proto F G n n n -> bool.
+          forall {n : nat}, G -> Vector.t G n -> @sigma_proto F G n n n -> bool.
         Proof.
           refine
             (fix Fn n := 
             match n with 
-            | 0 => fun gs hs Ha => true
-            | S n' => fun gs hs Ha => 
+            | 0 => fun g hs Ha => true
+            | S n' => fun g hs Ha => 
               match Ha with 
               | (a₁; c₁; r₁) => _ 
               end 
             end).
-          destruct (vector_inv_S gs) as (g & gsr & _).
           destruct (vector_inv_S hs) as (h & hsr & _).
           destruct (vector_inv_S a₁) as (a & asr & _).
           destruct (vector_inv_S c₁) as (c & csr & _).
           destruct (vector_inv_S r₁) as (r & rsr & _).
           exact ((@accepting_conversation F G gop gpow Gdec g h ([a]; [c]; [r])) && 
-            (Fn _ gsr hsr (asr; csr; rsr))).
+            (Fn _ g hsr (asr; csr; rsr))).
         Defined.
 
-
-        (* verify or sigma protocol *)
-        Definition generalised_or_accepting_conversations : 
-          forall {m n : nat}, 
-          Vector.t G (m + (1 + n)) -> Vector.t G (m + (1 + n)) ->
-          @sigma_proto F G (m + (1 + n)) (1 + (m + (1 + n))) (m + (1 + n)) ->
-          bool.
+        (* verify OR sigma protocol *)
+        (* Check that 
+          - the sum of c_i (from i=1 to n) equals c mod q.
+          - For each i from 1 to n: check that g^{s_i} = t_i * y_i^{c_i}. *)
+        Definition generalised_or_accepting_conversations {m n : nat} 
+          (g : G) (hs : Vector.t G (m + (1 + n)))
+          (Ha : @sigma_proto F G (m + (1 + n)) (1 + (m + (1 + n))) (m + (1 + n))) : bool.
         Proof.
-          intros ? ? gs hs Ha.
           refine 
             match Ha with 
-            |(a; ct; r) => _ 
+            |(a; css; r) => _ 
             end.
           (* Verifier first checks if challenge c is equal 
             to the rest of challenges *)
-          destruct (vector_inv_S ct) as (c & cs & _).
+          destruct (vector_inv_S css) as (c & cs & _).
           refine
             match Fdec c (Vector.fold_right add cs zero) with 
             | left _ => 
                 (* now check sigma *)
-                generalised_or_accepting_conversations_supplement gs hs (a; cs; r)
+                generalised_or_accepting_conversations_supplement g hs (a; cs; r)
             | right _ => false (* if it's false, there is 
               no point for checking further *)
             end.
         Defined.
 
-
-         (* schnorr distribution *)
+        (* schnorr distribution *)
         Definition generalised_or_schnorr_distribution  
           {n m : nat} (lf : list F) (Hlfn : lf <> List.nil) 
-          (x : F) (gs hs : Vector.t G (m + (1 + n))) (c : F) : 
+          (x : F) (g : G) (hs : Vector.t G (m + (1 + n))) (c : F) : 
           dist (@sigma_proto F G (m + (1 + n)) (1 + (m + (1 + n))) (m + (1 + n))) :=
           (* draw ((m + (1 + n)) + (m + n)) random elements *)
           usrs <- repeat_dist_ntimes_vector 
             (uniform_with_replacement lf Hlfn) ((m + (1 + n)) + (m + n)) ;;
-          Ret (construct_or_conversations_schnorr x gs hs usrs c).
+          Ret (construct_or_conversations_schnorr x g hs usrs c).
 
         (* simulator distribution *)
         Definition generalised_or_simulator_distribution  
           {n m : nat} (lf : list F) (Hlfn : lf <> List.nil) 
-          (gs hs : Vector.t G (m + (1 + n))) (c : F) : 
+          (g : G) (hs : Vector.t G (m + (1 + n))) (c : F) : 
           dist (@sigma_proto F G (m + (1 + n)) (1 + (m + (1 + n))) (m + (1 + n))) :=
           (* draw ((m + (1 + n)) + (m + n)) random elements *)
           usrs <- repeat_dist_ntimes_vector 
             (uniform_with_replacement lf Hlfn) ((m + (1 + n)) + (m + n)) ;;
-          Ret (construct_or_conversations_simulator gs hs usrs c).
-          
-    End Def.
+          Ret (construct_or_conversations_simulator g hs usrs c).
 
-    
+      
+      
+    End Defs.
 
     Section Proofs.
 
-
-        (* properties about accepting funciton *)
+      (* properties about accepting funciton *)
         (* 
           when generalised_or_accepting_conversations return true 
           then every individual sigma protocol is an 
@@ -306,13 +249,13 @@ Section DL.
           hd c = sum of rest of c 
         *)
         Lemma generalised_or_accepting_conversations_correctness_supplement_forward : 
-          forall {n : nat} (gs hs : Vector.t G n)
+          forall {n : nat} (g : G) (hs : Vector.t G n)
           (s :  @sigma_proto F G n n n),
-          generalised_or_accepting_conversations_supplement gs hs s = true ->
+          generalised_or_accepting_conversations_supplement g hs s = true ->
           (match s with 
           | (a; c; r) => 
             ∀ f : Fin.t n, 
-            @accepting_conversation F G gop gpow Gdec (nth gs f) (nth hs f) 
+            @accepting_conversation F G gop gpow Gdec g (nth hs f) 
               ([(nth a f)]; [nth c f]; [(nth r f)]) = true
           end).
         Proof.
@@ -333,7 +276,6 @@ Section DL.
               with 
               | (a₁; c₁; r₁) => fun Hb => _ 
               end eq_refl); intro f. 
-            destruct (vector_inv_S gs) as (gsh & gstl & Hc).
             destruct (vector_inv_S hs) as (hsh & hstl & Hd).
             destruct (vector_inv_S a₁) as (ah₁ & atl₁ & He).
             destruct (vector_inv_S c₁) as (ch₁ & ctl₁ & Hf).
@@ -354,19 +296,18 @@ Section DL.
 
 
          Lemma generalised_or_accepting_conversations_correctness_supplement_backward : 
-          forall {n : nat} (gs hs : Vector.t G n)
+          forall {n : nat} (g : G) (hs : Vector.t G n)
           (s :  @sigma_proto F G n n n),
           (match s with 
           | (a; c; r) => 
             ∀ f : Fin.t n,
-            @accepting_conversation  F G gop gpow Gdec (nth gs f) (nth hs f) 
+            @accepting_conversation  F G gop gpow Gdec g (nth hs f) 
               ([(nth a f)]; [nth c f]; [(nth r f)]) = true
-          end) -> generalised_or_accepting_conversations_supplement gs hs s = true.
+          end) -> generalised_or_accepting_conversations_supplement g hs s = true.
         Proof.
           induction n as [|n IHn].
           +
             intros * Ha.
-            rewrite (vector_inv_0 gs);
             rewrite (vector_inv_0 hs);
             cbn; reflexivity.
           + 
@@ -376,7 +317,6 @@ Section DL.
               with 
               | (a₁; c₁; r₁) => fun Hb => _ 
               end eq_refl).
-            destruct (vector_inv_S gs) as (gsh & gstl & Hc).
             destruct (vector_inv_S hs) as (hsh & hstl & Hd).
             destruct (vector_inv_S a₁) as (ah₁ & atl₁ & He).
             destruct (vector_inv_S c₁) as (ch₁ & ctl₁ & Hf).
@@ -389,11 +329,11 @@ Section DL.
               cbn in Hi.
               exact Hi.
             ++
-              specialize (IHn gstl hstl (atl₁; ctl₁; rtl₁)).
+              specialize (IHn g hstl (atl₁; ctl₁; rtl₁)).
               assert (Hb : (∀ f : Fin.t n,
               match (atl₁; ctl₁; rtl₁) with
               | (a; c; r) =>
-                  @accepting_conversation  F G gop gpow Gdec gstl[@f] hstl[@f]
+                  @accepting_conversation  F G gop gpow Gdec g hstl[@f]
                     ([a[@f]]; [c[@f]]; [r[@f]]) = true
               end)).
               intros *; exact (Ha (Fin.FS f)).
@@ -402,13 +342,13 @@ Section DL.
 
 
         Lemma generalised_or_accepting_conversations_correctness_supplement : 
-          forall {n : nat} (gs hs : Vector.t G n)
+          forall {n : nat} (g : G) (hs : Vector.t G n)
           (s :  @sigma_proto F G n n n),
-          generalised_or_accepting_conversations_supplement gs hs s = true <-> 
+          generalised_or_accepting_conversations_supplement g hs s = true <-> 
           match s with 
           | (a; c; r) => 
             ∀ f : Fin.t n,
-            @accepting_conversation F G gop gpow Gdec (nth gs f) (nth hs f) 
+            @accepting_conversation F G gop gpow Gdec g (nth hs f) 
               ([(nth a f)]; [nth c f]; [(nth r f)]) = true
           end.
         Proof.
@@ -422,23 +362,19 @@ Section DL.
             exact Ha.
         Qed.
 
-
-
-         
         Lemma generalised_or_accepting_conversations_supplement_app :
-          forall (n m : nat) 
-          (gsl hsl al : Vector.t G n) (gsr hsr ar : Vector.t G m)
+          forall (n m : nat) (g : G)
+          (hsl al : Vector.t G n) (hsr ar : Vector.t G m)
           (cl rl : Vector.t F n) (cr rr : Vector.t F m),
           generalised_or_accepting_conversations_supplement
-            (gsl ++ gsr) (hsl ++ hsr) 
+            g (hsl ++ hsr) 
             ((al ++ ar); (cl ++ cr); (rl ++ rr)) = 
-          generalised_or_accepting_conversations_supplement gsl hsl (al; cl; rl)  && 
-          generalised_or_accepting_conversations_supplement gsr hsr (ar; cr; rr).
+          generalised_or_accepting_conversations_supplement g hsl (al; cl; rl)  && 
+          generalised_or_accepting_conversations_supplement g hsr (ar; cr; rr).
         Proof.
           induction n as [|n IHn].
           +
             intros *.
-            rewrite (vector_inv_0 gsl).
             rewrite (vector_inv_0 hsl).
             rewrite (vector_inv_0 al).
             rewrite (vector_inv_0 cl).
@@ -446,29 +382,27 @@ Section DL.
             cbn; reflexivity.
           +
             intros *.
-            destruct (vector_inv_S gsl) as (gslh & gsltl & Ha).
             destruct (vector_inv_S hsl) as (hslh & hsltl & Hb).
             destruct (vector_inv_S al) as (alh & altl & Hc).
             destruct (vector_inv_S cl) as (clh & cltl & Hd).
             destruct (vector_inv_S rl) as (rlh & rltl & He).
             subst; cbn.
-            destruct (Gdec (gslh ^ rlh) (gop alh (hslh ^ clh))).
+            destruct (Gdec (g ^ rlh) (gop alh (hslh ^ clh))).
             ++
               cbn; eapply IHn.
             ++
               cbn; reflexivity.
         Qed.
 
-
         Lemma generalised_or_accepting_conversations_correctness_forward : 
-          forall {m n : nat} (gs hs : Vector.t G (m + (1 + n)))
+          forall {m n : nat} (g : G) (hs : Vector.t G (m + (1 + n)))
           (s :  @sigma_proto F G (m + (1 + n)) (1 + (m + (1 + n))) (m + (1 + n))),
-          generalised_or_accepting_conversations gs hs s = true -> 
+          generalised_or_accepting_conversations g hs s = true -> 
           match s with 
           | (a; c; r) => 
             Vector.hd c = Vector.fold_right add (Vector.tl c) zero ∧
             (∀ (f : Fin.t (m + (1 + n))),
-            @accepting_conversation F G gop gpow Gdec (nth gs f) (nth hs f) 
+            @accepting_conversation F G gop gpow Gdec g (nth hs f) 
               ([(nth a f)]; [nth c (Fin.FS f)]; [(nth r f)]) = true)
           end.
         Proof.
@@ -495,16 +429,16 @@ Section DL.
 
 
         Lemma generalised_or_accepting_conversations_correctness_backward : 
-          forall {m n : nat} (gs hs : Vector.t G (m + (1 + n)))
+          forall {m n : nat} (g : G) (hs : Vector.t G (m + (1 + n)))
           (s :  @sigma_proto F G (m + (1 + n)) (1 + (m + (1 + n))) (m + (1 + n))), 
           (match s with 
           | (a; c; r) => 
             Vector.hd c = Vector.fold_right add (Vector.tl c) zero ∧
             (∀ (f : Fin.t (m + (1 + n))),
-            @accepting_conversation F G gop gpow Gdec (nth gs f) (nth hs f) 
+            @accepting_conversation F G gop gpow Gdec g (nth hs f) 
               ([(nth a f)]; [nth c (Fin.FS f)]; [(nth r f)]) = true)
           end) -> 
-          generalised_or_accepting_conversations gs hs s = true.
+          generalised_or_accepting_conversations g hs s = true.
         Proof.
           intros * Ha.
           unfold generalised_or_accepting_conversations.
@@ -542,17 +476,17 @@ Section DL.
         Qed.
 
 
-         Lemma generalised_or_accepting_conversations_correctness: 
-          forall {m n : nat} (gs hs : Vector.t G (m + (1 + n)))
+        Lemma generalised_or_accepting_conversations_correctness: 
+          forall {m n : nat} (g : G) (hs : Vector.t G (m + (1 + n)))
           (s :  @sigma_proto F G (m + (1 + n)) (1 + (m + (1 + n))) (m + (1 + n))),
           (match s with 
           | (a; c; r) => 
             Vector.hd c = Vector.fold_right add (Vector.tl c) zero ∧
             (∀ (f : Fin.t (m + (1 + n))),
-            @accepting_conversation F G gop gpow Gdec (nth gs f) (nth hs f) 
+            @accepting_conversation F G gop gpow Gdec g (nth hs f) 
               ([(nth a f)]; [nth c (Fin.FS f)]; [(nth r f)]) = true)
           end) <-> 
-          generalised_or_accepting_conversations gs hs s = true.
+          generalised_or_accepting_conversations g hs s = true.
         Proof.
           intros *; 
           split; intro Ha.
@@ -575,136 +509,30 @@ Section DL.
           eq zero one opp add mul sub inv div vector_space_field).
 
 
-        Lemma construct_or_conversations_simulator_challenge : 
-          forall (n : nat) (gs hs : Vector.t G n)(us cs : Vector.t F n) 
-          (a : Vector.t G n) (c r : Vector.t F n),
-          (a; c; r) = construct_or_conversations_simulator_supplement gs hs us cs ->
-          cs = c.
-        Proof.
-          induction n as [|n IHn].
-          +
-            intros * Ha.
-            rewrite (vector_inv_0 gs), 
-            (vector_inv_0 hs),
-            (vector_inv_0 us),
-            (vector_inv_0 cs) in Ha.
-            cbn in Ha; inversion Ha; subst.
-            rewrite ((vector_inv_0 cs)); 
-            reflexivity.
-          +
-            intros * Ha.
-            destruct (vector_inv_S gs) as (gsh & gstl & Hb).
-            destruct (vector_inv_S hs) as (hsh & hstl & Hc).
-            destruct (vector_inv_S a) as (ah & atl & Hd).
-            destruct (vector_inv_S c) as (ch & ctl & He).
-            destruct (vector_inv_S r) as (rh & rtl & Hf).
-            destruct (vector_inv_S us) as (ush & ustl & Hg).
-            destruct (vector_inv_S cs) as (csh & cstl & Hi).
-            subst; cbn in Ha.
-            remember (construct_or_conversations_simulator_supplement gstl hstl ustl cstl)
-            as s.
-            refine 
-            (match s as s' return s = s' -> _ 
-            with 
-            | (a₁; c₁; r₁) => fun Hb => _ 
-            end eq_refl).
-            rewrite Hb in Ha;
-            inversion Ha; subst.
-            f_equal.
-            eapply Eqdep.EqdepTheory.inj_pair2 in H1, H3, H5.
-            eapply IHn.
-            apply eq_sym. 
-            rewrite <-H3 in Hb.
-            exact Hb.
-        Qed.
-
-
-
-        (* so in OR composition, we need simulator correctness first *)
-        #[local]
-        Lemma construct_or_conversations_simulator_completeness_supplement :
-          forall (m : nat) (gsl hsl : Vector.t G m) (usa csa : Vector.t F m),
-          generalised_or_accepting_conversations_supplement gsl hsl
-            (construct_or_conversations_simulator_supplement gsl hsl usa csa) = true.
-        Proof.
-          induction m as [|m' IHm].
-          +
-            intros *.
-            rewrite (vector_inv_0 gsl).
-            rewrite (vector_inv_0 hsl).
-            rewrite (vector_inv_0 usa).
-            rewrite (vector_inv_0 csa).
-            reflexivity.
-          +
-            intros *.
-            destruct (vector_inv_S gsl) as (gslh & gsltl & Ha).
-            destruct (vector_inv_S hsl) as (hslh & hsltl & Hb).
-            destruct (vector_inv_S usa) as (usah & usatl & Hc).
-            destruct (vector_inv_S csa) as (csah & csatl & Hd).
-            subst; cbn.
-            remember (construct_or_conversations_simulator_supplement gsltl hsltl usatl csatl)
-            as s.
-            refine 
-            (match s as s' return s = s' -> _ 
-            with 
-            | (a₁; c₁; r₁) => fun Hb => _ 
-            end eq_refl); cbn.
-            eapply andb_true_iff; split.
-            ++
-              eapply simulator_completeness.
-            ++
-              rewrite <-Hb, Heqs.
-              eapply IHm.
-              Unshelve.
-              apply Fdec.
-        Qed.
-
-
-
-        Lemma fold_right_app :
-          forall (n m : nat) (ul : Vector.t F n)
-          (ur : Vector.t F m),
-          fold_right add (ul ++ ur) zero = 
-          (fold_right add ul zero) + (fold_right add ur zero).
-        Proof.
-          induction n as [|n IHn].
-          +
-            intros *.
-            rewrite (vector_inv_0 ul);
-            cbn. field.
-          +
-            intros *.
-            destruct (vector_inv_S ul) as (ulh & ultl & Ha).
-            subst; cbn. 
-            rewrite IHn; cbn.
-            field.
-        Qed.
-
-
-         Lemma generalise_or_sigma_soundness_base_case :
-          forall (n : nat) gs hs 
+        Lemma generalise_or_sigma_soundness_base_case :
+          forall (n : nat) g hs 
           (a : Vector.t G (1 + n)) (c₁ c₂ : F)
           (cs₁ cs₂ : Vector.t F (1 + n))
           (r₁ r₂ : Vector.t F (1 + n)),
           @generalised_or_accepting_conversations 0 n 
-            gs hs (a; c₁ :: cs₁; r₁) = true ->
+            g hs (a; c₁ :: cs₁; r₁) = true ->
           @generalised_or_accepting_conversations _ _
-            gs hs (a; c₂ :: cs₂; r₂) = true ->
+            g hs (a; c₂ :: cs₂; r₂) = true ->
           (* c₁ and c₂ are verifier's challenges *)
           c₁ <> c₂ -> 
           (* There is an index where relation R is true and I can 
             extract a witness out of it *)
           ∃ (f : Fin.t (1 + n)) (y : F),
-          (nth gs f)^y = (nth hs f).
+          g^y = (nth hs f).
         Proof.
           intros * Ha Hb.
           pose proof generalised_or_accepting_conversations_correctness_forward 
-            gs hs (a; c₁ :: cs₁; r₁) Ha as Hd.
+            g hs (a; c₁ :: cs₁; r₁) Ha as Hd.
           pose proof generalised_or_accepting_conversations_correctness_forward 
-            gs hs (a; c₂ :: cs₂; r₂) Hb as He.
+            g hs (a; c₂ :: cs₂; r₂) Hb as He.
           clear Ha; clear Hb.
           generalize dependent n.
-          intros n gs hs a. revert c₂; revert c₁.
+          intros n hs a. revert c₂; revert c₁.
           generalize dependent n.          
           induction n as [|n IHn].
           +
@@ -712,15 +540,13 @@ Section DL.
             destruct Ha as (Hal & Har).
             destruct Hb as (Hbl & Hbr).
             exists Fin.F1.
-            destruct (vector_inv_S gs) as (gsh & gstl & Hf).
-            rewrite (vector_inv_0 gstl) in Hf. 
             destruct (vector_inv_S hs) as (hsh & hstl & Hg).
             rewrite (vector_inv_0 hstl) in Hg.
-            rewrite Hf, Hg; cbn.
+            rewrite Hg; cbn.
             specialize (Har Fin.F1).
             specialize (Hbr Fin.F1).
             cbn in * |- *.
-            rewrite dec_true, Hf, Hg in Har, Hbr.
+            rewrite dec_true, Hg in Har, Hbr.
             destruct (vector_inv_S a) as (ah & atl & Hh).
             rewrite (vector_inv_0 atl) in Hh.
             destruct (vector_inv_S r₁) as (rh₁ & rtl₁ & Hi).
@@ -743,7 +569,6 @@ Section DL.
             destruct Ha as (Hal & Har).
             destruct Hb as (Hbl & Hbr).
             cbn in Hal, Har, Hbl, Hbr.
-            destruct (vector_inv_S gs) as (gsh & gstl & Hd).
             destruct (vector_inv_S hs) as (hsh & hstl & He).
             destruct (vector_inv_S a) as (ah & atl & Hf).
             destruct (vector_inv_S r₁) as (rh₁ & rtl₁ & Hg).
@@ -782,7 +607,7 @@ Section DL.
               destruct Hd as (Hdl & Hdr).
               assert (He : (∀ f : Fin.t (S n),
               (if
-                Gdec (gstl[@f] ^ rtl₁[@f])
+                Gdec (g^rtl₁[@f])
                   (gop atl[@f] (hstl[@f] ^ cstl₁[@f]))
               then true
               else false) = true)).
@@ -792,7 +617,7 @@ Section DL.
               assert (Hf : 
               (∀ f : Fin.t (S n),
                 (if
-                  Gdec (gstl[@f] ^ rtl₂[@f])
+                  Gdec (g ^ rtl₂[@f])
                     (gop atl[@f] (hstl[@f] ^ cstl₂[@f]))
                   then true
                   else false) = true)).
@@ -800,7 +625,7 @@ Section DL.
               specialize (Hbr (Fin.FS f));
               exact Hbr.
               rewrite Heqhcl, Heqhcr in Hdr.
-              destruct (IHn gstl hstl atl
+              destruct (IHn hstl atl
                 (fold_right add cstl₁ zero)
                 (fold_right add cstl₂ zero) cstl₁ cstl₂ rtl₁ rtl₂
                 (conj eq_refl He) (conj eq_refl Hf) Hdr) as 
@@ -814,34 +639,33 @@ Section DL.
               eapply Gdec.
         Qed.
 
-
-
+        
         Lemma generalise_or_sigma_soundness_generic :
           forall (m n : nat) 
-          (gs hs : Vector.t G (m + (1 + n)))
+          (g : G) (hs : Vector.t G (m + (1 + n)))
           (a : Vector.t G (m + (1 + n))) 
           (c₁ c₂ : F)
           (cs₁ cs₂ : Vector.t F (m + (1 + n)))
           (r₁ r₂ : Vector.t F (m + (1 + n))),
           generalised_or_accepting_conversations 
-            gs hs (a; c₁ :: cs₁; r₁) = true ->
+            g hs (a; c₁ :: cs₁; r₁) = true ->
           generalised_or_accepting_conversations 
-            gs hs (a; c₂ :: cs₂; r₂) = true ->
+            g hs (a; c₂ :: cs₂; r₂) = true ->
           c₁ <> c₂ -> 
           (* I know an index where relation R is true and I can 
             extract a witness out of it *)
           ∃ (f : Fin.t (m + (1 + n))) (y : F),
-          (nth gs f)^y = (nth hs f).
+          g^y = (nth hs f).
         Proof.
           intros * Ha Hb.
           pose proof generalised_or_accepting_conversations_correctness_forward 
-            gs hs (a; c₁ :: cs₁; r₁) Ha as Hd.
+            g hs (a; c₁ :: cs₁; r₁) Ha as Hd.
           pose proof generalised_or_accepting_conversations_correctness_forward 
-            gs hs (a; c₂ :: cs₂; r₂) Hb as He.
+            g hs (a; c₂ :: cs₂; r₂) Hb as He.
           cbn in Hd, He.
           clear Ha; clear Hb.
           generalize dependent n;
-          intros n gs hs a; 
+          intros n hs a; 
           revert c₂; revert c₁;
           generalize dependent n.
           induction m as [|m' IHm].
@@ -859,7 +683,6 @@ Section DL.
             destruct Ha as (Hal & Har).
             destruct Hb as (Hbl & Hbr).
             cbn in * |- .
-            destruct (vector_inv_S gs) as (gsh & gstl & Hd).
             destruct (vector_inv_S hs) as (hsh & hstl & He).
             destruct (vector_inv_S a) as (ah & atl & Hf).
             destruct (vector_inv_S r₁) as (rh₁ & rtl₁ & Hg).
@@ -898,7 +721,7 @@ Section DL.
               destruct Hd as (Hdl & Hdr).
               assert (He : (∀ f : Fin.t (m' + S n),
               (if
-                Gdec (gstl[@f] ^ rtl₁[@f])
+                Gdec (g ^ rtl₁[@f])
                   (gop atl[@f] (hstl[@f] ^ cstl₁[@f]))
               then true
               else false) = true)).
@@ -908,7 +731,7 @@ Section DL.
               assert (Hf : 
               (∀ f : Fin.t (m' + S n),
                 (if
-                  Gdec (gstl[@f] ^ rtl₂[@f])
+                  Gdec (g ^ rtl₂[@f])
                     (gop atl[@f] (hstl[@f] ^ cstl₂[@f]))
                   then true
                   else false) = true)).
@@ -916,7 +739,7 @@ Section DL.
               specialize (Hbr (Fin.FS f));
               exact Hbr.
               rewrite Heqhcl, Heqhcr in Hdr.
-              destruct (IHm _ gstl hstl atl
+              destruct (IHm _  hstl atl
                 (fold_right add cstl₁ zero)
                 (fold_right add cstl₂ zero) cstl₁ cstl₂ rtl₁ rtl₂
                 (conj eq_refl He) (conj eq_refl Hf) Hdr) as 
@@ -929,223 +752,316 @@ Section DL.
         Qed.
 
 
-         (* Let's prove completeness *)
-        (* gs := gsl ++ [g] ++ gsr *)
-        (* hs := hsl ++ [h] ++ hsr *)
+       
 
 
+        Lemma fold_right_app :
+          forall (n m : nat) (ul : Vector.t F n)
+          (ur : Vector.t F m),
+          fold_right add (ul ++ ur) zero = 
+          (fold_right add ul zero) + (fold_right add ur zero).
+        Proof.
+          induction n as [|n IHn].
+          +
+            intros *.
+            rewrite (vector_inv_0 ul);
+            cbn. field.
+          +
+            intros *.
+            destruct (vector_inv_S ul) as (ulh & ultl & Ha).
+            subst; cbn. 
+            rewrite IHn; cbn.
+            field.
+        Qed.
+
+        Theorem construct_or_conversations_schnorr_completeness_base : 
+          forall (n : nat) (f : Fin.t n) (usr csr : Vector.t F n)
+          (hsr : Vector.t G n) (g : G),
+          g ^ usr[@f] = gop 
+          (zip_with (λ (hi : G) '(ui, ci), gop (g ^ ui) (hi ^ opp ci)) hsr
+          (zip_with (λ ui ci : F, (ui, ci)) usr csr))[@f]
+          (hsr[@f] ^ csr[@f]).
+        Proof.
+          induction n as [|n ihn].
+          +
+            intros *.
+            refine match f with end.
+          +
+            intros *.
+            destruct (vector_inv_S usr) as (usrh & usrt & ha).
+            destruct (vector_inv_S csr) as (csrh & csrt & hb).
+            destruct (vector_inv_S hsr) as (hsrh & hsrt & hc).
+            subst.
+            destruct (fin_inv_S _ f) as [f' | (f' & ha)].
+            ++
+              subst; cbn.
+              rewrite <-associative.
+              rewrite <-(@vector_space_smul_distributive_fadd F (@eq F) 
+                zero one add mul sub div 
+                opp inv G (@eq G) gid ginv gop gpow).
+              rewrite field_zero_iff_left,
+              vector_space_field_zero,
+              monoid_is_right_identity.
+              reflexivity.
+              typeclasses eauto.
+            ++
+              subst; cbn.
+              eapply ihn.
+        Qed.
+      
+
+
+        Theorem construct_or_conversations_schnorr_completeness_generic : 
+          forall (m n : nat) (f : Fin.t (m + S n)) (g : G) (usl : Vector.t F m)
+          (c : F) (csl : Vector.t F m) (csr : Vector.t F n) (x : F) (u : F)
+          (usr : Vector.t F n) (hsl : Vector.t G m) (h : G) (hsr : Vector.t G n),
+          g^x = h -> 
+          g ^ (usl ++ u + (c - fold_right add (csl ++ csr) zero) * x :: usr)[@f] =
+          gop (zip_with (λ (hi : G) '(ui, ci), gop (g ^ ui) (hi ^ opp ci)) hsl
+          (zip_with (λ ui ci : F, (ui, ci)) usl csl) ++ g ^ u
+          :: zip_with (λ (hi : G) '(ui, ci), gop (g ^ ui) (hi ^ opp ci)) hsr
+            (zip_with (λ ui ci : F, (ui, ci)) usr csr))[@f]
+          ((hsl ++ h :: hsr)[@f] ^ (csl ++ c - fold_right add (csl ++ csr) zero :: csr)[@f]).
+        Proof.
+          induction m as [|m ihm].
+          +
+            cbn; intros * hr.
+            rewrite (vector_inv_0 csl), (vector_inv_0 usl),
+            (vector_inv_0 hsl).
+            assert (ha : (zip_with (λ (hi : G) '(ui, ci), gop (g ^ ui) (hi ^ opp ci)) []
+            (zip_with (λ ui ci : F, (ui, ci)) [] []) = [])). reflexivity.
+            rewrite ha; clear ha. 
+            destruct (fin_inv_S _ f) as [f' | (f' & hf)].
+            ++
+              subst; cbn.
+              remember ((c - fold_right add csr zero)) as ct.
+              assert (Hg : (g ^ x) ^ ct = (g ^ (x * ct))).
+              rewrite smul_pow_up. 
+              reflexivity.
+              rewrite Hg; clear Hg.
+              assert (Hxc : x * ct = ct * x) by field.
+              rewrite Hxc; clear Hxc.
+              rewrite <- (@vector_space_smul_distributive_fadd F (@eq F) 
+                zero one add mul sub div
+                opp inv G (@eq G) gid ginv gop gpow);
+              subst; [exact eq_refl 
+              | assumption].
+            ++
+              subst; cbn.
+              eapply construct_or_conversations_schnorr_completeness_base.
+          +
+            (* inductive case *)
+            intros *.
+            destruct (vector_inv_S usl) as (uslh & uslt & ha).
+            destruct (vector_inv_S csl) as (cslh & cslt & hb).
+            destruct (vector_inv_S hsl) as (hslh & hslt & hc).
+            subst.
+            destruct (fin_inv_S _ f) as [f' | (f' & hd)]. 
+            ++
+              subst; cbn.
+              rewrite <-associative.
+              rewrite <-(@vector_space_smul_distributive_fadd F (@eq F) 
+                zero one add mul sub div 
+                opp inv G (@eq G) gid ginv gop gpow).
+              rewrite field_zero_iff_left,
+              vector_space_field_zero,
+              monoid_is_right_identity.
+              reflexivity.
+              typeclasses eauto.
+            ++
+              rewrite hd. cbn.
+              specialize (ihm _ f' g uslt (c - cslh) cslt csr x u usr hslt h hsr).
+              remember (fold_right add (cslt ++ csr) zero) as ct.
+              assert (ha : c - (cslh + ct) = c - cslh - ct). field.
+              rewrite ha; clear ha. 
+              exact ihm.
+        Qed.
         
+
+        Theorem fold_right_rew_gen : 
+          forall (m n : nat) (cs : Vector.t F m) (pf : m = n),
+          fold_right add (rew [t F] pf in cs) zero =
+          fold_right add cs zero.
+        Proof.
+          intros m n cs.
+          refine(match cs as cs' in Vector.t _ m' 
+            return ∀ (pf : m' = n), fold_right add (rew [t F] pf in cs') zero =
+              fold_right add cs' zero 
+            with 
+            | [] => _ 
+            | csh :: cst => _ 
+            end); intro pf; subst; reflexivity.
+        Qed.
+
+        Theorem construct_or_conversations_simulator_completeness_base : 
+          ∀ (n : nat) (f : Fin.t n) (usr : Vector.t F n) (g : G)
+          (hsr : Vector.t G n) (cstt : Vector.t F n),
+          g ^ usr[@f] =
+          gop
+          (zip_with (λ (hi : G) '(ui, ci), gop (g ^ ui) (hi ^ opp ci)) hsr
+          (zip_with (λ ui ci : F, (ui, ci)) usr cstt))[@f]
+          (hsr[@f] ^ cstt[@f]).
+        Proof.
+          induction n as [|n ihn].
+          +
+            intros *.
+            refine match f with end.
+          +
+            intros *.
+            destruct (vector_inv_S usr) as (usrh & usrt & ha).
+            destruct (vector_inv_S cstt) as (cstth & csttt & hb).
+            destruct (vector_inv_S hsr) as (hsrh & hsrt & hc).
+            subst.
+            destruct (fin_inv_S _ f) as [f' | (f' & ha)].
+            ++
+              subst; cbn.
+              rewrite <-associative.
+              rewrite <-(@vector_space_smul_distributive_fadd F (@eq F) 
+                zero one add mul sub div 
+                opp inv G (@eq G) gid ginv gop gpow).
+              rewrite field_zero_iff_left,
+              vector_space_field_zero,
+              monoid_is_right_identity.
+              reflexivity.
+              typeclasses eauto.
+            ++
+              subst; cbn.
+              eapply ihn.
+        Qed.
+
+
+
+        Theorem construct_or_conversations_simulator_completeness_generic : 
+          ∀ (m n : nat) (f : Fin.t (m + S n)) 
+          (usl : Vector.t F m) (u : F) (usr : Vector.t F n)
+          (hsl : t G m) (g h : G) (hsr : t G n)
+          (cst : t F (m + S n)),
+          g ^ (usl ++ u :: usr)[@f] =
+          gop
+          (zip_with (λ (hi : G) '(ui, ci), gop (g ^ ui) (hi ^ opp ci))
+          (hsl ++ h :: hsr)
+          (zip_with (λ ui ci : F, (ui, ci)) (usl ++ u :: usr) cst))[@f]
+          ((hsl ++ h :: hsr)[@f] ^ cst[@f]).
+        Proof.
+          induction m as [|m ihm].
+          +
+            cbn; intros *.
+            rewrite (vector_inv_0 usl), (vector_inv_0 hsl).
+            destruct (vector_inv_S cst) as (csth & cstt & ha).
+            destruct (fin_inv_S _ f) as [f' | (f' & hf)].
+            ++
+              subst. cbn.
+              rewrite <-associative.
+              rewrite <-(@vector_space_smul_distributive_fadd F (@eq F) 
+                zero one add mul sub div 
+                opp inv G (@eq G) gid ginv gop gpow).
+              rewrite field_zero_iff_left,
+              vector_space_field_zero,
+              monoid_is_right_identity.
+              reflexivity.
+              typeclasses eauto.
+            ++
+              subst; cbn.
+              eapply construct_or_conversations_simulator_completeness_base.
+          +
+            intros *.
+            destruct (vector_inv_S usl) as (uslh & uslt & ha). 
+            cbn in cst.
+            destruct (vector_inv_S cst) as (csth & cstt & hb).
+            destruct (vector_inv_S hsl) as (hslh & hslt & hc).
+            subst.
+            destruct (fin_inv_S _ f) as [f' | (f' & hf)].
+            ++
+              subst; cbn.
+              rewrite <-associative.
+              rewrite <-(@vector_space_smul_distributive_fadd F (@eq F) 
+                zero one add mul sub div 
+                opp inv G (@eq G) gid ginv gop gpow).
+              rewrite field_zero_iff_left,
+              vector_space_field_zero,
+              monoid_is_right_identity.
+              reflexivity.
+              typeclasses eauto.
+            ++
+              subst; cbn.
+              eapply ihm.
+        Qed.
+                
+          
+                
         Context
           {m n : nat}
-          (gsl : Vector.t G m) 
-          (gsr : Vector.t G n)
           (x : F) (* secret witness *)
-          (g h : G) (* public values *)
+          (g : G) (* public values *)
+          (* Prover knows a relation *)
           (hsl : Vector.t G m) 
+          (h : G)
           (hsr : Vector.t G n) 
           (R : h = g ^ x).  (* Prover knows (m + 1)th relation *)
-      
-      
-        
-        (* completeness *)
+          (* Throughout the proof we have used hs = hsl ++ [h] ++ hsr *)
+         
+
+         (* completeness *)
         Lemma construct_or_conversations_schnorr_completeness : 
           ∀ (uscs : Vector.t F (m + (1 + n) + (m + n))) (c : F),
-          generalised_or_accepting_conversations 
-            (gsl ++ [g] ++ gsr) (hsl ++ [h] ++ hsr)
-            (construct_or_conversations_schnorr x
-              (gsl ++ [g] ++ gsr) (hsl ++ [h] ++ hsr)
-              uscs c) = true.
+          generalised_or_accepting_conversations g (hsl ++ [h] ++ hsr)
+          (construct_or_conversations_schnorr x g (hsl ++ [h] ++ hsr) uscs c) = true.
         Proof.
-          intros *.
-          unfold generalised_or_accepting_conversations,
-          construct_or_conversations_schnorr.
-          repeat rewrite VectorSpec.splitat_append.
-          destruct (vector_inv_S ([g] ++ gsr)) as (ga & gt & Ha).
-          destruct (vector_inv_S ([h] ++ hsr)) as (ha & ht & Hb).
+          intros *. cbn.
+          eapply generalised_or_accepting_conversations_correctness.
+          unfold construct_or_conversations_schnorr.
           destruct (splitat (m + (1 + n)) uscs) as (us & cs).
-          destruct (splitat m us) as (usa & usb) eqn:Hc.
-          destruct (vector_inv_S usb) as (usba & usbb & Hd).
-          destruct (splitat m cs) as (csa & csb) eqn:He.
-          remember (construct_or_conversations_simulator_supplement gsl hsl usa csa)
-          as sa.
-          refine
-          (match sa as s'
-          return sa = s' -> _ with 
-          |(a₁; c₁; r₁) => fun Hg => _  
-          end eq_refl).
-          unfold schnorr_protocol.
-          remember (construct_or_conversations_simulator_supplement gt ht usbb csb)
-          as sb. 
-          refine
-          (match sb as s'
-          return sb = s' -> _ with 
-          |(a₂; c₂; r₂) => fun Hi => _  
-          end eq_refl); cbn.
-          (*
-          fold_right add (csa ++ csbb) zero = c₁ + c₂
-          *)
-          assert (Hj : c = (fold_right add
-          (c₁ ++ c - fold_right add (csa ++ csb) zero :: c₂) zero)).
-          remember (c - fold_right add (csa ++ csb) zero :: c₂) as ct.
-          rewrite fold_right_app.
-          rewrite Heqct; cbn.
-          rewrite fold_right_app.
-          rewrite Hg in Heqsa;
-          eapply construct_or_conversations_simulator_challenge in Heqsa;
-          rewrite Heqsa.
-          rewrite Hi in Heqsb; 
-          eapply construct_or_conversations_simulator_challenge in Heqsb;
-          rewrite Heqsb.
-          remember (fold_right add c₁ zero) as ca.
-          remember (fold_right add c₂ zero) as cb.
-          field.
-          rewrite <-Hj.
-          destruct (Fdec c c) as [Hk | Hk].
-          rewrite generalised_or_accepting_conversations_supplement_app.
-          eapply andb_true_iff.
-          split.
-          (* use simulator correctness *)
-          rewrite <-Hg, Heqsa.
-          eapply construct_or_conversations_simulator_completeness_supplement.
-          cbn; eapply andb_true_iff.
-          split.
-          remember ((c - fold_right add (csa ++ csb) zero)) as ct.
-          inversion Ha.
-          rewrite <-H0.
-          clear Hk; clear H0; clear H1.
-          rewrite dec_true, R.
-          assert (Hl : (g ^ x) ^ ct = (g ^ (x * ct))).
-          rewrite smul_pow_up; 
-          reflexivity.
-          rewrite Hl; clear Hl.
-          assert (Hxc : x * ct = ct * x).
-          rewrite commutative; reflexivity.
-          rewrite Hxc; clear Hxc.
-          rewrite (@vector_space_smul_distributive_fadd F (@eq F) 
-            zero one add mul sub div
-            opp inv G (@eq G) gid ginv gop gpow).
-          reflexivity.
-          exact Hvec.
-          (* simulator correctness *)
-          rewrite <-Hi, Heqsb.
-          inversion Ha; subst.
-          inversion Hb; subst.
-          eapply Eqdep.EqdepTheory.inj_pair2 in H1, H2.
-          subst.
-          eapply construct_or_conversations_simulator_completeness_supplement.
-          congruence.
+          (* us is the randomness for commitment and cs is the degree of freedom *)
+          (* split us for simulation  *)
+          destruct (splitat m us) as (usl & usrh).
+          destruct (vector_inv_S usrh) as (u & usr & _).
+          (* split cs for simulation *)
+          destruct (splitat m cs) as (csl & csr).
+          rewrite VectorSpec.splitat_append.
+          cbn; split.
+          + 
+            rewrite !fold_right_app. 
+            remember (fold_right add csl zero) as ca.
+            remember (fold_right add csr zero) as cb.
+            cbn. rewrite <-Heqcb. field.
+          +
+            intros f.
+            rewrite dec_true.
+            eapply construct_or_conversations_schnorr_completeness_generic.
+            rewrite R; reflexivity.
         Qed.
 
 
-        (* This proof basically hinges on simulator_supplement proof. It's 
-        here clear presentation *)
-        (*simulator completeness*)
+          
+        (* simulator completeness *)
         Lemma construct_or_conversations_simulator_completeness : 
           ∀ (uscs : Vector.t F (m + (1 + n) + (m + n))) (c : F),
-          generalised_or_accepting_conversations 
-            (gsl ++ [g] ++ gsr) (hsl ++ [h] ++ hsr)
-            (construct_or_conversations_simulator
-              (gsl ++ [g] ++ gsr) (hsl ++ [h] ++ hsr)
-              uscs c) = true.
+          generalised_or_accepting_conversations g (hsl ++ [h] ++ hsr)
+          (construct_or_conversations_simulator g (hsl ++ [h] ++ hsr) uscs c) = true.
         Proof using -(x R).
           clear x R.
           intros *.
-          unfold generalised_or_accepting_conversations,
-          construct_or_conversations_simulator.
-          repeat rewrite VectorSpec.splitat_append.
-          destruct (vector_inv_S ([g] ++ gsr)) as (ga & gt & Ha).
-          destruct (vector_inv_S ([h] ++ hsr)) as (ha & ht & Hb).
+          eapply generalised_or_accepting_conversations_correctness.
+          unfold construct_or_conversations_simulator.
           destruct (splitat (m + (1 + n)) uscs) as (us & cs).
-          destruct (splitat m us) as (usa & usb) eqn:Hc.
-          destruct (vector_inv_S usb) as (usba & usbb & Hd).
-          destruct (splitat m cs) as (csa & csb) eqn:He.
-          remember (construct_or_conversations_simulator_supplement gsl hsl usa csa)
-          as sa.
-          refine
-          (match sa as s'
-          return sa = s' -> _ with 
-          |(a₁; c₁; r₁) => fun Hg => _  
-          end eq_refl).
-          unfold schnorr_simulator.
-          remember (construct_or_conversations_simulator_supplement gt ht usbb csb)
-          as sb. 
-          refine
-          (match sb as s'
-          return sb = s' -> _ with 
-          |(a₂; c₂; r₂) => fun Hi => _  
-          end eq_refl); cbn.
-          assert (Hj : c = (fold_right add
-          (c₁ ++ c - fold_right add (csa ++ csb) zero :: c₂) zero)).
-          remember (c - fold_right add (csa ++ csb) zero :: c₂) as ct.
-          rewrite fold_right_app.
-          rewrite Heqct; cbn.
-          rewrite fold_right_app.
-          rewrite Hg in Heqsa;
-          eapply construct_or_conversations_simulator_challenge in Heqsa;
-          rewrite Heqsa.
-          rewrite Hi in Heqsb; 
-          eapply construct_or_conversations_simulator_challenge in Heqsb;
-          rewrite Heqsb.
-          remember (fold_right add c₁ zero) as ca.
-          remember (fold_right add c₂ zero) as cb.
-          field.
-          rewrite <-Hj.
-          destruct (Fdec c c) as [Hk | Hk].
-          rewrite generalised_or_accepting_conversations_supplement_app.
-          eapply andb_true_iff.
-          split.
-          (* use simulator_supplement correctness *)
-          rewrite <-Hg, Heqsa.
-          eapply construct_or_conversations_simulator_completeness_supplement.
-          cbn; eapply andb_true_iff.
-          split.
-          remember ((c - fold_right add (csa ++ csb) zero)) as ct.
-          inversion Ha.
-          rewrite <-H0.
-          clear Hk; clear H0; clear H1.
-          (* schnorr simulator correctness *)
-          rewrite dec_true.
-          rewrite <-associative.
-          inversion Hb.
-          rewrite <-(@vector_space_smul_distributive_fadd F (@eq F) 
-            zero one add mul sub div 
-            opp inv G (@eq G) gid ginv gop gpow).
-          rewrite field_zero_iff_left,
-          vector_space_field_zero,
-          monoid_is_right_identity.
-          reflexivity.
-          typeclasses eauto.
-          (* simulator_supplement correctness *)
-          rewrite <-Hi, Heqsb.
-          inversion Ha; subst.
-          inversion Hb; subst.
-          eapply Eqdep.EqdepTheory.inj_pair2 in H1, H2.
-          subst.
-          eapply construct_or_conversations_simulator_completeness_supplement.
-          congruence.
+          cbn; split.
+          +
+            rewrite fold_right_rew_gen. cbn. field. 
+          + 
+            intros *.
+            eapply dec_true.
+            remember (rew [t F] plus_n_Sm m n in (c - fold_right add cs zero :: cs))
+            as cst. clear Heqcst.
+            destruct (splitat m us) as (usl & usrh) eqn:ha.
+            eapply append_splitat in ha.
+            destruct (vector_inv_S usrh) as (u & usr & hb).
+            (* split cs for simulation *)
+            destruct (splitat m cs) as (csl & csr) eqn:hc.
+            eapply append_splitat in hc.
+            subst.
+            eapply construct_or_conversations_simulator_completeness_generic.
         Qed.
 
-      (* 
-         Lemma construct_or_conversations_simulator_completeness_gen : 
-          ∀ (uscs : Vector.t F (m + (1 + n) + (m + n))) (c : F),
-          generalised_or_accepting_conversations 
-            (gsl ++ [g] ++ gsr) (hsl ++ [h] ++ hsr)
-            (construct_or_conversations_simulator_gen
-              (gsl ++ [g] ++ gsr) (hsl ++ [h] ++ hsr)
-              uscs c) = true.
-        Proof using -(x R).
-          clear x R.
-          intros *.
-          unfold generalised_or_accepting_conversations,
-          construct_or_conversations_simulator_gen.
-          repeat rewrite VectorSpec.splitat_append.
-          destruct (splitat (1 + (m + n))
-            (subst_vector uscs (nat_succ_p m n (m + n)))) as (us, cs) eqn:Ha.
-          
-        Admitted.
-      *)
-
-        (* end of completeness *)
 
         (* special soundness *)
         Lemma generalise_or_sigma_soundness :
@@ -1154,25 +1070,24 @@ Section DL.
          (cs₁ cs₂ : Vector.t F (m + (1 + n)))
          (r₁ r₂ : Vector.t F (m + (1 + n))),
          generalised_or_accepting_conversations 
-          (gsl ++ [g] ++ gsr) (hsl ++ [h] ++ hsr) (a; c₁ :: cs₁; r₁) = true ->
+          g (hsl ++ [h] ++ hsr) (a; c₁ :: cs₁; r₁) = true ->
          generalised_or_accepting_conversations 
-          (gsl ++ [g] ++ gsr) (hsl ++ [h] ++ hsr) (a; c₂ :: cs₂; r₂) = true ->
+          g (hsl ++ [h] ++ hsr) (a; c₂ :: cs₂; r₂) = true ->
          c₁ <> c₂ -> 
          (* There is an index where relation R is true and can 
           extract a witness out of it *)
          ∃ (f : Fin.t (m + (1 + n))) (y : F),
-         (nth (gsl ++ [g] ++ gsr) f)^y = (nth (hsl ++ [h] ++ hsr) f).
+         g^y = (nth (hsl ++ [h] ++ hsr) f).
         Proof using -(x R).
           clear x R.
           intros * Ha Hb Hc.
           eapply generalise_or_sigma_soundness_generic;
           [exact Ha | exact Hb | exact Hc].
-        Qed. 
+        Qed.
 
 
+        (* zero-knowledge *)
 
-
-          
         (* honest verifier zero knowledge proof *)
 
         #[local] Notation "p / q" := (mk_prob p (Pos.of_nat q)).
@@ -1185,8 +1100,7 @@ Section DL.
           List.In (trans, pr)
             (Bind l (λ uscs :  Vector.t F (m + (1 + n) + (m + n)),
               Ret (construct_or_conversations_schnorr x 
-              (gsl ++ [g] ++ gsr) (hsl ++ [h] ++ hsr) uscs c))) → 
-          pr = 1 / q.
+              g (hsl ++ [h] ++ hsr) uscs c))) → pr = 1 / q.
         Proof.
           induction l as [|(a, p) l IHl].
           + intros * Ha Hin.
@@ -1209,16 +1123,14 @@ Section DL.
         Qed.
 
 
-
         Lemma generalised_or_schnorr_distribution_transcript_generic : 
           forall (l : dist (t F (m + (1 + n) + (m + n)))) 
           (trans : sigma_proto) (pr : prob) (c : F),
           List.In (trans, pr)
             (Bind l (λ uscs : Vector.t F (m + (1 + n) + (m + n)),
               Ret (construct_or_conversations_schnorr x 
-              (gsl ++ [g] ++ gsr) (hsl ++ [h] ++ hsr) uscs c))) → 
-          generalised_or_accepting_conversations 
-            (gsl ++ [g] ++ gsr) (hsl ++ [h] ++ hsr) trans = true.
+              g (hsl ++ [h] ++ hsr) uscs c))) → 
+          generalised_or_accepting_conversations g (hsl ++ [h] ++ hsr) trans = true.
         Proof.
           induction l as [|(a, p) l IHl].
           +
@@ -1246,9 +1158,7 @@ Section DL.
                 eapply IHl; try assumption.
                 exact Ha.
         Qed.
-
-
-
+        
 
         (* Every element in generalised schnorr distribution 
           is an accepting conversation and it's probability 1 / |lf|^n 
@@ -1263,10 +1173,9 @@ Section DL.
           (c : F) a b, 
           List.In (a, b) 
             (generalised_or_schnorr_distribution lf Hlfn 
-            x (gsl ++ [g] ++ gsr) (hsl ++ [h] ++ hsr) c) ->
+            x g (hsl ++ [h] ++ hsr) c) ->
             (* it's an accepting conversation and probability is *)
-          generalised_or_accepting_conversations 
-          (gsl ++ [g] ++ gsr) (hsl ++ [h] ++ hsr) a = true ∧ 
+          generalised_or_accepting_conversations g (hsl ++ [h] ++ hsr) a = true ∧ 
           b = 1 / (Nat.pow (List.length lf) (m + (1 + n) + (m + n))).
         Proof.
           intros * Ha.
@@ -1292,8 +1201,7 @@ Section DL.
           List.In (trans, pr)
             (Bind l (λ uscs :  Vector.t F (m + (1 + n) + (m + n)),
               Ret (construct_or_conversations_simulator 
-              (gsl ++ [g] ++ gsr) (hsl ++ [h] ++ hsr) uscs c))) → 
-          pr = 1 / q.
+              g (hsl ++ [h] ++ hsr) uscs c))) → pr = 1 / q.
         Proof.
           induction l as [|(a, p) l IHl].
           + intros * Ha Hin.
@@ -1323,9 +1231,8 @@ Section DL.
           List.In (trans, pr)
             (Bind l (λ uscs : Vector.t F (m + (1 + n) + (m + n)),
               Ret (construct_or_conversations_simulator
-              (gsl ++ [g] ++ gsr) (hsl ++ [h] ++ hsr) uscs c))) → 
-          generalised_or_accepting_conversations 
-            (gsl ++ [g] ++ gsr) (hsl ++ [h] ++ hsr) trans = true.
+                g (hsl ++ [h] ++ hsr) uscs c))) → 
+          generalised_or_accepting_conversations g (hsl ++ [h] ++ hsr) trans = true.
         Proof.
           induction l as [|(a, p) l IHl].
           +
@@ -1368,11 +1275,9 @@ Section DL.
           forall (lf : list F) (Hlfn : lf <> List.nil) 
           (c : F) a b, 
           List.In (a, b) 
-            (generalised_or_simulator_distribution lf Hlfn 
-            (gsl ++ [g] ++ gsr) (hsl ++ [h] ++ hsr) c) ->
+            (generalised_or_simulator_distribution lf Hlfn g (hsl ++ [h] ++ hsr) c) ->
             (* it's an accepting conversation and probability is *)
-          generalised_or_accepting_conversations 
-          (gsl ++ [g] ++ gsr) (hsl ++ [h] ++ hsr) a = true ∧ 
+          generalised_or_accepting_conversations g (hsl ++ [h] ++ hsr) a = true ∧ 
           b = 1 / (Nat.pow (List.length lf) (m + (1 + n) + (m + n))).
         Proof.
           intros * Ha.
@@ -1393,11 +1298,11 @@ Section DL.
         Lemma generalised_or_special_honest_verifier_zkp : 
           forall (lf : list F) (Hlfn : lf <> List.nil) (c : F),
           List.map (fun '(a, p) => 
-            (generalised_or_accepting_conversations (gsl ++ [g] ++ gsr) (hsl ++ [h] ++ hsr) a, p))
-            (generalised_or_schnorr_distribution lf Hlfn x (gsl ++ [g] ++ gsr) (hsl ++ [h] ++ hsr) c) = 
+            (generalised_or_accepting_conversations g (hsl ++ [h] ++ hsr) a, p))
+            (generalised_or_schnorr_distribution lf Hlfn x g (hsl ++ [h] ++ hsr) c) = 
           List.map (fun '(a, p) => 
-            (generalised_or_accepting_conversations (gsl ++ [g] ++ gsr) (hsl ++ [h] ++ hsr) a, p))
-            (generalised_or_simulator_distribution lf Hlfn (gsl ++ [g] ++ gsr) (hsl ++ [h] ++ hsr) c).
+            (generalised_or_accepting_conversations g (hsl ++ [h] ++ hsr) a, p))
+            (generalised_or_simulator_distribution lf Hlfn g (hsl ++ [h] ++ hsr) c).
         Proof.
           intros ? ? ?.
           eapply map_ext_eq.
@@ -1416,7 +1321,6 @@ Section DL.
             exact Ha.
         Qed.
 
-
     End Proofs.
-  End Or.
+  End Or. 
 End DL.
