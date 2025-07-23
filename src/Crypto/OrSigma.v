@@ -633,9 +633,7 @@ Section DL.
               exists (Fin.FS f), y;
               exact IH.
               Unshelve.
-              eapply Fdec.
               eapply Gdec.
-              eapply Fdec.
               eapply Gdec.
         Qed.
 
@@ -747,7 +745,6 @@ Section DL.
               exists (Fin.FS f), y;
               exact IH.
               Unshelve.
-              eapply Fdec.
               eapply Gdec.
         Qed.
 
