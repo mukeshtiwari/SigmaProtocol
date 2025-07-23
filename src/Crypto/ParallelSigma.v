@@ -261,15 +261,16 @@ Section DL.
 
         Context
           {Hvec: @vector_space F (@eq F) zero one add mul sub 
-            div opp inv G (@eq G) gid ginv gop gpow} (* vector space *)
+            div opp inv G (@eq G) gid ginv gop gpow}. (* vector space *)
+        (* 
           (x : F) (* secret witness *)
           (g h : G) (* public values *) 
           (R : h = g ^ x). (* relation that prover trying to establish, or convince a verifier*)
-
+        *)
 
 
         (* completeness *)
-        Lemma construct_parallel_conversations_schnorr_completeness : 
+        Lemma construct_parallel_conversations_schnorr_completeness (x : F) (g h : G) (R : h = g^x) : 
           forall (n : nat) (us cs : Vector.t F n),
           generalised_parallel_accepting_conversations g h
             (construct_parallel_conversations_schnorr x g us cs) = true.
@@ -307,12 +308,11 @@ Section DL.
 
 
         (* simulator completeness *)
-        Lemma construct_parallel_conversations_simulator_completeness : 
+        Lemma construct_parallel_conversations_simulator_completeness (g h : G) : 
           forall (n : nat) (us cs : Vector.t F n),
           generalised_parallel_accepting_conversations g h
             (construct_parallel_conversations_simulator g h us cs) = true.
-        Proof using -(x R).
-          clear x R. (* clear the secret and relation. *)
+        Proof.
           induction n as [|n IHn];
           [intros ? ?;
           reflexivity | intros ? ? ].
@@ -348,7 +348,7 @@ Section DL.
 
 
         (* special soundness helper *)
-        Lemma generalise_parallel_sigma_soundness_supplement : 
+        Lemma generalise_parallel_sigma_soundness_supplement (g h : G) : 
           ∀ (n : nat) (s₁ s₂ : @sigma_proto F G (S n) (S n) (S n)),
           (match s₁, s₂ with 
           | (a₁; c₁; _), (a₂; c₂; _) => 
@@ -360,8 +360,7 @@ Section DL.
             generalised_parallel_accepting_conversations g h s₂ = true ->
             ∃ y : F, g^y = h
           end).
-        Proof using -(x R).
-          clear x R. (* otherwise, it's trivial :) *)
+        Proof.
           induction n as [|n IHn].
           +
             intros ? ?.
@@ -486,7 +485,7 @@ Section DL.
 
 
         (* special soundness *)
-        Lemma generalise_parallel_sigma_soundness : 
+        Lemma generalise_parallel_sigma_soundness (g h : G) : 
           ∀ (n : nat) (a : Vector.t G (1 + n)) 
           (c₁ r₁ c₂ r₂ : Vector.t F (1 + n)),
           c₁ <> c₂ -> 
@@ -495,10 +494,9 @@ Section DL.
           (* accepting conversatation*)
           generalised_parallel_accepting_conversations g h (a; c₂; r₂) = true ->
           ∃ y : F, g^y = h.
-        Proof using -(x R).
-          clear x R.
+        Proof.
           intros * Ha Hb Hc.
-          exact (generalise_parallel_sigma_soundness_supplement n
+          exact (generalise_parallel_sigma_soundness_supplement g h n
             (a; c₁; r₁) (a; c₂; r₂) 
             (vector_same_implies_same_everyelem _ a a eq_refl)
             (@vector_not_equal_implies_disjoint_someelem _ Fdec _ c₁ c₂ Ha) 
@@ -509,7 +507,8 @@ Section DL.
         #[local] Notation "p / q" := (mk_prob p (Pos.of_nat q)).
 
         (* Honest Verifier zero-knowledge-proof *)
-        Lemma generalised_parallel_schnorr_distribution_transcript_generic {n : nat} : 
+        Lemma generalised_parallel_schnorr_distribution_transcript_generic 
+          {n : nat} (x : F) (g h : G) (R : h = g^x) : 
           forall (l : dist (Vector.t F n)) 
           (trans : sigma_proto) (pr : prob) (cs : Vector.t F n),
           List.In (trans, pr) (Bind l (λ us : t F n,
@@ -529,7 +528,7 @@ Section DL.
               cbn in Ha.
               destruct Ha as [Ha | Ha];
               inversion Ha.
-              eapply construct_parallel_conversations_schnorr_completeness.
+              now eapply construct_parallel_conversations_schnorr_completeness.
             ++
               intros * Ha.
               remember (((la, lp) :: l)%list) as ls.
@@ -537,7 +536,7 @@ Section DL.
               destruct Ha as [Ha | Ha].
               +++
                 inversion Ha.
-                eapply construct_parallel_conversations_schnorr_completeness.
+                now eapply construct_parallel_conversations_schnorr_completeness.
               +++
                 eapply IHl; try assumption.
                 exact Ha.
@@ -546,8 +545,8 @@ Section DL.
 
 
 
-        Lemma generalised_parallel_schnorr_distribution_probability_generic {n : nat} : 
-          forall (l : dist (Vector.t F n)) (trans : sigma_proto) 
+        Lemma generalised_parallel_schnorr_distribution_probability_generic {n : nat} 
+          (x : F) (g : G) : forall (l : dist (Vector.t F n)) (trans : sigma_proto) 
           (pr : prob) (cs : Vector.t F n) (m : nat),
           (∀ (trx : Vector.t F n) (prx : prob), 
             List.In (trx, prx) l → prx = 1 / m) -> 
@@ -580,7 +579,8 @@ Section DL.
           is an accepting conversation and it's probability 1 / |lf|^n 
           Maybe probabilistic notations but this one is more intuitive.
         *)
-        Lemma generalised_parallel_special_honest_verifier_schnorr_dist {n : nat}: 
+        Lemma generalised_parallel_special_honest_verifier_schnorr_dist {n : nat} 
+          (x : F) (g h : G) (R : h = g^x) : 
           forall (lf : list F) (Hlfn : lf <> List.nil) 
           (cs : Vector.t F n) a b, 
           List.In (a, b) 
@@ -592,7 +592,8 @@ Section DL.
           intros * Ha.
           refine(conj _ _).
           + 
-            eapply generalised_parallel_schnorr_distribution_transcript_generic; 
+            eapply generalised_parallel_schnorr_distribution_transcript_generic.
+            exact R.
             exact Ha.
           +
             eapply generalised_parallel_schnorr_distribution_probability_generic;
@@ -603,8 +604,8 @@ Section DL.
 
 
         (* fact about simultor *)
-        Lemma generalised_parallel_simulator_distribution_transcript_generic {n : nat} : 
-          forall (l : dist (Vector.t F n)) 
+        Lemma generalised_parallel_simulator_distribution_transcript_generic {n : nat} 
+          (g h : G) : forall (l : dist (Vector.t F n)) 
           (trans : sigma_proto) (pr : prob) (cs : Vector.t F n),
           List.In (trans, pr) (Bind l (λ us : t F n,
             Ret (construct_parallel_conversations_simulator g h us cs))) → 
@@ -639,8 +640,8 @@ Section DL.
 
 
 
-        Lemma generalised_parallel_simulator_distribution_probability_generic {n : nat} : 
-          forall (l : dist (Vector.t F n)) (trans : sigma_proto) 
+        Lemma generalised_parallel_simulator_distribution_probability_generic {n : nat} 
+          (g h : G) : forall (l : dist (Vector.t F n)) (trans : sigma_proto) 
           (pr : prob) (cs : Vector.t F n) (m : nat),
           (∀ (trx : Vector.t F n) (prx : prob), List.In (trx, prx) l → prx = 1 / m) -> 
           List.In (trans, pr) (Bind l (λ us : t F n,
@@ -669,8 +670,8 @@ Section DL.
 
 
         (* *)
-        Lemma generalised_parallel_special_honest_verifier_simulator_dist {n : nat}: 
-          forall (lf : list F) (Hlfn : lf <> List.nil) 
+        Lemma generalised_parallel_special_honest_verifier_simulator_dist {n : nat} 
+          (g h : G) : forall (lf : list F) (Hlfn : lf <> List.nil) 
           (cs : Vector.t F n) (a : sigma_proto) (b : prob),
           List.In (a, b) 
             (generalised_parallel_simulator_distribution lf Hlfn g h cs) ->
@@ -695,7 +696,8 @@ Section DL.
 
         (* distributions is identical (information theoretic soundenss because 
         the most powerful computer can't also distinguish between the two) *)
-        Lemma generalised_parallel_special_honest_verifier_zkp : 
+        Lemma generalised_parallel_special_honest_verifier_zkp 
+          (x : F) (g h : G) (R : h = g^x) : 
           forall (lf : list F) (Hlfn : lf <> List.nil) (n : nat) 
           (cs : Vector.t F n),
           List.map (fun '(a, p) => 
@@ -714,6 +716,7 @@ Section DL.
           +
             intros (aa, cc, rr) y Ha.
             eapply generalised_parallel_special_honest_verifier_schnorr_dist.
+            exact R.
             exact Ha.
           + 
             intros (aa, cc, rr) y Ha. 
