@@ -337,8 +337,7 @@ Section DL.
             rewrite hd; cbn.
             (* by simulator completeness *)
             eapply simulator_completeness.
-            Unshelve.
-            exact Fdec.
+  
           +
             rewrite Hf; cbn.
             specialize (Hc hd);
@@ -478,9 +477,6 @@ Section DL.
             cbn in Hm; exact Hm.
             eapply IHn; 
             try assumption.
-            Unshelve.
-            apply Fdec.
-            apply Fdec.
         Qed.
 
 

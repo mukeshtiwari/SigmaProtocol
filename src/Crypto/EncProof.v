@@ -528,5 +528,5 @@ Section DL.
 
     End Proofs.
   End EncProof.
-Section DL.
+End DL.
 

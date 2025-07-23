@@ -386,7 +386,6 @@ Section DL.
             eapply andb_true_iff; split.
             ++
               eapply simulator_completeness.
-              Unshelve. eapply Fdec.
             ++
               eapply IHn.
       Qed.
@@ -595,7 +594,7 @@ Section DL.
             cbn in Ha, Hb.
             pose proof @special_soundness_berry_gen 
             F zero one add mul sub div opp inv 
-            Fdec G gid ginv gop gpow Gdec Hvec
+             G gid ginv gop gpow Gdec Hvec
             _ _ _ _ _ _ _ Hc Ha Hb as Hi.
             destruct Hi as (y & Hi & Hj).
             rewrite <-Hj.

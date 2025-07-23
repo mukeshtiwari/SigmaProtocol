@@ -715,5 +715,5 @@ Section DL.
         Qed. 
 
     End Proofs. 
-  Section And. 
-Section DL.
+  End And. 
+End DL.

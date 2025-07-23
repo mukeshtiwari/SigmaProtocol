@@ -1,3 +1,4 @@
+(* 
 From Stdlib Require Import Setoid
   setoid_ring.Field Lia Vector Utf8
   Psatz Bool Pnat BinNatDef 
@@ -204,6 +205,7 @@ Section DL.
           (* split the randomness us at 2 + n *)
           destruct (splitat (2 + n) us) as (usl & usr).
           (* Now run AND protocol *)
+          Print construct_and_conversations_schnorr.
           (refine 
             match @construct_and_conversations_schnorr F 
             add mul G gpow _ xs gs usl c with 
@@ -515,3 +517,4 @@ Section DL.
     End Proofs.
   End Neq.
 End DL.
+*)
