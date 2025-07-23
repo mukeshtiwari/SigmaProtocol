@@ -152,13 +152,6 @@ Section DL.
           div opp inv G (@eq G) gid ginv gop gpow}.
 
       
-      (* available in global context *)
-      Context 
-        (x : F) (* secret witness *) 
-        (g h : G) (* public values *)
-        (R : h = g^x). (* relation that prover trying to 
-          establish, or convince a verifier*)
-
       (* add field *)
       Add Field field : (@field_theory_for_stdlib_tactic F
         eq zero one opp add mul sub inv div vector_space_field).
@@ -168,7 +161,7 @@ Section DL.
         (schnorr_protocol x g r c) returns 
         an accepting conversation.
       *)
-      Lemma schnorr_completeness :
+      Lemma schnorr_completeness (g h : G) (x : F) (R : h = g^x) :
         forall (r c : F),
           accepting_conversation g h 
           (schnorr_protocol x g r c) = true.
@@ -194,23 +187,22 @@ Section DL.
           It explicitly binds the accepting 
           conversation to variables (a₁; c₁; r₁).
       *)
-      Lemma schnorr_completeness_berry : 
+      Lemma schnorr_completeness_berry (g h : G) (x : F) (R : h = g^x) : 
         forall (r c : F) (a₁ : t G 1) (c₁ r₁ : t F 1),
         (a₁; c₁; r₁) = (schnorr_protocol x g r c) ->
         accepting_conversation g h (a₁; c₁; r₁) = true.
       Proof.
         intros * Ha; rewrite Ha;
-        eapply schnorr_completeness.
+        now eapply schnorr_completeness.
       Qed.
 
 
       (* simulator produces an accepting conversation,
           without using the secret x *)
-      Lemma simulator_completeness : 
+      Lemma simulator_completeness (g h : G) : 
         forall (r c : F), 
         accepting_conversation g h (schnorr_simulator g h r c) = true.
-      Proof using -(x R).
-        clear x R. (* Just for sanity. *)
+      Proof.
         unfold accepting_conversation, 
           schnorr_simulator; 
         intros *; simpl.
@@ -231,12 +223,11 @@ Section DL.
           conversation of simulator 
           to variables (a₁; c₁; r₁).
       *)
-      Lemma simulator_completeness_berry : 
+      Lemma simulator_completeness_berry (g h : G) : 
         forall (r c : F) (a₁ : t G 1) (c₁ r₁ : t F 1),
         (a₁; c₁; r₁) = (schnorr_simulator g h r c) ->
         accepting_conversation g h (a₁; c₁; r₁) = true.
-      Proof using -(x R).
-        clear x R.
+      Proof.
         intros * Ha;
         rewrite Ha;
         apply simulator_completeness.
@@ -249,7 +240,7 @@ Section DL.
         then exatractor can extract a witness 
       *)
     
-      Lemma special_soundness_berry_gen : 
+      Lemma special_soundness_berry_gen (g h : G) : 
         forall (a : G) (c₁ r₁ c₂ r₂ : F),
         c₁ <> c₂ -> 
         accepting_conversation g h ([a]; [c₁]; [r₁]) = true -> (* and it's accepting *) 
@@ -257,8 +248,7 @@ Section DL.
         ∃ y : F, g^y = h ∧ y =  ((r₁ - r₂) * inv (c₁ - c₂)).
         (* The explicit value of y is require in EQ proof *)
         (* then we can find a witness y such that g^y = h *)
-      Proof using -(x R).
-        clear x R. (* remove the assumption, otherwise it's trivial :) *)
+      Proof.
         intros * Ha Hb Hc.
         apply (@dec_true _ Gdec) in Hb, Hc. 
         cbn in Hb, Hc.
@@ -312,16 +302,16 @@ Section DL.
       Qed.
 
 
-      Lemma special_soundness_berry: 
+      Lemma special_soundness_berry (g h : G) : 
         forall (a : G) (c₁ r₁ c₂ r₂ : F),
         c₁ <> c₂ -> 
         accepting_conversation g h ([a]; [c₁]; [r₁]) = true -> (* and it's accepting *) 
         accepting_conversation g h ([a]; [c₂]; [r₂]) = true -> (* and it's accepting *)
         ∃ y : F, g^y = h.
         (* then we can find a witness y such that g^y = h *)
-      Proof using -(x R).
+      Proof.
         intros * Ha Hb Hc.
-        pose proof special_soundness_berry_gen 
+        pose proof special_soundness_berry_gen g h
         a c₁ r₁ c₂ r₂ Ha Hb Hc as Hd.
         destruct Hd as (y & Hd & He).
         exists y; exact Hd.
@@ -363,7 +353,7 @@ Section DL.
 
       (* every triple in schnorr distribution has 
         probability 1/n *)
-      Lemma schnorr_distribution_probability_generic : 
+      Lemma schnorr_distribution_probability_generic (x : F) (g h : G) : 
         forall (l : dist F) (trans : sigma_proto) 
         (prob : Prob.prob) (c : F) (n : nat),
         (forall trx prx, List.In (trx, prx) l -> prx = 1 / n) ->  
@@ -393,7 +383,7 @@ Section DL.
 
       (* every triple in schnorr distribution is 
         an accepting conversation *)
-      Lemma schnorr_distribution_transcript_generic : 
+      Lemma schnorr_distribution_transcript_generic (x : F) (g h : G) (R : h = g^x) : 
         forall(l : dist F) (trans : sigma_proto) 
         (prob : Prob.prob) (c : F),
         List.In (trans, prob) (Bind l (λ u : F, Ret (schnorr_protocol x g u c))) ->
@@ -410,7 +400,7 @@ Section DL.
             simpl in Ha;
             destruct Ha as [Ha | Ha];
             inversion Ha.
-            eapply schnorr_completeness.
+            now eapply schnorr_completeness.
           ++
             
             remember (((la, lp) :: l)%list) as ls.
@@ -418,7 +408,7 @@ Section DL.
             destruct Ha as [Ha | Ha].
             +++
               inversion Ha.
-              eapply  schnorr_completeness.
+              now eapply  schnorr_completeness.
             +++
               (* inductive case *)
               eapply IHl; exact Ha.
@@ -435,7 +425,7 @@ Section DL.
         conversation is accepting
       *)
 
-      Lemma schnorr_distribution_probability : 
+      Lemma schnorr_distribution_probability (x : F) (g h : G) (R : h = g^x) : 
         forall (lf : list F) (Hlfn : lf <> List.nil) 
         (c : F) (a₁ : t G 1) (c₁ r₁ : t F 1) 
         (prob : Prob.prob) (n : nat),
@@ -453,7 +443,7 @@ Section DL.
           unfold uniform_with_replacement.
           rewrite List.length_map;
           reflexivity.
-          pose proof schnorr_distribution_probability_generic
+          pose proof schnorr_distribution_probability_generic x g h  
           (uniform_with_replacement lf Hlfn)
           (a₁; c₁; r₁) prob c n as Ht.
           rewrite Hn in Ht |- *.
@@ -462,13 +452,13 @@ Section DL.
           unfold schnorr_distribution in Hl;
           cbn in Hl.
           eapply schnorr_distribution_transcript_generic;
-          exact Hl.
+          [exact R | exact Hl].
       Qed.
           
     
 
         
-      Lemma simulator_distribution_probability_generic : 
+      Lemma simulator_distribution_probability_generic (g h : G) : 
         forall (l : dist F) (trans : sigma_proto) 
         (prob : Prob.prob) (c : F) (n : nat),
         (forall trx prx, List.In (trx, prx) l -> prx = 1 / n) ->  
@@ -496,7 +486,7 @@ Section DL.
       Qed.
 
 
-      Lemma simulator_distribution_transcript_generic : 
+      Lemma simulator_distribution_transcript_generic (g h : G) : 
         forall (l : dist F) (trans : sigma_proto) 
         (prob : Prob.prob) (c : F),
         List.In (trans, prob) (Bind l (λ u : F, Ret (schnorr_simulator g h u c))) ->
@@ -534,7 +524,7 @@ Section DL.
         lf the list of Field element from which the 
         random r is drawn and it's an accepting 
         conversation *)
-      Lemma probability_simulator_distribution : 
+      Lemma probability_simulator_distribution (g h : G) : 
         forall (lf : list F) (Hlfn : lf <> List.nil) 
         (c : F) (a₁ : t G 1) (c₁ r₁ : t F 1) 
         (prob : Prob.prob) (n : nat),
@@ -552,7 +542,7 @@ Section DL.
           unfold uniform_with_replacement.
           rewrite List.length_map;
           reflexivity.
-          pose proof simulator_distribution_probability_generic
+          pose proof simulator_distribution_probability_generic g h 
           (uniform_with_replacement lf Hlfn)
           (a₁; c₁; r₁) prob c n as Ht.
           rewrite Hn.
@@ -576,7 +566,7 @@ Section DL.
         and then we show that these two distribution are 
         identical 
       *)
-      Lemma special_honest_verifier_zkp : 
+      Lemma special_honest_verifier_zkp (x : F) (g h : G) (R : h = g^x): 
         forall (lf : list F) (Hlfn : lf <> List.nil) (c : F), 
           List.map (fun '(a, p) => 
             (accepting_conversation g h a, p))
@@ -594,6 +584,7 @@ Section DL.
           intros (aa, cc, rr) y Ha. 
           eapply and_comm.
           eapply schnorr_distribution_probability.
+          exact R. 
           auto. exact Ha.
         + 
           intros (aa, cc, rr) y Ha. 
