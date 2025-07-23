@@ -241,7 +241,7 @@ Section DL.
 
     Section Proofs.
 
-      (* properties about accepting funciton *)
+        (* properties about accepting funciton *)
         (* 
           when generalised_or_accepting_conversations return true 
           then every individual sigma protocol is an 
@@ -988,7 +988,7 @@ Section DL.
         Qed.
                 
           
-                
+         (*        
         Context
           {m n : nat}
           (x : F) (* secret witness *)
@@ -999,10 +999,12 @@ Section DL.
           (hsr : Vector.t G n) 
           (R : h = g ^ x).  (* Prover knows (m + 1)th relation *)
           (* Throughout the proof we have used hs = hsl ++ [h] ++ hsr *)
-         
+         *)
 
          (* completeness *)
-        Lemma construct_or_conversations_schnorr_completeness : 
+        Lemma construct_or_conversations_schnorr_completeness {m n : nat}
+          (x : F) (* secret witness *) (g : G) (* public values *)
+          (hsl : Vector.t G m) (h : G) (hsr : Vector.t G n) (R : h = g ^ x) : 
           ∀ (uscs : Vector.t F (m + (1 + n) + (m + n))) (c : F),
           generalised_or_accepting_conversations g (hsl ++ [h] ++ hsr)
           (construct_or_conversations_schnorr x g (hsl ++ [h] ++ hsr) uscs c) = true.
@@ -1034,12 +1036,13 @@ Section DL.
 
           
         (* simulator completeness *)
-        Lemma construct_or_conversations_simulator_completeness : 
+        Lemma construct_or_conversations_simulator_completeness {m n : nat}
+          (g : G) (* public values *) (hsl : Vector.t G m) 
+          (h : G) (hsr : Vector.t G n) : 
           ∀ (uscs : Vector.t F (m + (1 + n) + (m + n))) (c : F),
           generalised_or_accepting_conversations g (hsl ++ [h] ++ hsr)
           (construct_or_conversations_simulator g (hsl ++ [h] ++ hsr) uscs c) = true.
-        Proof using -(x R).
-          clear x R.
+        Proof.
           intros *.
           eapply generalised_or_accepting_conversations_correctness.
           unfold construct_or_conversations_simulator.
@@ -1064,22 +1067,26 @@ Section DL.
 
 
         (* special soundness *)
-        Lemma generalise_or_sigma_soundness :
-         forall (a : Vector.t G (m + (1 + n))) 
-         (c₁ c₂ : F)
-         (cs₁ cs₂ : Vector.t F (m + (1 + n)))
-         (r₁ r₂ : Vector.t F (m + (1 + n))),
-         generalised_or_accepting_conversations 
-          g (hsl ++ [h] ++ hsr) (a; c₁ :: cs₁; r₁) = true ->
-         generalised_or_accepting_conversations 
-          g (hsl ++ [h] ++ hsr) (a; c₂ :: cs₂; r₂) = true ->
-         c₁ <> c₂ -> 
-         (* There is an index where relation R is true and can 
-          extract a witness out of it *)
-         ∃ (f : Fin.t (m + (1 + n))) (y : F),
-         g^y = (nth (hsl ++ [h] ++ hsr) f).
-        Proof using -(x R).
-          clear x R.
+        Lemma generalise_or_sigma_soundness 
+          {m n : nat}
+          (g : G) (* public values *)
+          (hsl : Vector.t G m) 
+          (h : G)
+          (hsr : Vector.t G n) :
+          forall (a : Vector.t G (m + (1 + n))) 
+          (c₁ c₂ : F)
+          (cs₁ cs₂ : Vector.t F (m + (1 + n)))
+          (r₁ r₂ : Vector.t F (m + (1 + n))),
+          generalised_or_accepting_conversations 
+            g (hsl ++ [h] ++ hsr) (a; c₁ :: cs₁; r₁) = true ->
+          generalised_or_accepting_conversations 
+            g (hsl ++ [h] ++ hsr) (a; c₂ :: cs₂; r₂) = true ->
+          c₁ <> c₂ -> 
+          (* There is an index where relation R is true and can 
+            extract a witness out of it *)
+          ∃ (f : Fin.t (m + (1 + n))) (y : F),
+          g^y = (nth (hsl ++ [h] ++ hsr) f).
+        Proof.
           intros * Ha Hb Hc.
           eapply generalise_or_sigma_soundness_generic;
           [exact Ha | exact Hb | exact Hc].
@@ -1092,7 +1099,13 @@ Section DL.
 
         #[local] Notation "p / q" := (mk_prob p (Pos.of_nat q)).
 
-        Lemma generalised_or_schnorr_distribution_probability_generic : 
+        Lemma generalised_or_schnorr_distribution_probability_generic 
+          {m n : nat}
+          (x : F) (* secret witness *)
+          (g : G) (* public values *)
+          (hsl : Vector.t G m) 
+          (h : G)
+          (hsr : Vector.t G n) : 
           forall (l : dist (t F (m + (1 + n) + (m + n)))) 
           (trans : sigma_proto) (pr : prob) (c : F) (q : nat),
           (∀ (trx : Vector.t F (m + (1 + n) + (m + n))) (prx : prob), 
@@ -1123,7 +1136,14 @@ Section DL.
         Qed.
 
 
-        Lemma generalised_or_schnorr_distribution_transcript_generic : 
+        Lemma generalised_or_schnorr_distribution_transcript_generic 
+          {m n : nat}
+          (x : F) (* secret witness *)
+          (g : G) (* public values *)
+          (hsl : Vector.t G m) 
+          (h : G)
+          (hsr : Vector.t G n) 
+          (R : h = g ^ x) : 
           forall (l : dist (t F (m + (1 + n) + (m + n)))) 
           (trans : sigma_proto) (pr : prob) (c : F),
           List.In (trans, pr)
@@ -1145,7 +1165,7 @@ Section DL.
               cbn in Ha.
               destruct Ha as [Ha | Ha];
               inversion Ha.
-              eapply construct_or_conversations_schnorr_completeness.
+              now eapply construct_or_conversations_schnorr_completeness.
             ++
               intros * Ha.
               remember (((la, lp) :: l)%list) as ls.
@@ -1153,7 +1173,7 @@ Section DL.
               destruct Ha as [Ha | Ha].
               +++
                 inversion Ha.
-                eapply construct_or_conversations_schnorr_completeness.
+                now eapply construct_or_conversations_schnorr_completeness.
               +++
                 eapply IHl; try assumption.
                 exact Ha.
@@ -1168,7 +1188,14 @@ Section DL.
         (* From Berry's notes : we have (m = 0 ∧ n = 1) ∨
           (m = 1 ∧ n = 0). In both cases, probability is 
           1 / |lf|^3 *)
-        Lemma generalised_or_special_honest_verifier_schnorr_dist : 
+        Lemma generalised_or_special_honest_verifier_schnorr_dist 
+          {m n : nat}
+          (x : F) (* secret witness *)
+          (g : G) (* public values *)
+          (hsl : Vector.t G m) 
+          (h : G)
+          (hsr : Vector.t G n) 
+          (R : h = g ^ x) : 
           forall (lf : list F) (Hlfn : lf <> List.nil) 
           (c : F) a b, 
           List.In (a, b) 
@@ -1181,7 +1208,8 @@ Section DL.
           intros * Ha.
           refine(conj _ _).
           + 
-            eapply generalised_or_schnorr_distribution_transcript_generic; 
+            eapply generalised_or_schnorr_distribution_transcript_generic.
+            exact R.
             exact Ha.
           +
             eapply generalised_or_schnorr_distribution_probability_generic.
@@ -1193,7 +1221,12 @@ Section DL.
 
 
 
-        Lemma generalised_or_simulator_distribution_probability_generic : 
+        Lemma generalised_or_simulator_distribution_probability_generic 
+          {m n : nat}
+          (g : G) (* public values *)
+          (hsl : Vector.t G m) 
+          (h : G)
+          (hsr : Vector.t G n) : 
           forall (l : dist (t F (m + (1 + n) + (m + n)))) 
           (trans : sigma_proto) (pr : prob) (c : F) (q : nat),
           (∀ (trx : Vector.t F (m + (1 + n) + (m + n))) (prx : prob), 
@@ -1225,7 +1258,12 @@ Section DL.
 
 
 
-        Lemma generalised_or_simulator_distribution_transcript_generic : 
+        Lemma generalised_or_simulator_distribution_transcript_generic 
+          {m n : nat}
+          (g : G) (* public values *)
+          (hsl : Vector.t G m) 
+          (h : G)
+          (hsr : Vector.t G n) : 
           forall (l : dist (t F (m + (1 + n) + (m + n)))) 
           (trans : sigma_proto) (pr : prob) (c : F),
           List.In (trans, pr)
@@ -1271,7 +1309,12 @@ Section DL.
         (* From Berry's notes : we have (m = 0 ∧ n = 1) ∨
           (m = 1 ∧ n = 0). In both cases, probability is 
           1 / |lf|^3 *)
-        Lemma generalised_or_special_honest_verifier_simulator_dist : 
+        Lemma generalised_or_special_honest_verifier_simulator_dist 
+          {m n : nat}
+          (g : G) (* public values *)
+          (hsl : Vector.t G m) 
+          (h : G)
+          (hsr : Vector.t G n) : 
           forall (lf : list F) (Hlfn : lf <> List.nil) 
           (c : F) a b, 
           List.In (a, b) 
@@ -1295,7 +1338,15 @@ Section DL.
 
 
         (* Information theoretic proofs *)
-        Lemma generalised_or_special_honest_verifier_zkp : 
+        Lemma generalised_or_special_honest_verifier_zkp 
+          {m n : nat}
+          (x : F) (* secret witness *)
+          (g : G) (* public values *)
+          (* Prover knows a relation *)
+          (hsl : Vector.t G m) 
+          (h : G)
+          (hsr : Vector.t G n) 
+          (R : h = g ^ x) : 
           forall (lf : list F) (Hlfn : lf <> List.nil) (c : F),
           List.map (fun '(a, p) => 
             (generalised_or_accepting_conversations g (hsl ++ [h] ++ hsr) a, p))
@@ -1314,6 +1365,7 @@ Section DL.
           +
             intros (aa, cc, rr) y Ha.
             eapply generalised_or_special_honest_verifier_schnorr_dist.
+            exact R.
             exact Ha. 
           +
             intros (aa, cc, rr) y Ha.
