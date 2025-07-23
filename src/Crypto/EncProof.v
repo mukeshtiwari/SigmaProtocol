@@ -52,7 +52,7 @@ Section DL.
   Section EncProof.
     Section Def.
 
-
+      (* Mostly taken and generalised from https://github.com/benadida/helios-server/blob/master/helios/crypto/elgamal.py#L225-L423 *)
       (* 
         c₁ := g^x, c₂ := m_{b} * h^x 
         Ciphertext c is an encryption of [m₀; m₁; ...;m\_{n-1}]. We assume that 
@@ -126,6 +126,7 @@ Section DL.
           c :: csl ++ [cb] ++ csr ; usl ++ [res] ++ usr).
       Defined.
     
+
       (* simulator *)
       (* does not involve secret x *)
       Definition construct_encryption_proof_elgamal_simulator {m n : nat} 
@@ -147,7 +148,7 @@ Section DL.
 
 
       #[local]
-      Definition generalised_encryption_proof_elgamal_supplement {n : nat}
+      Definition generalised_accepting_encryption_proof_elgamal_supplement {n : nat}
       (g h : G) (ms : Vector.t G n) (cp : G * G) 
       (pf : @sigma_proto F (G * G) n n n) : bool.
       Proof.
@@ -165,20 +166,20 @@ Section DL.
         destruct (vector_inv_S c) as (ch & csr & _).
         destruct (vector_inv_S r) as (rh & rsr & _).
         destruct (vector_inv_S ms) as (m & msr & _).
-        destruct cp as (c₁, c₂). 
+        destruct cp as (c₁, c₂).
         exact ((@accepting_conversation F G gop gpow Gdec g c₁ ([ah₁]; [ch]; [rh])) && 
           (@accepting_conversation F G gop gpow Gdec h (gop c₂ (ginv m)) ([ah₂]; [ch]; [rh])) &&
           (Fn _ g h msr (c₁, c₂) (asr; csr; rsr))).
       Defined.
 
 
-      (* verify OR sigma protocol *)
+      (* verify EncProof sigma protocol *)
       (* Check that 
-        - the sum of c_i (from i=1 to n) equals c mod q.
+        - the sum of c_i (from i=1 to n) equals c.
         - For each i from 1 to n: check that g^{r_i} = t_1i * c₁^{c_i} and 
           h^{r_i} = t2i * (c₂ / m_i)^{c_i}.
         *)
-      Definition generalised_encryption_proof_elgamal  {m n : nat} 
+      Definition generalised_accepting_encryption_proof_elgamal  {m n : nat} 
         (ms : Vector.t G (m + (1 + n)))  (g h : G) (cp : G * G)
         (pf : @sigma_proto F (G * G) (m + (1 + n)) (1 + (m + (1 + n))) (m + (1 + n))) : bool. 
       Proof.
@@ -193,7 +194,7 @@ Section DL.
           match Fdec c (Vector.fold_right add cs zero) with 
           | left _ => 
               (* now check sigma *)
-              generalised_encryption_proof_elgamal_supplement g h ms cp (a; cs; r)
+              generalised_accepting_encryption_proof_elgamal_supplement g h ms cp (a; cs; r)
           | right _ => false (* if it's false, there is 
             no point for checking further *)
           end.
@@ -224,6 +225,306 @@ Section DL.
     End Def.
 
     Section Proofs.
+
+      (* properties about accepting funciton *)
+        (* 
+          when generalised_or_accepting_conversations return true 
+          then every individual sigma protocol is an 
+          accepting conversations and 
+          hd c = sum of rest of c 
+        *)
+        Lemma generalised_accepting_encryption_proof_elgamal_supplement_forward : 
+          forall {n : nat} (g h : G) (ms : Vector.t G n) (c₁ c₂ : G)
+          (s :  @sigma_proto F (G * G) n n n),
+          generalised_accepting_encryption_proof_elgamal_supplement g h ms (c₁, c₂) s = true ->
+          (match s with 
+          | (a; c; r) => 
+            ∀ f : Fin.t n, 
+            (@accepting_conversation F G gop gpow Gdec g c₁ 
+              ([fst (nth a f)]; [nth c f]; [nth r f])) = true ∧ 
+            (@accepting_conversation F G gop gpow Gdec h (gop c₂ (ginv (nth ms f))) 
+              ([snd (nth a f)]; [nth c f]; [nth r f])) = true
+          end).
+        Proof.
+          induction n as [|n IHn].
+          +
+            intros * Ha.
+            refine 
+              (match s as s' return s = s' -> _ 
+              with 
+              | (a₁; c₁; r₁) => fun Hb => _ 
+              end eq_refl).
+            intros f;
+            inversion f.
+          +
+            intros * Ha.
+            refine 
+              (match s as s' return s = s' -> _ 
+              with 
+              | (au; cu; ru) => fun Hb => _ 
+              end eq_refl); intro f. 
+            destruct (vector_inv_S au) as ((ah₁, ah₂) & aut & He).
+            destruct (vector_inv_S cu) as (cuh & cut & Hf).
+            destruct (vector_inv_S ru) as (ruh & rut & Hg).
+            destruct (vector_inv_S ms) as (msh & mst & Hi).
+            destruct (fin_inv_S _ f) as [Hj | (fs & Hj)];
+            subst; simpl. 
+            ++
+              cbn in Ha.
+              eapply andb_true_iff in Ha.
+              destruct Ha as (Hal  &  Har).
+              split. eapply andb_true_iff in Hal. 
+              destruct Hal as [Hall Halr]. exact Hall.
+              eapply andb_true_iff in Hal. 
+              destruct Hal as [Hall Halr]. exact Halr.
+            ++
+              simpl in Ha;
+              eapply andb_true_iff in Ha.
+              destruct Ha as [Hal Har].
+              eapply andb_true_iff in Hal.
+              destruct Hal as [Hall Halr].
+              specialize (IHn g h mst c₁ c₂ (aut; cut; rut) Har).
+              cbn in IHn. 
+              eapply IHn.
+        Qed.
+
+        Lemma generalised_accepting_encryption_proof_elgamal_supplement_backward : 
+          forall {n : nat} (g h : G) (ms : Vector.t G n) (c₁ c₂ : G)
+          (s :  @sigma_proto F (G * G) n n n),
+          (match s with 
+          | (a; c; r) => 
+            ∀ f : Fin.t n, 
+            (@accepting_conversation F G gop gpow Gdec g c₁ 
+              ([fst (nth a f)]; [nth c f]; [nth r f])) = true ∧ 
+            (@accepting_conversation F G gop gpow Gdec h (gop c₂ (ginv (nth ms f))) 
+              ([snd (nth a f)]; [nth c f]; [nth r f])) = true
+          end) -> generalised_accepting_encryption_proof_elgamal_supplement g h ms (c₁, c₂) s = true.
+        Proof.
+          induction n as [|n IHn].
+          +
+            intros * Ha.
+            rewrite (vector_inv_0 ms);
+            cbn; reflexivity.
+          + 
+            intros * Ha.
+            refine 
+              (match s as s' return s = s' -> _ 
+              with 
+              | (au; cu; ru) => fun Hb => _ 
+              end eq_refl).
+            destruct (vector_inv_S ms) as (msh & mstl & Hd).
+            destruct (vector_inv_S au) as ((auh₁, auh₂) & autl & He).
+            destruct (vector_inv_S cu) as (cuh & cutl & Hf).
+            destruct (vector_inv_S ru) as (ruh & rutl & Hg).
+            subst. simpl. 
+            eapply andb_true_iff.
+            split. 
+            ++ 
+              pose proof (Ha Fin.F1) as Hi.
+              cbn in Hi.
+              eapply andb_true_iff.
+              exact Hi.
+            ++
+              eapply IHn.
+              intro f. 
+              specialize (Ha (Fin.FS f)).
+              cbn in Ha. 
+              exact Ha.
+        Qed.
+
+         Lemma generalised_accepting_encryption_proof_elgamal_supplement_correctness : 
+          forall {n : nat} (g h : G) (ms : Vector.t G n) (c₁ c₂ : G)
+          (s :  @sigma_proto F (G * G) n n n),
+          generalised_accepting_encryption_proof_elgamal_supplement g h ms (c₁, c₂) s = true <->
+          (match s with 
+          | (a; c; r) => 
+            ∀ f : Fin.t n, 
+            (@accepting_conversation F G gop gpow Gdec g c₁ 
+              ([fst (nth a f)]; [nth c f]; [nth r f])) = true ∧ 
+            (@accepting_conversation F G gop gpow Gdec h (gop c₂ (ginv (nth ms f))) 
+              ([snd (nth a f)]; [nth c f]; [nth r f])) = true
+          end).
+        Proof.
+          intros *; split; intro ha;
+          [eapply generalised_accepting_encryption_proof_elgamal_supplement_forward |
+          eapply generalised_accepting_encryption_proof_elgamal_supplement_backward]; assumption.
+        Qed.
+
+
+        Lemma generalised_accepting_elgamal_accepting_conversations_supplement_app :
+          forall (n m : nat) (g h : G) (cp : G * G)
+          (msl : Vector.t G n) (msr : Vector.t G m)
+          (al : Vector.t (G * G) n) (ar : Vector.t (G * G) m)
+          (cl rl : Vector.t F n) (cr rr : Vector.t F m) ,
+          generalised_accepting_encryption_proof_elgamal_supplement g h (msl ++ msr)
+          cp  ((al ++ ar); (cl ++ cr); (rl ++ rr)) = 
+          generalised_accepting_encryption_proof_elgamal_supplement g h msl cp (al; cl; rl) &&
+          generalised_accepting_encryption_proof_elgamal_supplement g h msr cp (ar; cr; rr). 
+        Proof.
+           induction n as [|n IHn].
+          +
+            intros *.
+            rewrite (vector_inv_0 msl).
+            rewrite (vector_inv_0 al).
+            rewrite (vector_inv_0 cl).
+            rewrite (vector_inv_0 rl).
+            simpl; reflexivity.
+          +
+            intros *.
+            destruct (vector_inv_S msl) as (mslh & msltl & Hb).
+            destruct (vector_inv_S al) as ((alhl, alhr) & altl & Hc).
+            destruct (vector_inv_S cl) as (clh & cltl & Hd).
+            destruct (vector_inv_S rl) as (rlh & rltl & He).
+            destruct cp as (c₁, c₂).
+            subst; simpl.
+            destruct (Gdec (g ^ rlh) (gop alhl (c₁ ^ clh)));
+            destruct (Gdec (h ^ rlh) (gop alhr (gop c₂ (ginv mslh) ^ clh))); 
+            simpl; try reflexivity.
+            ++
+              simpl. eapply IHn.
+        Qed.
+
+
+         Lemma generalised_accepting_elgamal_conversations_correctness_forward : 
+          forall {m n : nat} (g h : G) (ms : Vector.t G (m + (1 + n))) (c₁ c₂ : G)
+          (s :  @sigma_proto F (G * G) (m + (1 + n)) (1 + (m + (1 + n))) (m + (1 + n))),
+          generalised_accepting_encryption_proof_elgamal ms g h (c₁, c₂) s = true -> 
+          match s with 
+          | (a; c; r) => 
+            Vector.hd c = Vector.fold_right add (Vector.tl c) zero ∧
+            (∀ (f : Fin.t (m + (1 + n))),
+            (@accepting_conversation F G gop gpow Gdec g c₁ 
+              ([fst (nth a f)]; [nth c (Fin.FS f)]; [nth r f])) = true ∧ 
+            (@accepting_conversation F G gop gpow Gdec h (gop c₂ (ginv (nth ms f))) 
+              ([snd (nth a f)]; [nth c (Fin.FS f)]; [nth r f])) = true)
+          end.
+        Proof.
+          intros * Ha.
+          unfold generalised_accepting_encryption_proof_elgamal in Ha.
+          refine 
+            (match s as s' return s = s' -> _ 
+            with 
+            | (au; cu; ru) => fun Hb => _ 
+            end eq_refl).
+          rewrite Hb in Ha.
+          destruct (vector_inv_S cu) as (cuh & cut & hc).
+          subst. split.
+          + 
+            destruct (Fdec cuh (fold_right add cut zero)); try congruence.
+            exact e.
+          +
+          intro f.
+          pose proof (@generalised_accepting_encryption_proof_elgamal_supplement_forward 
+          _ g h ms c₁ c₂ (au; cut; ru)) as hb.
+          destruct (Fdec cuh (fold_right add cut zero)); try congruence.
+          specialize (hb Ha).
+          cbn in hb |- *.
+          exact (hb f).
+        Qed.
+
+
+        Lemma generalised_accepting_elgamal_conversations_correctness_backward : 
+          forall {m n : nat} (g h : G) (ms : Vector.t G (m + (1 + n))) (c₁ c₂ : G)
+          (s :  @sigma_proto F (G * G) (m + (1 + n)) (1 + (m + (1 + n))) (m + (1 + n))),
+          match s with 
+          | (a; c; r) => 
+            Vector.hd c = Vector.fold_right add (Vector.tl c) zero ∧
+            (∀ (f : Fin.t (m + (1 + n))),
+            (@accepting_conversation F G gop gpow Gdec g c₁ 
+              ([fst (nth a f)]; [nth c (Fin.FS f)]; [nth r f])) = true ∧ 
+            (@accepting_conversation F G gop gpow Gdec h (gop c₂ (ginv (nth ms f))) 
+              ([snd (nth a f)]; [nth c (Fin.FS f)]; [nth r f])) = true)
+          end ->  generalised_accepting_encryption_proof_elgamal ms g h (c₁, c₂) s = true.
+        Proof.
+          intros * Ha.
+          unfold generalised_accepting_encryption_proof_elgamal.
+          refine 
+            (match s as s' return s = s' -> _ 
+            with 
+            | (au; cu; ru) => fun Hb => _ 
+            end eq_refl).
+          destruct (vector_inv_S cu) as (cuh & cutl & Hc).
+          assert (Hd : cuh = (fold_right add cutl zero)).
+          {
+            rewrite Hb in Ha.
+            destruct Ha as [hal har].
+            rewrite Hc in hal; cbn in hal.
+            exact hal.
+          }
+          rewrite <-Hd.
+          destruct (Fdec cuh cuh) as [e | e]; try congruence.
+          rewrite Hb in Ha. destruct Ha as (hal & har).
+          eapply generalised_accepting_encryption_proof_elgamal_supplement_backward.
+          intro f. specialize (har f).
+          rewrite Hc in har.
+          cbn in har. cbn. exact har.
+        Qed.
+
+
+
+        Lemma generalised_accepting_elgamal_conversations_correctness: 
+          forall {m n : nat} (g h : G) (ms : Vector.t G (m + (1 + n))) (c₁ c₂ : G)
+          (s :  @sigma_proto F (G * G) (m + (1 + n)) (1 + (m + (1 + n))) (m + (1 + n))),
+          generalised_accepting_encryption_proof_elgamal ms g h (c₁, c₂) s = true <-> 
+          match s with 
+          | (a; c; r) => 
+            Vector.hd c = Vector.fold_right add (Vector.tl c) zero ∧
+            (∀ (f : Fin.t (m + (1 + n))),
+            (@accepting_conversation F G gop gpow Gdec g c₁ 
+              ([fst (nth a f)]; [nth c (Fin.FS f)]; [nth r f])) = true ∧ 
+            (@accepting_conversation F G gop gpow Gdec h (gop c₂ (ginv (nth ms f))) 
+              ([snd (nth a f)]; [nth c (Fin.FS f)]; [nth r f])) = true)
+          end.
+        Proof.
+          intros *; split; intro ha;
+          [eapply generalised_accepting_elgamal_conversations_correctness_forward |
+          eapply generalised_accepting_elgamal_conversations_correctness_backward]; assumption.
+        Qed.
+
+        (* end of properties *)
+
+        Context
+          {Hvec: @vector_space F (@eq F) zero one add mul sub 
+            div opp inv G (@eq G) gid ginv gop gpow}.
+
+        (* add field *)
+        Add Field field : (@field_theory_for_stdlib_tactic F
+          eq zero one opp add mul sub inv div vector_space_field).
+
+        
+
+       
+        (* special soundness *)
+        Lemma generalised_accepting_elgamal_conversations_soundness :
+          forall {m n : nat} (g h : G) (ms : Vector.t G (m + (1 + n))) (c₁ c₂ : G)
+          (au₁ : t (G * G) (m + (1 + n))) (cu₁ : F) (cut₁ ru₁ : t F (m + (1 + n))) 
+          (au₂ : t (G * G) (m + (1 + n))) (cu₂ : F) (cut₂ ru₂ : t F (m + (1 + n))), 
+          generalised_accepting_encryption_proof_elgamal ms g h (c₁, c₂) (au₁; cu₁ :: cut₁; ru₁) = true ->
+          generalised_accepting_encryption_proof_elgamal ms g h (c₁, c₂) (au₂; cu₂ :: cut₂; ru₂) = true ->
+          cu₁ ≠ cu₂ -> 
+          ∃ (y : F), g^y = c₁ ∧ ∃ (f : Fin.t (m + (1 + n))), h^y = gop c₂ (ginv (nth ms f)).
+        Proof.
+        Admitted.
+
+
+     
+
+
+        (* completeness *)
+        
+        
+
+        
+
+        (* zero-knowledge *)
+
+
+
+
+          
+
+
+
 
     End Proofs.
   End EncProof.
