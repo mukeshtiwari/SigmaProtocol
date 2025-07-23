@@ -100,14 +100,19 @@ Section DL.
 
       Context
         {Hvec: @vector_space F (@eq F) zero one add mul sub 
-          div opp inv G (@eq G) gid ginv gop gpow}
+          div opp inv G (@eq G) gid ginv gop gpow}.
+        (* 
         {n : nat}
         (x : F) (* randomness used for encryption  *)
         (g h c₁ c₂ : G)
-        (R : g^x = c₁ ∧ h^x = c₂).
+        (R : g^x = c₁ ∧ h^x = c₂). *)
 
       (* Completeness *)
-      Lemma construct_cp_conversations_schnorr_completeness : 
+      Lemma construct_cp_conversations_schnorr_completeness 
+        {n : nat}
+        (x : F) (* randomness used for encryption  *)
+        (g h c₁ c₂ : G)
+        (R : g^x = c₁ ∧ h^x = c₂) : 
         forall (u c : F),
         generalised_cp_accepting_conversations g h c₁ c₂
           (construct_cp_conversations_schnorr x g h u c) = true.
@@ -123,18 +128,21 @@ Section DL.
       Qed.
 
       (* simulator completeness *)
-      Lemma construct_cp_conversations_simulator_completeness : 
+      Lemma construct_cp_conversations_simulator_completeness 
+        {n : nat}
+        (g h c₁ c₂ : G) : 
         forall (u c : F),
         generalised_cp_accepting_conversations g h c₁ c₂
           (construct_cp_conversations_simulator g h c₁ c₂ u c) = true.
       Proof.
         intros *.
         eapply construct_eq_conversations_simulator_completeness.
-        Unshelve. eapply Fdec.
       Qed.
 
       (* Soundness (POK) *)
-      Lemma generalise_cp_sigma_soundness :
+      Lemma generalise_cp_sigma_soundness
+        {n : nat}
+        (g h c₁ c₂ : G) :
         forall (a : Vector.t G 2) 
         (cr₁ cr₂ : F) (r₁ r₂ : F),
         generalised_cp_accepting_conversations g h c₁ c₂ (a; [cr₁]; [r₁]) = true ->
@@ -148,12 +156,15 @@ Section DL.
         with (a := a) (c₁ := cr₁)
         (c₂ := cr₂) (r₁ := r₁) (r₂ := r₂).
         exact ha. exact hb. exact hc.
-        Unshelve. eapply Fdec.
       Qed.
 
 
       (* zero-knowledge *)
-      Lemma generalised_cp_special_honest_verifier_zkp : 
+      Lemma generalised_cp_special_honest_verifier_zkp 
+        {n : nat}
+        (x : F) (* randomness used for encryption  *)
+        (g h c₁ c₂ : G)
+        (R : g^x = c₁ ∧ h^x = c₂) : 
         forall (lf : list F) (Hlfn : lf <> List.nil) (c : F),
         List.map (fun '(a, p) => 
           (generalised_cp_accepting_conversations g h c₁ c₂ a, p))
@@ -170,7 +181,6 @@ Section DL.
         destruct (fin_inv_S _ fi) as [eaa | (fii & eaa)].
         subst; cbn. exact eq_refl.
         refine match (fin_inv_0 fii) with end.
-        Unshelve. eapply Fdec.
       Qed.
 
     End Proofs.

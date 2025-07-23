@@ -314,16 +314,22 @@ Section DL.
 
         Context
           {Hvec: @vector_space F (@eq F) zero one add mul sub 
-            div opp inv G (@eq G) gid ginv gop gpow}
+            div opp inv G (@eq G) gid ginv gop gpow}.
+        (* 
           {n : nat}
           (x : F) (* common witness for all relations *)
           (gs hs : Vector.t G (2 + n))
           (R : forall (f : Fin.t (2 + n)), 
             (Vector.nth gs f)^x = Vector.nth hs f).
-
+        *)
         
          (* completeness *)
-        Lemma construct_eq_conversations_schnorr_completeness : 
+        Lemma construct_eq_conversations_schnorr_completeness 
+          {n : nat}
+          (x : F) (* common witness for all relations *)
+          (gs hs : Vector.t G (2 + n))
+          (R : forall (f : Fin.t (2 + n)), 
+            (Vector.nth gs f)^x = Vector.nth hs f) : 
           forall (u c : F),
           generalised_eq_accepting_conversations gs hs
             (construct_eq_conversations_schnorr x gs u c) = true.
@@ -359,12 +365,15 @@ Section DL.
               exact (R (Fin.FS f)).
         Qed.
 
-        Lemma construct_eq_conversations_simulator_completeness : 
+        
+
+        Lemma construct_eq_conversations_simulator_completeness 
+          {n : nat}
+          (gs hs : Vector.t G (2 + n)) : 
           forall (u c : F),
           generalised_eq_accepting_conversations gs hs
             (construct_eq_conversations_simulator gs hs u c) = true.
-        Proof using -(x R).
-          clear x R.
+        Proof.
           induction n as [|n' IHn].
           +
             intros *.
@@ -392,7 +401,9 @@ Section DL.
 
       (* special soundness (proof of knowledge) *)
       (* This is a bit challenging *)
-      Lemma generalise_eq_sigma_soundness :
+      Lemma generalise_eq_sigma_soundness 
+        {n : nat}
+        (gs hs : Vector.t G (2 + n)) :
         forall (a : Vector.t G (2 + n)) 
         (c₁ c₂ : F) (r₁ r₂ : F),
         generalised_eq_accepting_conversations gs hs (a; [c₁]; [r₁]) = true ->
@@ -400,8 +411,7 @@ Section DL.
         c₁ <> c₂ ->
         ∃ y : F, (forall (f : Fin.t (2 + n)),
         (nth gs f)^y = (nth hs f)).
-      Proof using -(x R).
-        clear x R. (* otherwise trival *)
+      Proof.
         intros * Ha Hb Hc.
         pose proof 
           (generalised_eq_accepting_conversations_correctness_forward _ 
@@ -604,7 +614,12 @@ Section DL.
       #[local] Notation "p / q" := (mk_prob p (Pos.of_nat q)).
 
       (* zero-knowledge *)
-      Lemma generalised_eq_schnorr_distribution_transcript_generic : 
+      Lemma generalised_eq_schnorr_distribution_transcript_generic 
+        {n : nat}
+        (x : F) (* common witness for all relations *)
+        (gs hs : Vector.t G (2 + n))
+        (R : forall (f : Fin.t (2 + n)), 
+          (Vector.nth gs f)^x = Vector.nth hs f) : 
         forall (l : dist F) (trans : sigma_proto) (pr : prob) (c : F ),
         List.In (trans, pr)
           (Bind l (λ u,
@@ -625,6 +640,7 @@ Section DL.
             destruct Ha as [Ha | Ha];
             inversion Ha.
             eapply construct_eq_conversations_schnorr_completeness.
+            exact R.
           ++
             intros * Ha.
             remember (((la, lp) :: l)%list) as ls.
@@ -633,12 +649,16 @@ Section DL.
             +++
               inversion Ha.
               eapply construct_eq_conversations_schnorr_completeness.
+              exact R.
             +++
               eapply IHl; try assumption.
               exact Ha.
       Qed.
 
-      Lemma generalised_eq_schnorr_distribution_probability_generic : 
+      Lemma generalised_eq_schnorr_distribution_probability_generic 
+        {n : nat}
+        (x : F) (* common witness for all relations *)
+        (gs : Vector.t G (2 + n)) : 
         forall (l :  dist F) (trans : sigma_proto) 
         (pr : prob) (c : F) (m : nat),
         (∀ (trx : F) (prx : prob), 
@@ -672,7 +692,12 @@ Section DL.
         is an accepting conversation and it's probability 1 / |lf| 
         Maybe probabilistic notations but this one is more intuitive.
       *)
-      Lemma generalised_eq_special_honest_verifier_schnorr_dist : 
+      Lemma generalised_eq_special_honest_verifier_schnorr_dist 
+        {n : nat}
+        (x : F) (* common witness for all relations *)
+        (gs hs : Vector.t G (2 + n))
+        (R : forall (f : Fin.t (2 + n)), 
+          (Vector.nth gs f)^x = Vector.nth hs f) : 
         forall (lf : list F) (Hlfn : lf <> List.nil) 
         (c : F) a b, 
         List.In (a, b) 
@@ -684,7 +709,8 @@ Section DL.
         intros * Ha.
         refine(conj _ _).
         + 
-          eapply generalised_eq_schnorr_distribution_transcript_generic; 
+          eapply generalised_eq_schnorr_distribution_transcript_generic.
+          exact R.
           exact Ha.
         +
           eapply generalised_eq_schnorr_distribution_probability_generic;
@@ -695,7 +721,9 @@ Section DL.
 
 
       (* fact about simultor *)
-      Lemma generalised_eq_simulator_distribution_transcript_generic : 
+      Lemma generalised_eq_simulator_distribution_transcript_generic 
+        {n : nat}
+        (gs hs : Vector.t G (2 + n)) : 
         forall (l :  dist F) 
         (trans : sigma_proto) (pr : prob) (c : F),
         List.In (trans, pr)
@@ -730,7 +758,10 @@ Section DL.
               exact Ha.
       Qed.
 
-      Lemma generalised_eq_simulator_distribution_probability_generic : 
+
+      Lemma generalised_eq_simulator_distribution_probability_generic 
+        {n : nat}
+        (gs hs : Vector.t G (2 + n)) : 
         forall (l :  dist F) (trans : sigma_proto) 
         (pr : prob) (c : F) (m : nat),
         (∀ (trx : F) (prx : prob), 
@@ -765,7 +796,9 @@ Section DL.
       (* Every element in generalised schnorr distribution 
         is an accepting conversation and it's probability 1 / |lf|
       *)
-      Lemma generalised_eq_special_honest_verifier_simulator_dist : 
+      Lemma generalised_eq_special_honest_verifier_simulator_dist 
+        {n : nat}
+        (gs hs : Vector.t G (2 + n)) : 
         forall (lf : list F) (Hlfn : lf <> List.nil) 
         (c : F) a b, 
         List.In (a, b) 
@@ -787,7 +820,12 @@ Section DL.
       Qed.
 
 
-      Lemma generalised_eq_special_honest_verifier_zkp : 
+      Lemma generalised_eq_special_honest_verifier_zkp 
+        {n : nat}
+        (x : F) (* common witness for all relations *)
+        (gs hs : Vector.t G (2 + n))
+        (R : forall (f : Fin.t (2 + n)), 
+          (Vector.nth gs f)^x = Vector.nth hs f) : 
         forall (lf : list F) (Hlfn : lf <> List.nil) (c : F),
         List.map (fun '(a, p) => 
           (generalised_eq_accepting_conversations gs hs a, p))
@@ -806,6 +844,7 @@ Section DL.
         +
           intros (aa, cc, rr) y Ha.
           eapply generalised_eq_special_honest_verifier_schnorr_dist.
+          exact R.
           exact Ha. 
         +
           intros (aa, cc, rr) y Ha.
@@ -816,6 +855,3 @@ Section DL.
     End Proofs. 
   End EQ.
 End DL. 
-
-          
-    
