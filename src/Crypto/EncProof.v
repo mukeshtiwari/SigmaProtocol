@@ -215,7 +215,7 @@ Section DL.
       (* simulator distribution *)
       Definition generalised_encryption_proof_elgamal_simulator_distribution  
         {n m : nat} (lf : list F) (Hlfn : lf <> List.nil) 
-        (g h : G) (cp : G * G) (g h : G) (ms : Vector.t G (m + (1 + n))) (c : F) : 
+        (g h : G) (cp : G * G) (ms : Vector.t G (m + (1 + n))) (c : F) : 
         dist (@sigma_proto F (G * G) (m + (1 + n)) (1 + (m + (1 + n))) (m + (1 + n))) :=
         (* draw ((m + (1 + n)) + (m + n)) random elements *)
         uscs <- repeat_dist_ntimes_vector 
@@ -1022,20 +1022,231 @@ Section DL.
               eapply append_splitat in hc.
               subst.
               eapply construct_encryption_proof_elgamal_simulator_completeness_generic_second.
-      Qed.
-       
-
+        Qed.
         
 
         (* zero-knowledge *)
 
+        (* honest verifier zero knowledge proof *)
+
+        #[local] Notation "p / q" := (mk_prob p (Pos.of_nat q)).
+
+        Lemma construct_encryption_proof_elgamal_distribution_probability_generic  : 
+          forall (l : dist (t F (m + (1 + n) + (m + n)))) 
+          (trans : sigma_proto) (pr : prob) (c : F) (q : nat),
+          (∀ (trx : Vector.t F (m + (1 + n) + (m + n))) (prx : prob), 
+            List.In (trx, prx) l → prx = 1 / q) -> 
+          List.In (trans, pr)
+            (Bind l (λ uscs :  Vector.t F (m + (1 + n) + (m + n)),
+              Ret (construct_encryption_proof_elgamal_real x 
+              uscs (msl ++ [mc] ++ msr) g h (c₁, c₂) c))) → pr = 1 / q.
+        Proof.
+          induction l as [|(a, p) l IHl].
+          + intros * Ha Hin.
+            simpl in Hin.
+            inversion Hin.
+          + intros * Ha Hin.
+            pose proof (Ha a p (or_introl eq_refl)).
+            destruct Hin as [Hwa | Hwb].
+            inversion Hwa; subst; 
+            clear Hwa.
+            unfold mul_prob, 
+            Prob.one; simpl.
+            f_equal.
+            nia.
+            simpl in Hwb.
+            eapply IHl.
+            intros ? ? Hinn.
+            exact (Ha trx prx (or_intror Hinn)).
+            exact Hwb.
+        Qed.
+
+         
+        Lemma construct_encryption_proof_elgamal_distribution_transcript_generic : 
+          forall (l : dist (t F (m + (1 + n) + (m + n)))) 
+          (trans : sigma_proto) (pr : prob) (c : F),
+          List.In (trans, pr)
+            (Bind l (λ uscs : Vector.t F (m + (1 + n) + (m + n)),
+              Ret (construct_encryption_proof_elgamal_real x 
+              uscs (msl ++ [mc] ++ msr) g h (c₁, c₂) c))) → 
+          generalised_accepting_encryption_proof_elgamal (msl ++ [mc] ++ msr) 
+            g h (c₁, c₂) trans = true.
+        Proof.
+            induction l as [|(a, p) l IHl].
+          +
+            intros * Ha.
+            cbn in Ha; 
+            inversion Ha.
+          +
+            (* destruct l *)
+            destruct l as [|(la, lp) l].
+            ++
+              intros * Ha.
+              cbn in Ha.
+              destruct Ha as [Ha | Ha];
+              inversion Ha.
+              now eapply construct_encryption_proof_elgamal_real_completeness.
+            ++
+              intros * Ha.
+              remember (((la, lp) :: l)%list) as ls.
+              cbn in Ha.
+              destruct Ha as [Ha | Ha].
+              +++
+                inversion Ha.
+                now eapply construct_encryption_proof_elgamal_real_completeness.
+              +++
+                eapply IHl; try assumption.
+                exact Ha.
+        Qed.
+
+        Lemma generalised_encryption_proof_elgamal_special_honest_verifier_dist : 
+          forall (lf : list F) (Hlfn : lf <> List.nil) 
+          (c : F) a b, 
+          List.In (a, b) 
+            (generalised_encryption_proof_elgamal_real_distribution lf Hlfn 
+            x (c₁, c₂) g h (msl ++ [mc] ++ msr) c) ->
+            (* it's an accepting conversation and probability is *)
+          generalised_accepting_encryption_proof_elgamal (msl ++ [mc] ++ msr) 
+            g h (c₁, c₂) a = true ∧ 
+          b = 1 / (Nat.pow (List.length lf) (m + (1 + n) + (m + n))).
+        Proof.
+          intros * Ha.
+          refine(conj _ _).
+          + 
+            eapply construct_encryption_proof_elgamal_distribution_transcript_generic.
+            exact Ha.
+          +
+            eapply construct_encryption_proof_elgamal_distribution_probability_generic.
+            intros * Hc.
+            eapply uniform_probability_multidraw_prob; exact Hc.
+            exact Ha.
+        Qed.
 
 
 
-          
+        Lemma construct_encryption_proof_elgamal_simulator_distribution_probability_generic  : 
+          forall (l : dist (t F (m + (1 + n) + (m + n)))) 
+          (trans : sigma_proto) (pr : prob) (c : F) (q : nat),
+          (∀ (trx : Vector.t F (m + (1 + n) + (m + n))) (prx : prob), 
+            List.In (trx, prx) l → prx = 1 / q) -> 
+          List.In (trans, pr)
+            (Bind l (λ uscs :  Vector.t F (m + (1 + n) + (m + n)),
+              Ret (construct_encryption_proof_elgamal_simulator uscs
+              (msl ++ [mc] ++ msr) g h (c₁, c₂) c))) → pr = 1 / q.
+        Proof.
+          induction l as [|(a, p) l IHl].
+          + intros * Ha Hin.
+            simpl in Hin.
+            inversion Hin.
+          + intros * Ha Hin.
+            pose proof (Ha a p (or_introl eq_refl)).
+            destruct Hin as [Hwa | Hwb].
+            inversion Hwa; subst; 
+            clear Hwa.
+            unfold mul_prob, 
+            Prob.one; simpl.
+            f_equal.
+            nia.
+            simpl in Hwb.
+            eapply IHl.
+            intros ? ? Hinn.
+            exact (Ha trx prx (or_intror Hinn)).
+            exact Hwb.
+        Qed.
+
+
+        Lemma construct_encryption_proof_elgamal_simulator_distribution_transcript_generic : 
+          forall (l : dist (t F (m + (1 + n) + (m + n)))) 
+          (trans : sigma_proto) (pr : prob) (c : F),
+          List.In (trans, pr)
+            (Bind l (λ uscs : Vector.t F (m + (1 + n) + (m + n)),
+              Ret (construct_encryption_proof_elgamal_simulator uscs
+              (msl ++ [mc] ++ msr) g h (c₁, c₂) c))) → 
+          generalised_accepting_encryption_proof_elgamal (msl ++ [mc] ++ msr) 
+            g h (c₁, c₂) trans = true.
+        Proof.
+          induction l as [|(a, p) l IHl].
+          +
+            intros * Ha.
+            cbn in Ha; 
+            inversion Ha.
+          +
+            (* destruct l *)
+            destruct l as [|(la, lp) l].
+            ++
+              intros * Ha.
+              cbn in Ha.
+              destruct Ha as [Ha | Ha];
+              inversion Ha.
+              eapply construct_encryption_proof_elgamal_simulator_completeness.
+            ++
+              intros * Ha.
+              remember (((la, lp) :: l)%list) as ls.
+              cbn in Ha.
+              destruct Ha as [Ha | Ha].
+              +++
+                inversion Ha.
+                eapply construct_encryption_proof_elgamal_simulator_completeness.
+              +++
+                eapply IHl; try assumption.
+                exact Ha.
+        Qed.
+
+       
+        Lemma construct_encryption_proof_elgamal_simulator_special_honest_verifier_dist : 
+          forall (lf : list F) (Hlfn : lf <> List.nil) 
+          (c : F) a b, 
+          List.In (a, b) 
+            (generalised_encryption_proof_elgamal_simulator_distribution lf Hlfn
+              g h (c₁, c₂) (msl ++ [mc] ++ msr) c) ->
+            (* it's an accepting conversation and probability is *)
+          generalised_accepting_encryption_proof_elgamal (msl ++ [mc] ++ msr) 
+            g h (c₁, c₂) a = true ∧ 
+          b = 1 / (Nat.pow (List.length lf) (m + (1 + n) + (m + n))).
+        Proof.
+          intros * Ha.
+          refine(conj _ _).
+          + 
+            eapply construct_encryption_proof_elgamal_simulator_distribution_transcript_generic. 
+            exact Ha.
+          +
+            eapply construct_encryption_proof_elgamal_simulator_distribution_probability_generic.
+            intros * Hc.
+            eapply uniform_probability_multidraw_prob; exact Hc.
+            exact Ha.
+        Qed.
 
 
 
+         Lemma generalised_or_special_honest_verifier_zkp : 
+          forall (lf : list F) (Hlfn : lf <> List.nil) (c : F),
+          List.map (fun '(a, p) => 
+            (generalised_accepting_encryption_proof_elgamal (msl ++ [mc] ++ msr) 
+            g h (c₁, c₂) a, p))
+            (generalised_encryption_proof_elgamal_real_distribution lf Hlfn 
+            x (c₁, c₂) g h (msl ++ [mc] ++ msr) c) = 
+          List.map (fun '(a, p) => 
+            (generalised_accepting_encryption_proof_elgamal (msl ++ [mc] ++ msr) 
+            g h (c₁, c₂) a, p))
+            (generalised_encryption_proof_elgamal_simulator_distribution lf Hlfn
+              g h (c₁, c₂) (msl ++ [mc] ++ msr) c).
+        Proof.
+          intros ? ? ?.
+          eapply map_ext_eq.
+          +
+            unfold generalised_encryption_proof_elgamal_real_distribution,
+            generalised_encryption_proof_elgamal_simulator_distribution; cbn.
+            repeat rewrite distribution_length.
+            reflexivity.
+          +
+            intros (aa, cc, rr) y Ha.
+            eapply generalised_encryption_proof_elgamal_special_honest_verifier_dist.
+            exact Ha. 
+          +
+            intros (aa, cc, rr) y Ha.
+            eapply construct_encryption_proof_elgamal_simulator_special_honest_verifier_dist.
+            exact Ha.
+        Qed.
 
     End Proofs.
   End EncProof.
