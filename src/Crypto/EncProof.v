@@ -1366,7 +1366,7 @@ Section DL.
         Qed.
 
 
-        (* completeness *)
+        (* completeness 
          Context
           {m n : nat}
           (x : F) (* secret witness *)
@@ -1376,9 +1376,17 @@ Section DL.
           (mc : G)
           (msr : Vector.t G n) 
           (R : g^x = c₁ ∧ h^x = gop c₂ (ginv mc)).
+        *)
 
 
-        Lemma construct_encryption_proof_elgamal_real_completeness : 
+        Lemma construct_encryption_proof_elgamal_real_completeness 
+          {m n : nat}
+          (x : F) (* secret witness *)
+          (g h c₁ c₂ : G) (* public values *)
+          (msl : Vector.t G m) 
+          (mc : G)
+          (msr : Vector.t G n) 
+          (R : g^x = c₁ ∧ h^x = gop c₂ (ginv mc)) : 
           forall (c : F) (uscs : Vector.t F ((m + (1 + n)) + (m + n))), 
           generalised_accepting_encryption_proof_elgamal 
           (msl ++ [mc] ++ msr)  g h (c₁, c₂) 
@@ -1416,14 +1424,18 @@ Section DL.
 
 
         (* simulator completeness *)
-        Lemma construct_encryption_proof_elgamal_simulator_completeness : 
+        Lemma construct_encryption_proof_elgamal_simulator_completeness 
+          {m n : nat}
+          (g h c₁ c₂ : G) (* public values *)
+          (msl : Vector.t G m) 
+          (mc : G)
+          (msr : Vector.t G n) : 
           forall (c : F) (uscs : Vector.t F ((m + (1 + n)) + (m + n))), 
           generalised_accepting_encryption_proof_elgamal 
           (msl ++ [mc] ++ msr)  g h (c₁, c₂) 
             (construct_encryption_proof_elgamal_simulator uscs 
               (msl ++ [mc] ++ msr) g h (c₁, c₂) c) = true.
-        Proof using -(x R).
-          clear x R.
+        Proof.
           intros *.
           eapply generalised_accepting_elgamal_conversations_correctness.
           unfold construct_encryption_proof_elgamal_simulator.
@@ -1467,7 +1479,14 @@ Section DL.
 
         #[local] Notation "p / q" := (mk_prob p (Pos.of_nat q)).
 
-        Lemma construct_encryption_proof_elgamal_distribution_probability_generic  : 
+        Lemma construct_encryption_proof_elgamal_distribution_probability_generic  
+          {m n : nat}
+          (x : F) (* secret witness *)
+          (g h c₁ c₂ : G) (* public values *)
+          (* Prover knows a relation *)
+          (msl : Vector.t G m) 
+          (mc : G)
+          (msr : Vector.t G n) : 
           forall (l : dist (t F (m + (1 + n) + (m + n)))) 
           (trans : sigma_proto) (pr : prob) (c : F) (q : nat),
           (∀ (trx : Vector.t F (m + (1 + n) + (m + n))) (prx : prob), 
@@ -1498,7 +1517,15 @@ Section DL.
         Qed.
 
          
-        Lemma construct_encryption_proof_elgamal_distribution_transcript_generic : 
+        Lemma construct_encryption_proof_elgamal_distribution_transcript_generic 
+          {m n : nat}
+          (x : F) (* secret witness *)
+          (g h c₁ c₂ : G) (* public values *)
+          (* Prover knows a relation *)
+          (msl : Vector.t G m) 
+          (mc : G)
+          (msr : Vector.t G n) 
+          (R : g^x = c₁ ∧ h^x = gop c₂ (ginv mc)) : 
           forall (l : dist (t F (m + (1 + n) + (m + n)))) 
           (trans : sigma_proto) (pr : prob) (c : F),
           List.In (trans, pr)
@@ -1535,7 +1562,15 @@ Section DL.
                 exact Ha.
         Qed.
 
-        Lemma generalised_encryption_proof_elgamal_special_honest_verifier_dist : 
+        Lemma generalised_encryption_proof_elgamal_special_honest_verifier_dist 
+          {m n : nat}
+          (x : F) (* secret witness *)
+          (g h c₁ c₂ : G) (* public values *)
+          (* Prover knows a relation *)
+          (msl : Vector.t G m) 
+          (mc : G)
+          (msr : Vector.t G n) 
+          (R : g^x = c₁ ∧ h^x = gop c₂ (ginv mc)) : 
           forall (lf : list F) (Hlfn : lf <> List.nil) 
           (c : F) a b, 
           List.In (a, b) 
@@ -1550,6 +1585,7 @@ Section DL.
           refine(conj _ _).
           + 
             eapply construct_encryption_proof_elgamal_distribution_transcript_generic.
+            exact R.
             exact Ha.
           +
             eapply construct_encryption_proof_elgamal_distribution_probability_generic.
@@ -1560,7 +1596,12 @@ Section DL.
 
 
 
-        Lemma construct_encryption_proof_elgamal_simulator_distribution_probability_generic  : 
+        Lemma construct_encryption_proof_elgamal_simulator_distribution_probability_generic  
+          {m n : nat}
+          (g h c₁ c₂ : G) (* public values *)
+          (msl : Vector.t G m) 
+          (mc : G)
+          (msr : Vector.t G n) : 
           forall (l : dist (t F (m + (1 + n) + (m + n)))) 
           (trans : sigma_proto) (pr : prob) (c : F) (q : nat),
           (∀ (trx : Vector.t F (m + (1 + n) + (m + n))) (prx : prob), 
@@ -1591,7 +1632,12 @@ Section DL.
         Qed.
 
 
-        Lemma construct_encryption_proof_elgamal_simulator_distribution_transcript_generic : 
+        Lemma construct_encryption_proof_elgamal_simulator_distribution_transcript_generic 
+          {m n : nat}
+          (g h c₁ c₂ : G) (* public values *)
+          (msl : Vector.t G m) 
+          (mc : G)
+          (msr : Vector.t G n) : 
           forall (l : dist (t F (m + (1 + n) + (m + n)))) 
           (trans : sigma_proto) (pr : prob) (c : F),
           List.In (trans, pr)
@@ -1629,7 +1675,13 @@ Section DL.
         Qed.
 
        
-        Lemma construct_encryption_proof_elgamal_simulator_special_honest_verifier_dist : 
+        Lemma construct_encryption_proof_elgamal_simulator_special_honest_verifier_dist 
+          {m n : nat}
+          (g h c₁ c₂ : G) (* public values *)
+          (* Prover knows a relation *)
+          (msl : Vector.t G m) 
+          (mc : G)
+          (msr : Vector.t G n) : 
           forall (lf : list F) (Hlfn : lf <> List.nil) 
           (c : F) a b, 
           List.In (a, b) 
@@ -1654,7 +1706,15 @@ Section DL.
 
 
 
-         Lemma generalised_or_special_honest_verifier_zkp : 
+         Lemma generalised_or_special_honest_verifier_zkp 
+          {m n : nat}
+          (x : F) (* secret witness *)
+          (g h c₁ c₂ : G) (* public values *)
+          (* Prover knows a relation *)
+          (msl : Vector.t G m) 
+          (mc : G)
+          (msr : Vector.t G n) 
+          (R : g^x = c₁ ∧ h^x = gop c₂ (ginv mc)) : 
           forall (lf : list F) (Hlfn : lf <> List.nil) (c : F),
           List.map (fun '(a, p) => 
             (generalised_accepting_encryption_proof_elgamal (msl ++ [mc] ++ msr) 
@@ -1677,6 +1737,7 @@ Section DL.
           +
             intros (aa, cc, rr) y Ha.
             eapply generalised_encryption_proof_elgamal_special_honest_verifier_dist.
+            exact R.
             exact Ha. 
           +
             intros (aa, cc, rr) y Ha.
