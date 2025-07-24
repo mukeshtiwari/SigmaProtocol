@@ -497,17 +497,453 @@ Section DL.
         (* special soundness *)
         Lemma generalised_accepting_elgamal_conversations_soundness :
           forall {m n : nat} (g h : G) (ms : Vector.t G (m + (1 + n))) (c₁ c₂ : G)
-          (au₁ : t (G * G) (m + (1 + n))) (cu₁ : F) (cut₁ ru₁ : t F (m + (1 + n))) 
-          (au₂ : t (G * G) (m + (1 + n))) (cu₂ : F) (cut₂ ru₂ : t F (m + (1 + n))), 
+          (a : t (G * G) (m + (1 + n))) (cu₁ : F) (cut₁ ru₁ : t F (m + (1 + n))) 
+          (cu₂ : F) (cut₂ ru₂ : t F (m + (1 + n))), 
           generalised_accepting_encryption_proof_elgamal ms g h 
-            (c₁, c₂) (au₁; cu₁ :: cut₁; ru₁) = true ->
+            (c₁, c₂) (a; cu₁ :: cut₁; ru₁) = true ->
           generalised_accepting_encryption_proof_elgamal ms g h 
-            (c₁, c₂) (au₂; cu₂ :: cut₂; ru₂) = true ->
+            (c₁, c₂) (a; cu₂ :: cut₂; ru₂) = true ->
           cu₁ ≠ cu₂ -> ∃ (y : F), g^y = c₁ ∧ 
           ∃ (f : Fin.t (m + (1 + n))), h^y = gop c₂ (ginv (nth ms f)).
         Proof.
+          intros * ha hb hc.
+          eapply generalised_accepting_elgamal_conversations_correctness in ha, hb.
+          cbn in ha, hb.
+          generalize dependent n.
+          generalize dependent cu₂.
+          revert cu₁.
+          induction m as [|m ihm].
+          +
+            intros * hc * [ha hb] [hd he].
+            destruct (vector_inv_S ms) as (msh & mstl & He).
+            destruct (vector_inv_S a) as ((ahl, ahr) & alt & Hf).
+            destruct (vector_inv_S ru₁) as (ruh₁ & rutl₁ & Hh).
+            destruct (vector_inv_S ru₂) as (ruh₂ & rult₂ & Hi).
+            destruct (vector_inv_S cut₁) as (cuth₁ & cutl₁ & Hj).
+            destruct (vector_inv_S cut₂) as (cuth₂ & cutl₂ & Hk).
+            subst. cbn in hc.
+            remember (fold_right add cutl₁ zero) as hcl.
+            remember (fold_right add cutl₂ zero) as hcr.
+            (* case analysis on challenges *)
+            assert (hcase : cuth₁ <> cuth₂ ∨ 
+              (cuth₁ = cuth₂ ∧ (hcl <> hcr))).
+            {
+              case_eq (Fdec cuth₁ cuth₂);
+              intros huu hv.
+              right.
+              refine (conj huu _). 
+              intro hf. eapply hc.
+              subst. rewrite hf.
+              reflexivity.
+              left. exact huu. 
+            }
+          
+          (* I know that 
+           hcase : cuth₁ ≠ cuth₂ ∨ cuth₁ = cuth₂ ∧ hcl ≠ hcr*)
+            destruct hcase as [hcase | hcase].
+            ++
+              specialize (he Fin.F1).
+              specialize (hb Fin.F1).
+              rewrite dec_true in he, hb.
+              cbn in he, hb.
+              destruct he as [hel her].
+              destruct hb as [hbl hbr].
+              rewrite dec_true in her, hbr.
+              (* witness *)
+              exists ((ruh₁ - ruh₂) * inv (cuth₁ - cuth₂)).
+              split.
+              +++
+                eapply f_equal with (f := ginv) in hel.
+                rewrite connection_between_vopp_and_fopp in hel.
+                rewrite group_inv_flip  in hel.
+                rewrite commutative in hel.
+                pose proof (@rewrite_gop G gop _ _ _ _ hbl hel) as Hcom.
+                rewrite <-(@vector_space_smul_distributive_fadd 
+                  F (@eq F) zero one add mul sub div 
+                  opp inv G (@eq G) gid ginv gop gpow) in Hcom.
+                rewrite <-ring_sub_definition in Hcom.
+                assert (Hwt : gop ahl (c₁ ^ cuth₁) = gop (c₁ ^ cuth₁) ahl).
+                rewrite commutative; reflexivity.
+                rewrite Hwt in Hcom; clear Hwt.
+                setoid_rewrite <-(@monoid_is_associative G (@eq G) gop gid) 
+                in Hcom.
+                assert (Hwt : (gop ahl (gop (ginv ahl) (ginv (c₁ ^ cuth₂)))) = 
+                (ginv (c₁ ^ cuth₂))).
+                rewrite associative.
+                rewrite group_is_right_inverse,
+                monoid_is_left_idenity;
+                reflexivity.
+                rewrite Hwt in Hcom; clear Hwt.
+                rewrite connection_between_vopp_and_fopp in Hcom.
+                rewrite <-(@vector_space_smul_distributive_fadd 
+                  F (@eq F) zero one add mul sub div 
+                  opp inv G (@eq G) gid ginv gop gpow) in Hcom.
+                apply f_equal with (f := fun x => x^(inv (cuth₁ + opp cuth₂)))
+                in Hcom.
+                rewrite !smul_pow_up in Hcom.
+                assert (Hw : (cuth₁ + opp cuth₂) * inv (cuth₁ + opp cuth₂) = 
+                (inv (cuth₁ + opp cuth₂) * (cuth₁ + opp cuth₂))).
+                rewrite commutative; reflexivity.
+                rewrite Hw in Hcom; clear Hw.
+                rewrite field_is_left_multiplicative_inverse in Hcom.
+                pose proof vector_space_field_one as Hone.
+                unfold is_field_one in Hone.
+                specialize (Hone c₁).
+                rewrite Hone in Hcom.
+                rewrite <-ring_sub_definition in Hcom.
+                exact Hcom.
+                intros Hf.
+                pose proof ring_neq_sub_neq_zero cuth₁ cuth₂ hcase as Hw.
+                apply Hw.
+                rewrite ring_sub_definition.
+                exact Hf.
+                all:typeclasses eauto.
+              +++ 
+                exists Fin.F1. cbn.
+                remember (gop c₂ (ginv msh)) as ct.
+                eapply f_equal with (f := ginv) in her.
+                rewrite connection_between_vopp_and_fopp in her.
+                rewrite group_inv_flip  in her.
+                rewrite commutative in her.
+                pose proof (@rewrite_gop G gop _ _ _ _ hbr her) as Hcom.
+                rewrite <-(@vector_space_smul_distributive_fadd 
+                  F (@eq F) zero one add mul sub div 
+                  opp inv G (@eq G) gid ginv gop gpow) in Hcom.
+                rewrite <-ring_sub_definition in Hcom.
+                assert (Hwt : gop ahr (ct ^ cuth₁) = gop (ct ^ cuth₁) ahr).
+                rewrite commutative; reflexivity.
+                rewrite Hwt in Hcom; clear Hwt.
+                setoid_rewrite <-(@monoid_is_associative G (@eq G) gop gid) 
+                in Hcom.
+                assert (Hwt : (gop ahr (gop (ginv ahr) (ginv (ct ^ cuth₂)))) = 
+                (ginv (ct ^ cuth₂))).
+                rewrite associative.
+                rewrite group_is_right_inverse,
+                monoid_is_left_idenity;
+                reflexivity.
+                rewrite Hwt in Hcom; clear Hwt.
+                rewrite connection_between_vopp_and_fopp in Hcom.
+                rewrite <-(@vector_space_smul_distributive_fadd 
+                  F (@eq F) zero one add mul sub div 
+                  opp inv G (@eq G) gid ginv gop gpow) in Hcom.
+                apply f_equal with (f := fun x => x^(inv (cuth₁ + opp cuth₂)))
+                in Hcom.
+                rewrite !smul_pow_up in Hcom.
+                assert (Hw : (cuth₁ + opp cuth₂) * inv (cuth₁ + opp cuth₂) = 
+                (inv (cuth₁ + opp cuth₂) * (cuth₁ + opp cuth₂))).
+                rewrite commutative; reflexivity.
+                rewrite Hw in Hcom; clear Hw.
+                rewrite field_is_left_multiplicative_inverse in Hcom.
+                pose proof vector_space_field_one as Hone.
+                unfold is_field_one in Hone.
+                specialize (Hone ct).
+                rewrite Hone in Hcom.
+                rewrite <-ring_sub_definition in Hcom.
+                exact Hcom.
+                intros Hf.
+                pose proof ring_neq_sub_neq_zero cuth₁ cuth₂ hcase as Hw.
+                apply Hw.
+                rewrite ring_sub_definition.
+                exact Hf.
+                all:typeclasses eauto.
+            ++
+              destruct hcase as (hcasel & hcaser).
+              assert (ht : cutl₁ <> cutl₂).
+              {
+                subst. intro ha. eapply hcaser.
+                subst. reflexivity.
+              }
+              destruct (@vector_not_equal_implies_disjoint_someelem F Fdec _ 
+                cutl₁ cutl₂ ht) as (f & ha).
+              destruct (hb (Fin.FS f)) as (hbl & hbr); clear hb.
+              destruct (he (Fin.FS f)) as (hel & her); clear he.
+              rewrite dec_true in hbl, hbr, hel, her.
+              cbn in * |- .
+              remember (rutl₁[@f]) as rf₁.
+              remember (cutl₁[@f]) as cf₁.
+              remember (rult₂[@f]) as rf₂.
+              remember (cutl₂[@f]) as cf₂.
+              remember (fst alt[@f]) as a.
+              exists ((rf₁ - rf₂) * inv (cf₁ - cf₂)).
+              split.
+              +++
+                eapply f_equal with (f := ginv) in hel.
+                rewrite connection_between_vopp_and_fopp in hel.
+                rewrite group_inv_flip  in hel.
+                rewrite commutative in hel.
+                pose proof (@rewrite_gop G gop _ _ _ _ hbl hel) as Hcom.
+                rewrite <-(@vector_space_smul_distributive_fadd 
+                  F (@eq F) zero one add mul sub div 
+                  opp inv G (@eq G) gid ginv gop gpow) in Hcom.
+                rewrite <-ring_sub_definition in Hcom.
+                assert (Hwt : gop a (c₁ ^ cf₁) = gop (c₁ ^ cf₁) a).
+                rewrite commutative; reflexivity.
+                rewrite Hwt in Hcom; clear Hwt.
+                setoid_rewrite <-(@monoid_is_associative G (@eq G) gop gid) 
+                in Hcom.
+                assert (Hwt : (gop a (gop (ginv a) (ginv (c₁ ^ cf₂)))) = 
+                (ginv (c₁ ^ cf₂))).
+                rewrite associative.
+                rewrite group_is_right_inverse,
+                monoid_is_left_idenity;
+                reflexivity.
+                rewrite Hwt in Hcom; clear Hwt.
+                rewrite connection_between_vopp_and_fopp in Hcom.
+                rewrite <-(@vector_space_smul_distributive_fadd 
+                  F (@eq F) zero one add mul sub div 
+                  opp inv G (@eq G) gid ginv gop gpow) in Hcom.
+                apply f_equal with (f := fun x => x^(inv (cf₁ + opp cf₂)))
+                in Hcom.
+                rewrite !smul_pow_up in Hcom.
+                assert (Hw : (cf₁ + opp cf₂) * inv (cf₁ + opp cf₂) = 
+                (inv (cf₁ + opp cf₂) * (cf₁ + opp cf₂))).
+                rewrite commutative; reflexivity.
+                rewrite Hw in Hcom; clear Hw.
+                rewrite field_is_left_multiplicative_inverse in Hcom.
+                pose proof vector_space_field_one as Hone.
+                unfold is_field_one in Hone.
+                specialize (Hone c₁).
+                rewrite Hone in Hcom.
+                rewrite <-ring_sub_definition in Hcom.
+                exact Hcom.
+                intros Hf.
+                pose proof ring_neq_sub_neq_zero cf₁ cf₂ ha as Hw.
+                apply Hw.
+                rewrite ring_sub_definition.
+                exact Hf.
+                all:typeclasses eauto.
+              +++
+                exists (Fin.FS f).
+                cbn.
+                remember (snd alt[@f]) as sa.
+                remember (gop c₂ (ginv mstl[@f])) as ct.
+                eapply f_equal with (f := ginv) in her.
+                rewrite connection_between_vopp_and_fopp in her.
+                rewrite group_inv_flip  in her.
+                rewrite commutative in her.
+                pose proof (@rewrite_gop G gop _ _ _ _ hbr her) as Hcom.
+                rewrite <-(@vector_space_smul_distributive_fadd 
+                  F (@eq F) zero one add mul sub div 
+                  opp inv G (@eq G) gid ginv gop gpow) in Hcom.
+                rewrite <-ring_sub_definition in Hcom.
+                assert (Hwt : gop sa (ct ^ cf₁) = gop (ct ^ cf₁) sa).
+                rewrite commutative; reflexivity.
+                rewrite Hwt in Hcom; clear Hwt.
+                setoid_rewrite <-(@monoid_is_associative G (@eq G) gop gid) 
+                in Hcom.
+                assert (Hwt : (gop sa (gop (ginv sa) (ginv (ct ^ cf₂)))) = 
+                (ginv (ct ^ cf₂))).
+                rewrite associative.
+                rewrite group_is_right_inverse,
+                monoid_is_left_idenity;
+                reflexivity.
+                rewrite Hwt in Hcom; clear Hwt.
+                rewrite connection_between_vopp_and_fopp in Hcom.
+                rewrite <-(@vector_space_smul_distributive_fadd 
+                  F (@eq F) zero one add mul sub div 
+                  opp inv G (@eq G) gid ginv gop gpow) in Hcom.
+                apply f_equal with (f := fun x => x^(inv (cf₁ + opp cf₂)))
+                in Hcom.
+                rewrite !smul_pow_up in Hcom.
+                assert (Hw : (cf₁ + opp cf₂) * inv (cf₁ + opp cf₂) = 
+                (inv (cf₁ + opp cf₂) * (cf₁ + opp cf₂))).
+                rewrite commutative; reflexivity.
+                rewrite Hw in Hcom; clear Hw.
+                rewrite field_is_left_multiplicative_inverse in Hcom.
+                pose proof vector_space_field_one as Hone.
+                unfold is_field_one in Hone.
+                specialize (Hone ct).
+                rewrite Hone in Hcom.
+                rewrite <-ring_sub_definition in Hcom.
+                exact Hcom.
+                intros Hf.
+                pose proof ring_neq_sub_neq_zero cf₁ cf₂ ha as Hw.
+                apply Hw.
+                rewrite ring_sub_definition.
+                exact Hf.
+                all:typeclasses eauto.
+          +
+            (* inductive case *)    
+            intros * hc * [ha hb] [hd he].
+            destruct (vector_inv_S ms) as (msh & mstl & He).
+            destruct (vector_inv_S a) as ((ahl, ahr) & alt & Hf).
+            destruct (vector_inv_S ru₁) as (ruh₁ & rutl₁ & Hh).
+            destruct (vector_inv_S ru₂) as (ruh₂ & rutl₂ & Hi).
+            destruct (vector_inv_S cut₁) as (cuth₁ & cutl₁ & Hj).
+            destruct (vector_inv_S cut₂) as (cuth₂ & cutl₂ & Hk).
+            cbn in hc.
+            remember (fold_right add cutl₁ zero) as hcl.
+            remember (fold_right add cutl₂ zero) as hcr.
+            (* case analysis on challenges *)
+            assert (hcase : cuth₁ <> cuth₂ ∨ 
+              (cuth₁ = cuth₂ ∧ (hcl <> hcr))).
+            {
+              case_eq (Fdec cuth₁ cuth₂);
+              intros hu hv.
+              right.
+              refine (conj hu _). 
+              intro hf. eapply hc.
+              subst. cbn. f_equal.
+              exact hf.
+              left. exact hu. 
+            }
+            destruct hcase as [hcase | hcase].
+            ++
+              specialize (he Fin.F1).
+              specialize (hb Fin.F1).
+              rewrite dec_true in he, hb.
+              cbn in he, hb.
+              destruct he as [hel her].
+              destruct hb as [hbl hbr].
+              rewrite dec_true in her, hbr.
+              (* witness *)
+              exists ((ruh₁ - ruh₂) * inv (cuth₁ - cuth₂)).
+              split.
+              +++
+                subst; cbn in * |-.
+                eapply f_equal with (f := ginv) in hel.
+                rewrite connection_between_vopp_and_fopp in hel.
+                rewrite group_inv_flip  in hel.
+                rewrite commutative in hel.
+                pose proof (@rewrite_gop G gop _ _ _ _ hbl hel) as Hcom.
+                rewrite <-(@vector_space_smul_distributive_fadd 
+                  F (@eq F) zero one add mul sub div 
+                  opp inv G (@eq G) gid ginv gop gpow) in Hcom.
+                rewrite <-ring_sub_definition in Hcom.
+                assert (Hwt : gop ahl (c₁ ^ cuth₁) = gop (c₁ ^ cuth₁) ahl).
+                rewrite commutative; reflexivity.
+                rewrite Hwt in Hcom; clear Hwt.
+                setoid_rewrite <-(@monoid_is_associative G (@eq G) gop gid) 
+                in Hcom.
+                assert (Hwt : (gop ahl (gop (ginv ahl) (ginv (c₁ ^ cuth₂)))) = 
+                (ginv (c₁ ^ cuth₂))).
+                rewrite associative.
+                rewrite group_is_right_inverse,
+                monoid_is_left_idenity;
+                reflexivity.
+                rewrite Hwt in Hcom; clear Hwt.
+                rewrite connection_between_vopp_and_fopp in Hcom.
+                rewrite <-(@vector_space_smul_distributive_fadd 
+                  F (@eq F) zero one add mul sub div 
+                  opp inv G (@eq G) gid ginv gop gpow) in Hcom.
+                apply f_equal with (f := fun x => x^(inv (cuth₁ + opp cuth₂)))
+                in Hcom.
+                rewrite !smul_pow_up in Hcom.
+                assert (Hw : (cuth₁ + opp cuth₂) * inv (cuth₁ + opp cuth₂) = 
+                (inv (cuth₁ + opp cuth₂) * (cuth₁ + opp cuth₂))).
+                rewrite commutative; reflexivity.
+                rewrite Hw in Hcom; clear Hw.
+                rewrite field_is_left_multiplicative_inverse in Hcom.
+                pose proof vector_space_field_one as Hone.
+                unfold is_field_one in Hone.
+                specialize (Hone c₁).
+                rewrite Hone in Hcom.
+                rewrite <-ring_sub_definition in Hcom.
+                exact Hcom.
+                intros Hf.
+                pose proof ring_neq_sub_neq_zero cuth₁ cuth₂ hcase as Hw.
+                apply Hw.
+                rewrite ring_sub_definition.
+                exact Hf.
+                all:typeclasses eauto.
+              +++
+                exists Fin.F1. subst; cbn in *|- *.
+                remember (gop c₂ (ginv msh)) as ct.
+                eapply f_equal with (f := ginv) in her.
+                rewrite connection_between_vopp_and_fopp in her.
+                rewrite group_inv_flip  in her.
+                rewrite commutative in her.
+                pose proof (@rewrite_gop G gop _ _ _ _ hbr her) as Hcom.
+                rewrite <-(@vector_space_smul_distributive_fadd 
+                  F (@eq F) zero one add mul sub div 
+                  opp inv G (@eq G) gid ginv gop gpow) in Hcom.
+                rewrite <-ring_sub_definition in Hcom.
+                assert (Hwt : gop ahr (ct ^ cuth₁) = gop (ct ^ cuth₁) ahr).
+                rewrite commutative; reflexivity.
+                rewrite Hwt in Hcom; clear Hwt.
+                setoid_rewrite <-(@monoid_is_associative G (@eq G) gop gid) 
+                in Hcom.
+                assert (Hwt : (gop ahr (gop (ginv ahr) (ginv (ct ^ cuth₂)))) = 
+                (ginv (ct ^ cuth₂))).
+                rewrite associative.
+                rewrite group_is_right_inverse,
+                monoid_is_left_idenity;
+                reflexivity.
+                rewrite Hwt in Hcom; clear Hwt.
+                rewrite connection_between_vopp_and_fopp in Hcom.
+                rewrite <-(@vector_space_smul_distributive_fadd 
+                  F (@eq F) zero one add mul sub div 
+                  opp inv G (@eq G) gid ginv gop gpow) in Hcom.
+                apply f_equal with (f := fun x => x^(inv (cuth₁ + opp cuth₂)))
+                in Hcom.
+                rewrite !smul_pow_up in Hcom.
+                assert (Hw : (cuth₁ + opp cuth₂) * inv (cuth₁ + opp cuth₂) = 
+                (inv (cuth₁ + opp cuth₂) * (cuth₁ + opp cuth₂))).
+                rewrite commutative; reflexivity.
+                rewrite Hw in Hcom; clear Hw.
+                rewrite field_is_left_multiplicative_inverse in Hcom.
+                pose proof vector_space_field_one as Hone.
+                unfold is_field_one in Hone.
+                specialize (Hone ct).
+                rewrite Hone in Hcom.
+                rewrite <-ring_sub_definition in Hcom.
+                exact Hcom.
+                intros Hf.
+                pose proof ring_neq_sub_neq_zero cuth₁ cuth₂ hcase as Hw.
+                apply Hw.
+                rewrite ring_sub_definition.
+                exact Hf.
+                all:typeclasses eauto.
+            ++
+              (* apply induction hypothesis *)
+              specialize (ihm (fold_right add cutl₁ zero) (fold_right add cutl₂ zero)).
+              destruct hcase as (hcasel & hcaser).
+              rewrite Heqhcl, Heqhcr in hcaser.
+              specialize (ihm hcaser n mstl alt cutl₁ rutl₁ cutl₂ rutl₂).
+              assert (hua : fold_right add cutl₁ zero = fold_right add cutl₁ zero
+                ∧ (∀ f : Fin.t (m + S n),
+                (if Gdec (g ^ rutl₁[@f]) (gop (fst alt[@f])
+                (c₁ ^ cutl₁[@f]))
+                then true
+                else false) = true
+                ∧ (if
+                Gdec (h ^ rutl₁[@f])
+                (gop (snd alt[@f]) (gop c₂ (ginv mstl[@f])
+                ^ cutl₁[@f]))
+                then true
+                else false) = true)).
+              {
+                refine(conj eq_refl _).
+                intro f. 
+                specialize (hb (Fin.FS f)).
+                subst; simpl in * |- *.
+                exact hb.
+              }
+            assert (hub : fold_right add cutl₂ zero = fold_right add cutl₂ zero
+              ∧ (∀ f : Fin.t (m + S n),
+              (if Gdec (g ^ rutl₂[@f])
+              (gop (fst alt[@f]) (c₁ ^ cutl₂[@f]))
+              then true
+              else false) = true
+              ∧ (if
+              Gdec (h ^ rutl₂[@f])
+              (gop (snd alt[@f])
+              (gop c₂ (ginv mstl[@f]) ^ cutl₂[@f]))
+              then true
+              else false) = true)).
+              {
+                refine(conj eq_refl _).
+                intro f.
+                specialize (he (Fin.FS f)).
+                subst; simpl in * |- *.
+                exact he.
+              }
+            destruct (ihm hua hub) as (y & hg & f' & hff).
+            exists y. split. exact hg.
+            exists (Fin.FS f'). subst; cbn. exact hff.
+        Qed.
 
-        Admitted.
+        (* what a challening proof! *)
 
 
         (* Move this to common utility file for F and G *)
