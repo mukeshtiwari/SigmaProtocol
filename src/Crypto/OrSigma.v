@@ -709,7 +709,7 @@ Section DL.
               pose proof (Har Fin.F1) as Hj.
               exists (Fin.F1).
               cbn in Hj, Hk |- *.
-              rewrite dec_true in Hk, Hj. 
+              rewrite dec_true in Hk, Hj.
               eapply special_soundness_berry; cbn;
               try (rewrite dec_true);
               [exact Hd | exact Hj | exact Hk].
