@@ -499,19 +499,306 @@ Section DL.
           forall {m n : nat} (g h : G) (ms : Vector.t G (m + (1 + n))) (c₁ c₂ : G)
           (au₁ : t (G * G) (m + (1 + n))) (cu₁ : F) (cut₁ ru₁ : t F (m + (1 + n))) 
           (au₂ : t (G * G) (m + (1 + n))) (cu₂ : F) (cut₂ ru₂ : t F (m + (1 + n))), 
-          generalised_accepting_encryption_proof_elgamal ms g h (c₁, c₂) (au₁; cu₁ :: cut₁; ru₁) = true ->
-          generalised_accepting_encryption_proof_elgamal ms g h (c₁, c₂) (au₂; cu₂ :: cut₂; ru₂) = true ->
-          cu₁ ≠ cu₂ -> 
-          ∃ (y : F), g^y = c₁ ∧ ∃ (f : Fin.t (m + (1 + n))), h^y = gop c₂ (ginv (nth ms f)).
+          generalised_accepting_encryption_proof_elgamal ms g h 
+            (c₁, c₂) (au₁; cu₁ :: cut₁; ru₁) = true ->
+          generalised_accepting_encryption_proof_elgamal ms g h 
+            (c₁, c₂) (au₂; cu₂ :: cut₂; ru₂) = true ->
+          cu₁ ≠ cu₂ -> ∃ (y : F), g^y = c₁ ∧ 
+          ∃ (f : Fin.t (m + (1 + n))), h^y = gop c₂ (ginv (nth ms f)).
         Proof.
+
         Admitted.
 
 
-     
+        (* Move this to common utility file for F and G *)
+        Lemma fold_right_app :
+          forall (n m : nat) (ul : Vector.t F n)
+          (ur : Vector.t F m),
+          fold_right add (ul ++ ur) zero = 
+          (fold_right add ul zero) + (fold_right add ur zero).
+        Proof.
+          induction n as [|n IHn].
+          +
+            intros *.
+            rewrite (vector_inv_0 ul);
+            cbn. field.
+          +
+            intros *.
+            destruct (vector_inv_S ul) as (ulh & ultl & Ha).
+            subst; cbn. 
+            rewrite IHn; cbn.
+            field.
+        Qed.
+
+        Lemma construct_encryption_proof_elgamal_real_completeness_generic_first_base : 
+          forall (n : nat) (f : Fin.t n) (x : F) (g h c₂ : G) 
+          (msr : Vector.t G n) (usr csr : Vector.t F n), 
+          g ^ usr[@f] = gop (fst (zip_with (λ (mi : G) '(ui, ci), 
+          (gop (g ^ ui) ((g ^ x) ^ opp ci), gop (h ^ ui) (gop c₂ (ginv mi) ^ opp ci))) msr
+          (zip_with (λ ui ci : F, (ui, ci)) usr csr))[@f]) ((g ^ x) ^ csr[@f]).
+        Proof.
+          induction n as [|n ihn].
+          +
+            intros *. refine match f with end.
+          +
+            intros *.
+            destruct (vector_inv_S usr) as (usrh & usrt & ha).
+            destruct (vector_inv_S csr) as (csrh & csrt & hb).
+            destruct (vector_inv_S msr) as (msrh & msrt & hc).
+            subst.
+            destruct (fin_inv_S _ f) as [f' | (f' & ha)].
+            ++
+              subst; cbn.
+              rewrite <-associative.
+              rewrite <-(@vector_space_smul_distributive_fadd F (@eq F) 
+                zero one add mul sub div 
+                opp inv G (@eq G) gid ginv gop gpow).
+              rewrite field_zero_iff_left,
+              vector_space_field_zero,
+              monoid_is_right_identity.
+              reflexivity.
+              typeclasses eauto.
+            ++
+              subst; cbn.
+              eapply ihn.
+        Qed.
+
+        Lemma construct_encryption_proof_elgamal_real_completeness_generic_second_base : 
+          forall (n : nat) (f : Fin.t n) (g h c₁ c₂ : G) 
+          (msr : Vector.t G n) (usr csr : Vector.t F n), 
+          h ^ usr[@f] = gop (snd (zip_with (λ (mi : G) '(ui, ci),
+          (gop (g ^ ui) (c₁ ^ opp ci), gop (h ^ ui) (gop c₂ (ginv mi) ^ opp ci))) msr
+            (zip_with (λ ui ci : F, (ui, ci)) usr csr))[@f])
+          (gop c₂ (ginv msr[@f]) ^ csr[@f]).
+        Proof.
+          induction n as [|n ihn].
+          +
+            intros *. refine match f with end.
+          +
+            intros *.
+            destruct (vector_inv_S usr) as (usrh & usrt & ha).
+            destruct (vector_inv_S csr) as (csrh & csrt & hb).
+            destruct (vector_inv_S msr) as (msrh & msrt & hc).
+            subst.
+            destruct (fin_inv_S _ f) as [f' | (f' & ha)].
+            ++
+              subst; cbn.
+              rewrite <-associative.
+              rewrite <-(@vector_space_smul_distributive_fadd F (@eq F) 
+                zero one add mul sub div 
+                opp inv G (@eq G) gid ginv gop gpow).
+              rewrite field_zero_iff_left,
+              vector_space_field_zero,
+              monoid_is_right_identity.
+              reflexivity.
+              typeclasses eauto.
+            ++
+              subst; cbn.
+              eapply ihn.
+        Qed.
+
+        Lemma construct_encryption_proof_elgamal_real_completeness_generic_first : 
+          forall (m n : nat) (f : Fin.t (m + S n)) (x : F) (g h c₁ c₂ : G) 
+          (msl : Vector.t G m)
+          (msr : Vector.t G n) (c : F) (usl csl : Vector.t F m)
+          (u : F) (usr csr : Vector.t F n), c₁ = g^x -> 
+          g ^ (usl ++ u + (c - fold_right add (csl ++ csr) zero) * x :: usr)[@f] =
+          gop (fst (zip_with (λ (mi : G) '(ui, ci), (gop (g ^ ui) (c₁ ^ opp ci),
+            gop (h ^ ui) (gop c₂ (ginv mi) ^ opp ci))) msl
+              (zip_with (λ ui ci : F, (ui, ci)) usl csl) ++ (g ^ u, h ^ u)
+              :: zip_with (λ (mi : G) '(ui, ci), (gop (g ^ ui) (c₁ ^ opp ci),
+                gop (h ^ ui) (gop c₂ (ginv mi) ^ opp ci))) msr
+                (zip_with (λ ui ci : F, (ui, ci)) usr csr))[@f])
+          (c₁ ^ (csl ++ c - fold_right add (csl ++ csr) zero :: csr)[@f]).
+        Proof.
+          induction m as [|m ihm].
+          +
+            intros * hr.
+            rewrite (vector_inv_0 usl), (vector_inv_0 csl),
+            (vector_inv_0 msl). 
+            assert (ha : (zip_with (λ (mi : G) '(ui, ci),
+              (gop (g ^ ui) (c₁ ^ opp ci), gop (h ^ ui) (gop c₂ (ginv mi) ^ opp ci))) []
+              (zip_with (λ ui ci : F, (ui, ci)) [] [])) = []). reflexivity.
+              rewrite ha. clear ha.
+            destruct (fin_inv_S _ f) as [f' | (f' & ha)].
+            ++
+              subst; cbn.
+              remember ((c - fold_right add csr zero)) as ct.
+              assert (Hg : (g ^ x) ^ ct = (g ^ (x * ct))).
+              rewrite smul_pow_up. 
+              reflexivity.
+              rewrite Hg; clear Hg.
+              assert (Hxc : x * ct = ct * x) by field.
+              rewrite Hxc; clear Hxc.
+              rewrite <- (@vector_space_smul_distributive_fadd F (@eq F) 
+                zero one add mul sub div
+                opp inv G (@eq G) gid ginv gop gpow);
+              subst; [exact eq_refl 
+              | assumption].
+            ++
+              subst; cbn.
+              eapply construct_encryption_proof_elgamal_real_completeness_generic_first_base.
+          +
+            intros * hr.
+            destruct (vector_inv_S usl) as (uslh & uslt & ha).
+            destruct (vector_inv_S csl) as (cslh & cslt & hb).
+            destruct (vector_inv_S msl) as (mslh & mslt & hc).
+            rewrite ha, hb, hc. 
+            destruct (fin_inv_S _ f) as [f' | (f' & hd)].
+            ++
+              subst; cbn.
+              rewrite <-associative.
+              rewrite <-(@vector_space_smul_distributive_fadd F (@eq F) 
+                zero one add mul sub div 
+                opp inv G (@eq G) gid ginv gop gpow).
+              rewrite field_zero_iff_left,
+              vector_space_field_zero,
+              monoid_is_right_identity.
+              reflexivity.
+              typeclasses eauto.
+            ++
+              rewrite hd. cbn.
+              specialize (ihm n f' x g h c₁ c₂ mslt msr (c - cslh) uslt cslt u usr csr
+                hr).
+              remember (fold_right add (cslt ++ csr) zero) as ct.
+              assert (he : c - (cslh + ct) = c - cslh - ct). field.
+              rewrite he. 
+              eapply ihm.
+        Qed.
+
+
+
+        Lemma construct_encryption_proof_elgamal_real_completeness_generic_second : 
+          forall (m n : nat) (f : Fin.t (m + S n)) (x : F) (g h c₁ c₂ : G) 
+          (msl : Vector.t G m) (mc : G)
+          (msr : Vector.t G n) (c : F) (usl csl : Vector.t F m)
+          (u : F) (usr csr : Vector.t F n), h ^ x = gop c₂ (ginv mc) -> 
+          h ^ (usl ++ u + (c - fold_right add (csl ++ csr) zero) * x :: usr)[@f] =
+          gop (snd (zip_with (λ (mi : G) '(ui, ci), (gop (g ^ ui) (c₁ ^ opp ci),
+            gop (h ^ ui) (gop c₂ (ginv mi) ^ opp ci))) msl 
+            (zip_with (λ ui ci : F, (ui, ci)) usl csl) ++ (g ^ u, h ^ u):: zip_with
+            (λ (mi : G) '(ui, ci), (gop (g ^ ui) (c₁ ^ opp ci), 
+            gop (h ^ ui) (gop c₂ (ginv mi) ^ opp ci))) msr 
+            (zip_with (λ ui ci : F, (ui, ci)) usr csr))[@f])
+            (gop c₂ (ginv (msl ++ mc :: msr)[@f]) 
+            ^ (csl ++ c - fold_right add (csl ++ csr) zero :: csr)[@f]).
+        Proof.
+          induction m as [|m ihm].
+          +
+            intros * hr.
+            rewrite (vector_inv_0 usl), (vector_inv_0 csl),
+            (vector_inv_0 msl). 
+            assert (ha : (zip_with (λ (mi : G) '(ui, ci),
+              (gop (g ^ ui) (c₁ ^ opp ci), gop (h ^ ui) (gop c₂ (ginv mi) ^ opp ci))) []
+              (zip_with (λ ui ci : F, (ui, ci)) [] [])) = []). reflexivity.
+              rewrite ha. clear ha.
+            destruct (fin_inv_S _ f) as [f' | (f' & ha)].
+            ++
+              subst; cbn.
+              remember ((c - fold_right add csr zero)) as ct.
+              rewrite <- hr.
+              assert (Hg : (h ^ x) ^ ct = (h ^ (x * ct))).
+              rewrite smul_pow_up. 
+              reflexivity.
+              rewrite Hg; clear Hg.
+              assert (Hxc : x * ct = ct * x) by field.
+              rewrite Hxc; clear Hxc.
+              rewrite <- (@vector_space_smul_distributive_fadd F (@eq F) 
+                zero one add mul sub div
+                opp inv G (@eq G) gid ginv gop gpow);
+              subst; [exact eq_refl 
+              | assumption].
+            ++
+              subst; cbn.
+              eapply construct_encryption_proof_elgamal_real_completeness_generic_second_base.
+          +
+            intros * hr.
+            destruct (vector_inv_S usl) as (uslh & uslt & ha).
+            destruct (vector_inv_S csl) as (cslh & cslt & hb).
+            destruct (vector_inv_S msl) as (mslh & mslt & hc).
+            rewrite ha, hb, hc. 
+            destruct (fin_inv_S _ f) as [f' | (f' & hd)].
+            ++
+              subst; cbn.
+              rewrite <-associative.
+              rewrite <-(@vector_space_smul_distributive_fadd F (@eq F) 
+                zero one add mul sub div 
+                opp inv G (@eq G) gid ginv gop gpow).
+              rewrite field_zero_iff_left,
+              vector_space_field_zero,
+              monoid_is_right_identity.
+              reflexivity.
+              typeclasses eauto.
+            ++
+              rewrite hd. cbn.
+              specialize (ihm n f' x g h c₁ c₂ mslt mc msr (c - cslh) uslt cslt u usr csr
+                hr).
+              remember (fold_right add (cslt ++ csr) zero) as ct.
+              assert (he : c - (cslh + ct) = c - cslh - ct). field.
+              rewrite he. 
+              eapply ihm.
+        Qed.
+        
 
 
         (* completeness *)
-        
+         Context
+          {m n : nat}
+          (x : F) (* secret witness *)
+          (g h c₁ c₂ : G) (* public values *)
+          (* Prover knows a relation *)
+          (msl : Vector.t G m) 
+          (mc : G)
+          (msr : Vector.t G n) 
+          (R : g^x = c₁ ∧ h^x = gop c₂ (ginv mc)).
+
+
+        Lemma construct_encryption_proof_elgamal_real_completeness : 
+          forall (c : F) (uscs : Vector.t F ((m + (1 + n)) + (m + n))), 
+          generalised_accepting_encryption_proof_elgamal 
+          (msl ++ [mc] ++ msr)  g h (c₁, c₂) 
+            (construct_encryption_proof_elgamal_real (x : F)
+            uscs (msl ++ [mc] ++ msr) g h (c₁, c₂) c) = true. 
+        Proof.
+          intros *.
+          eapply generalised_accepting_elgamal_conversations_correctness.
+          unfold construct_encryption_proof_elgamal_real.
+          destruct (splitat (m + (1 + n)) uscs) as (us & cs).
+          (* us is the randomness for commitment and cs is the degree of freedom *)
+          (* split us for simulation  *)
+          destruct (splitat m us) as (usl & usrh).
+          destruct (vector_inv_S usrh) as (u & usr & _).
+          (* split cs for simulation *)
+          destruct (splitat m cs) as (csl & csr).
+          rewrite VectorSpec.splitat_append.
+          cbn; split.
+          +
+            rewrite !fold_right_app. cbn.
+            field.
+          +
+            intro f.
+            rewrite !dec_true.
+            split.
+            ++
+              eapply construct_encryption_proof_elgamal_real_completeness_generic_first.
+              destruct R as [Ra Rb].
+              rewrite Ra; reflexivity.
+            ++
+              eapply construct_encryption_proof_elgamal_real_completeness_generic_second.
+              destruct R as [Ra Rb].
+              rewrite Rb; reflexivity.
+        Qed.
+
+
+        (* simulator completeness *)
+        Lemma construct_encryption_proof_elgamal_simulator_completeness : 
+          forall (c : F) (uscs : Vector.t F ((m + (1 + n)) + (m + n))), 
+          generalised_accepting_encryption_proof_elgamal 
+          (msl ++ [mc] ++ msr)  g h (c₁, c₂) 
+            (construct_encryption_proof_elgamal_simulator uscs 
+              (msl ++ [mc] ++ msr) g h (c₁, c₂) c) = true.
+        Proof.
+        Admitted.
         
 
         
