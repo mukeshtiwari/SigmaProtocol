@@ -127,7 +127,7 @@ Section DL.
       Lemma construct_decryption_proof_elgamal_real_completeness 
         (x : F) 
         (g h m c₁ c₂ : G)
-        (R : g^x = h ∧ c₁^x = gop c₂  (ginv m)) :
+        (R : g^x = h ∧ c₁^x = gop c₂ (ginv m)) :
         forall (u c : F), 
         decryption_proof_accepting_conversations g h c₁ c₂ m
           (construct_decryption_proof_elgamal_real x g (c₁, c₂) u c) = true.
@@ -312,16 +312,22 @@ Section DL.
 
 
       (* zero-knowledge *)
-
-
-
-
-
-
-          
-
-
-
+      Lemma construct_decryption_proof_elgamal_special_honest_verifier_zkp 
+        (x : F) 
+        (g h m c₁ c₂ : G)
+        (R : g^x = h ∧ c₁^x = gop c₂ (ginv m)) : 
+        forall (lf : list F) (Hlfn : lf <> List.nil) (c : F),
+        List.map (fun '(a, p) => 
+          (decryption_proof_accepting_conversations g h c₁ c₂ m a, p))
+          (construct_decryption_proof_elgamal_real_distribution lf Hlfn x g c₁ c) = 
+        List.map (fun '(a, p) => 
+          (decryption_proof_accepting_conversations g h c₁ c₂ m a, p))
+          (construct_decryption_proof_elgama_simulator_distribution lf Hlfn g h c₁ c₂ m c).
+      Proof.
+        intros *.
+        eapply generalised_cp_special_honest_verifier_zkp.
+        exact R.
+      Qed.
 
 
     End Proofs.
