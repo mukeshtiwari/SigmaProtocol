@@ -229,13 +229,7 @@ Section DL.
 
     Section Proofs.
 
-      (* properties about accepting funciton *)
-        (* 
-          when generalised_or_accepting_conversations return true 
-          then every individual sigma protocol is an 
-          accepting conversations and 
-          hd c = sum of rest of c 
-        *)
+        (* properties about accepting function *)
         Lemma generalised_accepting_encryption_proof_elgamal_supplement_forward : 
           forall {n : nat} (g h : G) (ms : Vector.t G n) (c₁ c₂ : G)
           (s :  @sigma_proto F (G * G) n n n),
@@ -484,7 +478,7 @@ Section DL.
           eapply generalised_accepting_elgamal_conversations_correctness_backward]; assumption.
         Qed.
 
-        (* end of properties *)
+        (* end of the properties about verification function *)
 
         Context
           {Hvec: @vector_space F (@eq F) zero one add mul sub 
@@ -505,7 +499,7 @@ Section DL.
           generalised_accepting_encryption_proof_elgamal ms g h 
             (c₁, c₂) (a; cu₁ :: cut₁; ru₁) = true ->
           generalised_accepting_encryption_proof_elgamal ms g h 
-            (c₁, c₂) (a; cu₂ :: cut₂; ru₂) = true ->
+            (c₁, c₂) (a; cu₂ :: cut₂; ru₂) = true -> 
           cu₁ ≠ cu₂ -> ∃ (y : F), g^y = c₁ ∧ 
           ∃ (f : Fin.t (m + (1 + n))), h^y = gop c₂ (ginv (nth ms f)).
         Proof.
@@ -1381,7 +1375,7 @@ Section DL.
           (R : g^x = c₁ ∧ h^x = gop c₂ (ginv mc)).
         *)
 
-
+        (* completeness of real function *)
         Lemma construct_encryption_proof_elgamal_real_completeness 
           {m n : nat}
           (x : F) (* secret witness *)
@@ -1486,7 +1480,6 @@ Section DL.
           {m n : nat}
           (x : F) (* secret witness *)
           (g h c₁ c₂ : G) (* public values *)
-          (* Prover knows a relation *)
           (msl : Vector.t G m) 
           (mc : G)
           (msr : Vector.t G n) : 
@@ -1524,7 +1517,6 @@ Section DL.
           {m n : nat}
           (x : F) (* secret witness *)
           (g h c₁ c₂ : G) (* public values *)
-          (* Prover knows a relation *)
           (msl : Vector.t G m) 
           (mc : G)
           (msr : Vector.t G n) 
@@ -1569,7 +1561,6 @@ Section DL.
           {m n : nat}
           (x : F) (* secret witness *)
           (g h c₁ c₂ : G) (* public values *)
-          (* Prover knows a relation *)
           (msl : Vector.t G m) 
           (mc : G)
           (msr : Vector.t G n) 
@@ -1681,7 +1672,6 @@ Section DL.
         Lemma construct_encryption_proof_elgamal_simulator_special_honest_verifier_dist 
           {m n : nat}
           (g h c₁ c₂ : G) (* public values *)
-          (* Prover knows a relation *)
           (msl : Vector.t G m) 
           (mc : G)
           (msr : Vector.t G n) : 
@@ -1713,7 +1703,6 @@ Section DL.
           {m n : nat}
           (x : F) (* secret witness *)
           (g h c₁ c₂ : G) (* public values *)
-          (* Prover knows a relation *)
           (msl : Vector.t G m) 
           (mc : G)
           (msr : Vector.t G n) 
@@ -1721,12 +1710,12 @@ Section DL.
           forall (lf : list F) (Hlfn : lf <> List.nil) (c : F),
           List.map (fun '(a, p) => 
             (generalised_accepting_encryption_proof_elgamal (msl ++ [mc] ++ msr) 
-            g h (c₁, c₂) a, p))
+              g h (c₁, c₂) a, p))
             (generalised_encryption_proof_elgamal_real_distribution lf Hlfn 
-            x (c₁, c₂) g h (msl ++ [mc] ++ msr) c) = 
+              x (c₁, c₂) g h (msl ++ [mc] ++ msr) c) = 
           List.map (fun '(a, p) => 
             (generalised_accepting_encryption_proof_elgamal (msl ++ [mc] ++ msr) 
-            g h (c₁, c₂) a, p))
+              g h (c₁, c₂) a, p))
             (generalised_encryption_proof_elgamal_simulator_distribution lf Hlfn
               g h (c₁, c₂) (msl ++ [mc] ++ msr) c).
         Proof.
