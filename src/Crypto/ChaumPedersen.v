@@ -62,7 +62,7 @@ Section DL.
         
       *)
       Definition construct_cp_conversations_schnorr 
-        (x : F) (g h : G) (u c : F) : @sigma_proto F G 2 1 1 := 
+        (x : F) (g h : G) (u c : F) : @sigma_proto F G 2 1 1 :=
         @construct_eq_conversations_schnorr F add mul G gpow _ x 
           [g; h] u c.
     
@@ -102,14 +102,12 @@ Section DL.
         {Hvec: @vector_space F (@eq F) zero one add mul sub 
           div opp inv G (@eq G) gid ginv gop gpow}.
         (* 
-        {n : nat}
         (x : F) (* randomness used for encryption  *)
         (g h c₁ c₂ : G)
         (R : g^x = c₁ ∧ h^x = c₂). *)
 
       (* Completeness *)
       Lemma construct_cp_conversations_schnorr_completeness 
-        {n : nat}
         (x : F) (* randomness used for encryption  *)
         (g h c₁ c₂ : G)
         (R : g^x = c₁ ∧ h^x = c₂) : 
@@ -129,7 +127,6 @@ Section DL.
 
       (* simulator completeness *)
       Lemma construct_cp_conversations_simulator_completeness 
-        {n : nat}
         (g h c₁ c₂ : G) : 
         forall (u c : F),
         generalised_cp_accepting_conversations g h c₁ c₂
@@ -141,7 +138,6 @@ Section DL.
 
       (* Soundness (POK) *)
       Lemma generalise_cp_sigma_soundness
-        {n : nat}
         (g h c₁ c₂ : G) :
         forall (a : Vector.t G 2) 
         (cr₁ cr₂ : F) (r₁ r₂ : F),
@@ -161,7 +157,6 @@ Section DL.
 
       (* zero-knowledge *)
       Lemma generalised_cp_special_honest_verifier_zkp 
-        {n : nat}
         (x : F) (* randomness used for encryption  *)
         (g h c₁ c₂ : G)
         (R : g^x = c₁ ∧ h^x = c₂) : 

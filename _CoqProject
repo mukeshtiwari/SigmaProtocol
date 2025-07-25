@@ -25,4 +25,5 @@ _build/default/src/Crypto/OrSigma.v
 _build/default/src/Crypto/ChaumPedersen.v
 _build/default/src/Crypto/Elgamal.v
 _build/default/src/Crypto/EncProof.v
+_build/default/src/Crypto/DecProof.v
 _build/default/src/Frontend/Approval.v
