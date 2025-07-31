@@ -7,7 +7,7 @@ From Algebra Require Import
 From Utility Require Import 
   Util.
 From Crypto Require Import 
-  Elgamal.
+  Elgamal EncProof.
 
 Section Approval.
 
@@ -35,11 +35,10 @@ Section Approval.
 
   Section Definitions.
 
-    (* Generate Encryption Proof *)
-    Definition generate_encryption_proof (h : G) (c : G * G) := True.
-
-    (* Simulate Encryption Proof *)
-    Definition simulate_encryption_proof := False.
+   (* 
+    In this case, a vote encrypts either 0 or 1. We map these 
+    values to the Group by g^0 and g^1, [g^0; g^1]   
+   *)
 
 
 
