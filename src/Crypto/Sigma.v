@@ -132,6 +132,8 @@ Section DL.
     Section Proofs.
 
       (* properties about  accepting_conversation  *)
+      (* (a; c; r) *)
+      (* g^r := a ∙ h^c *)
       Lemma accepting_conversation_correct : 
           forall (g h a : G) (c r : F), 
           accepting_conversation g h ([a]; [c]; [r]) = true <->

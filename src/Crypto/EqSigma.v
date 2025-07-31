@@ -59,7 +59,7 @@ Section DL.
         gs and hs : public inputs 
         c : single challenge
 
-        h₁ = g₁^x ∧ h₂ = g₂^x ∧ h₃ = g₃^x ∧ ....
+        Relation: h₁ = g₁^x ∧ h₂ = g₂^x ∧ h₃ = g₃^x ∧ ....
       *)
       Definition construct_eq_conversations_schnorr :
         forall {n : nat}, 

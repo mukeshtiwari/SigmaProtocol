@@ -53,113 +53,88 @@ Section DL.
 
     Section Def. 
 
-        
-        Definition compose_two_parallel_sigma_protocols {n m r u v w : nat} 
-          (s₁ : @sigma_proto F G n m r) (s₂ : @sigma_proto F G u v w) :
-          @sigma_proto F G (n + u) (m + v) (r + w) :=
-          match s₁, s₂ with 
-          | (a₁; c₁; r₁), (a₂; c₂; r₂) =>
-            (a₁ ++ a₂; c₁ ++ c₂; r₁ ++ r₂)
-          end.
+      (*
+        Construct parallel Sigma protocol for a 
+        the relation R : h = g^x
+      *)
+      (* input: x g us cs *)
+      (* secret x, generator g, commitments us, challenges cs *)
+      Definition construct_parallel_conversations_schnorr 
+         {n : nat} (x : F) (g : G) (us : Vector.t F n) (cs : Vector.t F n) :
+        @sigma_proto F G n n n.
+      Proof. 
+        (* compute commitment *)
+        set (com := Vector.map (fun u => g^u) us).
+        (* challenges are there but we need to find a way 
+        when pass the context right now into cs *)
+        (* zip the us and cs *)
+        set (uscs := zip_with (fun ui ci => (ui, ci)) us cs).
+        set (res := Vector.map (fun '(ui, ci) => ui + ci * x) uscs).
+        exact (com; cs; res).
+      Defined.
 
 
-        (*
-          Construct parallel Sigma protocol for a 
-          the relation R : h = g^x
-        *)
-        (* input: x g us cs *)
-        (* secret x, generator g, commitments us, challenges cs *)
-        Definition construct_parallel_conversations_schnorr :
-          forall {n : nat},  F -> G ->  Vector.t F n -> Vector.t F n ->
-          @sigma_proto F G n n n.
-        Proof.
-          refine(fix Fn n {struct n} := 
-          match n with 
-          | 0 => fun x g us cs => _
-          | S n' => fun x g us cs  => _
-          end).
-          + 
-            (* base case. *)
-            refine ([]; []; []).
-          + 
-            destruct (vector_inv_S us) as (ush & ustl & _).
-            destruct (vector_inv_S cs) as (csh & cstl & _).
-            exact (@compose_two_parallel_sigma_protocols _ _ _ _ _ _ 
-              (@schnorr_protocol F add mul G gpow x g ush csh)
-              (Fn _ x g ustl cstl)).
-        Defined.
+      (* Does not involve the secret x *)
+      (* input: g h us cs *)
+      (* group generator g and h, commitments us, challenges cs *)
+      Definition construct_parallel_conversations_simulator {n : nat}
+        (g h : G) (us : Vector.t F n) (cs : Vector.t F n) :  @sigma_proto F G n n n.
+      Proof.
+        set (uscs := zip_with (fun ui ci => (ui, ci)) us cs).
+        set(com := Vector.map (fun '(ui, ci) => 
+          gop (g^ui) (h^(opp ci))) uscs).
+        exact (com; cs; us).
+      Defined.
 
-      
-        (* Does not involve the secret x *)
-        (* input: g h us cs *)
-        (* group generator g and h, commitments us, challenges cs *)
-        Definition construct_parallel_conversations_simulator :
-          forall {n : nat}, 
-          G ->  G -> Vector.t F n -> Vector.t F n -> @sigma_proto F G n n n.
-        Proof.
-          refine(fix Fn n {struct n} := 
-          match n with 
-          | 0 => fun g h us cs => _
-          | S n' => fun g h us cs  => _
-          end).
-          + refine ([]; []; []).
-          + 
-            destruct (vector_inv_S us) as (ush & ustl & _).
-            destruct (vector_inv_S cs) as (csh & cstl & _).
-            exact (@compose_two_parallel_sigma_protocols _ _ _ _ _ _ 
-              (@schnorr_simulator F opp G gop gpow g h ush csh)
-              (Fn _ g h ustl cstl)).
-        Defined.
 
-        
-        (* Function that takes group generators g, h, and 
+      (* Function that takes group generators g, h, and 
         sigma protocol and returns a boolean value *)
-        Definition generalised_parallel_accepting_conversations : 
-          forall {n : nat}, 
-          G -> G -> @sigma_proto F G n n n -> bool.
-        Proof.
-          refine(fix Fn n {struct n} := 
-            match n with 
-            | 0 => fun _ _ p => true
-            | S n' => fun g h p => 
-              match p with 
-              | (a; c ; r) => _ 
-              end 
-            end).
-          destruct (vector_inv_S a) as (ah & atl & _).
-          destruct (vector_inv_S c) as (ch & ctl & _).
-          destruct (vector_inv_S r) as (rh & rtl & _).
-          exact ((@accepting_conversation F G gop gpow Gdec g h ([ah]; [ch]; [rh])) &&
-            (Fn _ g h (atl; ctl; rtl))).
-        Defined.
+      Definition generalised_parallel_accepting_conversations : 
+        forall {n : nat}, 
+        G -> G -> @sigma_proto F G n n n -> bool.
+      Proof.
+        refine(fix Fn n {struct n} := 
+          match n with 
+          | 0 => fun _ _ p => true
+          | S n' => fun g h p => 
+            match p with 
+            | (a; c ; r) => _ 
+            end 
+          end).
+        destruct (vector_inv_S a) as (ah & atl & _).
+        destruct (vector_inv_S c) as (ch & ctl & _).
+        destruct (vector_inv_S r) as (rh & rtl & _).
+        exact ((@accepting_conversation F G gop gpow Gdec g h ([ah]; [ch]; [rh])) &&
+          (Fn _ g h (atl; ctl; rtl))).
+      Defined.
 
 
-        (* Parallel Schnorr distribution (involves secret x)*)
-        Definition generalised_parallel_schnorr_distribution  
-          {n : nat} (lf : list F) (Hlfn : lf <> List.nil) 
-          (x : F) (g : G) (cs : Vector.t F n) : dist (@sigma_proto F G n n n) :=
-          (* draw n random elements *)
-          us <- repeat_dist_ntimes_vector 
-            (uniform_with_replacement lf Hlfn) n ;;
-          Ret (construct_parallel_conversations_schnorr x g us cs).
-        
-        
-        
-        (* Parallel Simulator distribution (without secret x) *)
-        Definition generalised_parallel_simulator_distribution 
-          {n : nat} (lf : list F) (Hlfn : lf <> List.nil) 
-          (g h : G) (cs : Vector.t F n) : dist (@sigma_proto F G n n n) := 
-          (* draw n random elements *)
-          us <- repeat_dist_ntimes_vector 
-            (uniform_with_replacement lf Hlfn) n ;;
-          Ret (construct_parallel_conversations_simulator g h us cs).
-
-    End Def.
+      (* Parallel Schnorr distribution (involves secret x)*)
+      Definition generalised_parallel_schnorr_distribution  
+        {n : nat} (lf : list F) (Hlfn : lf <> List.nil) 
+        (x : F) (g : G) (cs : Vector.t F n) : dist (@sigma_proto F G n n n) :=
+        (* draw n random elements *)
+        us <- repeat_dist_ntimes_vector 
+          (uniform_with_replacement lf Hlfn) n ;;
+        Ret (construct_parallel_conversations_schnorr x g us cs).
       
+        
+        
+      (* Parallel Simulator distribution (without secret x) *)
+      Definition generalised_parallel_simulator_distribution 
+        {n : nat} (lf : list F) (Hlfn : lf <> List.nil) 
+        (g h : G) (cs : Vector.t F n) : dist (@sigma_proto F G n n n) := 
+        (* draw n random elements *)
+        us <- repeat_dist_ntimes_vector 
+          (uniform_with_replacement lf Hlfn) n ;;
+        Ret (construct_parallel_conversations_simulator g h us cs).
+
+
+    End Def. 
+
     Section Proofs.
 
-
-        (* 
+      (* 
           when generalised_accepting_conversations return true 
           then every individual sigma protocol is an 
           accepting conversations.
@@ -202,9 +177,6 @@ Section DL.
             exact (IHn _ _ _ Ha hf).
         Qed.
 
-
-
-          
         (* When we have accepting conversations, then 
         generalised_accepting accepts it.
         *)
@@ -258,7 +230,6 @@ Section DL.
           apply generalised_parallel_accepting_conversations_correctness_forward].
         Qed.
 
-
         Context
           {Hvec: @vector_space F (@eq F) zero one add mul sub 
             div opp inv G (@eq G) gid ginv gop gpow}. (* vector space *)
@@ -268,43 +239,33 @@ Section DL.
           (R : h = g ^ x). (* relation that prover trying to establish, or convince a verifier*)
         *)
 
-
         (* completeness *)
         Lemma construct_parallel_conversations_schnorr_completeness (x : F) (g h : G) (R : h = g^x) : 
           forall (n : nat) (us cs : Vector.t F n),
           generalised_parallel_accepting_conversations g h
             (construct_parallel_conversations_schnorr x g us cs) = true.
         Proof.
-          induction n as [|n IHn];
-          [intros ? ?;
-          reflexivity | intros ? ? ].
-          destruct (vector_inv_S us) as (hus & tus & Ha).
-          destruct (vector_inv_S cs) as (hcs & tcs & Hb).
-          rewrite Ha, Hb.
-          specialize (IHn tus tcs).
-          pose proof 
-          generalised_parallel_accepting_conversations_correctness_forward
-          _ _ _ _ IHn as Hc.
-          eapply 
-          generalised_parallel_accepting_conversations_correctness_backward.
-          intros ?; cbn.
-          remember (construct_parallel_conversations_schnorr x g tus tcs) as s.
-          refine
-          (match s as s'
-          return s = s' -> _ with 
-          |(a; c; r) => fun Hb => _  
-          end eq_refl).
-          destruct (fin_inv_S _ f) as [hd | (hd & Hf)].
+          intros *.
+          eapply generalised_parallel_accepting_conversations_correctness.
+          unfold construct_parallel_conversations_schnorr.
+          generalize dependent n.
+          induction n as [|n IHn].
           +
-            rewrite hd; cbn.
-            (* by schnorr completeness *)
-            now eapply schnorr_completeness.
+            intros *. 
+            refine match f with end.
           +
-            rewrite Hf; cbn.
-            specialize (Hc hd);
-            rewrite Hb in Hc;
-            exact Hc.
+            intros *. 
+            destruct (vector_inv_S us) as (hus & tus & Ha).
+            destruct (vector_inv_S cs) as (hcs & tcs & Hb).
+            destruct (fin_inv_S _ f) as [hd | (hd & Hf)].
+            ++
+              subst; cbn.
+              now eapply schnorr_completeness.
+            ++
+              subst; cbn.
+              eapply IHn.
         Qed.
+
 
 
         (* simulator completeness *)
@@ -313,37 +274,28 @@ Section DL.
           generalised_parallel_accepting_conversations g h
             (construct_parallel_conversations_simulator g h us cs) = true.
         Proof.
-          induction n as [|n IHn];
-          [intros ? ?;
-          reflexivity | intros ? ? ].
-          destruct (vector_inv_S us) as (hus & tus & Ha).
-          destruct (vector_inv_S cs) as (hcs & tcs & Hb).
-          rewrite Ha, Hb.
-          specialize (IHn tus tcs).
-          pose proof 
-          generalised_parallel_accepting_conversations_correctness_forward
-          _ _ _ _ IHn as Hc.
-          eapply 
-          generalised_parallel_accepting_conversations_correctness_backward.
-          intros ?; cbn.
-          remember (construct_parallel_conversations_simulator g h tus tcs) as s.
-          refine
-          (match s as s'
-          return s = s' -> _ with 
-          |(a; c; r) => fun Hb => _  
-          end eq_refl).
-          destruct (fin_inv_S _ f) as [hd | (hd & Hf)].
+          intros *.
+          eapply generalised_parallel_accepting_conversations_correctness.
+          unfold construct_parallel_conversations_schnorr.
+          generalize dependent n.
+          induction n as [|n IHn].
           +
-            rewrite hd; cbn.
-            (* by simulator completeness *)
-            eapply simulator_completeness.
-  
+            intros *. 
+            refine match f with end.
           +
-            rewrite Hf; cbn.
-            specialize (Hc hd);
-            rewrite Hb in Hc;
-            exact Hc.
+            intros *. 
+            destruct (vector_inv_S us) as (hus & tus & Ha).
+            destruct (vector_inv_S cs) as (hcs & tcs & Hb).
+            destruct (fin_inv_S _ f) as [hd | (hd & Hf)].
+            ++
+              subst; cbn.
+              now eapply simulator_completeness.
+            ++
+              subst; cbn.
+              eapply IHn.
         Qed.
+
+
 
 
         (* special soundness helper *)
@@ -478,7 +430,6 @@ Section DL.
             eapply IHn; 
             try assumption.
         Qed.
-
 
         (* special soundness *)
         Lemma generalise_parallel_sigma_soundness (g h : G) : 
@@ -690,7 +641,7 @@ Section DL.
 
 
 
-        (* distributions is identical (information theoretic soundenss because 
+        (* distributions are identical (information theoretic soundenss because 
         the most powerful computer can't also distinguish between the two) *)
         Lemma generalised_parallel_special_honest_verifier_zkp 
           (x : F) (g h : G) (R : h = g^x) : 
@@ -719,7 +670,7 @@ Section DL.
             eapply generalised_parallel_special_honest_verifier_simulator_dist.
             exact Ha.
         Qed.
-        (* End of proofs *)
-    End Proofs.
+
+    End Proofs. 
   End Parallel.
 End DL.
