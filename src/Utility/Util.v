@@ -2,7 +2,14 @@ From Stdlib Require Import
   Vector Fin Bool Utf8
   Psatz BinIntDef.
 
-Import VectorNotations.
+Import VectorNotations EqNotations. 
+
+
+Notation "'existsT' x .. y , p" :=
+  (sigT (fun x => .. (sigT (fun y => p)) ..))
+    (at level 200, x binder, right associativity,
+     format "'[' 'existsT' '/ ' x .. y , '/ ' p ']'") : type_scope.
+
 
 Section Dec.
 
@@ -360,7 +367,104 @@ Section Vect.
         eapply PeanoNat.Nat.eq_dec.
   Qed.  
 
+  Theorem take_drop_inv : ∀ (n m : nat) (v : Vector.t R (n + m)),
+    v = take n v ++ drop n v.
+  Proof.
+    induction n as [|n ihn].
+    +
+      cbn; intros *.
+      reflexivity.
+    +
+      cbn; intros *.
+      destruct (vector_inv_S v) as (vh & vt & ha).
+      cbn. rewrite ha. f_equal.
+      erewrite <-ihn.
+      reflexivity.
+  Qed.
 
+  Theorem rew_eq_refl : ∀ (n m : nat) (v₁ : Vector.t R n)
+    (v₂ : Vector.t R m) (vh : R) (pf : n = m), 
+    v₁ = rew <-pf in v₂ -> 
+    vh :: v₁ = rew <- [Vector.t R] f_equal S pf in (vh :: v₂).
+  Proof.
+    intros * ha.
+    subst; cbn; reflexivity.
+  Qed.
+  
+  Theorem vector_fin_app : ∀ (n : nat) (f : Fin.t n) (v : Vector.t R n),
+     existsT (m₁ m₂ : nat) (v₁ : Vector.t R m₁) (vm : R) 
+      (v₂ : Vector.t R m₂)
+      (pf : n = m₁ + (1 + m₂)), 
+      v = rew  <- [Vector.t R] pf in (v₁ ++ [vm] ++ v₂) ∧
+      vm = Vector.nth v f ∧
+      m₁ = proj1_sig  (Fin.to_nat f).
+  Proof.
+    induction n as [|n ihn].
+    +
+      intros *.
+      refine match f with end.
+    +
+      intros *.
+      destruct (fin_inv_S _ f) as [f' | (f' & ha)].
+      ++
+        subst; cbn.
+        destruct (vector_inv_S v) as (vh & vt & hb).
+        exists 0, n, [], vh, vt, eq_refl. 
+        subst; cbn.
+        repeat split; reflexivity.
+      ++
+        (* inductive case *)
+        destruct (vector_inv_S v) as (vh & vt & hb).
+        subst; cbn.
+        destruct (ihn f' vt) as (m₁ & m₂ & v₁ & vm & v₂ & pf & ha & hb & hc).
+        exists (S m₁), m₂, (vh :: v₁), vm, v₂, (f_equal S pf).
+        cbn; split.
+        eapply rew_eq_refl; exact ha.
+        split. 
+        exact hb.
+        destruct (to_nat f') as (u & hu).
+        cbn in hc |- *.
+        subst. reflexivity.
+  Defined.
+
+  Theorem vector_fin_app_pred : ∀ (n : nat) (f : Fin.t (1 + n)) 
+    (va : Vector.t R (1 + n)) (vb : Vector.t R n),
+    existsT (m₁ m₂ : nat) (v₁ v₃ : Vector.t R m₁) (vm : R) 
+      (v₂ v₄ : Vector.t R m₂)
+      (pfa : 1 + n = (m₁ + (1 + m₂))) (pfb : n = m₁ + m₂), 
+      va = rew  <- [Vector.t R] pfa in ((v₁ ++ [vm] ++ v₂)) ∧
+      vm = Vector.nth va f ∧ 
+      vb = rew  <- [Vector.t R] pfb in ((v₃ ++ v₄)) ∧
+       m₁ = proj1_sig  (Fin.to_nat f).
+  Proof.
+    intros *.
+    destruct (vector_fin_app _ f va) as 
+    (m₁ & m₂ & v₁ & vm & v₂ & pf & ha & hb).
+    assert (hc : n = m₁ + m₂) by nia. subst.
+    exists m₁, m₂, v₁, (take m₁ vb), 
+    vm, v₂, (drop m₁ vb), pf, eq_refl.
+    subst; cbn in * |- *.
+    split. reflexivity.
+    destruct hb as (hb & hc).
+    split. exact hb.
+    split. 
+    eapply take_drop_inv.
+    destruct (to_nat f) as (u & hu).
+    cbn in hc |- *.
+    subst. reflexivity.
+  Defined.
+
+
+  Lemma fin_to_nat : ∀ (m n : nat) (rindex : Fin.t (m + S n)), 
+    m = proj1_sig (Fin.to_nat rindex) ->
+    rindex = Fin.R m (Fin.F1 : Fin.t (S n)).
+  Proof.
+    intros * ha.
+    eapply Fin.to_nat_inj.
+    rewrite Fin.R_sanity. 
+    cbn. rewrite <-ha. nia.
+  Qed.
+  
   (* Write Ltac *)
 
 End Vect. 
