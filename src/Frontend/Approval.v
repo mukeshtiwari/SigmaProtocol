@@ -105,8 +105,16 @@ Section Approval.
       intros * ha.
       unfold encrypt_vote_and_generate_enc_proof.
       destruct (Fdec m zero) as [fa | fa].
-      + admit.
-      + admit.
+      +
+        eapply generalised_construct_encryption_proof_elgamal_real_completeness.
+        (* I had a mini-heart attack by looking at the goal :) *)
+        subst; cbn. split. reflexivity.
+        admit.
+      +
+         eapply generalised_construct_encryption_proof_elgamal_real_completeness.
+         (* m = 1 *)
+         cbn.
+
     Admitted.
 
   End Proofs.
