@@ -26,9 +26,7 @@ Section Approval.
     {ginv : G -> G}
     {gop : G -> G -> G} 
     {gpow : G -> F -> G}
-    {Gdec : forall x y : G, {x = y} + {x <> y}}
-    {Hvec: @vector_space F (@eq F) zero one add mul sub 
-      div opp inv G (@eq G) gid ginv gop gpow}.
+    {Gdec : forall x y : G, {x = y} + {x <> y}}.
 
   Local Infix "^" := gpow.
   Local Infix "*" := mul.
@@ -66,6 +64,16 @@ Section Approval.
   End Definitions.
   Section Proofs.
 
+    (* Vector Space *)
+      Context
+        {Hvec: @vector_space F (@eq F) zero one add mul sub 
+        div opp inv G (@eq G) gid ginv gop gpow}.
+
+      
+      (* add field *)
+      Add Field field : (@field_theory_for_stdlib_tactic F
+        eq zero one opp add mul sub inv div vector_space_field).
+
     
     Theorem encryption_correct : ∀ (r : F) (g h : G) (m : F) 
       (uscs : Vector.t F 3) (c : F),
@@ -100,7 +108,7 @@ Section Approval.
         (m = zero ∨ m = one) →
         let (cp, pf) := encrypt_vote_and_generate_enc_proof r g h m uscs c in
         @generalised_accepting_encryption_proof_elgamal F zero add 
-        Fdec G ginv gop gpow Gdec 2 [g^zero; g^one] g h cp pf = true.
+        Fdec G ginv gop gpow Gdec _ [g^zero; g^one] g h cp pf = true.
     Proof.
       intros * ha.
       unfold encrypt_vote_and_generate_enc_proof.
@@ -109,14 +117,37 @@ Section Approval.
         eapply generalised_construct_encryption_proof_elgamal_real_completeness.
         (* I had a mini-heart attack by looking at the goal :) *)
         subst; cbn. split. reflexivity.
-        admit.
+        assert (Hwt : gop (g ^ zero) (h ^ r) = gop (h ^ r) (g ^ zero)).
+        rewrite commutative; reflexivity.
+        rewrite Hwt; clear Hwt.
+        setoid_rewrite <-(@monoid_is_associative G (@eq G) gop gid).
+        assert (Hwt : (gop (g ^ zero) (gop (ginv (g ^ zero)) (h ^ r))) = 
+        (h ^ r)).
+        rewrite associative.
+        rewrite group_is_right_inverse,
+        monoid_is_left_idenity;
+        reflexivity. rewrite associative, commutative in Hwt.
+        rewrite Hwt. reflexivity. 
+        typeclasses eauto.
       +
          eapply generalised_construct_encryption_proof_elgamal_real_completeness.
+         destruct ha as [ha | ha]; try congruence.
          (* m = 1 *)
-         cbn.
-
-    Admitted.
+         split. reflexivity.
+         cbn. subst.
+         assert (Hwt : gop (g ^ one) (h ^ r) = gop (h ^ r) (g ^ one)).
+        rewrite commutative; reflexivity.
+        rewrite Hwt; clear Hwt.
+        setoid_rewrite <-(@monoid_is_associative G (@eq G) gop gid).
+        assert (Hwt : (gop (g ^ one) (gop (ginv (g ^ one)) (h ^ r))) = 
+        (h ^ r)).
+        rewrite associative.
+        rewrite group_is_right_inverse,
+        monoid_is_left_idenity;
+        reflexivity. rewrite associative, commutative in Hwt.
+        rewrite Hwt. reflexivity. 
+        typeclasses eauto.
+    Qed.
 
   End Proofs.
-
 End Approval.
