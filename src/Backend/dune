@@ -1,0 +1,6 @@
+(include_subdirs qualified)
+(coq.theory
+ (name Backend)
+ (synopsis "Formalisation of utility functions")
+ (modules (:standard))
+ (theories Algebra Utility Probability Crypto))
