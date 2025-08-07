@@ -71,7 +71,7 @@ Section DL.
         @construct_cp_conversations_schnorr F add mul G gpow x 
         g (fst cp) u c.
 
-      
+     
       (* Simulator 
         random u and c 
         (g^c * h^{-c}, c, u)
@@ -90,6 +90,9 @@ Section DL.
         (s : @sigma_proto F G 2 1 1) : bool :=
         @generalised_cp_accepting_conversations F G gop gpow 
           Gdec g c₁ h (gop c₂ (ginv m)) s.
+
+
+
       
       (* distribution involving witness *)
       Definition construct_decryption_proof_elgamal_real_distribution  
@@ -104,6 +107,38 @@ Section DL.
         (c₁ c₂ : G) (m : G) (c : F) : dist (@sigma_proto F G 2 1 1) :=
         @generalised_cp_simulator_distribution  F opp G gop 
         gpow lf Hlfn g c₁ h (gop c₂ (ginv m)) c.
+      
+
+      (* These two function are just a convenience for tally code *)
+      Fixpoint construct_decryption_proof_elgamal_real_vector {n : nat} 
+        (x : F) (g : G) (cps : Vector.t (G * G) n) (us cs : Vector.t F n) :
+        Vector.t (@sigma_proto F G 2 1 1) n.
+      Proof.
+        destruct n as [|n].
+        +
+          exact [].
+        +
+          destruct (vector_inv_S cps) as (cph & cpt & _).
+          destruct (vector_inv_S us) as (ush & ust & _).
+          destruct (vector_inv_S cs) as (csh & cst & _).
+          exact ((construct_decryption_proof_elgamal_real x g cph ush csh) :: 
+            (construct_decryption_proof_elgamal_real_vector _ x g cpt ust cst)).
+      Defined.
+
+      Fixpoint decryption_proof_accepting_conversations_vector {n : nat} (g h : G) 
+        (cps : Vector.t (G * G) n) (ms : Vector.t G n)
+        (pf : Vector.t (@sigma_proto F G 2 1 1) n ) : bool.
+      Proof.
+        destruct n as [|n].
+        +
+          exact true.
+        +
+          destruct (vector_inv_S cps) as ((c₁, c₂) & cpst & _).
+          destruct (vector_inv_S ms) as (msh & mst & _).
+          destruct (vector_inv_S pf) as (pfh & pft & _).
+          exact ((decryption_proof_accepting_conversations g h c₁ c₂ msh pfh) && 
+          (decryption_proof_accepting_conversations_vector n g h cpst mst pft)).
+      Defined.
       
 
     End Def.
@@ -330,6 +365,37 @@ Section DL.
       Qed.
 
 
+    Theorem decryption_proof_accepting_conversations_vector_completeness : 
+      ∀ (n : nat) (x : F) (g h : G) 
+      (cps : Vector.t (G * G) n) (ms : Vector.t G n) (us cs : Vector.t F n), 
+      (g^x = h) -> (∀ (i : Fin.t n), (fst (Vector.nth cps i))^x = 
+      gop (snd (Vector.nth cps i)) (ginv ((Vector.nth ms i)))) ->
+      decryption_proof_accepting_conversations_vector g h 
+        cps ms (construct_decryption_proof_elgamal_real_vector x g cps us cs) = true. 
+    Proof.
+      induction n as [|n ihn].
+      + 
+        intros * ha hb. 
+        reflexivity.
+      + 
+        intros * ha hb.
+        destruct (vector_inv_S cps) as ((c₁, c₂) & cpst & hc).
+        destruct (vector_inv_S ms) as (msh & mst & hd).
+        destruct (vector_inv_S us) as (ush & ust & he).
+        destruct (vector_inv_S cs) as (csh & cst & hf).
+        subst. cbn.
+        eapply Bool.andb_true_iff. split.
+        eapply construct_decryption_proof_elgamal_real_completeness.
+        ++
+          specialize (hb Fin.F1).
+          cbn in hb. 
+          exact (conj eq_refl hb).
+        ++
+          eapply ihn;
+          [exact eq_refl | ].
+          intro f. exact (hb (Fin.FS f)).
+    Qed.
+    
     End Proofs.
   End DecProof. 
 End DL.

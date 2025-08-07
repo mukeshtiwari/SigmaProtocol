@@ -33,7 +33,7 @@ Section Tally.
     {ginv : G -> G}
     {gop : G -> G -> G} 
     {gpow : G -> F -> G}
-    {Gdec : forall x y : G, {x = y} + {x <> y}}. 
+    {Gdec : forall x y : G, {x = y} + {x <> y}}.
     (* decidable equality on G *)
     
 
@@ -77,23 +77,22 @@ Section Tally.
       list (Vector.t (G * G * @Sigma.sigma_proto F (G * G) 2 3 2) n) -> 
       Vector.t F n -> state.
 
-    Print Permutation.
+    
     Inductive count : state -> Type :=
     (* 
     - ax bootstraps the election 
       ms is encryption of zero -- ms = (@encrypted_ballot F G gop gpow g h _
         (repeat_ntimes n zero) rs)
       pf is decryption proof that ms decryptions to g^zero.
-
-      Is it overkill? Can I not simply reveal the randomness rs used to 
-      produce ms? 
+      ds is decryption of ms
     *)
     | ax 
-      (ms : Vector.t (G * G) n) (pf : Vector.t (@sigma_proto F G 2 1 1) n) : 
-      Vector.fold_left  (fun acc '((c₁, c₂), pfv) => 
-        (acc && (@decryption_proof_accepting_conversations F 
-          G ginv gop gpow Gdec g h c₁ c₂ (g ^ zero) pfv))%bool) true 
-        (@zip_with _ _ _ _ (fun cp pfcp => (cp, pfcp)) ms pf) = true ->
+      (ms : Vector.t (G * G) n) 
+      (ds : Vector.t G n) 
+      (pf : Vector.t (@sigma_proto F G 2 1 1) n) : 
+      (∀ (i : Fin.t n), Vector.nth ds i = g ^ zero) -> 
+      @decryption_proof_accepting_conversations_vector F G ginv gop gpow 
+        Gdec _ g h ms ds pf = true ->
       count (partial (@List.nil (Vector.t (G * G * @Sigma.sigma_proto F (G * G) 2 3 2) n))
         (@List.nil (Vector.t (G * G * @Sigma.sigma_proto F (G * G) 2 3 2) n)) 
         (@List.nil (Vector.t (G * G * @Sigma.sigma_proto F (G * G) 2 3 2) n)) ms)
@@ -107,8 +106,8 @@ Section Tally.
     *)
     | cvalid 
       (u : Vector.t (G * G * @Sigma.sigma_proto F (G * G) 2 3 2) n)
-      (ms nms : Vector.t (G * G) n)
-      (us vbs inbs : list (Vector.t (G * G * @Sigma.sigma_proto F (G * G) 2 3 2) n)) :
+      (us vbs inbs : list (Vector.t (G * G * @Sigma.sigma_proto F (G * G) 2 3 2) n)) 
+      (ms nms : Vector.t (G * G) n) :
       count (partial us vbs inbs ms) -> 
       Permutation us (vbs ++ inbs) -> 
       @verify_encryption_ballot_proof F zero one add Fdec G ginv gop gpow Gdec
@@ -125,8 +124,8 @@ Section Tally.
     *)
     | cinvalid 
       (u : Vector.t (G * G * @Sigma.sigma_proto F (G * G) 2 3 2) n)
-      (ms : Vector.t (G * G) n)
-      (us vbs inbs : list (Vector.t (G * G * @Sigma.sigma_proto F (G * G) 2 3 2) n)) :
+      (us vbs inbs : list (Vector.t (G * G * @Sigma.sigma_proto F (G * G) 2 3 2) n)) 
+      (ms : Vector.t (G * G) n) :
       count (partial us vbs inbs ms) -> 
       Permutation us (vbs ++ inbs) -> 
       @verify_encryption_ballot_proof F zero one add Fdec G ginv gop gpow Gdec
@@ -138,7 +137,7 @@ Section Tally.
       inbs is the invalid ballots 
       ms final tally 
       ds is decryption of finally (it's group elements)
-      pt is discrete logarithm search over ds 
+      pt is obtained by discrete logarithm search over ds 
     *)
     | cfinish 
       (us vbs inbs : list (Vector.t (G * G * @Sigma.sigma_proto F (G * G) 2 3 2) n)) 
@@ -148,36 +147,128 @@ Section Tally.
       count (partial us vbs inbs ms) -> 
       Permutation us (vbs ++ inbs) -> 
       (∀ (i : Fin.t n), g ^ (Vector.nth pt i) = Vector.nth ds i) -> 
-      Vector.fold_left  (fun acc '(p, ((c₁, c₂), pfv)) => 
-        (acc && (@decryption_proof_accepting_conversations F 
-          G ginv gop gpow Gdec g h c₁ c₂ p pfv))%bool) true
-        (@zip_with _ _ _ _ (fun pt cppfcp => (pt, cppfcp)) ds 
-        ((@zip_with _ _ _ _ (fun cp pfcp => (cp, pfcp)) ms pf))) = true ->
-      count (partial us vbs inbs ms) -> count (winners us vbs inbs pt).
+      @decryption_proof_accepting_conversations_vector F G ginv gop gpow 
+        Gdec _ g h ms ds pf = true -> 
+      count (winners us vbs inbs pt).
 
 
 
-    Fixpoint compute_final_tally (rs : Vector.t F n) 
-      (us : list (Vector.t (G * G * @Sigma.sigma_proto F (G * G) 2 3 2) n)) : 
-      existsT (vbs inbs :  list (Vector.t (G * G * @Sigma.sigma_proto F (G * G) 2 3 2) n))
-        (ms : Vector.t (G * G) n), count (partial us vbs inbs ms).
+    Context
+      {Hvec: @vector_space F (@eq F) zero one add mul sub 
+        div opp inv G (@eq G) gid ginv gop gpow}.
+        
+        (* 
+          (x : F) 
+          (g h m c₁ c₂ : G)
+          (R : g^x = h ∧ c₁^x = gop c₂  (ginv m)). 
+        *)
+      (* add field *)
+    Add Field field : (@field_theory_for_stdlib_tactic F
+       eq zero one opp add mul sub inv div vector_space_field).
+
+    Theorem  compute_final_tally_aux1 : ∀ (m : nat) (f : Fin.t m), 
+      (@raise_message_gen F G gpow g _ (repeat_ntimes m zero))[@f] = g ^ zero. 
     Proof.
-      destruct us as [| u us'].
+      induction m as [|m ihm].
       +
-        set (ms :=  (@encrypted_ballot F G gop gpow g h _ (repeat_ntimes n zero) rs)).
+        intro f. refine match f with end.
+      +
+        intro f. 
+        destruct (fin_inv_S _ f) as [f' | (f' & ha)].
+        ++
+          subst; cbn.
+          reflexivity.
+        ++
+          subst; cbn.
+          eapply ihm.
+    Qed.
+
+    Theorem  compute_final_tally_aux2 : ∀ (m : nat) (i : Fin.t m) 
+      (rs : Vector.t F m) (x : F), g^x = h -> 
+      fst (@encrypted_ballot F G gop gpow g h _ (repeat_ntimes m zero) rs)[@i] ^ x =
+      gop (snd (@encrypted_ballot F G gop gpow g h _ (repeat_ntimes m zero) rs)[@i])
+        (ginv (@decrypted_ballot F G ginv gop gpow x _ 
+          (@encrypted_ballot F G gop gpow g h _ (repeat_ntimes m zero) rs))[@i]).
+    Proof.
+      induction m as [|m ihm].
+      +
+        intros *. refine match i with end.
+      +
+        intros * ha.
+        destruct (vector_inv_S rs) as (rsh & rst & hb). 
+        destruct (fin_inv_S _ i) as [f' | (f' & hc)].
+        ++
+          subst; cbn.
+          admit.
+    Admitted.
+         
+
+    Definition compute_final_tally (x : F) (rs us cs : Vector.t F n) : 
+      g^x = h -> (* relation between public key and group generator *)  
+      ∀ (bs : list (Vector.t (G * G * @Sigma.sigma_proto F (G * G) 2 3 2) n)), 
+      existsT (vbs inbs :  list (Vector.t (G * G * @Sigma.sigma_proto F (G * G) 2 3 2) n))
+        (ms : Vector.t (G * G) n), (count (partial bs vbs inbs ms) *
+        Permutation bs (vbs ++ inbs))%type.
+    Proof.
+      intro ha.
+      refine(fix fn (bs : list (Vector.t (G * G * sigma_proto) n)) {struct bs} := 
+        match bs with 
+        | @List.nil _ => _ 
+        | @List.cons _ bh bt => _ 
+        end).
+      +
+        set (ms := (@encrypted_ballot F G gop gpow g h _ (repeat_ntimes n zero) rs)).
+        set (ds := @decrypted_ballot F G ginv gop gpow x _ ms).
+        set (pf := @construct_decryption_proof_elgamal_real_vector F add mul G gpow 
+          _ x g ms us cs).
         exists (@List.nil (Vector.t (G * G * @Sigma.sigma_proto F (G * G) 2 3 2) n)),
         (@List.nil (Vector.t (G * G * @Sigma.sigma_proto F (G * G) 2 3 2) n)), ms.
-        refine (ax ms _ _).
-        admit.
+        refine (pair (ax ms ds pf  _ _ ) _).
+        ++
+          unfold ds, ms.
+          intro f. 
+          pose proof (@ballot_encryption_decryption_raise_message F zero one 
+            add mul sub div opp inv G gid ginv gop gpow Hvec x g h (eq_sym ha)
+            _ (repeat_ntimes n zero) rs ms eq_refl) as hb.
+          unfold ms in hb. rewrite <-hb.
+          eapply compute_final_tally_aux1.
+        ++
+          eapply decryption_proof_accepting_conversations_vector_completeness;
+          [exact ha | ].
+          unfold ms, ds, ms.
+          intro f.
+          eapply compute_final_tally_aux2; exact ha.
+        ++
+         reflexivity.
       +
         refine 
           (match @verify_encryption_ballot_proof F zero one add Fdec G ginv gop gpow Gdec
-        _ g h u return _  
-        with 
-        | true => _
-        | false => _ 
-        end ). 
+          _ g h bh as v return 
+          @verify_encryption_ballot_proof F zero one add Fdec G ginv gop gpow Gdec
+          _ g h bh = v -> _ 
+          with 
+          | true => fun hv => _ 
+          | false => fun hv => _ 
+          end eq_refl). 
         (* check if u is valid ballot or not? *)
+        (* true case *)
+        ++
+          destruct (fn bt) as (vbs & inbs &  ms & hb & hc).
+          exists (@List.cons _ bh vbs), inbs, 
+            (@mul_encrypted_ballots G gop _ ms (Vector.map fst bh)).
+          refine(pair _ _ ). 
+          *
+            eapply cvalid. exact hb. admit.
+            exact hv. reflexivity.
+          *
+            cbn.
+            eapply Permutation_cons;
+            [exact eq_refl | exact hc].
+        ++
+          (* false case *)
+          
+
+        
     Admitted.
 
 
