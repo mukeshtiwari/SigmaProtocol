@@ -72,7 +72,7 @@ Section Tally.
       list (Vector.t (G * G * @Sigma.sigma_proto F (G * G) 2 3 2) n) -> 
       list (Vector.t (G * G * @Sigma.sigma_proto F (G * G) 2 3 2) n) -> 
       Vector.t (G * G) n -> state
-    | winners : list (Vector.t (G * G * @Sigma.sigma_proto F (G * G) 2 3 2) n) ->  
+    | finished : list (Vector.t (G * G * @Sigma.sigma_proto F (G * G) 2 3 2) n) ->  
       list (Vector.t (G * G * @Sigma.sigma_proto F (G * G) 2 3 2) n) -> 
       list (Vector.t (G * G * @Sigma.sigma_proto F (G * G) 2 3 2) n) -> 
       Vector.t F n -> state.
@@ -149,7 +149,7 @@ Section Tally.
       (∀ (i : Fin.t n), g ^ (Vector.nth pt i) = Vector.nth ds i) -> 
       @decryption_proof_accepting_conversations_vector F G ginv gop gpow 
         Gdec _ g h ms ds pf = true -> 
-      count (winners us vbs inbs pt).
+      count (finished us vbs inbs pt).
 
 
 
@@ -183,24 +183,27 @@ Section Tally.
           eapply ihm.
     Qed.
 
-    Theorem  compute_final_tally_aux2 : ∀ (m : nat) (i : Fin.t m) 
-      (rs : Vector.t F m) (x : F), g^x = h -> 
-      fst (@encrypted_ballot F G gop gpow g h _ (repeat_ntimes m zero) rs)[@i] ^ x =
-      gop (snd (@encrypted_ballot F G gop gpow g h _ (repeat_ntimes m zero) rs)[@i])
-        (ginv (@decrypted_ballot F G ginv gop gpow x _ 
-          (@encrypted_ballot F G gop gpow g h _ (repeat_ntimes m zero) rs))[@i]).
+
+    Theorem  compute_final_tally_aux2 : ∀ (m : nat) (f : Fin.t m) 
+      (ms : Vector.t (G * G) m) (x : F), g^x = h -> 
+      fst ms[@f] ^ x = gop (snd ms[@f]) (ginv (@decrypted_ballot F G ginv gop gpow x _ ms)[@f]). 
     Proof.
       induction m as [|m ihm].
       +
-        intros *. refine match i with end.
+        intros *. refine match f with end.
       +
         intros * ha.
-        destruct (vector_inv_S rs) as (rsh & rst & hb). 
-        destruct (fin_inv_S _ i) as [f' | (f' & hc)].
+        destruct (vector_inv_S ms) as ((msha, mshb) & mst & hb).
+        destruct (fin_inv_S _ f) as [f' | (f' & hc)].
         ++
           subst; cbn.
           admit.
+        ++
+          subst; cbn.
+          eapply ihm.
+          reflexivity.
     Admitted.
+  
          
 
     Definition compute_final_tally (x : F) (rs us cs : Vector.t F n) : 
@@ -279,7 +282,60 @@ Section Tally.
             eapply Permutation_middle.
     Defined.
 
+    (* Discrete logarithms search and coherence axiom on it. This is for 
+    searching the exponent values in the tally. *)
+    Variable (discrete_logarithm_search : G -> G -> F).
+    Axiom (hdiscrete : ∀ (y : F) (hx hy : G), discrete_logarithm_search hx hy = y ->
+      hx^y = hy). 
 
+    Theorem compute_final_count_aux : ∀ (m : nat) (i : Fin.t m) 
+      (ds : Vector.t G m) (pt : Vector.t F m), 
+      pt = map (λ hy : G, discrete_logarithm_search g hy) ds -> 
+      g ^ pt[@i] = ds[@i].
+    Proof.
+      induction m as [|m ihm].
+      +
+        intros * ha.
+        refine match i with end.
+      +
+        intros * ha.
+        destruct (vector_inv_S ds) as (dsh & dst & hb).
+        destruct (vector_inv_S pt) as (pth & ptt & hc).
+        destruct (fin_inv_S _ i) as [f' | (f' & hd)].
+        ++
+          subst; cbn.
+          now erewrite hdiscrete.
+        ++
+          subst; cbn.
+          now eapply ihm.
+    Qed.
+    
+
+    Definition compute_final_count (x : F) (rs : Vector.t F n) 
+      (us cs : Vector.t F (n + n)) : 
+      g^x = h -> (* relation between public key and group generator *)  
+      ∀ (bs : list (Vector.t (G * G * @Sigma.sigma_proto F (G * G) 2 3 2) n)), 
+      existsT (vbs inbs :  list (Vector.t (G * G * @Sigma.sigma_proto F (G * G) 2 3 2) n))
+        (pt : Vector.t F n), count (finished bs vbs inbs pt).
+    Proof.
+      destruct (splitat n us) as (usa & usb).
+      destruct (splitat n cs) as (csa & csb).
+      intros * ha *.
+      destruct (compute_final_tally x rs usa csa ha bs) as (vbs & inbs & ms & hb & hc).
+      set (ds := @decrypted_ballot F G ginv gop gpow x _ ms).
+      set (pt := (map (fun hy => discrete_logarithm_search g hy) ds)).
+      set (pf := @construct_decryption_proof_elgamal_real_vector F add mul G gpow 
+          _ x g ms usb csb).
+      exists vbs, inbs, pt.
+      refine(cfinish bs vbs inbs ms ds pf pt hb hc _ _).
+      intro f. eapply compute_final_count_aux;
+      unfold pt; reflexivity.
+      eapply decryption_proof_accepting_conversations_vector_completeness;
+      [exact ha | ].
+      intro f.
+      unfold ds.
+      eapply compute_final_tally_aux2; exact ha.
+    Defined.
 
   End Defs.
 
