@@ -258,26 +258,32 @@ Section Tally.
             (@mul_encrypted_ballots G gop _ ms (Vector.map fst bh)).
           refine(pair _ _ ). 
           *
-            eapply cvalid. exact hb. admit.
+            eapply cvalid. exact hb. 
+            exact hc.
             exact hv. reflexivity.
           *
             cbn.
             eapply Permutation_cons;
-            [exact eq_refl | exact hc].
+            [exact eq_refl | exact hc]. 
         ++
           (* false case *)
-          
-
-        
-    Admitted.
-
-
-
+          destruct (fn bt) as (vbs & inbs &  ms & hb & hc).
+          exists vbs, (@List.cons _ bh inbs), ms.
+          refine(pair _ _).
+          *
+            eapply cinvalid; assumption.
+          *
+            cbn.
+            eapply Permutation_trans with (l' := List.cons bh (vbs ++ inbs)).
+            eapply Permutation_cons; [exact eq_refl | exact hc].
+            eapply Permutation_middle.
+    Defined.
 
 
 
   End Defs.
 
+  
   Section Proofs.
 
   End Proofs.
