@@ -186,23 +186,42 @@ Section Tally.
 
     Theorem  compute_final_tally_aux2 : ∀ (m : nat) (f : Fin.t m) 
       (ms : Vector.t (G * G) m) (x : F), g^x = h -> 
-      fst ms[@f] ^ x = gop (snd ms[@f]) (ginv (@decrypted_ballot F G ginv gop gpow x _ ms)[@f]). 
+      fst ms[@f] ^ x = gop (snd ms[@f]) 
+        (ginv (@decrypted_ballot F G ginv gop gpow x _ ms)[@f]). 
     Proof.
       induction m as [|m ihm].
       +
         intros *. refine match f with end.
       +
         intros * ha.
-        destruct (vector_inv_S ms) as ((msha, mshb) & mst & hb).
+        destruct (vector_inv_S ms) as ((c₁, c₂) & mst & hb).
         destruct (fin_inv_S _ f) as [f' | (f' & hc)].
         ++
           subst; cbn.
-          admit.
+          remember (ginv (c₁ ^ x)) as ct.
+          (* c₁ ^ x = gop c₂ (ginv (gop c₂ (ginv (c₁ ^ x)))) *)
+          assert (ha : (ginv (gop c₂ ct)) = 
+            gop (ginv ct) (ginv c₂)).
+          rewrite group_inv_flip. reflexivity.
+          rewrite ha; clear ha.
+          assert (ha : (gop (ginv ct) (ginv c₂)) = gop (ginv c₂) (ginv ct)).
+          rewrite commutative. reflexivity. 
+          rewrite ha; clear ha.
+          assert (Hwt : (gop c₂ (gop (ginv c₂) (ginv ct))) = (ginv ct)).
+          {
+            rewrite associative.
+            rewrite group_is_right_inverse,
+            monoid_is_left_idenity;
+            reflexivity.
+          }
+          rewrite Hwt; clear Hwt. subst.
+          rewrite group_inv_inv.
+          reflexivity.
         ++
           subst; cbn.
           eapply ihm.
           reflexivity.
-    Admitted.
+    Qed.
   
          
 
@@ -339,8 +358,4 @@ Section Tally.
 
   End Defs.
 
-  
-  Section Proofs.
-
-  End Proofs.
 End Tally.
