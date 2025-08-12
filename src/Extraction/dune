@@ -1,0 +1,11 @@
+(subdir Sigmalib
+ (coq.extraction
+  (prelude Extraction)
+  (extracted_modules SigmaIns Sigma Datatypes Vector 
+   VectorDef Zpstar BigInt)
+  (theories ExtLib Stdlib Utility Crypto Algebra 
+   Probability Examples))
+ (library 
+   (name Sigmalib)
+   (libraries zarith)
+   (modules :standard)))
