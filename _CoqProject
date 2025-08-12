@@ -2,7 +2,10 @@
 -R _build/default/src/Utility Utility
 -R _build/default/src/Probability Probability
 -R _build/default/src/Crypto Crypto
--R _build/default/src/Frontend Frontend 
+-R _build/default/src/Frontend Frontend
+-R _build/default/src/Backend Backend
+-R _build/default/src/Examples Examples
+-R _build/default/src/Extraction Extraction
 
 _build/default/src/Algebra/Hierarchy.v 
 _build/default/src/Algebra/Monoid.v
@@ -28,3 +31,5 @@ _build/default/src/Crypto/EncProof.v
 _build/default/src/Crypto/DecProof.v
 _build/default/src/Frontend/Approval.v
 _build/default/src/Backend/Tally.v
+_build/default/src/Examples/SigmaIns.v
+_build/default/src/Extraction/Sigmalib/Extraction.v
