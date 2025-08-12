@@ -9,3 +9,15 @@
    (name Sigmalib)
    (libraries zarith)
    (modules :standard)))
+
+(subdir ParaSigmalib
+ (coq.extraction
+  (prelude Extraction)
+  (extracted_modules ParaSigmaIns Datatypes Vector 
+   VectorDef Zpstar BigInt)
+  (theories ExtLib Stdlib Utility Crypto Algebra 
+   Probability Examples))
+ (library 
+   (name ParaSigmalib)
+   (libraries zarith)
+   (modules :standard)))
