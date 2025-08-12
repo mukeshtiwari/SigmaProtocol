@@ -1,0 +1,6 @@
+(include_subdirs qualified)
+(coq.theory
+ (name Examples)
+ (synopsis "Examples of Sigma Protocols")
+ (modules (:standard))
+ (theories Stdlib Algebra Utility Probability Crypto Frontend Backend))
