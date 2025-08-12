@@ -3,4 +3,4 @@
  (name Probability)
  (synopsis "Formalisation of probability theory")
  (modules (:standard))
- (theories Utility))
+ (theories Stdlib ExtLib Utility))

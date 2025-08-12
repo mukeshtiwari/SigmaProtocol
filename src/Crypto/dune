@@ -3,4 +3,4 @@
  (name Crypto)
  (synopsis "Formalisation of utility functions")
  (modules (:standard))
- (theories Algebra Utility Probability))
+ (theories Stdlib Algebra Utility Probability))

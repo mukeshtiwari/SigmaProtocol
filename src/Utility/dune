@@ -3,4 +3,4 @@
  (name Utility)
  (synopsis "Formalisation of utility functions")
  (modules (:standard))
- (theories Algebra))
+ (theories Stdlib Algebra))

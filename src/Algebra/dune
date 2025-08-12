@@ -1,5 +1,6 @@
 (include_subdirs qualified)
 (coq.theory
- (name Algebra)
+ (name  Algebra)
  (synopsis "Formalisation of algebra")
- (modules (:standard)))
+ (modules (:standard))
+ (theories Stdlib))

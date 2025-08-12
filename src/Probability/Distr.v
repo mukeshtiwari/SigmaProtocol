@@ -5,7 +5,7 @@ From Stdlib Require Import
   Relation_Definitions.
 From Utility Require Import Util. 
 From Probability Require Import Prob.
-From ExtLib Require Import 
+From ExtLib.Structures Require Import 
   Monad Functor Applicative
   MonadLaws FunctorLaws.
 
