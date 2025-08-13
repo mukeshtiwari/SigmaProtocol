@@ -8,10 +8,10 @@ Import Vspace Schnorr Zpfield Zpgroup.
 Section Ins.
   
   (* Prime q*)
-  Definition q : Z := 11.
+  Definition q : Z := 593.
 
   (* Prime p *)
-  Definition p : Z := 23.
+  Definition p : Z := 1187.
 
   (* Prime Proof *)
   Theorem prime_q : Znumtheory.prime q : Prop : Type.
@@ -35,14 +35,14 @@ Section Ins.
     {| Zpfield.v := 3; Zpfield.Hv := eq_refl : (3 mod q)%Z = 3%Z |}.
   (* group generator *)
   
-  Definition g : @Schnorr_group p q := 
-    {| Schnorr.v := 2;
-    Ha := conj eq_refl eq_refl : (0 < 2 < p)%Z;
-    Hb := eq_refl : (2 ^ q mod p)%Z = 1%Z|}.
+  Definition g : @Schnorr_group p q :=
+    {| Schnorr.v := 4;
+    Ha := conj eq_refl eq_refl : (0 < 4 < p)%Z;
+    Hb := eq_refl : (4 ^ q mod p)%Z = 1%Z|}.
   
     (* public key *)
   Definition h : @Schnorr_group p q := 
-    Eval compute in @pow 2 23 11 safe_prime prime_p prime_q g x.
+    Eval compute in @pow _ _ _ safe_prime prime_p prime_q g x.
   
     (* u is the randomness for commitment and c is the challenge. 
   For the moment, it is random but I need to *)
