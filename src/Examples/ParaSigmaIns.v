@@ -3,6 +3,7 @@ From Stdlib Require Import Utf8 ZArith.
 From Crypto Require Import Sigma 
   ParallelSigma.
 From Utility Require Import Zpstar.
+From Examples Require Import Prime.
 Import Vspace Schnorr Zpfield Zpgroup.
 
 Section Ins.
@@ -15,10 +16,17 @@ Section Ins.
   
   (* Prime Proof *)
   Theorem prime_q : Znumtheory.prime q : Prop : Type.
-  Proof. compute. Admitted. 
-  
+  Proof. 
+    eapply is_prime_sqrt_correct.
+    compute; reflexivity.
+  Qed.
+
   Theorem prime_p : Znumtheory.prime p : Prop : Type. 
-  Proof. compute. Admitted.
+  Proof. 
+    eapply is_prime_sqrt_correct.
+    compute; reflexivity.
+  Qed.
+  
   
   (* safe prime *)
   Theorem safe_prime : p = (2 * q + 1)%Z.
