@@ -1,4 +1,3 @@
-
 From Stdlib Require Import Utf8 ZArith.
 From Crypto Require Import Sigma 
   ParallelSigma.

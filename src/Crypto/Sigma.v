@@ -621,7 +621,7 @@ Section Noninteractive.
   *)
 
   Definition nizk_schnorr_protocol {G F : Type} 
-    (fn : G -> string)(gn : N -> F) 
+    (fn : G -> string) (gn : N -> F) 
     (add mul : F → F → F) (gpow : G -> F -> G)
     (x : F) (g h : G) (u : F) : @sigma_proto F G 1 1 1 :=
     let commit := @schnorr_protocol_commitment F G gpow g u in 
