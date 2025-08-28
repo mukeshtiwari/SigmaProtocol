@@ -9,8 +9,8 @@ From Algebra Require Import
 From Probability Require Import 
   Prob Distr. 
 From Utility Require Import 
-  Util. 
-From ExtLib Require Import 
+  Util Sha256.
+From ExtLib.Structures Require Import 
   Monad. 
   
 
@@ -88,14 +88,20 @@ Section DL.
       (* A prover convinces a verified that they know 
         x such that h := g^x *)
       
-      
+      (* Lifted the commitment definition so that it can be called 
+      during hashing to make it non-interactive *)
+      Definition schnorr_protocol_commitment (g : G) (u : F) : G := g^u. 
+
+      Definition schnorr_simulator_commitment (g h : G) (u c : F) : G :=
+        gop (g^u) (h^(opp c)).
+
       (* Real transcript, using randomness u and (secret) witness x *)
       Definition schnorr_protocol (x : F) (g : G) (u c : F) : @sigma_proto 1 1 1 :=  
-        ([g^u]; [c]; [u + c * x]).
+        ([schnorr_protocol_commitment g u]; [c]; [u + c * x]).
 
       (* Fake transcript (without the witness x) *)
       Definition schnorr_simulator (g h : G) (u c : F) : @sigma_proto 1 1 1 := 
-        ([gop (g^u) (h^(opp c))]; [c]; [u]).
+        ([schnorr_simulator_commitment g h u c]; [c]; [u]).
 
       (* 
         This function checks if a conversation (a; c; r) 
@@ -209,6 +215,7 @@ Section DL.
           schnorr_simulator; 
         intros *; simpl.
         rewrite (@dec_true _ Gdec).
+        unfold schnorr_simulator_commitment.
         rewrite <-associative.
         rewrite <-(@vector_space_smul_distributive_fadd F (@eq F) 
           zero one add mul sub div 
@@ -595,20 +602,32 @@ Section DL.
           reflexivity. 
           exact Ha. 
       Qed.
-      
-    
 
     End Proofs.
-
-    (* call the sha 256 hash function 
-      here to turn the interactive version into non-interactive,
-      strong Fiat Shamir transformation
-      https://eprint.iacr.org/2016/771.pdf.
-      Definition nizp_schnorr (r : F) :=
-        let c := sha256_string statement-with-other-values in  
-        schnorr_protocol r c.
-    *)
-
   End Basic_sigma.
 End DL.
+
+
+From Stdlib Require Import String Ascii List.
+Import ListNotations.
+
+(* We don't prove anthing about the below function. *)
+Section Noninteractive.
+
+  (* call the sha 256 hash function 
+      here to turn the interactive version into non-interactive,
+      strong Fiat Shamir transformation
+      https://eprint.iacr.org/2016/771.pdf. 
+  *)
+
+  Definition nizk_schnorr_protocol {G F : Type} 
+    (fn : G -> string)(gn : N -> F) 
+    (add mul : F → F → F) (gpow : G -> F -> G)
+    (x : F) (g h : G) (u : F) : @sigma_proto F G 1 1 1 :=
+    let commit := @schnorr_protocol_commitment F G gpow g u in 
+    let c := sha256_string (String.concat (fn commit) [fn g; fn h]) in 
+    @schnorr_protocol F add mul G gpow x g u (gn c).
+  
+End Noninteractive.
+
 

@@ -44,7 +44,7 @@ Section Ins.
   Definition h : @Schnorr_group p q := 
     Eval compute in @pow _ _ _ safe_prime prime_p prime_q g x.
   
-    (* u is the randomness for commitment and c is the challenge. 
+  (* u is the randomness for commitment and c is the challenge. 
   For the moment, it is random but I need to *)
   Definition schnorr_protocol_construction_ins (u c : @Zp q) : 
     @sigma_proto (@Zp q) (@Schnorr_group p q) 1 1 1.
@@ -56,6 +56,22 @@ Section Ins.
     eapply prime_p.
     eapply prime_q. 
   Defined.
+
+  (* Non-interactive: u is randomness and c is computed using 
+  hashing*)
+  Definition nizk_schnorr_protocol_construction_ins 
+    (fn : @Schnorr_group p q -> String.string) (gn : N -> @Zp q) (u : @Zp q) : 
+    @sigma_proto (@Zp q) (@Schnorr_group p q) 1 1 1.
+  Proof.
+    refine (@nizk_schnorr_protocol (@Schnorr_group p q) (@Zp q) fn gn 
+      zp_add zp_mul pow x g h u).
+    instantiate (1 := 2%Z).
+    compute; reflexivity.
+    eapply prime_p.
+    eapply prime_q. 
+  Defined.
+    
+
 
   Definition schnorr_protocol_verification_ins : 
     @sigma_proto (@Zp q) (@Schnorr_group p q) 1 1 1 -> bool.
