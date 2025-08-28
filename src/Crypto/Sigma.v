@@ -92,16 +92,13 @@ Section DL.
       during hashing to make it non-interactive *)
       Definition schnorr_protocol_commitment (g : G) (u : F) : G := g^u. 
 
-      Definition schnorr_simulator_commitment (g h : G) (u c : F) : G :=
-        gop (g^u) (h^(opp c)).
-
       (* Real transcript, using randomness u and (secret) witness x *)
       Definition schnorr_protocol (x : F) (g : G) (u c : F) : @sigma_proto 1 1 1 :=  
         ([schnorr_protocol_commitment g u]; [c]; [u + c * x]).
 
       (* Fake transcript (without the witness x) *)
       Definition schnorr_simulator (g h : G) (u c : F) : @sigma_proto 1 1 1 := 
-        ([schnorr_simulator_commitment g h u c]; [c]; [u]).
+        ([gop (g^u) (h^(opp c))]; [c]; [u]).
 
       (* 
         This function checks if a conversation (a; c; r) 
@@ -215,7 +212,6 @@ Section DL.
           schnorr_simulator; 
         intros *; simpl.
         rewrite (@dec_true _ Gdec).
-        unfold schnorr_simulator_commitment.
         rewrite <-associative.
         rewrite <-(@vector_space_smul_distributive_fadd F (@eq F) 
           zero one add mul sub div 
@@ -629,5 +625,3 @@ Section Noninteractive.
     @schnorr_protocol F add mul G gpow x g u (gn c).
   
 End Noninteractive.
-
-

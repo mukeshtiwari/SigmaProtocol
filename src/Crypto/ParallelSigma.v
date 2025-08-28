@@ -59,12 +59,15 @@ Section DL.
       *)
       (* input: x g us cs *)
       (* secret x, generator g, commitments us, challenges cs *)
+      Definition construct_parallel_conversations_schnorr_commitment {n : nat} 
+        (g : G) (us : Vector.t F n) : Vector.t G n := Vector.map (fun u => g^u) us.
+
       Definition construct_parallel_conversations_schnorr 
          {n : nat} (x : F) (g : G) (us : Vector.t F n) (cs : Vector.t F n) :
         @sigma_proto F G n n n.
       Proof. 
         (* compute commitment *)
-        set (com := Vector.map (fun u => g^u) us).
+        set (com := construct_parallel_conversations_schnorr_commitment g us).
         (* challenges are there but we need to find a way 
         when pass the context right now into cs *)
         (* zip the us and cs *)
@@ -77,6 +80,7 @@ Section DL.
       (* Does not involve the secret x *)
       (* input: g h us cs *)
       (* group generator g and h, commitments us, challenges cs *)
+      
       Definition construct_parallel_conversations_simulator {n : nat}
         (g h : G) (us : Vector.t F n) (cs : Vector.t F n) :  @sigma_proto F G n n n.
       Proof.
