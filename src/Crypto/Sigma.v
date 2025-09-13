@@ -9,7 +9,7 @@ From Algebra Require Import
 From Probability Require Import 
   Prob Distr. 
 From Utility Require Import 
-  Util Sha256.
+  Util.
 From ExtLib.Structures Require Import 
   Monad. 
   
