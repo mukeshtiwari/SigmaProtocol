@@ -59,6 +59,7 @@ Section Ins.
 
   (* Non-interactive: u is randomness and c is computed using 
   hashing*)
+  (* 
   Definition nizk_schnorr_protocol_construction_ins 
     (fn : @Schnorr_group p q -> String.string) (gn : N -> @Zp q) (u : @Zp q) : 
     @sigma_proto (@Zp q) (@Schnorr_group p q) 1 1 1.
@@ -70,7 +71,7 @@ Section Ins.
     eapply prime_p.
     eapply prime_q. 
   Defined.
-    
+  *)
 
 
   Definition schnorr_protocol_verification_ins : 
