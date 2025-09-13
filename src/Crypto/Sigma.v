@@ -1,7 +1,7 @@
 From Stdlib Require Import Setoid
   setoid_ring.Field Lia Vector Utf8
   Psatz Bool Pnat BinNatDef 
-  BinPos. 
+  BinPos.
 From Algebra Require Import 
   Hierarchy Group Monoid
   Field Integral_domain
@@ -604,6 +604,7 @@ Section DL.
 End DL.
 
 
+(* 
 From Stdlib Require Import String Ascii List.
 Import ListNotations.
 
@@ -625,3 +626,4 @@ Section Noninteractive.
     @schnorr_protocol F add mul G gpow x g u (gn c).
   
 End Noninteractive.
+*)
