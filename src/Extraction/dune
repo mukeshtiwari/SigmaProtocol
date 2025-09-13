@@ -2,8 +2,7 @@
  (coq.extraction
   (prelude Extraction)
   (extracted_modules SigmaIns Sigma Datatypes Vector 
-   VectorDef Zpstar BinInt Sha256 PosDef Nat BinNat Functions BinPos
-   Byte0 ListDef PeanoNat)
+   VectorDef Zpstar BinInt PosDef Functions BinNat)
   (theories ExtLib Stdlib Utility Crypto Algebra 
    Probability Examples))
  (library 
