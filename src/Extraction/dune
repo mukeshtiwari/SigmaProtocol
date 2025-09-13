@@ -2,7 +2,8 @@
  (coq.extraction
   (prelude Extraction)
   (extracted_modules SigmaIns Sigma Datatypes Vector 
-   VectorDef Zpstar BigInt)
+   VectorDef Zpstar BinInt Sha256 PosDef Nat BinNat Functions BinPos
+   Byte0 ListDef PeanoNat)
   (theories ExtLib Stdlib Utility Crypto Algebra 
    Probability Examples))
  (library 
@@ -13,8 +14,9 @@
 (subdir ParaSigmalib
  (coq.extraction
   (prelude Extraction)
-  (extracted_modules ParaSigmaIns Datatypes Vector 
-   VectorDef Zpstar BigInt)
+  (extracted_modules ParaSigmaIns ParallelSigma Sigma Datatypes Vector 
+   VectorDef Zpstar BinInt PosDef Functions BinNat 
+   Specif Util EqdepFacts)
   (theories ExtLib Stdlib Utility Crypto Algebra 
    Probability Examples))
  (library 
