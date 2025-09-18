@@ -1,9 +1,7 @@
 open Sigmalib.SigmaIns 
 open Sigmalib.Sigma
+open Cryptokit
 
-(* 
-type vec = Z.t Sigmalib.VectorDef.t [@@deriving sexp]
-*)
 
 let rec vector_string (v : Z.t Sigmalib.VectorDef.t) : string = 
   match v with
@@ -16,10 +14,23 @@ let proof_string (proof : (Z.t, Z.t) Sigmalib.Sigma.sigma_proto) : string =
       response = r} -> "proof = {annoucement = "^ vector_string a ^ " challenge = " ^ vector_string c ^ 
       " response = " ^ vector_string r ^ "}" 
 
+
+let big_int_of_bytes (s : bytes) : Z.t =
+  let n = ref Big_int_Z.zero_big_int in
+  Bytes.iter (fun c -> n := Big_int_Z.add_big_int
+    (Big_int_Z.shift_left_big_int !n 8)
+    (Big_int_Z.big_int_of_int (Char.code c))) s;
+  !n
+
+let rnd (q : Z.t)= 
+  let rng = Random.device_rng "/dev/urandom" in 
+  let buf  = Bytes.create 4 in 
+  rng#random_bytes buf 0 4; 
+  Big_int_Z.mod_big_int (big_int_of_bytes buf) q 
+  
 let () = 
-  Random.self_init ();
-  let cha = Big_int_Z.big_int_of_int (Random.int 593) in 
-  let res = Big_int_Z.big_int_of_int (Random.int 593) in 
+  let cha = rnd Sigmalib.SigmaIns.q in 
+  let res = rnd Sigmalib.SigmaIns.q in 
   let proof = schnorr_protocol_construction_ins cha res in
   let verify = 
     match schnorr_protocol_verification_ins proof with  
