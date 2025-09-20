@@ -3,4 +3,4 @@
  (name Examples)
  (synopsis "Examples of Sigma Protocols")
  (modules (:standard))
- (theories Stdlib Algebra Utility Probability Crypto Frontend Backend))
+ (theories Stdlib Algebra Utility Probability Crypto Frontend Backend Coqprime Bignums))

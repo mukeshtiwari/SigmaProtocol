@@ -8,10 +8,10 @@ Import Vspace Schnorr Zpfield Zpgroup.
 Section Ins.
 
  (* Prime q*)
-  Definition q : Z := 593.
+  Definition q : Z := 2963.
 
   (* Prime p *)
-  Definition p : Z := 1187.
+  Definition p : Z := 2 * q + 1.
   
   (* Prime Proof *)
   Theorem prime_q : Znumtheory.prime q : Prop : Type.
@@ -36,10 +36,14 @@ Section Ins.
     {| Zpfield.v := 3; Zpfield.Hv := eq_refl : (3 mod q)%Z = 3%Z |}.
   
   (* group generator *)
-  Definition g : @Schnorr_group p q := 
+  Definition g : @Schnorr_group p q.
+  Proof.
+    refine 
     {| Schnorr.v := 4;
     Ha := conj eq_refl eq_refl : (0 < 4 < p)%Z;
-    Hb := eq_refl : (4 ^ q mod p)%Z = 1%Z|}.
+    Hb := _ |}.
+    vm_cast_no_check (eq_refl (Zpow_facts.Zpow_mod 4 q p)).
+  Defined.
   
   (* public key *)
   Definition h : @Schnorr_group p q := 
@@ -75,9 +79,4 @@ Section Ins.
   Defined.
 
 End Ins.
-
-
-    
-
-
 

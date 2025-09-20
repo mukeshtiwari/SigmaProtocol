@@ -717,10 +717,13 @@ Module Schnorr.
       If I compute v^q => w ^ (k * q) mod p = 
       w^(p - 1) mod p = 1.
     *) 
+    
     Record Schnorr_group := 
       mk_schnorr 
-      {v : Z; Ha : 0 < v < p; Hb : (v ^ q mod p = 1)}.
+      {v : Z; Ha : 0 < v < p; Hb : (Zpow_mod v q p = 1)}.
 
+
+    
 
     Lemma comparison_dec : 
       ∀ x y : comparison, {x = y} + {x ≠ y}.
@@ -747,7 +750,7 @@ Module Schnorr.
     Qed.
 
     Lemma uniqueness_of_schnorr_proof_second : 
-      forall v (Hx Hy : v ^ q mod p = 1),  
+      forall v (Hx Hy : Zpow_mod v q p = 1),  
       Hx = Hy.
     Proof.
       intros v Hx Hy;
@@ -758,9 +761,9 @@ Module Schnorr.
     Lemma construct_schnorr_group : 
       forall x y
       (Hxa : (0 < x < p))
-      (Hxb : (x ^ q mod p = 1))
+      (Hxb : (Zpow_mod x q p = 1))
       (Hya : (0 < y < p))
-      (Hyb : (y ^ q mod p = 1)),
+      (Hyb : (Zpow_mod y q p = 1)),
       x = y -> 
       mk_schnorr x Hxa Hxb = mk_schnorr y Hya Hyb.
     Proof.
@@ -791,13 +794,15 @@ Module Schnorr.
       nia.
     Qed.  
 
-    Lemma one_pow_mod_q : 1 ^ q mod p = 1.
+    Lemma one_pow_mod_q : Zpow_mod 1 q p = 1.
     Proof.
       pose proof @Hp_2_p p Hp as Ha.
       pose proof @Hp_2_p q Hq as Hb.
+      rewrite Zpow_mod_correct. 
       rewrite Z.pow_1_l, 
       Z.mod_1_l.
       + exact eq_refl.
+      + abstract nia.
       + abstract nia.
       + abstract nia. 
     Qed. 
@@ -824,6 +829,7 @@ Module Schnorr.
         (* everything good upto this point*)
         + pose proof @Hp_2_p p Hp.
           pose proof @Hp_2_p q Hq.
+          rewrite Zpow_mod_correct in Hub, Hvb |- *.
           rewrite <-Zpower_mod,
           Zmult_power,
           Zmult_mod, Hub, Hvb,
@@ -855,7 +861,7 @@ Module Schnorr.
     Qed.
 
 
-    Lemma inv_schnorr_group_subproof_second : 
+    Lemma inv_schnorr_group_subproof_second_aux : 
       forall au, 
       0 < au < p ->
       au ^ q mod p = 1 ->
@@ -883,6 +889,22 @@ Module Schnorr.
       rewrite !Z2N.id.
       exact Hp.
       abstract nia.
+    Qed.
+
+
+    Lemma inv_schnorr_group_subproof_second : 
+      forall (au : Z), 0 < au < p -> Zpow_mod au q p = 1 ->
+      Zpow_mod 
+      (Z.of_N (Npow_mod 
+        (Z.to_N au) 
+        (Z.to_N (p - 2)) 
+        (Z.to_N p))) q p = 1.
+    Proof.
+      intros * ha hb.
+      rewrite Zpow_mod_correct in hb |- *.
+      eapply inv_schnorr_group_subproof_second_aux; 
+      try assumption.
+      all:nia.
     Qed.
 
 
@@ -1072,7 +1094,7 @@ Module Vspace.
     Qed.
 
 
-    Lemma pow_subproof_second : 
+    Lemma pow_subproof_second_aux : 
       forall au yt,
       yt mod q = yt ->   
       0 < au < p ->
@@ -1106,6 +1128,23 @@ Module Vspace.
       exact Hq.
     Qed.
 
+     Lemma pow_subproof_second : 
+      forall au yt,
+      yt mod q = yt ->   
+      0 < au < p ->
+      Zpow_mod au q p = 1 ->
+      Zpow_mod 
+      (Z.of_N (Npow_mod 
+        (Z.to_N au) 
+        (Z.to_N yt) 
+        (Z.to_N p))) q p = 1.
+    Proof.
+      intros * ha hb hc.
+      rewrite Zpow_mod_correct in hc |- *.
+      eapply pow_subproof_second_aux; 
+      try assumption.
+      all:nia.
+    Qed.
 
 
     Definition pow (g : @Schnorr.Schnorr_group p q) 
@@ -1119,8 +1158,6 @@ Module Vspace.
                 (pow_subproof_second _ _  Hyt Hgta Hgtb)
         end.
     Defined.
-
-    
   
 
 
@@ -1191,6 +1228,7 @@ Module Vspace.
       rewrite Zpower_mod;
       try reflexivity.
       nia. 
+      rewrite Zpow_mod_correct in Hb.
       rewrite Hvt, Hb.
       rewrite Z.pow_1_l,
       Z.mod_1_l,
@@ -1260,6 +1298,7 @@ Module Vspace.
       rewrite Zpower_mod;
       try reflexivity.
       nia. 
+      rewrite Zpow_mod_correct in Hb. 
       rewrite Hvt, Hb.
       rewrite Z.pow_1_l,
       Z.mod_1_l,
@@ -1357,9 +1396,5 @@ Module Vspace.
         subst. reflexivity.  
     Qed.
 
-
-
   End VectorSpace.
-
-
 End Vspace.
