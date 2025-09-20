@@ -36,7 +36,6 @@ Definition is_prime_sqrt (p : Z) : bool :=
   (Z.to_nat (Z.sqrt p)).
 
 
-
 Lemma composite_has_divisor_sqrt :
   ∀ n, 1 < n -> ~prime n -> 
   exists d, 1 < d <= Z.sqrt n /\ (d | n).

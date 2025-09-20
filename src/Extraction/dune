@@ -34,3 +34,17 @@
    (name ParaSigmalib)
    (libraries zarith)
    (modules :standard)))
+
+(subdir AndSigmalib
+ (coq.extraction
+  (prelude Extraction)
+  (extracted_modules AndSigmaIns AndSigma Sigma Zpow_facts 
+   Datatypes Vector 
+   VectorDef Zpstar BinInt PosDef Functions BinNat 
+   Specif Util EqdepFacts)
+  (theories ExtLib Stdlib Utility Crypto Algebra 
+   Probability Examples))
+ (library 
+   (name AndSigmalib)
+   (libraries zarith)
+   (modules :standard)))

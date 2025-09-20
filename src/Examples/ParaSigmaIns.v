@@ -7,7 +7,7 @@ Import Vspace Schnorr Zpfield Zpgroup.
 
 Section Ins.
 
- (* Prime q*)
+  (* Prime q*)
   Definition q : Z := 2963.
 
   (* Prime p *)
