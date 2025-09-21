@@ -61,12 +61,17 @@ Section DL.
         *)
         (* input: xs g us c *)
 
+        Definition construct_and_conversations_schnorr_commitment 
+          {n : nat} (g : G) (us : Vector.t F n) : Vector.t G n := 
+          Vector.map (fun y => g^y) us.
+
         Definition construct_and_conversations_schnorr {n : nat}
           (xs : Vector.t F n) (g : G)  
           (us : Vector.t F n) (c : F) :  @sigma_proto F G n 1 n.
         Proof.
           (* commitment *)
-          set (comm := Vector.map (fun y => g^y) us).
+          set (comm := construct_and_conversations_schnorr_commitment
+            g us).
           (* challenge is already there *)
           set (usxs := zip_with (fun u x => (u, x)) us xs).
           set (res := Vector.map (fun '(u, x) => u + c * x) usxs).

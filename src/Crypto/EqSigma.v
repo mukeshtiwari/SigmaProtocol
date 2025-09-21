@@ -61,6 +61,11 @@ Section DL.
 
         Relation: h₁ = g₁^x ∧ h₂ = g₂^x ∧ h₃ = g₃^x ∧ ....
       *)
+
+      Definition construct_eq_conversations_schnorr_commitment 
+        {n : nat} (gs : Vector.t G (2 + n)) (u : F) : Vector.t G (2 + n) := 
+        Vector.map (fun g => gpow g u) gs.
+
       Definition construct_eq_conversations_schnorr :
         forall {n : nat}, 
         F -> Vector.t G (2 + n) -> F  -> 
@@ -68,7 +73,8 @@ Section DL.
       Proof.
         intros n x gs u c.
         (* prover commits *)
-        remember (Vector.map (fun g => gpow g u) gs) as commitment.
+        remember (construct_eq_conversations_schnorr_commitment gs u) 
+        as commitment.
         exact (commitment; [c]; [u + c * x]).
       Defined.
 
