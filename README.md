@@ -34,3 +34,17 @@ generate OCaml code from it [_CoqProject file](/_CoqProject). It takes a while (
     proof = {annoucement = 1644,  challenge = 1987,  response = 2269, }
     true%
     ```
+3. Run `dune exec _build/default/src/Executable/AndSigmacode/main.exe` to run the AndSigma protocol. You will see ouput like this:
+   ```OCaml
+   (base) mukesh.tiwari@Mukeshs-MacBook-Pro-2 SigmaProtocol % dune exec _build/default/src/Executable/AndSigmacode/main.exe
+    p = 5927, q = 2963, g = 4, h1 = 64, h2 = 1024, h3 = 339
+    proof = {annoucement = 2036, 2070, 3797,  challenge = 461,  response = 1709, 1298, 722, }
+    true%
+   ```
+4. Run `dune exec _build/default/src/Executable/ParaSigmacode/main.exe` to run the Parallel Sigma protocol. You will see ouput like this:
+   ```OCaml
+   (base) mukesh.tiwari@Mukeshs-MacBook-Pro-2 SigmaProtocol % dune exec _build/default/src/Executable/ParaSigmacode/main.exe
+    p = 5927, q = 2963, g = 4, h = 64
+    proof = {annoucement = 4823, 4334,  challenge = 2303, 2717,  response = 2634, 1787, }
+    true%
+   ```
