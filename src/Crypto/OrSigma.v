@@ -119,15 +119,11 @@ Section DL.
           c is challenge.
         *)
 
-        (*  {(x₁, x₂ … xₙ) : h₁ = g^x₁ ∨ h₂ = g^x₂ ∨ … hₙ = g^xₙ} *)
-        (* Prover knows (m + 1)-th relation g^x = hₘ *)
-        #[local]
-        Definition construct_or_conversations_schnorr {m n : nat} 
-          (x : F) (g : G) (hs : Vector.t G (m + (1 + n)))
-          (uscs : Vector.t F ((m + (1 + n)) + (m + n))) (c : F) : 
-          @sigma_proto F G (m + (1 + n)) (1 + (m + (1 + n))) (m + (1 + n)).
+        Definition construct_or_conversations_schnorr_commitment {m n : nat} 
+         (g : G) (hs : Vector.t G (m + (1 + n))) 
+         (uscs : Vector.t F ((m + (1 + n)) + (m + n))) : 
+         Vector.t G ((m + (1 + n))).
         Proof.
-          (* commitment *)
           destruct (splitat (m + (1 + n)) uscs) as (us & cs).
           (* us is the randomness for commitment and cs is the degree of freedom *)
           (* split us for simulation  *)
@@ -138,21 +134,43 @@ Section DL.
           destruct (splitat m hs) as (hsl & hsrh).
           destruct (vector_inv_S hsrh) as (_ & hsr & _).
           (* left simulate commitments *)
-          set (comml := zip_with (fun ui ci => (ui, ci)) usl csl).
-          set (commitl := zip_with (fun hi '(ui, ci) => gop (g^ui) (hi^(opp ci))) hsl comml).
+          set (coml := zip_with (fun ui ci => (ui, ci)) usl csl).
+          set (commitl := zip_with (fun hi '(ui, ci) => gop (g^ui) (hi^(opp ci))) hsl coml).
           (* real commitment *)
           set (com := g^u). 
           (* right simulate commitment *)
-          set (commr := zip_with (fun ui ci => (ui, ci)) usr csr).
-          set (commitr := zip_with (fun hi '(ui, ci) => gop (g^ui) (hi^(opp ci))) hsr commr).
+          set (comr := zip_with (fun ui ci => (ui, ci)) usr csr).
+          set (commitr := zip_with (fun hi '(ui, ci) => gop (g^ui) (hi^(opp ci))) hsr comr).
+          exact ((commitl ++ [com] ++ commitr)).
+        Defined.
+
+          (*  {(x₁, x₂ … xₙ) : h₁ = g^x₁ ∨ h₂ = g^x₂ ∨ … hₙ = g^xₙ} *)
+        (* Prover knows (m + 1)-th relation g^x = hₘ *)
+        
+        #[local]
+        Definition construct_or_conversations_schnorr {m n : nat} 
+          (x : F) (g : G) (hs : Vector.t G (m + (1 + n)))
+          (uscs : Vector.t F ((m + (1 + n)) + (m + n))) (c : F) : 
+          @sigma_proto F G (m + (1 + n)) (1 + (m + (1 + n))) (m + (1 + n)).
+        Proof.
+          (* commitment *)
+          set (comm := @construct_or_conversations_schnorr_commitment m n g hs 
+            uscs).
+          destruct (splitat (m + (1 + n)) uscs) as (us & cs).
+          (* us is the randomness for commitment and cs is the degree of freedom *)
+          (* split us for simulation  *)
+          destruct (splitat m us) as (usl & usrh).
+          destruct (vector_inv_S usrh) as (u & usr & _).
+          (* split cs for simulation *)
+          destruct (splitat m cs) as (csl & csr).
           (* put c at front of challenges *)
           remember (c - (Vector.fold_right add (csl ++ csr) zero)) as cb.
           (* response *)
           remember (u + cb * x) as res.
-          refine((commitl ++ [com] ++ commitr); c :: csl ++ [cb] ++ csr ; usl ++ [res] ++ usr).
+          refine(comm; c :: csl ++ [cb] ++ csr ; usl ++ [res] ++ usr).
         Defined.
 
-        (*  {(x₁, x₂ … xₙ) : h₁ = g^x₁ ∨ h₂ = g^x₂ ∨ … hₙ = g^xₙ} *)
+         (*  {(x₁, x₂ … xₙ) : h₁ = g^x₁ ∨ h₂ = g^x₂ ∨ … hₙ = g^xₙ} *)
         (* Prover knows rindex such that relation g^x = hₘ *)
         Definition generalised_construct_or_conversations_schnorr {n : nat} 
           (rindex : Fin.t (2 + n)) (x : F) (g : G) (hs : Vector.t G (2 + n))
@@ -254,7 +272,6 @@ Section DL.
     End Defs.
 
     Section Proofs.
-
 
         (* properties about accepting funciton *)
         (* 
@@ -508,7 +525,7 @@ Section DL.
 
         (* end of properties *)
 
-         Context
+        Context
           {Hvec: @vector_space F (@eq F) zero one add mul sub 
             div opp inv G (@eq G) gid ginv gop gpow}.
 
@@ -535,6 +552,7 @@ Section DL.
             rewrite IHn; cbn.
             field.
         Qed.
+
 
         Theorem construct_or_conversations_schnorr_completeness_base : 
           forall (n : nat) (f : Fin.t n) (usr csr : Vector.t F n)
@@ -570,7 +588,6 @@ Section DL.
               subst; cbn.
               eapply ihn.
         Qed.
-      
 
 
         Theorem construct_or_conversations_schnorr_completeness_generic : 
@@ -638,7 +655,7 @@ Section DL.
               rewrite ha; clear ha. 
               exact ihm.
         Qed.
-        
+
 
         Theorem fold_right_rew_gen : 
           forall (m n : nat) (cs : Vector.t F m) (pf : m = n),
@@ -654,6 +671,7 @@ Section DL.
             | csh :: cst => _ 
             end); intro pf; subst; reflexivity.
         Qed.
+
 
         Theorem construct_or_conversations_simulator_completeness_base : 
           ∀ (n : nat) (f : Fin.t n) (usr : Vector.t F n) (g : G)
@@ -691,9 +709,7 @@ Section DL.
               eapply ihn.
         Qed.
 
-
-
-        Theorem construct_or_conversations_simulator_completeness_generic : 
+      Theorem construct_or_conversations_simulator_completeness_generic : 
           ∀ (m n : nat) (f : Fin.t (m + S n)) 
           (usl : Vector.t F m) (u : F) (usr : Vector.t F n)
           (hsl : t G m) (g h : G) (hsr : t G n)
@@ -748,10 +764,8 @@ Section DL.
               subst; cbn.
               eapply ihm.
         Qed.
-                
-          
-      
-         
+
+
         Lemma construct_or_conversations_schnorr_completeness {m n : nat}
           (x : F) (* secret witness *) (g : G) (* public values *)
           (hsl : Vector.t G m) (h : G) (hsr : Vector.t G n) (R : h = g ^ x) : 
@@ -761,7 +775,8 @@ Section DL.
         Proof.
           intros *. cbn.
           eapply generalised_or_accepting_conversations_correctness.
-          unfold construct_or_conversations_schnorr.
+          unfold construct_or_conversations_schnorr, 
+          construct_or_conversations_schnorr_commitment.
           destruct (splitat (m + (1 + n)) uscs) as (us & cs).
           (* us is the randomness for commitment and cs is the degree of freedom *)
           (* split us for simulation  *)
@@ -783,8 +798,7 @@ Section DL.
             rewrite R; reflexivity.
         Qed.
 
-       
-       
+
         Theorem generalised_construct_or_conversations_schnorr_completeness_fin : 
           forall (m n : nat) (rindex : Fin.t (m + S n)) 
           (hsl : Vector.t G m) (h g : G) (hsr : Vector.t G n) (x : F),
@@ -873,9 +887,10 @@ Section DL.
             eapply construct_or_conversations_simulator_completeness_generic.
         Qed.
 
+
         (* Special Soundenss Proof *)
 
-         Lemma generalised_or_sigma_soundness_base_case :
+        Lemma generalised_or_sigma_soundness_base_case :
           forall (n : nat) g hs 
           (a : Vector.t G (1 + n)) (c₁ c₂ : F)
           (cs₁ cs₂ : Vector.t F (1 + n))
@@ -1002,7 +1017,6 @@ Section DL.
               eapply Gdec.
               eapply Gdec.
         Qed.
-
 
         Lemma generalised_or_sigma_soundness_generic :
           forall (m n : nat) 
@@ -1138,7 +1152,6 @@ Section DL.
           eapply generalised_or_sigma_soundness_generic;
           [exact Ha | exact Hb | exact Hc].
         Qed.
-
 
         (* Main soundness proof *)
         Lemma generalised_or_sigma_soundness_main
@@ -1469,7 +1482,7 @@ Section DL.
             eapply generalised_or_special_honest_verifier_simulator_dist.
             exact Ha.
         Qed.
-        
-    End Proofs.
-  End Or. 
+
+    End Proofs. 
+  End Or.
 End DL.
