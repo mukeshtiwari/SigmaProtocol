@@ -27,4 +27,10 @@ generate OCaml code from it [_CoqProject file](/_CoqProject). It takes a while (
    true%
    ```
 
-2. 
+2. Run `dune exec _build/default/src/Executable/Sigmacode/main.exe` to run the sigma protocol. You will see ouput like this:
+   ```OCaml
+   (base) mukesh.tiwari@Mukeshs-MacBook-Pro-2 SigmaProtocol % dune exec _build/default/src/Executable/Sigmacode/main.exe
+    p = 5927, q = 2963, g = 4, h = 64
+    proof = {annoucement = 1644,  challenge = 1987,  response = 2269, }
+    true%
+    ```
