@@ -90,12 +90,13 @@ Section DL.
         (t1_0, t2_0, t1_1, t2_1, ..., t1_{n-1}, t2_{n-1}, c_0, c_1, ..., c_{n-1}, u_0, u_1, ..., r_b, u_{n-1})
 
       *)
-      Definition construct_encryption_proof_elgamal_real {m n : nat} (x : F)
+
+
+      Definition construct_encryption_proof_elgamal_commitment {m n : nat}
         (uscs : Vector.t F ((m + (1 + n)) + (m + n)))   
-        (ms : Vector.t G (m + (1 + n))) (g h : G) (cp : G * G) (c : F) : 
-         @sigma_proto F (G * G) (m + (1 + n)) (1 + (m + (1 + n))) (m + (1 + n)).
+        (ms : Vector.t G (m + (1 + n))) (g h : G) (cp : G * G) : 
+        Vector.t (G * G) (m + (1 + n)).
       Proof.
-        (* commitment *)
         destruct (splitat (m + (1 + n)) uscs) as (us & cs).
         (* us is the randomness for commitment and cs is the degree of freedom *)
         (* split us for simulation  *)
@@ -118,14 +119,31 @@ Section DL.
         set (commitr := zip_with (fun mi '(ui, ci) => 
           (gop (g^ui) (c₁^(opp ci)), 
           gop (h^ui) (((gop c₂ (ginv mi))^(opp ci))))) msr commr).
+        exact (commitl ++ [com] ++ commitr).
+      Defined.
+
+      Definition construct_encryption_proof_elgamal_real {m n : nat} (x : F)
+        (uscs : Vector.t F ((m + (1 + n)) + (m + n)))   
+        (ms : Vector.t G (m + (1 + n))) (g h : G) (cp : G * G) (c : F) : 
+         @sigma_proto F (G * G) (m + (1 + n)) (1 + (m + (1 + n))) (m + (1 + n)).
+      Proof.
+        (* commitment *)
+        set (comm := @construct_encryption_proof_elgamal_commitment m n 
+          uscs ms g h cp).
+        destruct (splitat (m + (1 + n)) uscs) as (us & cs).
+        (* us is the randomness for commitment and cs is the degree of freedom *)
+        (* split us for simulation  *)
+        destruct (splitat m us) as (usl & usrh).
+        destruct (vector_inv_S usrh) as (u & usr & _).
+        (* split cs for simulation *)
+        destruct (splitat m cs) as (csl & csr).
         (* put c at front of challenges *)
         remember (c - (Vector.fold_right add (csl ++ csr) zero)) as cb.
         (* response *)
         remember (u + cb * x) as res.
-        refine ((commitl ++ [com] ++ commitr); 
+        refine (comm; 
           c :: csl ++ [cb] ++ csr ; usl ++ [res] ++ usr).
       Defined.
-
 
       Definition generalised_construct_encryption_proof_elgamal_real {n : nat}
           (rindex : Fin.t (2 + n)) (x : F) (uscs : Vector.t F ((2 + n) + (1 + n))) 
@@ -240,13 +258,17 @@ Section DL.
         (* draw ((m + (1 + n)) + (m + n)) random elements *)
         uscs <- repeat_dist_ntimes_vector 
           (uniform_with_replacement lf Hlfn) (((2 + n)) + (1 + n)) ;;
-        Ret (generalised_construct_encryption_proof_elgamal_simulator  uscs ms g h cp c).
+        Ret (generalised_construct_encryption_proof_elgamal_simulator  
+          uscs ms g h cp c).
+
 
 
     End Def.
+
     Section Proofs.
 
-        (* properties about accepting function *)
+
+      (* properties about accepting function *)
         Lemma generalised_accepting_encryption_proof_elgamal_supplement_forward : 
           forall {n : nat} (g h : G) (ms : Vector.t G n) (c₁ c₂ : G)
           (s :  @sigma_proto F (G * G) n n n),
@@ -346,7 +368,7 @@ Section DL.
               exact Ha.
         Qed.
 
-         Lemma generalised_accepting_encryption_proof_elgamal_supplement_correctness : 
+        Lemma generalised_accepting_encryption_proof_elgamal_supplement_correctness : 
           forall {n : nat} (g h : G) (ms : Vector.t G n) (c₁ c₂ : G)
           (s :  @sigma_proto F (G * G) n n n),
           generalised_accepting_encryption_proof_elgamal_supplement g h ms (c₁, c₂) s = true <->
@@ -520,7 +542,6 @@ Section DL.
 
 
         (* end of the properties about verification function *)
-
 
         Context
           {Hvec: @vector_space F (@eq F) zero one add mul sub 
@@ -1003,8 +1024,7 @@ Section DL.
           exact ha. exact hb. exact hc.
         Qed.
 
-
-         (* Move this to common utility file for F and G *)
+        (* Move this to common utility file for F and G *)
         Lemma fold_right_app :
           forall (n m : nat) (ul : Vector.t F n)
           (ur : Vector.t F m),
@@ -1161,7 +1181,6 @@ Section DL.
               rewrite he. 
               eapply ihm.
         Qed.
-
 
 
         Lemma construct_encryption_proof_elgamal_real_completeness_generic_second : 
@@ -1455,7 +1474,8 @@ Section DL.
         Proof.
           intros *.
           eapply generalised_accepting_elgamal_conversations_correctness.
-          unfold construct_encryption_proof_elgamal_real.
+          unfold construct_encryption_proof_elgamal_real, 
+          construct_encryption_proof_elgamal_commitment.
           destruct (splitat (m + (1 + n)) uscs) as (us & cs).
           (* us is the randomness for commitment and cs is the degree of freedom *)
           (* split us for simulation  *)
@@ -1928,7 +1948,7 @@ Section DL.
             eapply generalised_construct_encryption_proof_elgamal_simulator_special_honest_verifier_dist.
             exact Ha.
         Qed.
-
-    End Proofs.
+    
+    End Proofs. 
   End EncProof.
 End DL.
