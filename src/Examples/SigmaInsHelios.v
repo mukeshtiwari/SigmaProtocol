@@ -33,6 +33,7 @@ Section Helios.
     Zpfield.Hv := eq_refl : (51796371230878246594092192713757255637102599536569172659263951511160666027893 mod q)%Z = 51796371230878246594092192713757255637102599536569172659263951511160666027893%Z |}.
 
  
+  
   Definition g : @Schnorr_group p q.
   Proof. 
     refine 
@@ -46,6 +47,15 @@ Section Helios.
   Definition h : @Schnorr_group p q := 
     Eval vm_compute in @pow _ _ _ safe_prime primeP.prime_p primeQ.prime_q g x.
   
+
+  Definition schnorr_protocol_commitment_ins (u : @Zp q) : (@Schnorr_group p q).
+  Proof.
+    refine(@schnorr_protocol_commitment (@Zp q) (@Schnorr_group p q)
+      pow g u).
+    exact safe_prime.
+    exact prime_p.
+    exact prime_q.
+  Defined. 
 
   (* u is the randomness for commitment and c is the challenge. 
   For the moment, it is random but I need to *)
