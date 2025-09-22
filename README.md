@@ -18,7 +18,7 @@ Here is my plan to proceed:
 The end goal is verify all the crypto primitives of [SwissPost](https://gitlab.com/swisspost-evoting/crypto-primitives/crypto-primitives/) in Coq.
 
 Run `dune build` (ignore the warinings) in this directory to compile the project. It will compile the Rocq code and 
-generate OCaml code from it (see _CoqProject file). It takes a while (3 hours) because it verifies the primality and generator order in Rocq (see SigmaInsHelios.v file) used in [Helios](https://github.com/benadida/js-voting-crypto/blob/master/test/elgamal-test.js#L14). `dune build  6554.20s user 15.53s system 57% cpu 3:08:53.70 total`  
+generate OCaml code from it [_CoqProject file](/_CoqProject). It takes a while (3 hours) because it verifies the primality and generator order in Rocq [SigmaInsHelios.v](/src/Examples/SigmaInsHelios.v) used in [Helios](https://github.com/benadida/js-voting-crypto/blob/master/test/elgamal-test.js#L14). `dune build  6554.20s user 15.53s system 57% cpu 3:08:53.70 total`. If you want to compile it quickly, comment out all the code in [SigmaInsHelios.v](/src/Examples/SigmaInsHelios.v), [primeP.v](/src/Examples/primeP.v), [primeQ.v](/src/Examples/primeQ.v), and [main.ml](/src/Executable/SigmaHelios/main.ml).
 1. Run `dune exec _build/default/src/Executable/SigmaHelios/main.exe` to run the Helios example. You will output like this:
    ```OCaml
    (base) mukesh.tiwari@Mukeshs-MacBook-Pro-2 SigmaProtocol % dune exec _build/default/src/Executable/SigmaHelios/main.exe 
