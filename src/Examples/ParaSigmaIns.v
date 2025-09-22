@@ -49,6 +49,18 @@ Section Ins.
   Definition h : @Schnorr_group p q := 
     Eval compute in @pow _ _ _ safe_prime prime_p prime_q g x.
 
+  
+  Definition construct_parallel_conversations_schnorr_commitment_ins  
+      (g :  @Schnorr_group p q) (us :  Vector.t (@Zp q) 2) : 
+      Vector.t (@Schnorr_group p q) 2.
+  Proof.
+    refine(@construct_parallel_conversations_schnorr_commitment 
+      (@Zp q) (@Schnorr_group p q) pow 2 g us).
+    exact safe_prime.
+    exact prime_p.
+    exact prime_q.
+  Defined.
+
   (* us is the randomness for commitment and cs is the challenge. 
   For the moment, it is random but I need to *)
   Definition construct_parallel_conversations_schnorr_ins

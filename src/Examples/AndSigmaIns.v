@@ -89,6 +89,16 @@ Section Ins.
     vm_cast_no_check (eq_refl (Zpow_facts.Zpow_mod (Schnorr.v g) q p)).
   Defined.
 
+  Definition construct_and_conversations_schnorr_commitment_ins
+    (g :  @Schnorr_group p q) (us : Vector.t (@Zp q) 3) : Vector.t (@Schnorr_group p q) 3.
+  Proof.
+    refine(@construct_and_conversations_schnorr_commitment 
+      (@Zp q) (@Schnorr_group p q) pow _ g us).
+    exact safe_prime.
+    eapply prime_p.
+    eapply prime_q.
+  Defined.
+
   
   Definition construct_and_conversations_schnorr_ins (us : Vector.t (@Zp q) 3) (c : (@Zp q)) : 
     @sigma_proto (@Zp q) (@Schnorr_group p q) 3 1 3.

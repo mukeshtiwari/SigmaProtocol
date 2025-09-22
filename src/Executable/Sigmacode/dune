@@ -1,3 +1,3 @@
 (executable
  (name main)
- (libraries Sigmalib cryptokit))
+ (libraries Sigmalib cryptokit hacl-star))

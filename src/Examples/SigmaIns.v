@@ -48,6 +48,16 @@ Section Ins.
   Definition h : @Schnorr_group p q := 
     Eval compute in @pow _ _ _ safe_prime prime_p prime_q g x.
   
+
+  Definition schnorr_protocol_commitment_ins (u : @Zp q) : (@Schnorr_group p q).
+  Proof.
+    refine(@schnorr_protocol_commitment (@Zp q) (@Schnorr_group p q)
+      pow g u).
+    exact safe_prime.
+    exact prime_p.
+    exact prime_q.
+  Defined.
+
   (* u is the randomness for commitment and c is the challenge. 
   For the moment, it is random but I need to *)
   Definition schnorr_protocol_construction_ins (u c : @Zp q) : 
