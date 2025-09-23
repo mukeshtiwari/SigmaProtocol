@@ -37,6 +37,7 @@ _build/default/src/Examples/primeP.v
 _build/default/src/Examples/SigmaIns.v
 _build/default/src/Examples/SigmaInsHelios.v
 _build/default/src/Examples/ParaSigmaIns.v
+_build/default/src/Examples/ElgamalIns.v
 _build/default/src/Extraction/Sigmalib/Extraction.v
 _build/default/src/Extraction/ParaSigmalib/Extraction.v
 _build/default/src/Extraction/SigmaHelioslib/Extraction.v
