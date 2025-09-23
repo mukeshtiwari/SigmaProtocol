@@ -27,24 +27,35 @@ generate OCaml code from it [_CoqProject file](/_CoqProject). It takes a while (
    true%
    ```
 
-2. Run `dune exec _build/default/src/Executable/Sigmacode/main.exe` to run the sigma protocol. You will see ouput like this:
+2. Run `dune exec _build/default/src/Executable/Sigmacode/main.exe` to run the sigma protocol. You will see output like this:
    ```OCaml
    (base) mukesh.tiwari@Mukeshs-MacBook-Pro-2 SigmaProtocol % dune exec _build/default/src/Executable/Sigmacode/main.exe
     p = 5927, q = 2963, g = 4, h = 64
     proof = {annoucement = 1644,  challenge = 1987,  response = 2269, }
     true%
     ```
-3. Run `dune exec _build/default/src/Executable/AndSigmacode/main.exe` to run the AndSigma protocol. You will see ouput like this:
+3. Run `dune exec _build/default/src/Executable/AndSigmacode/main.exe` to run the AndSigma protocol. You will see output like this:
    ```OCaml
    (base) mukesh.tiwari@Mukeshs-MacBook-Pro-2 SigmaProtocol % dune exec _build/default/src/Executable/AndSigmacode/main.exe
     p = 5927, q = 2963, g = 4, h1 = 64, h2 = 1024, h3 = 339
     proof = {annoucement = 2036, 2070, 3797,  challenge = 461,  response = 1709, 1298, 722, }
     true%
    ```
-4. Run `dune exec _build/default/src/Executable/ParaSigmacode/main.exe` to run the Parallel Sigma protocol. You will see ouput like this:
+4. Run `dune exec _build/default/src/Executable/ParaSigmacode/main.exe` to run the Parallel Sigma protocol. You will see output like this:
    ```OCaml
    (base) mukesh.tiwari@Mukeshs-MacBook-Pro-2 SigmaProtocol % dune exec _build/default/src/Executable/ParaSigmacode/main.exe
     p = 5927, q = 2963, g = 4, h = 64
     proof = {annoucement = 4823, 4334,  challenge = 2303, 2717,  response = 2634, 1787, }
     true%
+   ```
+5. Run `dune exec _build/default/src/Executable/Elgamalcode/main.exe` to run the Elgamal encryption functions. You will see output like this: 
+   ```OCaml
+   (base) mukesh.tiwari@Mukeshs-MacBook-Pro-2 SigmaProtocol % dune exec _build/default/src/Executable/Elgamalcode/main.exe
+   message ms1 = 1438, 2189, 1367, 2838, 1976, 1242, 1293, 547, 318, 1642
+   encryption cs1 = (772, 982), (3598, 4290), (5616, 1176), (5606, 4148), (3815, 4574), (513, 21), (254, 2913), (5742, 588), (1318, 5099), (5253, 1443)
+   decryption ds1 = 999969, 997757, 999898, 998406, 997544, 999773, 999824, 999078, 998849, 997210
+   rencryption cs2 = (4238, 3122), (4202, 1029), (3807, 956), (3457, 5530), (4516, 331), (1267, 4202), (2610, 3111), (4665, 800), (3235, 145), (289, 3627)
+   decryption ds2 = 999969, 997757, 999898, 998406, 997544, 999773, 999824, 999078, 998849, 997210
+   multiplication enc ballot cs3 = (32, 1545), (4946, 4722), (1423, 4053), (4579, 950), (4678, 2609), (3928, 5264), (5043, 5887), (2317, 2167), (2217, 4407), (805, 220)
+   decryption ds3 = 998444, 999946, 998302, 998281, 999520, 998052, 998154, 999625, 999167, 998852%
    ```
