@@ -42,3 +42,4 @@ _build/default/src/Extraction/Sigmalib/Extraction.v
 _build/default/src/Extraction/ParaSigmalib/Extraction.v
 _build/default/src/Extraction/SigmaHelioslib/Extraction.v
 _build/default/src/Extraction/AndSigmalib/Extraction.v
+_build/default/src/Extraction/Elgamallib/Extraction.v

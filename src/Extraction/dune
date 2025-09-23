@@ -52,7 +52,7 @@
 (subdir Elgamallib
  (coq.extraction
   (prelude Extraction)
-  (extracted_modules Elgamal
+  (extracted_modules Elgamal ElgamalIns
    Datatypes Vector 
    VectorDef Zpstar BinInt PosDef Functions BinNat 
    Util EqdepFacts)
