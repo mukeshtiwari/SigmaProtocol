@@ -153,7 +153,11 @@ Section DL.
       Proof.
         destruct (splitat (2 + n) uscs) as (us & cs).
         destruct (@vector_fin_app_pred F (1 + n) rindex us cs) as 
-        (m₁ & m₂ & v₁ & v₃ & vm & v₂ & v₄ & pfa & pfb & ha & hb & hc & hd).
+        (m₁ & m₂ & v₁ & v₃ & vm & v₂ & v₄ & pfaa & pfbb & haa).
+        destruct pfaa as [pfa].
+        destruct pfbb as [pfb].
+        destruct haa as [ha].
+        destruct ha as (ha & hb & hc & hd).
         generalize dependent ms. generalize dependent us. 
         generalize dependent cs. generalize dependent rindex. 
         cbn in * |- *. rewrite !pfa, !pfb. cbn.
@@ -1537,7 +1541,11 @@ Section DL.
           unfold generalised_construct_encryption_proof_elgamal_real.
           destruct (splitat (2 + n) uscs) as (us & cs).
           destruct (@vector_fin_app_pred F (1 + n) rindex us cs) as 
-          (m₁ & m₂ & v₁ & v₃ & vm & v₂ & v₄ & pfa & pfb & ha & hb & hc & hd).
+          (m₁ & m₂ & v₁ & v₃ & vm & v₂ & v₄ & pfaa & pfbb & haa).
+          destruct pfaa as [pfa].
+          destruct pfbb as [pfb].
+          destruct haa as [ha].
+          destruct ha as (ha & hb & hc & hd).
           generalize dependent ms. generalize dependent us. 
           generalize dependent cs. generalize dependent rindex. 
           cbn in * |- *. rewrite !pfa, !pfb. cbn.

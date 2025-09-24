@@ -9,6 +9,7 @@
    (name Sigmalib)
    (libraries zarith)
    (modules :standard)))
+ 
 
 (subdir SigmaHelioslib
  (coq.extraction
@@ -21,7 +22,7 @@
    (name SigmaHelioslib)
    (libraries zarith)
    (modules :standard)))
-
+   
 (subdir ParaSigmalib
  (coq.extraction
   (prelude Extraction)
@@ -67,7 +68,7 @@
  (coq.extraction
   (prelude Extraction)
   (extracted_modules OrSigmaIns OrSigma
-   Datatypes Vector 
+   Datatypes Vector Nat Fin Specif Sigma
    VectorDef Zpstar BinInt PosDef Functions BinNat 
    Util EqdepFacts)
   (theories ExtLib Stdlib Utility Crypto Algebra 

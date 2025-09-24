@@ -87,6 +87,9 @@ Section Ins.
     (us : Vector.t (@Zp q) 3) (cs : Vector.t (@Zp q) 2) (c : (@Zp q)) : 
     @sigma_proto (@Zp q) (@Schnorr_group p q) 3 4 3.
   Proof.
+    (* Try to fake a proof here and see how it get rejected by 
+      the verifier. To fake a proof, put some random data 
+      for (Fin.FS Fin.F1) x g [h₁; h₂; h₃]  *)
     refine(@generalised_construct_or_conversations_schnorr 
       (@Zp q) zero zp_add zp_mul zp_sub zp_opp 
       (@Schnorr_group p q) (@mul_schnorr_group p q prime_p prime_q)
@@ -113,4 +116,3 @@ Section Ins.
   Defined.
 
 End Ins.
-  

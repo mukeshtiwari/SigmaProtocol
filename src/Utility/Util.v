@@ -80,9 +80,9 @@ Section Vect.
       end).
   Defined.
 
-
   Lemma vector_inv_S : 
-      forall {n : nat} (v : Vector.t R (S n)), {h & {t & v = h :: t}}.
+      forall {n : nat} (v : Vector.t R (S n)), 
+      existsT h t, v = h :: t.
   Proof.
     intros n v.
     refine 
@@ -91,12 +91,13 @@ Section Vect.
         with 
         | 0 => fun _ => IDProp
         | S n'' => fun (ea : Vector.t R (S n'')) => 
-          {h : R & {t : Vector.t R n'' & ea = h :: t}}
+            existsT (h : R) (t : Vector.t R n''), ea = h :: t 
         end v')
       with
       | cons _ h _ t => existT _ h (existT _ t eq_refl)
       end).
   Defined.
+
 
 
   Lemma fin_inv_0 (i : Fin.t 0) : False.
@@ -391,13 +392,16 @@ Section Vect.
     subst; cbn; reflexivity.
   Qed.
   
-  Theorem vector_fin_app : ∀ (n : nat) (f : Fin.t n) (v : Vector.t R n),
+  Record Box (P:Prop) : Type := { p : P }.
+  Arguments p {_} _.
+  
+   Theorem vector_fin_app : ∀ (n : nat) (f : Fin.t n) (v : Vector.t R n),
      existsT (m₁ m₂ : nat) (v₁ : Vector.t R m₁) (vm : R) 
       (v₂ : Vector.t R m₂)
-      (pf : n = m₁ + (1 + m₂)), 
-      v = rew  <- [Vector.t R] pf in (v₁ ++ [vm] ++ v₂) ∧
+      (pf : Box (n = m₁ + (1 + m₂))), 
+      Box (v = rew  <- [Vector.t R] (p pf) in (v₁ ++ [vm] ++ v₂) ∧
       vm = Vector.nth v f ∧
-      m₁ = proj1_sig  (Fin.to_nat f).
+      m₁ = proj1_sig  (Fin.to_nat f)).
   Proof.
     induction n as [|n ihn].
     +
@@ -409,16 +413,18 @@ Section Vect.
       ++
         subst; cbn.
         destruct (vector_inv_S v) as (vh & vt & hb).
-        exists 0, n, [], vh, vt, eq_refl. 
+        exists 0, n, [], vh, vt, (Build_Box _ eq_refl). 
         subst; cbn.
         repeat split; reflexivity.
       ++
         (* inductive case *)
         destruct (vector_inv_S v) as (vh & vt & hb).
         subst; cbn.
-        destruct (ihn f' vt) as (m₁ & m₂ & v₁ & vm & v₂ & pf & ha & hb & hc).
-        exists (S m₁), m₂, (vh :: v₁), vm, v₂, (f_equal S pf).
-        cbn; split.
+        destruct (ihn f' vt) as (m₁ & m₂ & v₁ & vm & v₂ & pf & haa).
+        destruct haa as [ha].
+        destruct ha as (ha & hb & hc).
+        exists (S m₁), m₂, (vh :: v₁), vm, v₂, (Build_Box _ (f_equal S (p pf))).
+        cbn; split. split.
         eapply rew_eq_refl; exact ha.
         split. 
         exact hb.
@@ -427,27 +433,30 @@ Section Vect.
         subst. reflexivity.
   Defined.
 
-  Theorem vector_fin_app_pred : ∀ (n : nat) (f : Fin.t (1 + n)) 
+  Theorem vector_fin_app_pred : ∀ (n : nat) (f : Fin.t (1 + n))
     (va : Vector.t R (1 + n)) (vb : Vector.t R n),
-    existsT (m₁ m₂ : nat) (v₁ v₃ : Vector.t R m₁) (vm : R) 
+    existsT (m₁ m₂ : nat) (v₁ v₃ : Vector.t R m₁) (vm : R)
       (v₂ v₄ : Vector.t R m₂)
-      (pfa : 1 + n = (m₁ + (1 + m₂))) (pfb : n = m₁ + m₂), 
-      va = rew  <- [Vector.t R] pfa in ((v₁ ++ [vm] ++ v₂)) ∧
-      vm = Vector.nth va f ∧ 
-      vb = rew  <- [Vector.t R] pfb in ((v₃ ++ v₄)) ∧
-       m₁ = proj1_sig  (Fin.to_nat f).
+      (pfa : Box (1 + n = (m₁ + (1 + m₂)))) (pfb : Box (n = m₁ + m₂)),
+      Box (va = rew  <- [Vector.t R] (p pfa) in ((v₁ ++ [vm] ++ v₂)) ∧
+      vm = Vector.nth va f ∧
+      vb = rew  <- [Vector.t R] (p pfb) in ((v₃ ++ v₄)) ∧
+      m₁ = proj1_sig  (Fin.to_nat f)).
   Proof.
     intros *.
-    destruct (vector_fin_app _ f va) as 
-    (m₁ & m₂ & v₁ & vm & v₂ & pf & ha & hb).
+    destruct (vector_fin_app _ f va) as
+    (m₁ & m₂ & v₁ & vm & v₂ & pff & haa).
+    destruct pff as [pf].
+    destruct haa as [ha].
+    destruct ha as (ha & hb).
     assert (hc : n = m₁ + m₂) by nia. subst.
-    exists m₁, m₂, v₁, (take m₁ vb), 
-    vm, v₂, (drop m₁ vb), pf, eq_refl.
+    exists m₁, m₂, v₁, (take m₁ vb),
+    vm, v₂, (drop m₁ vb), (Build_Box _ pf), (Build_Box _ eq_refl).
     subst; cbn in * |- *.
-    split. reflexivity.
+    split. split. reflexivity.
     destruct hb as (hb & hc).
     split. exact hb.
-    split. 
+    split.
     eapply take_drop_inv.
     destruct (to_nat f) as (u & hu).
     cbn in hc |- *.

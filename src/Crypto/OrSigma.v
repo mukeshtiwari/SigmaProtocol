@@ -179,7 +179,9 @@ Section DL.
         Proof.
           destruct (splitat (2 + n) uscs) as (us & cs).
           destruct (@vector_fin_app_pred F (1 + n) rindex us cs) as 
-          (m₁ & m₂ & v₁ & v₃ & vm & v₂ & v₄ & pfa & pfb & ha & hb & hc).
+          (m₁ & m₂ & v₁ & v₃ & vm & v₂ & v₄ & pfaa & pfbb & _).
+          inversion pfaa as [pfa]. 
+          inversion pfbb as [pfb].
           pose proof (@construct_or_conversations_schnorr m₁ m₂ x g 
           (rew pfa in hs) ((rew pfa in us) ++ (rew pfb in cs)) c) as hd.
           rewrite <-pfa in hd.
@@ -829,7 +831,11 @@ Section DL.
           destruct (splitat (2 + n) uscs) as (us & cs) eqn:hv.
           eapply append_splitat in hv.
           destruct (vector_fin_app_pred (1 + n) rindex us cs) as 
-          (m₁ & m₂ & v₁ & v₃ & vm & v₂ & v₄ & pfa & pfb & ha & hb & hc & hd).
+          (m₁ & m₂ & v₁ & v₃ & vm & v₂ & v₄ & pfaa & pfbb & haa).
+          destruct pfaa as [pfa].
+          destruct pfbb as [pfb].
+          destruct haa as [ha].
+          destruct ha as (ha & hb & hc & hd).
           revert hd.
           subst; cbn. intro hf. rewrite !rew_opp_r.
           destruct (splitat m₁ ((rew [t G] pfa in hs))) as (hsl & hsrr) eqn:ha.
