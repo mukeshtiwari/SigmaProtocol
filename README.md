@@ -59,3 +59,10 @@ generate OCaml code from it [_CoqProject file](/_CoqProject). It takes a while (
    multiplication enc ballot cs3 = (32, 1545), (4946, 4722), (1423, 4053), (4579, 950), (4678, 2609), (3928, 5264), (5043, 5887), (2317, 2167), (2217, 4407), (805, 220)
    decryption ds3 = 998444, 999946, 998302, 998281, 999520, 998052, 998154, 999625, 999167, 998852%
    ```
+6. Run `dune exec _build/default/src/Executable/OrSigmacode/main.exe` to run the OR Sigma protocol. You will see output like this:
+   ```OCaml 
+   (base) mukesh.tiwari@Mukeshs-MacBook-Pro-2 SigmaProtocol % dune exec _build/default/src/Executable/OrSigmacode/main.exe
+   p = 5927, q = 2963, g = 4, h_UU2081_  = 12, h_UU2082_  = 64, h_UU2083_  = 25, com = 3173, 1573, 1351,
+   proof = {annoucement = 3173, 1573, 1351,  challenge = 1723, 1429, 2530, 727,  response = 455, 2825, 1712, }
+   true%
+   ```
