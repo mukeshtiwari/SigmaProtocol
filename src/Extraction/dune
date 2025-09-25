@@ -77,3 +77,17 @@
    (name OrSigmalib)
    (libraries zarith)
    (modules :standard)))
+
+(subdir EncProoflib
+ (coq.extraction
+  (prelude Extraction)
+  (extracted_modules EncProofIns EncProof
+   Datatypes Vector Nat Fin Specif Sigma
+   VectorDef Zpstar BinInt PosDef Functions BinNat 
+   Util EqdepFacts)
+  (theories ExtLib Stdlib Utility Crypto Algebra 
+   Probability Examples))
+ (library 
+   (name EncProoflib)
+   (libraries zarith)
+   (modules :standard)))

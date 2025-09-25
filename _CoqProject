@@ -39,9 +39,11 @@ _build/default/src/Examples/SigmaInsHelios.v
 _build/default/src/Examples/ParaSigmaIns.v
 _build/default/src/Examples/ElgamalIns.v
 _build/default/src/Examples/OrSigmaIns.v
+_build/default/src/Examples/EncProofIns.v
 _build/default/src/Extraction/Sigmalib/Extraction.v
 _build/default/src/Extraction/ParaSigmalib/Extraction.v
 _build/default/src/Extraction/SigmaHelioslib/Extraction.v
 _build/default/src/Extraction/AndSigmalib/Extraction.v
 _build/default/src/Extraction/Elgamallib/Extraction.v
 _build/default/src/Extraction/OrSigmalib/Extraction.v
+_build/default/src/Extraction/EncProoflib/Extraction.v
