@@ -27,28 +27,28 @@ generate OCaml code from it [_CoqProject file](/_CoqProject). It takes a while (
    true%
    ```
 
-2. Run `dune exec _build/default/src/Executable/Sigmacode/main.exe` to run the sigma protocol. You will see output like this:
+2. Run `dune exec _build/default/src/Executable/Sigmacode/main.exe` to run the sigma protocol. You will see an output like this:
    ```OCaml
    (base) mukesh.tiwari@Mukeshs-MacBook-Pro-2 SigmaProtocol % dune exec _build/default/src/Executable/Sigmacode/main.exe
     p = 5927, q = 2963, g = 4, h = 64
     proof = {annoucement = 1644,  challenge = 1987,  response = 2269, }
     true%
     ```
-3. Run `dune exec _build/default/src/Executable/AndSigmacode/main.exe` to run the AndSigma protocol. You will see output like this:
+3. Run `dune exec _build/default/src/Executable/AndSigmacode/main.exe` to run the AndSigma protocol. You will see an output like this:
    ```OCaml
    (base) mukesh.tiwari@Mukeshs-MacBook-Pro-2 SigmaProtocol % dune exec _build/default/src/Executable/AndSigmacode/main.exe
     p = 5927, q = 2963, g = 4, h1 = 64, h2 = 1024, h3 = 339
     proof = {annoucement = 2036, 2070, 3797,  challenge = 461,  response = 1709, 1298, 722, }
     true%
    ```
-4. Run `dune exec _build/default/src/Executable/ParaSigmacode/main.exe` to run the Parallel Sigma protocol. You will see output like this:
+4. Run `dune exec _build/default/src/Executable/ParaSigmacode/main.exe` to run the Parallel Sigma protocol. You will see an output like this:
    ```OCaml
    (base) mukesh.tiwari@Mukeshs-MacBook-Pro-2 SigmaProtocol % dune exec _build/default/src/Executable/ParaSigmacode/main.exe
     p = 5927, q = 2963, g = 4, h = 64
     proof = {annoucement = 4823, 4334,  challenge = 2303, 2717,  response = 2634, 1787, }
     true%
    ```
-5. Run `dune exec _build/default/src/Executable/Elgamalcode/main.exe` to run the Elgamal encryption functions. You will see output like this: 
+5. Run `dune exec _build/default/src/Executable/Elgamalcode/main.exe` to run the Elgamal encryption functions. You will see an output like this: 
    ```OCaml
    (base) mukesh.tiwari@Mukeshs-MacBook-Pro-2 SigmaProtocol % dune exec _build/default/src/Executable/Elgamalcode/main.exe
    message ms1 = 1438, 2189, 1367, 2838, 1976, 1242, 1293, 547, 318, 1642
@@ -59,17 +59,24 @@ generate OCaml code from it [_CoqProject file](/_CoqProject). It takes a while (
    multiplication enc ballot cs3 = (32, 1545), (4946, 4722), (1423, 4053), (4579, 950), (4678, 2609), (3928, 5264), (5043, 5887), (2317, 2167), (2217, 4407), (805, 220)
    decryption ds3 = 998444, 999946, 998302, 998281, 999520, 998052, 998154, 999625, 999167, 998852%
    ```
-6. Run `dune exec _build/default/src/Executable/OrSigmacode/main.exe` to run the OR Sigma protocol. You will see output like this:
+6. Run `dune exec _build/default/src/Executable/OrSigmacode/main.exe` to run the OR Sigma protocol. You will see an output like this:
    ```OCaml 
    (base) mukesh.tiwari@Mukeshs-MacBook-Pro-2 SigmaProtocol % dune exec _build/default/src/Executable/OrSigmacode/main.exe
    p = 5927, q = 2963, g = 4, h_UU2081_  = 12, h_UU2082_  = 64, h_UU2083_  = 25, com = 3173, 1573, 1351,
    proof = {annoucement = 3173, 1573, 1351,  challenge = 1723, 1429, 2530, 727,  response = 455, 2825, 1712, }
    true%
    ```
-7. Run `dune exec _build/default/src/Executable/EncProofcode/main.exe` to run the Encryption Proof Sigma protocol. You will see output like this: 
+7. Run `dune exec _build/default/src/Executable/EncProofcode/main.exe` to run the Encryption Proof Sigma protocol. You will see an output like this: 
    ```OCaml
    (base) mukesh.tiwari@Mukeshs-MacBook-Pro-2 SigmaProtocol % dune exec _build/default/src/Executable/EncProofcode/main.exe
    p = 5927, q = 2963, g = 12, h  = 25, m_UU2080_  = 28, m_UU2081_  = 134, m_UU2082_ = 38, cp = (3108, 450), com = (83, 5583), (4551, 5153), (72, 586)
    proof = {annoucement = (83, 5583), (3021, 5294), (3534, 677) challenge = 2026, 2515, 1078, 1396 response = 1448, 228, 2263}
+   true%
+   ```
+8. Run `dune exec _build/default/src/Executable/EqSigmacode/main.exe` to run the EQ Sigma protocol. You will see an output like this: 
+   ```OCaml
+   (base) mukesh.tiwari@Mukeshs-MacBook-Pro-2 SigmaProtocol % dune exec _build/default/src/Executable/EqSigmacode/main.exe
+   p = 5927, q = 2963, g_UU2081_ = 12, g_UU2082_ = 16, g_UU2083_ = 18, h_UU2081_ = 1728, h_UU2082_ = 4096, h_UU2083_ = 18, com = 4026, 2686, 5005
+   proof = {annoucement = 4026, 2686, 5005 challenge = 2010 response = 596}
    true%
    ```
