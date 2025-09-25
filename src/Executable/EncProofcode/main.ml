@@ -82,34 +82,4 @@ let _ =
   print_string (proof_string proof);
   print_endline "";
   print_string verify;
-  
-(* 
-let _ = 
-    let us = rnd_list OrSigmalib.OrSigmaIns.q 3 in (* randomness for commitment *)
-    let cs = rnd_list OrSigmalib.OrSigmaIns.q 2 in (* degree of freedom for cheating *)
-    let com =  vector_string (OrSigmalib.OrSigmaIns.construct_or_conversations_schnorr_commitment_ins us cs) in 
-    let cha = "p = " ^ Big_int_Z.string_of_big_int OrSigmalib.OrSigmaIns.p ^ ", q = " ^ 
-      Big_int_Z.string_of_big_int OrSigmalib.OrSigmaIns.q  ^ ", g = " ^ 
-      Big_int_Z.string_of_big_int OrSigmalib.OrSigmaIns.g ^ ", h_UU2081_  = " ^ 
-      Big_int_Z.string_of_big_int OrSigmalib.OrSigmaIns.h_UU2081_ ^ ", h_UU2082_  = " ^ 
-      Big_int_Z.string_of_big_int OrSigmalib.OrSigmaIns.h_UU2082_ ^ ", h_UU2083_  = " ^ 
-      Big_int_Z.string_of_big_int OrSigmalib.OrSigmaIns.h_UU2083_ ^ ", com = " ^ com in 
-    let c = big_int_of_bytes_mod_q (shake256 ~msg:(String.to_bytes cha) ~size:4) OrSigmalib.OrSigmaIns.q in
-    let proof = generalised_construct_or_conversations_schnorr_ins us cs c in 
-    let verify = 
-        match generalised_or_accepting_conversations_ins proof with
-        | true -> "true"
-        | _ -> "false"
-    in
-    print_string ("p = " ^ Big_int_Z.string_of_big_int OrSigmalib.OrSigmaIns.p ^ ", q = " ^ 
-      Big_int_Z.string_of_big_int OrSigmalib.OrSigmaIns.q  ^ ", g = " ^ 
-      Big_int_Z.string_of_big_int OrSigmalib.OrSigmaIns.g ^ ", h_UU2081_  = " ^ 
-      Big_int_Z.string_of_big_int OrSigmalib.OrSigmaIns.h_UU2081_ ^ ", h_UU2082_  = " ^ 
-      Big_int_Z.string_of_big_int OrSigmalib.OrSigmaIns.h_UU2082_ ^ ", h_UU2083_  = " ^ 
-      Big_int_Z.string_of_big_int OrSigmalib.OrSigmaIns.h_UU2083_ ^ ", com = " ^ com);
-    print_endline "";
-    print_string (proof_string proof);
-    print_endline "";
-    print_string verify;
 
-*)

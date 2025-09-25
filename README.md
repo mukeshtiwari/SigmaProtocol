@@ -66,3 +66,10 @@ generate OCaml code from it [_CoqProject file](/_CoqProject). It takes a while (
    proof = {annoucement = 3173, 1573, 1351,  challenge = 1723, 1429, 2530, 727,  response = 455, 2825, 1712, }
    true%
    ```
+7. Run `dune exec _build/default/src/Executable/EncProofcode/main.exe` to run the Encryption Proof Sigma protocol. You will see output like this: 
+   ```OCaml
+   (base) mukesh.tiwari@Mukeshs-MacBook-Pro-2 SigmaProtocol % dune exec _build/default/src/Executable/EncProofcode/main.exe
+   p = 5927, q = 2963, g = 12, h  = 25, m_UU2080_  = 28, m_UU2081_  = 134, m_UU2082_ = 38, cp = (3108, 450), com = (83, 5583), (4551, 5153), (72, 586)
+   proof = {annoucement = (83, 5583), (3021, 5294), (3534, 677) challenge = 2026, 2515, 1078, 1396 response = 1448, 228, 2263}
+   true%
+   ```

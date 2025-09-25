@@ -54,19 +54,19 @@ Section Ins.
   Definition m₀ : @Schnorr_group p q.
   Proof.
     refine 
-    {| Schnorr.v := 36;
-    Ha := conj eq_refl eq_refl : (0 < 36 < p)%Z;
-    Hb := _ |}.
-    vm_cast_no_check (eq_refl (Zpow_facts.Zpow_mod 36 q p)).
+    {| Schnorr.v := 28;
+    Ha := conj eq_refl eq_refl : (0 < 28 < p)%Z;
+    Hb := _ |}. 
+    vm_cast_no_check (eq_refl (Zpow_facts.Zpow_mod 28 q p)).
   Defined.
 
   Definition m₁ : @Schnorr_group p q.
   Proof.
     refine 
-    {| Schnorr.v := 37;
-    Ha := conj eq_refl eq_refl : (0 < 37 < p)%Z;
+    {| Schnorr.v := 134;
+    Ha := conj eq_refl eq_refl : (0 < 134 < p)%Z;
     Hb := _ |}.
-    vm_cast_no_check (eq_refl (Zpow_facts.Zpow_mod 36 q p)).
+    vm_cast_no_check (eq_refl (Zpow_facts.Zpow_mod 134 q p)).
   Defined.
 
   Definition m₂ : @Schnorr_group p q.
@@ -76,6 +76,15 @@ Section Ins.
     Ha := conj eq_refl eq_refl : (0 < 38 < p)%Z;
     Hb := _ |}.
     vm_cast_no_check (eq_refl (Zpow_facts.Zpow_mod 38 q p)).
+  Defined.
+
+  Definition mfake : @Schnorr_group p q.
+  Proof.
+    refine
+    {| Schnorr.v := 25;
+    Ha := conj eq_refl eq_refl : (0 < 25 < p)%Z;
+    Hb := _ |}.
+    vm_cast_no_check (eq_refl (Zpow_facts.Zpow_mod 25 q p)).
   Defined.
 
   (* randomness used in encryption  *)
@@ -119,6 +128,8 @@ Section Ins.
       (@mul_schnorr_group p q prime_p prime_q)
       pow 1 (Fin.FS (Fin.FS Fin.F1)) r (us ++ cs) 
       [m₀; m₁; m₂] g h cp c).
+    (* Try to replace [m₀; m₁; m₂] with 
+      [m₀; m₁; mfake] *)
     eapply prime_q.
     eapply prime_q.
     exact safe_prime.
@@ -126,6 +137,7 @@ Section Ins.
     eapply prime_q.
   Defined.
 
+  
   Definition generalised_accepting_encryption_proof_elgamal_ins 
     (proof : @sigma_proto (@Zp q) (@Schnorr_group p q * @Schnorr_group p q) 3 4 3) : bool.
   Proof.
@@ -135,6 +147,8 @@ Section Ins.
       (@inv_schnorr_group 2 p q safe_prime prime_p prime_q)
       (@mul_schnorr_group p q prime_p prime_q) pow 
       Schnorr.dec_zpstar _  [m₀; m₁; m₂] g h cp proof).
+      (* Try to replace [m₀; m₁; m₂] with 
+      [m₀; m₁; mfake]*)
     eapply prime_q.
     exact safe_prime.
     eapply prime_p.
