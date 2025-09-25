@@ -91,3 +91,17 @@
    (name EncProoflib)
    (libraries zarith)
    (modules :standard)))
+
+(subdir EqSigmalib
+ (coq.extraction
+  (prelude Extraction)
+  (extracted_modules EqSigmaIns EqSigma
+   Datatypes Vector Nat Specif Sigma
+   VectorDef Zpstar BinInt PosDef Functions BinNat 
+   Util)
+  (theories ExtLib Stdlib Utility Crypto Algebra 
+   Probability Examples))
+ (library 
+   (name EqSigmalib)
+   (libraries zarith)
+   (modules :standard)))
