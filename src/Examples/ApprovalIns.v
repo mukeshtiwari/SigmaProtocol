@@ -68,6 +68,21 @@ Section Ins.
 
  (* I need to expose the And commitment function here so 
  that I can hash the values to compute the challenge. *)
+  Definition encrypt_vote_and_generate_enc_proof_ins_commitment  
+    (uscs : Vector.t (@Zp q) 3) (ms : Vector.t (@Schnorr_group p q) 2)
+    (cp : (@Schnorr_group p q) * (@Schnorr_group p q)) : 
+    Vector.t (@Schnorr_group p q * @Schnorr_group p q) 2.
+  Proof.
+    refine(@construct_encryption_proof_elgamal_commitment
+    (@Zp q) zp_opp (@Schnorr_group p q) 
+    (@inv_schnorr_group 2 p q safe_prime prime_p prime_q)
+    (@mul_schnorr_group p q prime_p prime_q)
+    pow 1 0 uscs ms g h cp).
+    all:(try (eapply prime_q)).
+    all:(try (eapply prime_p)).
+    all:(try (eapply safe_prime)).
+  Defined.
+
   Definition encrypt_vote_and_generate_enc_proof_ins 
     (r m : (@Zp q)) (uscs : Vector.t (@Zp q) 3) (c : (@Zp q)) : 
     @Schnorr_group p q * @Schnorr_group p q * 
