@@ -103,14 +103,14 @@ Section Ins.
   Defined.
 
   Definition construct_encryption_proof_elgamal_commitment_ins 
-    (us : Vector.t (@Zp q) 3) (cs : Vector.t (@Zp q) 2) : 
+    (uscs : Vector.t (@Zp q) 5) : 
     Vector.t (@Schnorr_group p q * @Schnorr_group p q) 3.
   Proof.
     refine(@construct_encryption_proof_elgamal_commitment
     (@Zp q) zp_opp (@Schnorr_group p q) 
     (@inv_schnorr_group 2 p q safe_prime prime_p prime_q)
     (@mul_schnorr_group p q prime_p prime_q)
-    pow 1 1 (us ++ cs) [m₀; m₁; m₂] g h cp).
+    pow 1 1 (uscs) [m₀; m₁; m₂] g h cp).
     eapply prime_q.
     exact safe_prime.
     eapply prime_p.
@@ -119,14 +119,14 @@ Section Ins.
 
 
   Definition generalised_construct_encryption_proof_elgamal_real_ins 
-    (us : Vector.t (@Zp q) 3) (cs : Vector.t (@Zp q) 2) (c : (@Zp q)) :
+    (uscs : Vector.t (@Zp q) 5) (c : (@Zp q)) :
     @sigma_proto (@Zp q) (@Schnorr_group p q * @Schnorr_group p q) 3 4 3.
   Proof.
     refine(@generalised_construct_encryption_proof_elgamal_real (@Zp q)
       Zpfield.zero zp_add zp_mul zp_sub zp_opp (@Schnorr_group p q)
       (@inv_schnorr_group 2 p q safe_prime prime_p prime_q)
       (@mul_schnorr_group p q prime_p prime_q)
-      pow 1 (Fin.FS (Fin.FS Fin.F1)) r (us ++ cs) 
+      pow 1 (Fin.FS (Fin.FS Fin.F1)) r (uscs) 
       [m₀; m₁; m₂] g h cp c).
     (* Try to replace [m₀; m₁; m₂] with 
       [m₀; m₁; mfake] *)

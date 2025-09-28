@@ -50,9 +50,8 @@ let rnd_list (q : Z.t) (n : int) : Z.t EncProoflib.VectorDef.t =
 
 
 let _ = 
-  let us = rnd_list EncProoflib.EncProofIns.q 3 in (* randomness for commitment *)
-  let cs = rnd_list EncProoflib.EncProofIns.q 2 in (* degree of freedom for cheating *)
-  let com =  vector_string_pair (EncProoflib.EncProofIns.construct_encryption_proof_elgamal_commitment_ins us cs) in 
+  let uscs = rnd_list EncProoflib.EncProofIns.q 5 in (* 3 randomness for commitment and 2 degree of freedom for cheating*)
+  let com =  vector_string_pair (EncProoflib.EncProofIns.construct_encryption_proof_elgamal_commitment_ins uscs) in 
   let cha = "p = " ^ Big_int_Z.string_of_big_int EncProoflib.EncProofIns.p ^ ", q = " ^ 
     Big_int_Z.string_of_big_int EncProoflib.EncProofIns.q  ^ ", g = " ^ 
     Big_int_Z.string_of_big_int EncProoflib.EncProofIns.g ^ ", h  = " ^ 
@@ -63,7 +62,7 @@ let _ =
     Big_int_Z.string_of_big_int (fst EncProoflib.EncProofIns.cp) ^ ", snd cp = " ^ 
     Big_int_Z.string_of_big_int (snd EncProoflib.EncProofIns.cp) ^ ", com = " ^ com in 
   let c = big_int_of_bytes_mod_q (shake256 ~msg:(String.to_bytes cha) ~size:4) EncProoflib.EncProofIns.q in
-  let proof = generalised_construct_encryption_proof_elgamal_real_ins us cs c in
+  let proof = generalised_construct_encryption_proof_elgamal_real_ins uscs c in
   let verify = 
         match generalised_accepting_encryption_proof_elgamal_ins  proof with
         | true -> "true"
