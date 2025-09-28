@@ -44,6 +44,7 @@ Section Approval.
       uscs : randomness for encryption proof 
       c : challenge -- I need to think about making it non-interactive (fiat-shamir)
     *)
+    
 
     Definition encrypt_vote_and_generate_enc_proof (r : F) (g h : G) (m : F) 
       (uscs : Vector.t F 3) (c : F) : G * G * @Sigma.sigma_proto F (G * G) 2 3 2 := 

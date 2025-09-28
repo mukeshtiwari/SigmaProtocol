@@ -105,3 +105,17 @@
    (name EqSigmalib)
    (libraries zarith)
    (modules :standard)))
+
+(subdir Approvallib
+ (coq.extraction
+  (prelude Extraction)
+  (extracted_modules ApprovalIns Approval EncProof
+   Datatypes Vector Nat Specif Sigma
+   VectorDef Zpstar BinInt PosDef Functions BinNat 
+   Util EqdepFacts Fin Elgamal)
+  (theories ExtLib Stdlib Utility Crypto Algebra 
+   Probability Examples Frontend))
+ (library 
+   (name Approvallib)
+   (libraries zarith)
+   (modules :standard)))
