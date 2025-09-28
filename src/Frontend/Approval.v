@@ -36,34 +36,35 @@ Section Approval.
 
   Section Definitions.
 
-    (* 
+  (* 
       In this case, a vote encrypts either 0 or 1.  
       r : randomness for encryption 
       g group generator, h : public key -- ∃ x : g ^ x = h 
-      m : vote value -- 0 or 1 in this case 
+      m : vote value  
       uscs : randomness for encryption proof 
       c : challenge -- I need to think about making it non-interactive (fiat-shamir)
-    *)
-    
+   *)
 
-    Definition encrypt_vote_and_generate_enc_proof (r : F) (g h : G) (m : F) 
+   (* In this function, when you pass a value of m that not 0 and 1, the 
+    function still creates a proof but it won't pass the check 
+    of verify_encryption_vote_proof, which checks if cp is encryption of 
+    zero or one. See the proofs vote_proof_valid and vote_proof_invalid *)
+    Definition encrypt_vote_and_generate_enc_proof 
+      (r : F) (g h : G) (m : F) 
       (uscs : Vector.t F 3) (c : F) : G * G * @Sigma.sigma_proto F (G * G) 2 3 2 := 
-      let cp := @enc F G gop gpow g h m r in 
-      let ms := [g^zero; g^one] in 
+      let cp := @enc F G gop gpow g h m r in
       let sig_proof := 
         match Fdec m zero with 
         | left _ => 
           @generalised_construct_encryption_proof_elgamal_real F zero add mul sub 
-            opp G ginv gop gpow 0 Fin.F1 r uscs ms g h cp c (* real one goes to 
+            opp G ginv gop gpow 0 Fin.F1 r uscs [g^m; g^one] g h cp c (* real one goes to 
             the first place Fin.F1 *)
         | right _ =>  
           @generalised_construct_encryption_proof_elgamal_real F zero add mul sub 
-            opp G ginv gop gpow 0 (Fin.FS Fin.F1) r uscs ms g h cp c (* real one 
+            opp G ginv gop gpow 0 (Fin.FS Fin.F1) r uscs [g^zero; g^m] g h cp c (* real one 
             goes to the second place (Fin.FS Fin.F1) *)
         end 
       in (cp, sig_proof).
-
-
 
     (* verification of encryption proof *)
     Definition verify_encryption_vote_proof (g h : G)
@@ -109,6 +110,7 @@ Section Approval.
 
 
   End Definitions.
+
   Section Proofs.
 
     (* Vector Space *)
@@ -136,7 +138,6 @@ Section Approval.
         reflexivity.  (* Directly reduces to (gʳ, g¹·hʳ) *)
     Qed.
 
-   
     Theorem vote_proof_valid :
       ∀ (r : F) (g h : G) (m : F) (uscs : Vector.t F 3) (c : F),
         (m = zero ∨ m = one) →
@@ -148,6 +149,7 @@ Section Approval.
       verify_encryption_vote_proof.
       destruct (Fdec m zero) as [fa | fa].
       +
+        subst.
         eapply generalised_construct_encryption_proof_elgamal_real_completeness.
         (* I had a mini-heart attack by looking at the goal :) *)
         subst; cbn. split. reflexivity.
@@ -164,12 +166,12 @@ Section Approval.
         rewrite Hwt. reflexivity. 
         typeclasses eauto.
       +
-         eapply generalised_construct_encryption_proof_elgamal_real_completeness.
-         destruct ha as [ha | ha]; try congruence.
+        destruct ha as [ha | ha]; try congruence. subst.
+        eapply generalised_construct_encryption_proof_elgamal_real_completeness.
          (* m = 1 *)
-         split. reflexivity.
-         cbn. subst.
-         assert (Hwt : gop (g ^ one) (h ^ r) = gop (h ^ r) (g ^ one)).
+        split. reflexivity.
+        cbn. subst.
+        assert (Hwt : gop (g ^ one) (h ^ r) = gop (h ^ r) (g ^ one)).
         rewrite commutative; reflexivity.
         rewrite Hwt; clear Hwt.
         setoid_rewrite <-(@monoid_is_associative G (@eq G) gop gid).
@@ -183,6 +185,79 @@ Section Approval.
         typeclasses eauto.
     Qed.
 
+    
+    Theorem vote_proof_invalid_reject :
+      ∀ (r : F) (g h : G) (m : F) (uscs : Vector.t F 3) (c : F),
+        (m <> zero ∧ m <> one) →
+        verify_encryption_vote_proof g h 
+          (encrypt_vote_and_generate_enc_proof r g h m uscs c) = false.
+    Proof.
+      intros * hu.
+      unfold encrypt_vote_and_generate_enc_proof, 
+      verify_encryption_vote_proof.
+      destruct (Fdec m zero) as [fa | fa].
+      + 
+        destruct hu as (hal & har).
+        subst. specialize (hal eq_refl).
+        inversion hal.
+      +
+        destruct (Fdec m one) as [faa | faa].
+        ++
+          subst; destruct hu as (hal & har).
+          specialize (har eq_refl). 
+          inversion har.
+        ++
+          unfold generalised_accepting_encryption_proof_elgamal, 
+          enc, generalised_construct_encryption_proof_elgamal_real.
+          destruct (splitat (2 + 0) uscs) as (us & cs) eqn:hm.
+          eapply append_splitat in hm. subst.
+          rewrite VectorSpec.splitat_append.
+           destruct (@vector_fin_app_pred F (1 + 0) (FS F1) us cs) as 
+          (m₁ & m₂ & v₁ & v₃ & vm & v₂ & v₄ & pfaa & pfbb & haa).
+          destruct pfaa as [pfa].
+          destruct pfbb as [pfb].
+          destruct haa as [ha].
+          destruct ha as (ha & hb & hc & hd).
+          generalize dependent us. 
+          generalize dependent cs. 
+          cbn in * |- *. subst. cbn.
+          assert (m₂ = 0). 
+          {
+            destruct m₂ as [|m₂].
+            reflexivity. nia.
+          }
+          subst. cbn. 
+          assert (pfa = eq_refl). 
+          eapply Eqdep_dec.UIP_refl_nat.
+          assert (pfb = eq_refl). 
+          eapply Eqdep_dec.UIP_refl_nat.
+          subst. cbn.
+          intros * ha * hb hc.
+          subst. 
+          pose proof (vector_inv_0 v₂) as hd.
+          pose proof (vector_inv_0 v₄) as he.
+          subst; cbn.
+          destruct (vector_inv_S v₁) as (ma & msr & hmm).
+          subst; cbn.
+          pose proof (vector_inv_0 msr) as hd.
+          subst; cbn.
+          destruct (vector_inv_S v₃) as (mb & msr & hmm).
+          subst; cbn.
+          pose proof (vector_inv_0 msr) as hd.
+          subst; cbn.
+          assert (ha : c = (mb + (sub c (mb + zero) + zero))). (* field *)
+          admit.
+          rewrite ha. clear ha.
+          destruct (Fdec (mb + (sub c (mb + zero) + zero)) 
+            (mb + (sub (mb + (sub c (mb + zero) + zero)) (mb + zero) + zero)))
+          as [hdec | hdec]; try auto.
+          eapply Bool.andb_false_intro2.
+          eapply Bool.andb_false_intro1.
+          eapply Bool.andb_false_intro2.
+          cbn in hc.
+          eapply dec_false.
+    Admitted.
+    
     (* ballot proof is valid *)
     Theorem ballot_proof_valid :
       ∀ (n : nat) (rs : Vector.t F n) (g h : G) 
@@ -215,6 +290,5 @@ Section Approval.
           intro f.
           exact (ha (Fin.FS f)).
     Qed.  
-
   End Proofs.
 End Approval.
