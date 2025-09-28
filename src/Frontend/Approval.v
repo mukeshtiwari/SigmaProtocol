@@ -1,5 +1,5 @@
 From Stdlib Require Import Setoid
-  Lia Vector Utf8 Fin. 
+  setoid_ring.Field  Lia Vector Utf8 Fin. 
 From Algebra Require Import
   Hierarchy Group Monoid
   Field Integral_domain
@@ -245,8 +245,7 @@ Section Approval.
           subst; cbn.
           pose proof (vector_inv_0 msr) as hd.
           subst; cbn.
-          assert (ha : c = (mb + (sub c (mb + zero) + zero))). (* field *)
-          admit.
+          assert (ha : c = (mb + (sub c (mb + zero) + zero))). field.
           rewrite ha. clear ha.
           destruct (Fdec (mb + (sub c (mb + zero) + zero)) 
             (mb + (sub (mb + (sub c (mb + zero) + zero)) (mb + zero) + zero)))
@@ -254,8 +253,10 @@ Section Approval.
           eapply Bool.andb_false_intro2.
           eapply Bool.andb_false_intro1.
           eapply Bool.andb_false_intro2.
-          cbn in hc.
           eapply dec_false.
+          intro ha. 
+
+          
     Admitted.
     
     (* ballot proof is valid *)
