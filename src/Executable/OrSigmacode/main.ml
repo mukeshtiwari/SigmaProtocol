@@ -40,9 +40,8 @@ let rnd_list (q : Z.t) (n : int) : Z.t OrSigmalib.VectorDef.t =
 
 
 let _ = 
-    let us = rnd_list OrSigmalib.OrSigmaIns.q 3 in (* randomness for commitment *)
-    let cs = rnd_list OrSigmalib.OrSigmaIns.q 2 in (* degree of freedom for cheating *)
-    let com =  vector_string (OrSigmalib.OrSigmaIns.construct_or_conversations_schnorr_commitment_ins us cs) in 
+    let uscs = rnd_list OrSigmalib.OrSigmaIns.q 5 in (* 3 randomness for commitment and 2 degree of freedom for cheating*)
+    let com =  vector_string (OrSigmalib.OrSigmaIns.construct_or_conversations_schnorr_commitment_ins uscs) in 
     let cha = "p = " ^ Big_int_Z.string_of_big_int OrSigmalib.OrSigmaIns.p ^ ", q = " ^ 
       Big_int_Z.string_of_big_int OrSigmalib.OrSigmaIns.q  ^ ", g = " ^ 
       Big_int_Z.string_of_big_int OrSigmalib.OrSigmaIns.g ^ ", h_UU2081_  = " ^ 
@@ -50,7 +49,7 @@ let _ =
       Big_int_Z.string_of_big_int OrSigmalib.OrSigmaIns.h_UU2082_ ^ ", h_UU2083_  = " ^ 
       Big_int_Z.string_of_big_int OrSigmalib.OrSigmaIns.h_UU2083_ ^ ", com = " ^ com in 
     let c = big_int_of_bytes_mod_q (shake256 ~msg:(String.to_bytes cha) ~size:4) OrSigmalib.OrSigmaIns.q in
-    let proof = generalised_construct_or_conversations_schnorr_ins us cs c in 
+    let proof = generalised_construct_or_conversations_schnorr_ins uscs c in 
     let verify = 
         match generalised_or_accepting_conversations_ins proof with
         | true -> "true"

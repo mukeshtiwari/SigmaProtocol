@@ -71,12 +71,12 @@ Section Ins.
   Defined.
 
   Definition construct_or_conversations_schnorr_commitment_ins 
-     (us : Vector.t (@Zp q) 3) (cs : Vector.t (@Zp q) 2) : 
+     (uscs : Vector.t (@Zp q) 5)  : 
      Vector.t (@Schnorr_group p q) 3.
   Proof.
     refine(@construct_or_conversations_schnorr_commitment (@Zp q)
       zp_opp (@Schnorr_group p q) (@mul_schnorr_group p q prime_p prime_q)
-      pow 1 1 g [h₁; h₂; h₃] (us ++ cs)).
+      pow 1 1 g [h₁; h₂; h₃] (uscs)).
       eapply prime_q.
       exact safe_prime.
       eapply prime_p.
@@ -84,7 +84,7 @@ Section Ins.
   Defined.
 
   Definition generalised_construct_or_conversations_schnorr_ins 
-    (us : Vector.t (@Zp q) 3) (cs : Vector.t (@Zp q) 2) (c : (@Zp q)) : 
+    (uscs : Vector.t (@Zp q) 5) (c : (@Zp q)) : 
     @sigma_proto (@Zp q) (@Schnorr_group p q) 3 4 3.
   Proof.
     (* Try to fake a proof here and see how it get rejected by 
@@ -93,7 +93,7 @@ Section Ins.
     refine(@generalised_construct_or_conversations_schnorr 
       (@Zp q) zero zp_add zp_mul zp_sub zp_opp 
       (@Schnorr_group p q) (@mul_schnorr_group p q prime_p prime_q)
-      pow _ (Fin.FS Fin.F1) x g [h₁; h₂; h₃] (us ++ cs) c).
+      pow _ (Fin.FS Fin.F1) x g [h₁; h₂; h₃] (uscs) c).
       eapply prime_q.
       eapply prime_q.
       exact safe_prime.
