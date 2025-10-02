@@ -328,8 +328,47 @@ Section DL.
               exact (IHn _ _ _ Har fs).
         Qed.
 
+        Lemma or_accepting_conversations_correctness_supplement_forward_reject : 
+          forall {n : nat} (g : G) (hs : Vector.t G n)
+          (s :  @sigma_proto F G n n n),
+          or_accepting_conversations_supplement g hs s = false ->
+          (match s with 
+          | (a; c; r) => 
+            ∃ f : Fin.t n, 
+            @accepting_conversation F G gop gpow Gdec g (nth hs f) 
+              ([(nth a f)]; [nth c f]; [(nth r f)]) = false
+          end).
+        Proof.
+          induction n as [|n ihn].
+          +
+            intros * ha.
+            cbn in ha; congruence.
+          +
+            intros * ha.
+            refine 
+              (match s as s' return s = s' -> _ 
+              with 
+              | (a₁; c₁; r₁) => fun hb => _ 
+              end eq_refl).
+            rewrite hb in ha.
+            destruct (vector_inv_S hs) as (hsh & hstl & Hd).
+            destruct (vector_inv_S a₁) as (ah₁ & atl₁ & He).
+            destruct (vector_inv_S c₁) as (ch₁ & ctl₁ & Hf).
+            destruct (vector_inv_S r₁) as (rh₁ & rtl₁ & Hg).
+            subst. cbn in ha.
+            destruct (Gdec (g ^ rh₁) (gop ah₁ (hsh ^ ch₁))) as [hb | hb].
+            ++
+              destruct (ihn g hstl (atl₁; ctl₁; rtl₁) ha) as (f & hc).
+              exists (Fin.FS f); cbn. exact hc.
+            ++
+              exists Fin.F1; cbn.
+              eapply dec_false.
+              exact hb.
+        Qed.
 
-         Lemma or_accepting_conversations_correctness_supplement_backward : 
+
+
+        Lemma or_accepting_conversations_correctness_supplement_backward : 
           forall {n : nat} (g : G) (hs : Vector.t G n)
           (s :  @sigma_proto F G n n n),
           (match s with 
@@ -374,6 +413,56 @@ Section DL.
               exact (IHn Hb).
         Qed.
 
+        Lemma or_accepting_conversations_correctness_supplement_backward_reject : 
+          forall {n : nat} (g : G) (hs : Vector.t G n)
+          (s :  @sigma_proto F G n n n),
+          (match s with 
+          | (a; c; r) => 
+            ∃ f : Fin.t n,
+            @accepting_conversation  F G gop gpow Gdec g (nth hs f) 
+              ([(nth a f)]; [nth c f]; [(nth r f)]) = false
+          end) -> or_accepting_conversations_supplement g hs s = false.
+        Proof.
+          induction n as [|n ihn].
+          +
+            intros * ha.
+            refine 
+              (match s as s' return s = s' -> _ 
+              with 
+              | (a₁; c₁; r₁) => fun hb => _ 
+              end eq_refl).
+            rewrite hb in ha.
+            destruct ha as (f & ha).
+            refine match f with end.
+          +
+            intros * ha.
+            refine 
+              (match s as s' return s = s' -> _ 
+              with 
+              | (a₁; c₁; r₁) => fun hb => _ 
+              end eq_refl).
+            rewrite hb in ha.
+            destruct ha as (f & ha).
+            destruct (vector_inv_S hs) as (hsh & hstl & Hd).
+            destruct (vector_inv_S a₁) as (ah₁ & atl₁ & He).
+            destruct (vector_inv_S c₁) as (ch₁ & ctl₁ & Hf).
+            destruct (vector_inv_S r₁) as (rh₁ & rtl₁ & Hg).
+            destruct (fin_inv_S _ f) as [Hi | (fs & Hi)];
+            subst. 
+            ++
+              cbn in ha |- *.
+              rewrite dec_false in ha.
+              eapply andb_false_iff; left.
+              rewrite dec_false. exact ha.
+            ++
+              cbn in ha |- *.
+              eapply andb_false_iff; right.
+              eapply ihn.
+              exists fs. 
+              exact ha.
+        Qed. 
+
+
 
         Lemma or_accepting_conversations_correctness_supplement : 
           forall {n : nat} (g : G) (hs : Vector.t G n)
@@ -395,6 +484,24 @@ Section DL.
             eapply or_accepting_conversations_correctness_supplement_backward;
             exact Ha.
         Qed.
+
+        Lemma or_accepting_conversations_correctness_supplement_reject : 
+          forall {n : nat} (g : G) (hs : Vector.t G n)
+          (s :  @sigma_proto F G n n n),
+          or_accepting_conversations_supplement g hs s = false <-> 
+          match s with 
+          | (a; c; r) => 
+            ∃ f : Fin.t n,
+            @accepting_conversation F G gop gpow Gdec g (nth hs f) 
+              ([(nth a f)]; [nth c f]; [(nth r f)]) = false
+          end.
+        Proof.
+          intros *; split; intro ha;
+          [eapply or_accepting_conversations_correctness_supplement_forward_reject |
+          eapply or_accepting_conversations_correctness_supplement_backward_reject]; 
+          assumption.
+        Qed.
+
 
         Lemma or_accepting_conversations_supplement_app :
           forall (n m : nat) (g : G)
@@ -428,6 +535,7 @@ Section DL.
               cbn; reflexivity.
         Qed.
 
+
         Lemma generalised_or_accepting_conversations_correctness_forward : 
           forall {n : nat} (g : G) (hs : Vector.t G n )
           (s :  @sigma_proto F G n (1 + n) n),
@@ -460,6 +568,41 @@ Section DL.
             eapply or_accepting_conversations_correctness_supplement_forward in
             Ha; exact Ha.
         Qed.
+
+         Lemma generalised_or_accepting_conversations_correctness_forward_reject : 
+          forall {n : nat} (g : G) (hs : Vector.t G n )
+          (s :  @sigma_proto F G n (1 + n) n),
+          generalised_or_accepting_conversations g hs s = false -> 
+          match s with 
+          | (a; c; r) => 
+            Vector.hd c ≠ Vector.fold_right add (Vector.tl c) zero ∨
+            (∃ (f : Fin.t n),
+            @accepting_conversation F G gop gpow Gdec g (nth hs f) 
+              ([(nth a f)]; [nth c (Fin.FS f)]; [(nth r f)]) = false)
+          end.
+        Proof.
+          intros * ha.
+          refine 
+            (match s as s' return s = s' -> _ 
+            with 
+            | (a₁; c₁; r₁) => fun hb => _ 
+            end eq_refl).
+          rewrite hb in ha.
+          unfold generalised_or_accepting_conversations in ha.
+          destruct (vector_inv_S c₁) as (ch₁ & ctl₁ & Hc).
+          destruct (Fdec ch₁ (fold_right add ctl₁ zero)) eqn:hc;
+          [|inversion ha]. 
+          +
+            right. rewrite Hc.
+            cbn. 
+            eapply or_accepting_conversations_correctness_supplement_forward_reject in ha.
+            exact ha.
+          +
+            left. subst. cbn.
+            assumption.
+        Qed.
+
+
 
 
         Lemma generalised_or_accepting_conversations_correctness_backward : 
@@ -503,6 +646,44 @@ Section DL.
         Qed.
 
 
+
+        Lemma generalised_or_accepting_conversations_correctness_backward_reject : 
+          forall {n : nat} (g : G) (hs : Vector.t G n)
+          (s :  @sigma_proto F G n (1 + n) n), 
+          (match s with 
+          | (a; c; r) => 
+            Vector.hd c ≠ Vector.fold_right add (Vector.tl c) zero ∨
+            (∃ (f : Fin.t n),
+            @accepting_conversation F G gop gpow Gdec g (nth hs f) 
+              ([(nth a f)]; [nth c (Fin.FS f)]; [(nth r f)]) = false)
+          end) -> 
+          generalised_or_accepting_conversations g hs s = false.
+        Proof.
+          intros * ha.
+          refine 
+            (match s as s' return s = s' -> _ 
+            with 
+            | (a₁; c₁; r₁) => fun hb => _ 
+            end eq_refl).
+          rewrite hb in ha.
+          destruct ha as [ha | ha].
+          +
+            destruct (vector_inv_S c₁) as (ch₁ & ctl₁ & Hc).
+            subst; cbn in ha |- *.
+            destruct (Fdec ch₁ (fold_right add ctl₁ zero)) as [hb | hb];
+            [congruence | exact eq_refl].
+          +
+            destruct ha as (f & ha).
+            destruct (vector_inv_S c₁) as (ch₁ & ctl₁ & Hc).
+            subst; cbn in ha |- *.
+            destruct (Fdec ch₁ (fold_right add ctl₁ zero)) as [hb | hb].
+            eapply or_accepting_conversations_correctness_supplement_backward_reject.
+            exists f. cbn. exact ha.
+            reflexivity.
+        Qed.
+
+
+
         Lemma generalised_or_accepting_conversations_correctness: 
           forall {n : nat} (g : G) (hs : Vector.t G n)
           (s :  @sigma_proto F G n (1 + n) n),
@@ -524,6 +705,29 @@ Section DL.
             eapply generalised_or_accepting_conversations_correctness_forward;
             try assumption.
         Qed.
+
+        Lemma generalised_or_accepting_conversations_correctness_reject : 
+          forall {n : nat} (g : G) (hs : Vector.t G n)
+          (s :  @sigma_proto F G n (1 + n) n),
+          (match s with 
+          | (a; c; r) => 
+            Vector.hd c ≠ Vector.fold_right add (Vector.tl c) zero ∨
+            (∃ (f : Fin.t n),
+            @accepting_conversation F G gop gpow Gdec g (nth hs f) 
+              ([(nth a f)]; [nth c (Fin.FS f)]; [(nth r f)]) = false)
+          end) <-> 
+          generalised_or_accepting_conversations g hs s = false.
+        Proof.
+          intros *; 
+          split; intro Ha.
+          +
+            eapply generalised_or_accepting_conversations_correctness_backward_reject; 
+            try assumption. 
+          +
+            eapply generalised_or_accepting_conversations_correctness_forward_reject;
+            try assumption.
+        Qed.
+
 
         (* end of properties *)
 
