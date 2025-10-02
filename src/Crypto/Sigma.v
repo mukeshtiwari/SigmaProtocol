@@ -148,7 +148,27 @@ Section DL.
           (apply (@dec_true _ Gdec) in Ha; 
           exact Ha).
       Qed.
-      
+
+      Lemma accepting_conversation_reject : 
+          forall (g h a : G) (c r : F), 
+          accepting_conversation g h ([a]; [c]; [r]) = false <->
+          (g^r) ≠ (gop a (h^c)). (* g^r <> a ∙ h^c *)
+      Proof.
+        intros *.
+        split; intro ha.
+        +
+          unfold accepting_conversation in ha.
+          destruct (Gdec (g ^ hd [r]) (gop (hd [a]) (h ^ hd [c]))) as [hb | hb]; 
+          try congruence.
+          cbn in hb; exact hb.
+        +
+          unfold accepting_conversation.
+          destruct (Gdec (g ^ hd [r]) (gop (hd [a]) (h ^ hd [c]))) as [hb | hb];
+          cbn in hb; try congruence.
+      Qed.
+
+
+
       (* end of properties *)
 
       (* Vector Space *)

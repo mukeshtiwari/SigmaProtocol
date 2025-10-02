@@ -16,6 +16,7 @@ From Crypto Require Import Sigma.
 Import MonadNotation 
   VectorNotations.
 
+
 #[local] Open Scope monad_scope.
 
 (* Discrete Logarithm Zero Knowlege Proof *) 
@@ -138,7 +139,7 @@ Section DL.
 
     Section Proofs.
 
-      (* 
+        (* 
           when generalised_accepting_conversations return true 
           then every individual sigma protocol is an 
           accepting conversations.
@@ -233,6 +234,105 @@ Section DL.
           [apply generalised_parallel_accepting_conversations_correctness_backward |
           apply generalised_parallel_accepting_conversations_correctness_forward].
         Qed.
+
+
+        Lemma generalised_parallel_accepting_conversations_correctness_forward_reject : 
+          forall (n : nat) g h (s : @sigma_proto F G n n n),
+          @generalised_parallel_accepting_conversations n g h s = false ->
+          ∃ (f : Fin.t n), 
+          match s with 
+          | (a; c; r) => 
+            @accepting_conversation F G gop gpow Gdec g h 
+              ([(nth a f)]; [(nth c f)]; [(nth r f)]) = false
+          end.
+        Proof.
+          induction n as [|n ihn].
+          +
+            intros * ha *.
+            unfold generalised_parallel_accepting_conversations in ha;
+            congruence.
+          +
+            intros * ha *.
+            refine
+            (match s as s'
+            return s = s' -> _ with 
+            |(a; c; r) => fun hc => _  
+            end eq_refl).
+            rewrite hc in ha.
+            destruct (vector_inv_S a) as (hda & tla & hb).
+            destruct (vector_inv_S c) as (hdc & tlc & hd).
+            destruct (vector_inv_S r) as (hdr & tlr & he).
+            subst. cbn in ha.
+            destruct (Gdec (g ^ hdr) (gop hda (h ^ hdc))) as [hg | hg].
+            ++
+              
+              destruct (ihn g h (tla; tlc; tlr) ha) as (f' & hi).
+              exists (Fin.FS f'); cbn. exact hi.
+            ++
+              exists Fin.F1; cbn.
+              eapply dec_false.
+              exact hg.
+        Qed.
+            
+        Lemma generalised_parallel_accepting_conversations_correctness_backward_reject : 
+          forall (n : nat) g h (s : @sigma_proto F G n n n), 
+          (∃ (f : Fin.t n),
+            match s with 
+            | (a; c; r) => 
+              @accepting_conversation F G gop gpow Gdec g h 
+                ([(nth a f)]; [(nth c f)]; [(nth r f)]) = false
+            end) -> 
+          @generalised_parallel_accepting_conversations n g h s = false.
+        Proof.
+          induction n as [|n ihn].
+          +
+            intros * (f & ha).
+            refine match f with end.
+          +
+            intros * (f & ha).
+            refine
+            (match s as s'
+            return s = s' -> _ with 
+            |(a; c; r) => fun hc => _  
+            end eq_refl).
+            rewrite hc in ha.
+            destruct (vector_inv_S a) as (hda & tla & hb).
+            destruct (vector_inv_S c) as (hdc & tlc & hd).
+            destruct (vector_inv_S r) as (hdr & tlr & he).
+            subst.
+            destruct (fin_inv_S _ f) as [f' | (f' & hf)].
+            ++
+              subst; cbn in ha |- *.
+              rewrite dec_false in ha.
+              eapply andb_false_iff; left.
+              rewrite dec_false; exact ha.
+            ++
+              subst; cbn in ha |- *.
+              rewrite dec_false in ha.
+              eapply andb_false_iff; right.
+              eapply ihn.
+              exists f'. cbn. rewrite dec_false.
+              exact ha.
+        Qed.
+
+
+
+        Lemma generalised_parallel_accepting_conversations_correctness_reject : 
+          forall (n : nat) g h (s : @sigma_proto F G n n n), 
+          (∃ (f : Fin.t n),
+            match s with 
+            | (a; c; r) => 
+              @accepting_conversation F G gop gpow Gdec g h 
+                ([(nth a f)]; [(nth c f)]; [(nth r f)]) = false
+            end) <-> 
+          @generalised_parallel_accepting_conversations n g h s = false.
+        Proof.
+          intros *; split; intro ha;
+          [eapply  generalised_parallel_accepting_conversations_correctness_backward_reject |
+          eapply  generalised_parallel_accepting_conversations_correctness_forward_reject]; 
+          assumption.
+        Qed.
+
 
         Context
           {Hvec: @vector_space F (@eq F) zero one add mul sub 
