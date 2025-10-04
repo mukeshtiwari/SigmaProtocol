@@ -98,6 +98,92 @@ Section DL.
 
     Section Proofs.
 
+      Theorem generalised_cp_accepting_conversations_accept_forward :
+        ∀ (g h c₁ c₂ : G) (a₁ a₂ : G) (c r : F),
+        generalised_cp_accepting_conversations g h c₁ c₂ 
+        ([a₁; a₂]; [c]; [r]) = true -> g ^ r = gop a₁ (c₁ ^ c) ∧
+        h ^ r = gop a₂ (c₂ ^ c).
+      Proof.
+        intros * ha. unfold generalised_cp_accepting_conversations,
+        generalised_eq_accepting_conversations. cbn in ha.
+        eapply andb_true_iff in ha. 
+        destruct ha as (hal & har).
+        rewrite dec_true in hal, har.
+        rewrite hal, har; split; reflexivity.
+      Qed.
+
+      Theorem generalised_cp_accepting_conversations_accept_backward :
+        ∀ (g h c₁ c₂ : G) (a₁ a₂ : G) (c r : F),
+        g ^ r = gop a₁ (c₁ ^ c) -> h ^ r = gop a₂ (c₂ ^ c) ->
+        generalised_cp_accepting_conversations g h c₁ c₂ 
+        ([a₁; a₂]; [c]; [r]) = true.
+      Proof.
+        intros * ha hb.
+        cbn. eapply andb_true_iff; split;
+        eapply dec_true; [exact ha | exact hb].
+      Qed.
+
+      Theorem generalised_cp_accepting_conversations_accept :
+        ∀ (g h c₁ c₂ : G) (a₁ a₂ : G) (c r : F),
+        generalised_cp_accepting_conversations g h c₁ c₂ 
+        ([a₁; a₂]; [c]; [r]) = true <-> g ^ r = gop a₁ (c₁ ^ c) ∧
+        h ^ r = gop a₂ (c₂ ^ c).
+      Proof.
+        intros *; split; intros ha.
+        eapply generalised_cp_accepting_conversations_accept_forward;
+        assumption.
+        eapply generalised_cp_accepting_conversations_accept_backward;
+        destruct ha as (hal & har); assumption.
+      Qed.
+
+
+      Theorem generalised_cp_accepting_conversations_reject_forward :
+        ∀ (g h c₁ c₂ : G) (a₁ a₂ : G) (c r : F),
+        generalised_cp_accepting_conversations g h c₁ c₂ 
+        ([a₁; a₂]; [c]; [r]) = false -> g ^ r ≠ gop a₁ (c₁ ^ c) ∨
+        h ^ r ≠ gop a₂ (c₂ ^ c).
+      Proof.
+        intros * ha; cbn in ha.
+        eapply andb_false_iff in ha.
+        destruct ha as [ha | ha].
+        +
+          eapply dec_false in ha;
+          left; exact ha.
+        +
+          eapply dec_false in ha; 
+          right; exact ha.
+      Qed.
+
+      Theorem generalised_cp_accepting_conversations_reject_backward :
+        ∀ (g h c₁ c₂ : G) (a₁ a₂ : G) (c r : F),
+        (g ^ r ≠ gop a₁ (c₁ ^ c) ∨ h ^ r ≠ gop a₂ (c₂ ^ c)) ->
+        generalised_cp_accepting_conversations g h c₁ c₂ 
+        ([a₁; a₂]; [c]; [r]) = false.
+      Proof.
+        intros * [ha | ha].
+        +
+          cbn. eapply andb_false_iff.
+          left. eapply dec_false.
+          exact ha.
+        +
+          cbn. eapply andb_false_iff.
+          right. eapply dec_false.
+          exact ha.
+      Qed.
+
+      Theorem generalised_cp_accepting_conversations_reject :
+        ∀ (g h c₁ c₂ : G) (a₁ a₂ : G) (c r : F),
+        (g ^ r ≠ gop a₁ (c₁ ^ c) ∨ h ^ r ≠ gop a₂ (c₂ ^ c)) <->
+        generalised_cp_accepting_conversations g h c₁ c₂ 
+        ([a₁; a₂]; [c]; [r]) = false.
+      Proof.
+        intros *; split; intros ha.
+        eapply generalised_cp_accepting_conversations_reject_backward;
+        assumption.
+        eapply generalised_cp_accepting_conversations_reject_forward; 
+        assumption.
+      Qed.
+
       Context
         {Hvec: @vector_space F (@eq F) zero one add mul sub 
           div opp inv G (@eq G) gid ginv gop gpow}.
