@@ -219,6 +219,59 @@ Section DL.
             exact IHn.
         Qed.
 
+
+        Lemma generalised_eq_accepting_conversations_correctness_forward_reject : 
+          forall (n : nat) (gs hs : Vector.t G (2 + n)) 
+          (s : @sigma_proto F G (2 + n) 1 1),
+          generalised_eq_accepting_conversations gs hs s = false ->
+          (∃ f : Fin.t (2 + n), 
+          match s with 
+          | (a; c; r) => 
+            @accepting_conversation F G gop gpow Gdec (nth gs f) (nth hs f)
+              ([(nth a f)]; c; r) = false
+          end).
+        Proof.
+          induction n as [|n ihn].
+          +
+            intros * ha.
+            refine
+              (match s as s' return s = s' -> _ 
+              with 
+              |(a; c; r) => fun Hb => _
+              end eq_refl).
+            destruct (vector_inv_S gs) as (gh & gstl & Hc).
+            destruct (vector_inv_S gstl) as (ggh & gstll & Hd).
+            destruct (vector_inv_S hs) as (hh & hstl & He).
+            destruct (vector_inv_S hstl) as (hhh & hstll & Hf).
+            destruct (vector_inv_S a) as (ah & atl & Hg).
+            destruct (vector_inv_S atl) as (ahh & atll & Hi).
+            subst. cbn in ha.
+            rewrite andb_false_iff in ha.
+            destruct ha as [ha | ha].
+            exists Fin.F1. cbn. exact ha.
+            exists (Fin.FS Fin.F1). cbn.
+            exact ha.
+          +
+            intros * ha.
+            refine
+              (match s as s' return s = s' -> _ 
+              with 
+              |(a; c; r) => fun hb => _
+              end eq_refl).
+            destruct (vector_inv_S gs) as (gh & gstl & hc).
+            destruct (vector_inv_S hs) as (hh & hstl & hd).
+            destruct (vector_inv_S a) as (ah & atl & he).
+            subst.
+            cbn in ha.
+            rewrite andb_false_iff in ha.
+            destruct ha as [ha | ha].
+            exists Fin.F1. cbn. exact ha.
+            destruct (ihn gstl hstl (atl; c; r) ha) as (f & ihnn).
+            exists (Fin.FS f).
+            exact ihnn.
+        Qed.
+
+
         Lemma generalised_eq_accepting_conversations_correctness_backward : 
           forall (n : nat) (gs hs : Vector.t G (2 + n)) 
           (s : @sigma_proto F G (2 + n) 1 1),
@@ -272,6 +325,66 @@ Section DL.
             exact Hf.
         Qed.
 
+         Lemma generalised_eq_accepting_conversations_correctness_backward_reject : 
+          forall (n : nat) (gs hs : Vector.t G (2 + n)) 
+          (s : @sigma_proto F G (2 + n) 1 1),
+          (∃ f : Fin.t (2 + n), 
+            match s with 
+            | (a; c; r) => 
+              @accepting_conversation F G gop gpow Gdec (nth gs f) (nth hs f)
+                ([(nth a f)]; c; r) = false
+            end) -> generalised_eq_accepting_conversations gs hs s = false.
+        Proof.
+          induction n as [|n ihn].
+          +
+            intros * (f & ha).
+            refine
+              (match s as s' return s = s' -> _ 
+              with 
+              |(a; c; r) => fun Hb => _
+              end eq_refl).
+            destruct (vector_inv_S gs) as (gh & gstl & Hc).
+            destruct (vector_inv_S gstl) as (ggh & gstll & Hd).
+            destruct (vector_inv_S hs) as (hh & hstl & He).
+            destruct (vector_inv_S hstl) as (hhh & hstll & Hf).
+            destruct (vector_inv_S a) as (ah & atl & Hg).
+            destruct (vector_inv_S atl) as (ahh & atll & Hi).
+            destruct (fin_inv_S _ f) as [hf | (hf & Hj)].
+            rewrite Hb in ha. cbn in ha.
+            subst; cbn in ha |- *. 
+            ++
+              rewrite ha. reflexivity.
+            ++
+              destruct (fin_inv_S _ hf) as [hff | (hff & Hjj)];
+              [|inversion hff]. subst.
+              cbn in ha |- *.
+              rewrite ha. 
+              eapply andb_false_r.
+          +
+            intros * (f & ha).
+            refine
+              (match s as s' return s = s' -> _ 
+              with 
+              |(a; c; r) => fun hb => _
+              end eq_refl).
+            rewrite hb in ha.
+            destruct (vector_inv_S gs) as (gh & gstl & hc).
+            destruct (vector_inv_S hs) as (hh & hstl & hd).
+            destruct (vector_inv_S a) as (ah & atl & he).
+            destruct (fin_inv_S _ f) as [hf | (hf & hj)].
+            subst; cbn in ha |- *.
+            ++
+              rewrite ha; reflexivity.
+            ++
+              subst. 
+              specialize (ihn gstl hstl (atl; c; r) (ex_intro _ hf ha)).
+              cbn in |- *.
+              rewrite ihn.
+              eapply andb_false_r.
+        Qed.
+          
+
+
         Lemma generalised_eq_accepting_conversations_correctness : 
           forall (n : nat) (gs hs : Vector.t G (2 + n)) 
           (s : @sigma_proto F G (2 + n) 1 1),
@@ -292,31 +405,29 @@ Section DL.
             try assumption.
         Qed.
 
-        Lemma construct_eq_conversations_schnorr_challenge_and_response :
-          forall (n : nat) (aw gs : Vector.t G (2 + n)) 
-          (cw rw : Vector.t F 1) (c x u : F), 
-          (aw; cw; rw) = construct_eq_conversations_schnorr x gs u c ->
-          cw = [c] ∧ rw = [u + c * x].
+        Lemma generalised_eq_accepting_conversations_correctness_reject : 
+          forall (n : nat) (gs hs : Vector.t G (2 + n)) 
+          (s : @sigma_proto F G (2 + n) 1 1),
+          (∃ f : Fin.t (2 + n), 
+            match s with 
+            | (a; c; r) => 
+              @accepting_conversation F G gop gpow Gdec (nth gs f) (nth hs f)
+                ([(nth a f)]; c; r) = false
+            end) <-> generalised_eq_accepting_conversations gs hs s = false.
         Proof.
-          intros * ha. 
-          unfold construct_eq_conversations_schnorr in ha.
-          inversion ha; subst; 
-          split; exact eq_refl.
+          intros *; 
+          split.
+          +
+            eapply generalised_eq_accepting_conversations_correctness_backward_reject;
+            try assumption.
+          +
+            eapply generalised_eq_accepting_conversations_correctness_forward_reject;
+            try assumption.
         Qed.
         
 
-         Lemma construct_eq_conversations_simulator_challenge_and_response :
-          forall (n : nat) (aw gs hs : Vector.t G (2 + n)) 
-          (cw rw : Vector.t F 1) (u c : F), 
-          (aw; cw; rw) = construct_eq_conversations_simulator gs hs u c ->
-          cw = [c] ∧ rw = [u].
-        Proof.
-          intros * ha.
-          inversion ha; subst.
-          split; exact eq_refl.
-        Qed.
 
-         (* end of properties *)
+        (* end of properties *)
 
         Context
           {Hvec: @vector_space F (@eq F) zero one add mul sub 
