@@ -186,6 +186,48 @@ Section DL.
         Qed.
 
 
+        Lemma generalised_and_accepting_conversations_correctness_forward_reject : 
+          forall (n : nat) (g : G) (hs : Vector.t G n) (s : @sigma_proto F G n 1 n),
+          generalised_and_accepting_conversations g hs s = false ->
+          (∃ (f : Fin.t n), 
+            match s with 
+            | (a; c; r) => 
+              @accepting_conversation F G gop gpow Gdec g (nth hs f)
+                ([(nth a f)]; c; [(nth r f)]) = false
+            end).
+        Proof.
+          induction n as [|n ihn].
+          +
+            intros * ha.
+            cbn in ha. 
+            congruence.
+          +
+            intros * Ha.
+            refine
+            (match s as s'
+            return s = s' -> _ with 
+            |(a; c; r) => fun Hb => _  
+            end eq_refl).
+            rewrite Hb in Ha.
+            destruct (vector_inv_S a) as (ha & ta & Hd).
+            destruct (vector_inv_S c) as (hc & tc & He).
+            destruct (vector_inv_S r) as (hr & tr & Hf).
+            destruct (vector_inv_S hs) as (hsa & hstl & Hj).
+            subst.
+            cbn in Ha.
+            eapply andb_false_iff in Ha.
+            destruct Ha as [Ha | Ha].
+            ++
+              exists Fin.F1.
+              exact Ha.
+            ++
+              destruct (ihn g hstl (ta; hc :: tc; tr) Ha) as (f & ihnn).
+              exists (Fin.FS f). 
+              cbn.
+              exact ihnn.
+        Qed.
+            
+
 
 
         Lemma generalised_and_accepting_conversations_correctness_backward : 
@@ -228,6 +270,52 @@ Section DL.
         Qed.
 
 
+        Lemma generalised_and_accepting_conversations_correctness_backward_reject : 
+          forall (n : nat) (g : G) (hs : Vector.t G n) (s : @sigma_proto F G n 1 n),
+          (∃ (f : Fin.t n), 
+          match s with 
+          | (a; c; r) => 
+            @accepting_conversation F G gop gpow Gdec  g (nth hs f)
+              ([(nth a f)]; c; [(nth r f)]) = false
+          end) ->
+          generalised_and_accepting_conversations g hs s = false.
+        Proof.
+          induction n as [|n ihn].
+          +
+            intros * (f & ha).
+            refine 
+            match f as f' in Fin.t n return 
+              match n as n' return sigma_proto -> Type 
+              with 
+              | 0 => fun s' => generalised_and_accepting_conversations g hs s' = false
+              | _ => fun _ => IDProp 
+              end s 
+            with end.
+          +
+            intros * (f & Ha).
+            refine
+            (match s as s'
+            return s = s' -> _ with 
+            |(a; c; r) => fun Hb => _  
+            end eq_refl).
+            rewrite Hb in Ha.
+            destruct (vector_inv_S a) as (ha & ta & Hc).
+            destruct (vector_inv_S c) as (hc & tc & Hd).
+            destruct (vector_inv_S r) as (hr & tr & He).
+            destruct (vector_inv_S hs) as (hsa & hstl & Hj).
+            destruct (fin_inv_S _ f) as [hf | (hf & Hg)].
+            subst.
+            ++
+              cbn in Ha |- *.
+              rewrite Ha; reflexivity.
+            ++
+              subst; cbn in Ha |- *.
+              specialize (ihn g hstl (ta; hc :: tc; tr) (ex_intro _ hf Ha)).
+              now rewrite ihn, andb_false_r.
+        Qed.
+
+
+
         Lemma generalised_and_accepting_conversations_correctness : 
           forall (n : nat) (g : G) (hs : Vector.t G n) (s : @sigma_proto F G n 1 n),
           (∀ (f : Fin.t n), 
@@ -249,32 +337,25 @@ Section DL.
         Qed.
 
 
-        (* Proof that we are using the same challenge for all 
-          relations *)
-        Lemma construct_and_conversations_schnorr_challenge : 
-          ∀ (n : nat) (xs : t F n) (g : G) (us : t F n) 
-          (c : F) (aw : t G n) (cw : t F 1) (rw : t F n),
-          (aw; cw; rw) = construct_and_conversations_schnorr xs g us c ->
-          cw = [c].
+        Lemma generalised_and_accepting_conversations_correctness_reject : 
+          forall (n : nat) (g : G) (hs : Vector.t G n) (s : @sigma_proto F G n 1 n),
+          (∃ (f : Fin.t n), 
+          match s with 
+          | (a; c; r) => 
+            @accepting_conversation F G gop gpow Gdec g (nth hs f)
+              ([(nth a f)]; c; [(nth r f)]) = false
+          end) <->
+          generalised_and_accepting_conversations g hs s = false.
         Proof.
-          intros * Ha.
-          unfold construct_and_conversations_schnorr in Ha.
-          inversion Ha; subst; reflexivity.
+          intros *; 
+          split.
+          +
+            eapply generalised_and_accepting_conversations_correctness_backward_reject;
+            try assumption.
+          +
+            eapply generalised_and_accepting_conversations_correctness_forward_reject;
+            try assumption.
         Qed.
-
-
-        Lemma construct_and_conversations_simulator_challenge : 
-          ∀ (n : nat) (g : G) (hs : t G n) (us : t F n) 
-          (c : F) (aw : t G n) (cw : t F 1) (rw : t F n),
-          (aw; cw; rw) = construct_and_conversations_simulator g hs us c ->
-          cw = [c].
-        Proof.
-         intros * Ha.
-         inversion Ha; subst; 
-         reflexivity.
-        Qed.
-        (* end of same challenge *)
-
 
         Context
           {Hvec: @vector_space F (@eq F) zero one add mul sub 
