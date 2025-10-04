@@ -328,6 +328,57 @@ Section DL.
               eapply IHn.
         Qed.
 
+
+        Lemma generalised_accepting_encryption_proof_elgamal_supplement_reject_forward : 
+          forall {n : nat} (g h : G) (ms : Vector.t G n) (c₁ c₂ : G)
+          (s :  @sigma_proto F (G * G) n n n),
+          generalised_accepting_encryption_proof_elgamal_supplement g h ms (c₁, c₂) s = false ->
+          (match s with 
+          | (a; c; r) => 
+            ∃ f : Fin.t n, 
+            (@accepting_conversation F G gop gpow Gdec g c₁ 
+              ([fst (nth a f)]; [nth c f]; [nth r f])) = false ∨ 
+            (@accepting_conversation F G gop gpow Gdec h (gop c₂ (ginv (nth ms f))) 
+              ([snd (nth a f)]; [nth c f]; [nth r f])) = false
+          end).
+        Proof.
+          induction n as [|n ihn].
+          +
+            intros * ha.
+            cbn in ha.
+            congruence.
+          +
+            intros * ha.
+            refine 
+              (match s as s' return s = s' -> _ 
+              with 
+              | (au; cu; ru) => fun hb => _ 
+              end eq_refl).
+            rewrite hb in ha. 
+            destruct (vector_inv_S au) as ((ah₁, ah₂) & aut & He).
+            destruct (vector_inv_S cu) as (cuh & cut & Hf).
+            destruct (vector_inv_S ru) as (ruh & rut & Hg).
+            destruct (vector_inv_S ms) as (msh & mst & Hi).
+            subst. simpl in ha.
+            eapply andb_false_iff in ha.
+            destruct ha as [ha | ha].
+            ++
+              exists Fin.F1.
+              cbn. 
+              eapply andb_false_iff in ha.
+              exact ha.
+            ++
+              destruct (ihn g h mst c₁ c₂ (aut; cut; rut) ha) as (f & [ihnn | ihnn]).
+              +++
+                exists (Fin.FS f).
+                left. exact ihnn.
+              +++
+                exists (Fin.FS f).
+                right. exact ihnn.
+        Qed.
+
+        
+           
         Lemma generalised_accepting_encryption_proof_elgamal_supplement_backward : 
           forall {n : nat} (g h : G) (ms : Vector.t G n) (c₁ c₂ : G)
           (s :  @sigma_proto F (G * G) n n n),
@@ -372,6 +423,72 @@ Section DL.
               exact Ha.
         Qed.
 
+             
+        Lemma generalised_accepting_encryption_proof_elgamal_supplement_reject_backward : 
+          forall {n : nat} (g h : G) (ms : Vector.t G n) (c₁ c₂ : G)
+          (s :  @sigma_proto F (G * G) n n n),
+          (match s with 
+          | (a; c; r) => 
+            ∃ f : Fin.t n, 
+            (@accepting_conversation F G gop gpow Gdec g c₁ 
+              ([fst (nth a f)]; [nth c f]; [nth r f])) = false ∨ 
+            (@accepting_conversation F G gop gpow Gdec h (gop c₂ (ginv (nth ms f))) 
+              ([snd (nth a f)]; [nth c f]; [nth r f])) = false
+          end) -> 
+          generalised_accepting_encryption_proof_elgamal_supplement g h ms (c₁, c₂) s = false.
+        Proof.
+          induction n as [|n ihn].
+          +
+            intros * ha.
+            refine 
+              (match s as s' return s = s' -> _ 
+              with 
+              | (au; cu; ru) => fun Hb => _ 
+              end eq_refl).
+            rewrite Hb in ha.
+            destruct ha as (f & ha).
+            refine match f with end.
+          +
+            intros * ha.
+            refine 
+              (match s as s' return s = s' -> _ 
+              with 
+              | (au; cu; ru) => fun Hb => _ 
+              end eq_refl).
+            rewrite Hb in ha.
+            destruct (vector_inv_S ms) as (msh & mstl & Hd).
+            destruct (vector_inv_S au) as ((auh₁, auh₂) & autl & He).
+            destruct (vector_inv_S cu) as (cuh & cutl & Hf).
+            destruct (vector_inv_S ru) as (ruh & rutl & Hg).
+            destruct ha as (f & [ha | ha]);
+            destruct (fin_inv_S _ f) as [Hj | (fs & Hj)];
+            subst.
+            ++
+              simpl. cbn in ha.
+              rewrite ha. 
+              reflexivity.
+            ++
+              simpl. cbn in ha.
+              eapply andb_false_iff.
+              right. eapply ihn.
+              exists fs. left.
+              exact ha.
+            ++
+              simpl. cbn in ha.
+              rewrite ha.
+              eapply andb_false_iff.
+              left. eapply andb_false_iff.
+              right. reflexivity.
+            ++
+              simpl. cbn in ha.
+              eapply andb_false_iff.
+              right. eapply ihn.
+              exists fs.
+              cbn. rewrite ha.
+              right. reflexivity.
+        Qed.
+
+
         Lemma generalised_accepting_encryption_proof_elgamal_supplement_correctness : 
           forall {n : nat} (g h : G) (ms : Vector.t G n) (c₁ c₂ : G)
           (s :  @sigma_proto F (G * G) n n n),
@@ -390,6 +507,25 @@ Section DL.
           eapply generalised_accepting_encryption_proof_elgamal_supplement_backward]; assumption.
         Qed.
 
+
+        Lemma generalised_accepting_encryption_proof_elgamal_supplement_reject_correctness : 
+          forall {n : nat} (g h : G) (ms : Vector.t G n) (c₁ c₂ : G)
+          (s :  @sigma_proto F (G * G) n n n),
+          generalised_accepting_encryption_proof_elgamal_supplement g h ms (c₁, c₂) s = false <->
+          (match s with 
+          | (a; c; r) => 
+            ∃ f : Fin.t n, 
+            (@accepting_conversation F G gop gpow Gdec g c₁ 
+              ([fst (nth a f)]; [nth c f]; [nth r f])) = false ∨ 
+            (@accepting_conversation F G gop gpow Gdec h (gop c₂ (ginv (nth ms f))) 
+              ([snd (nth a f)]; [nth c f]; [nth r f])) = false
+          end).
+        Proof.
+          intros *; split; intro ha;
+          [eapply generalised_accepting_encryption_proof_elgamal_supplement_reject_forward |
+          eapply generalised_accepting_encryption_proof_elgamal_supplement_reject_backward]; 
+          assumption.
+        Qed.
 
         Lemma generalised_accepting_elgamal_accepting_conversations_supplement_app :
           forall (n m : nat) (g h : G) (cp : G * G)
@@ -463,6 +599,51 @@ Section DL.
         Qed.
 
 
+
+        Lemma generalised_accepting_elgamal_conversations_correctness_reject_forward : 
+          forall {m n : nat} (g h : G) (ms : Vector.t G (m + (1 + n))) (c₁ c₂ : G)
+          (s :  @sigma_proto F (G * G) (m + (1 + n)) (1 + (m + (1 + n))) (m + (1 + n))),
+          generalised_accepting_encryption_proof_elgamal ms g h (c₁, c₂) s = false -> 
+          match s with 
+          | (a; c; r) => 
+            Vector.hd c ≠ Vector.fold_right add (Vector.tl c) zero ∨
+            (∃ (f : Fin.t (m + (1 + n))),
+            (@accepting_conversation F G gop gpow Gdec g c₁ 
+              ([fst (nth a f)]; [nth c (Fin.FS f)]; [nth r f])) = false ∨
+            (@accepting_conversation F G gop gpow Gdec h (gop c₂ (ginv (nth ms f))) 
+              ([snd (nth a f)]; [nth c (Fin.FS f)]; [nth r f])) = false)
+          end.
+        Proof.
+          intros * ha.
+          unfold generalised_accepting_encryption_proof_elgamal in ha.
+          refine 
+            (match s as s' return s = s' -> _ 
+            with 
+            | (au; cu; ru) => fun Hb => _ 
+            end eq_refl).
+          rewrite Hb in ha.
+          destruct (vector_inv_S cu) as (cuh & cut & hc).
+          subst. simpl.
+          destruct (Fdec cuh (fold_right add cut zero)) as [hc | hc].
+          +
+            eapply generalised_accepting_encryption_proof_elgamal_supplement_reject_correctness in ha.
+            destruct ha as (f & [ha | ha]).
+            ++
+              right.
+              exists f. cbn in ha.
+              rewrite ha. left; reflexivity.
+            ++
+              right.
+              exists f. cbn in ha.
+              rewrite ha. right.
+              reflexivity.
+          +
+            left. exact hc.
+        Qed.
+
+
+
+
         Lemma generalised_accepting_elgamal_conversations_correctness_backward : 
           forall {m n : nat} (g h : G) (ms : Vector.t G (m + (1 + n))) (c₁ c₂ : G)
           (s :  @sigma_proto F (G * G) (m + (1 + n)) (1 + (m + (1 + n))) (m + (1 + n))),
@@ -501,6 +682,50 @@ Section DL.
         Qed.
 
 
+        Lemma generalised_accepting_elgamal_conversations_correctness_reject_backward : 
+          forall {m n : nat} (g h : G) (ms : Vector.t G (m + (1 + n))) (c₁ c₂ : G)
+          (s :  @sigma_proto F (G * G) (m + (1 + n)) (1 + (m + (1 + n))) (m + (1 + n))),
+          match s with 
+          | (a; c; r) => 
+            Vector.hd c ≠ Vector.fold_right add (Vector.tl c) zero ∨
+            (∃ (f : Fin.t (m + (1 + n))),
+            (@accepting_conversation F G gop gpow Gdec g c₁ 
+              ([fst (nth a f)]; [nth c (Fin.FS f)]; [nth r f])) = false ∨
+            (@accepting_conversation F G gop gpow Gdec h (gop c₂ (ginv (nth ms f))) 
+              ([snd (nth a f)]; [nth c (Fin.FS f)]; [nth r f])) = false)
+          end ->  
+          generalised_accepting_encryption_proof_elgamal ms g h (c₁, c₂) s = false.
+        Proof.
+          intros * Ha.
+          unfold generalised_accepting_encryption_proof_elgamal.
+          refine 
+            (match s as s' return s = s' -> _ 
+            with 
+            | (au; cu; ru) => fun Hb => _ 
+            end eq_refl).
+          destruct (vector_inv_S cu) as (cuh & cutl & Hc).
+          rewrite Hb in Ha.
+          subst. cbn in Ha.
+          destruct Ha as [Ha | (f & [Ha | Ha])].
+          +
+            destruct (Fdec cuh (fold_right add cutl zero)) as [hb | hb];
+            try contradiction.
+            reflexivity.
+          +
+            destruct (Fdec cuh (fold_right add cutl zero)) as [hc | hc];
+            try reflexivity.
+            eapply generalised_accepting_encryption_proof_elgamal_supplement_reject_correctness.
+            exists f. cbn. rewrite Ha.
+            left; reflexivity.
+          +
+            destruct (Fdec cuh (fold_right add cutl zero)) as [hc | hc];
+            try reflexivity.
+            eapply generalised_accepting_encryption_proof_elgamal_supplement_reject_correctness.
+            exists f. cbn. 
+            rewrite Ha. right; reflexivity.
+        Qed.
+
+
 
         Lemma generalised_accepting_elgamal_conversations_correctness: 
           forall {m n : nat} (g h : G) (ms : Vector.t G (m + (1 + n))) (c₁ c₂ : G)
@@ -520,6 +745,28 @@ Section DL.
           [eapply generalised_accepting_elgamal_conversations_correctness_forward |
           eapply generalised_accepting_elgamal_conversations_correctness_backward]; assumption.
         Qed.
+
+
+        Lemma generalised_accepting_elgamal_conversations_reject_correctness: 
+          forall {m n : nat} (g h : G) (ms : Vector.t G (m + (1 + n))) (c₁ c₂ : G)
+          (s :  @sigma_proto F (G * G) (m + (1 + n)) (1 + (m + (1 + n))) (m + (1 + n))),
+          generalised_accepting_encryption_proof_elgamal ms g h (c₁, c₂) s = false <-> 
+          match s with 
+          | (a; c; r) => 
+            Vector.hd c ≠ Vector.fold_right add (Vector.tl c) zero ∨
+            (∃ (f : Fin.t (m + (1 + n))),
+            (@accepting_conversation F G gop gpow Gdec g c₁ 
+              ([fst (nth a f)]; [nth c (Fin.FS f)]; [nth r f])) = false ∨ 
+            (@accepting_conversation F G gop gpow Gdec h (gop c₂ (ginv (nth ms f))) 
+              ([snd (nth a f)]; [nth c (Fin.FS f)]; [nth r f])) = false)
+          end.
+        Proof.
+          intros *; split; intro ha;
+          [eapply generalised_accepting_elgamal_conversations_correctness_reject_forward |
+          eapply generalised_accepting_elgamal_conversations_correctness_reject_backward];
+          assumption.
+        Qed.
+
 
         Lemma generalised_accepting_elgamal_conversations_correctness_gen : 
           forall {n : nat} (g h : G) (ms : Vector.t G ((2 + n))) (c₁ c₂ : G)
@@ -542,6 +789,29 @@ Section DL.
           rewrite !ha.
           intros *. 
           eapply generalised_accepting_elgamal_conversations_correctness.
+        Qed.
+
+         Lemma generalised_accepting_elgamal_conversations_reject_correctness_gen : 
+          forall {n : nat} (g h : G) (ms : Vector.t G ((2 + n))) (c₁ c₂ : G)
+          (s :  @sigma_proto F (G * G) ((2 + n)) (1 + ((2 + n))) ((2 + n))),
+          generalised_accepting_encryption_proof_elgamal ms g h (c₁, c₂) s = false <-> 
+          match s with 
+          | (a; c; r) => 
+            Vector.hd c ≠ Vector.fold_right add (Vector.tl c) zero ∨
+            (∃ (f : Fin.t ((2 + n))),
+            (@accepting_conversation F G gop gpow Gdec g c₁ 
+              ([fst (nth a f)]; [nth c (Fin.FS f)]; [nth r f])) = false ∨ 
+            (@accepting_conversation F G gop gpow Gdec h (gop c₂ (ginv (nth ms f))) 
+              ([snd (nth a f)]; [nth c (Fin.FS f)]; [nth r f])) = false)
+          end.
+        Proof.
+          intros n.
+          assert (ha : (∃ (m₁ m₂ : nat), (2 + n) = (m₁ + (1 + m₂)))%nat).
+          exists 1, n. reflexivity.
+          destruct ha as (m₁ & m₂ & ha).
+          rewrite !ha.
+          intros *. 
+          eapply generalised_accepting_elgamal_conversations_reject_correctness.
         Qed.
 
 
