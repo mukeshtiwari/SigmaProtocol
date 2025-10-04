@@ -86,7 +86,8 @@ Section DL.
        
       (* g^t = a * h^c mod p
          c₁^t = b * (c₂/m)^c mod p *)
-      Definition decryption_proof_accepting_conversations (g h : G) (c₁ c₂ : G) (m : G)
+      Definition decryption_proof_accepting_conversations 
+        (g h : G) (c₁ c₂ : G) (m : G)
         (s : @sigma_proto F G 2 1 1) : bool :=
         @generalised_cp_accepting_conversations F G gop gpow 
           Gdec g c₁ h (gop c₂ (ginv m)) s.
@@ -144,6 +145,87 @@ Section DL.
     End Def.
 
     Section Proofs.
+
+      Theorem decryption_proof_accepting_conversations_accept_forward : 
+        ∀ (g h : G) (c₁ c₂ : G) (m : G)  (a₁ a₂ : G) (c r : F),
+        decryption_proof_accepting_conversations g h c₁ c₂ m 
+        ([a₁; a₂]; [c]; [r]) = true -> 
+        g ^ r = gop a₁ (h ^ c) ∧ c₁ ^ r = gop a₂ (gop c₂ (ginv m) ^ c).
+      Proof.
+        intros * ha. 
+        cbn in ha.
+        eapply andb_true_iff in ha.
+        rewrite !dec_true in ha.
+        exact ha.
+      Qed.
+
+      Theorem decryption_proof_accepting_conversations_accept_backward : 
+        ∀ (g h : G) (c₁ c₂ : G) (m : G)  (a₁ a₂ : G) (c r : F),
+        g ^ r = gop a₁ (h ^ c) ->  c₁ ^ r = gop a₂ (gop c₂ (ginv m) ^ c) ->
+        decryption_proof_accepting_conversations g h c₁ c₂ m 
+        ([a₁; a₂]; [c]; [r]) = true.
+      Proof.
+        intros * ha hb.
+        cbn. eapply andb_true_iff.
+        rewrite !dec_true.
+        split; assumption.
+      Qed.
+
+      Theorem decryption_proof_accepting_conversations_accept :
+        ∀ (g h : G) (c₁ c₂ : G) (m : G)  (a₁ a₂ : G) (c r : F),
+        decryption_proof_accepting_conversations g h c₁ c₂ m 
+        ([a₁; a₂]; [c]; [r]) = true <-> 
+        g ^ r = gop a₁ (h ^ c) ∧ c₁ ^ r = gop a₂ (gop c₂ (ginv m) ^ c).
+      Proof.
+        intros *; split; intro ha.
+        eapply decryption_proof_accepting_conversations_accept_forward; 
+        assumption.
+        eapply decryption_proof_accepting_conversations_accept_backward;
+        destruct ha as (hal & har); assumption.
+      Qed.
+
+      Theorem decryption_proof_accepting_conversations_reject_forward : 
+        ∀ (g h : G) (c₁ c₂ : G) (m : G)  (a₁ a₂ : G) (c r : F),
+        decryption_proof_accepting_conversations g h c₁ c₂ m 
+        ([a₁; a₂]; [c]; [r]) = false -> 
+        g ^ r ≠ gop a₁ (h ^ c) ∨ c₁ ^ r ≠ gop a₂ (gop c₂ (ginv m) ^ c).
+      Proof.
+        intros * ha.
+        cbn in ha. 
+        eapply andb_false_iff in ha.
+        rewrite !dec_false in ha.
+        exact ha.
+      Qed.
+
+
+      Theorem decryption_proof_accepting_conversations_reject_backward : 
+        ∀ (g h : G) (c₁ c₂ : G) (m : G)  (a₁ a₂ : G) (c r : F),
+        (g ^ r ≠ gop a₁ (h ^ c) ∨ c₁ ^ r ≠ gop a₂ (gop c₂ (ginv m) ^ c)) ->
+        decryption_proof_accepting_conversations g h c₁ c₂ m 
+        ([a₁; a₂]; [c]; [r]) = false.
+      Proof.
+        intros * [ha | ha]; cbn;
+        eapply andb_false_iff;
+        rewrite !dec_false;
+        [left | right]; assumption.
+      Qed.
+
+
+      Theorem decryption_proof_accepting_conversations_reject : 
+        ∀ (g h : G) (c₁ c₂ : G) (m : G)  (a₁ a₂ : G) (c r : F),
+        (g ^ r ≠ gop a₁ (h ^ c) ∨ c₁ ^ r ≠ gop a₂ (gop c₂ (ginv m) ^ c)) <->
+        decryption_proof_accepting_conversations g h c₁ c₂ m 
+        ([a₁; a₂]; [c]; [r]) = false.
+      Proof.
+        intros *; split; intro ha.
+        eapply decryption_proof_accepting_conversations_reject_backward; 
+        assumption.
+        eapply decryption_proof_accepting_conversations_reject_forward;
+        assumption.
+      Qed.
+
+
+
 
       Context
         {Hvec: @vector_space F (@eq F) zero one add mul sub 
