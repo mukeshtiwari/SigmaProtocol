@@ -187,7 +187,7 @@ Section Approval.
 
     
     Theorem vote_proof_invalid_reject :
-      ∀ (r : F) (g h : G) (m : F) (uscs : Vector.t F 3) (c : F),
+      ∀ (r : F) (g h : G) (m : F) (uscs : Vector.t F (2 + 0 + (1 + 0))) (c : F),
         (m <> zero ∧ m <> one) →
         verify_encryption_vote_proof g h 
           (encrypt_vote_and_generate_enc_proof r g h m uscs c) = false.
@@ -196,7 +196,8 @@ Section Approval.
       unfold encrypt_vote_and_generate_enc_proof, 
       verify_encryption_vote_proof.
       destruct (Fdec m zero) as [fa | fa].
-      + 
+      +
+        
         destruct hu as (hal & har).
         subst. specialize (hal eq_refl).
         inversion hal.
@@ -207,147 +208,25 @@ Section Approval.
           specialize (har eq_refl). 
           inversion har.
         ++
-          unfold generalised_accepting_encryption_proof_elgamal, 
-          enc, generalised_construct_encryption_proof_elgamal_real.
-          destruct (splitat (2 + 0) uscs) as (us & cs) eqn:hm.
-          eapply append_splitat in hm. subst.
-          rewrite VectorSpec.splitat_append.
-           destruct (@vector_fin_app_pred F (1 + 0) (FS F1) us cs) as 
-          (m₁ & m₂ & v₁ & v₃ & vm & v₂ & v₄ & pfaa & pfbb & haa).
-          destruct pfaa as [pfa].
-          destruct pfbb as [pfb].
-          destruct haa as [ha].
-          destruct ha as (ha & hb & hc & hd).
-          (* 
-          us : Vector.t F (2 + 0)
-          cs : Vector.t F 1
-          m₁, m₂ : nat
-          v₁, v₃ : Vector.t F m₁
-          vm : F
-          v₂, v₄ : Vector.t F m₂
-          pfa : (1 + (1 + 0))%nat = (m₁ + (1 + m₂))%nat
-          pfb : (1 + 0)%nat = (m₁ + m₂)%nat
-          ha : us = eq_rect_r (Vector.t F) (v₁ ++ [vm] ++ v₂) (p ((1 + (1 + 0))%nat = (m₁ + (1 + m₂))%nat) {| p := pfa |})
-          hb : vm = us[@FS F1]
-          hc : cs = eq_rect_r (Vector.t F) (v₃ ++ v₄) (p ((1 + 0)%nat = (m₁ + m₂)%nat) {| p := pfb |})
-          hd : m₁ = proj1_sig (to_nat (FS F1))
-          *)
-          generalize dependent us. 
-          generalize dependent cs. 
-          cbn in * |- *. subst. cbn.
-          assert (m₂ = 0). 
-          {
-            destruct m₂ as [|m₂].
-            reflexivity. nia.
-          }
-          subst. cbn. 
-          assert (pfa = eq_refl). 
-          eapply Eqdep_dec.UIP_refl_nat.
-          assert (pfb = eq_refl). 
-          eapply Eqdep_dec.UIP_refl_nat.
-          subst. cbn.
-          intros * ha * hb hc.
-          (* subst. *) 
-          pose proof (vector_inv_0 v₂) as hd.
-          pose proof (vector_inv_0 v₄) as he.
-          rewrite hd, he in * |- *. cbn.
-          subst; cbn.
-          destruct (vector_inv_S v₁) as (ma & msr & hmm).
-          rewrite hmm in * |- *.
-          subst; cbn.
-          pose proof (vector_inv_0 msr) as hd.
-          subst; cbn.
-          (* mb is coming from here. *)
-          destruct (vector_inv_S v₃) as (mb & msr & hmm).
-          subst; cbn.
-          pose proof (vector_inv_0 msr) as hd.
-          subst; cbn.
-          assert (ha : c = (mb + (sub c (mb + zero) + zero))). field.
-          rewrite ha. clear ha.
-          destruct (Fdec (mb + (sub c (mb + zero) + zero)) 
-            (mb + (sub (mb + (sub c (mb + zero) + zero)) (mb + zero) + zero)))
-          as [hdec | hdec]; try auto. 
-          eapply Bool.andb_false_intro2.
-          eapply Bool.andb_false_intro1.
-          eapply Bool.andb_false_intro2.
-          eapply dec_false; intro ha.
-          assert (hb : mb + zero = mb). field.
-          rewrite !hb in ha, hdec; clear hb.
-          assert (hb : sub c mb + zero = sub c mb). field.
-          rewrite !hb in ha, hdec; clear hb.
-          assert (hb : (sub (mb + sub c mb) mb + zero) = (sub (mb + sub c mb) mb)).
-          field. rewrite hb in hdec; clear hb.
-          assert(hb : g ^ one = g).
-          rewrite field_one; reflexivity.
-          rewrite !hb in ha; clear hb.
-          assert (hb : mb + sub c mb = c). field.
-          rewrite !hb in ha; clear hb.
-          assert (hb : gop (g ^ m) (h ^ r) = gop (h ^ r) (g ^ m)).
-          rewrite commutative. reflexivity.
-          rewrite !hb in ha; clear hb.
-          assert (hb : (gop (gop (h ^ r) (g ^ m)) (ginv g)) = 
-           gop (h ^ r) (gop (g ^ m) (ginv g))).
-          rewrite associative; reflexivity.
-          rewrite !hb in ha; clear hb.
-          remember ((gop (g ^ m) (ginv g))) as gp.
-          rewrite smul_distributive_vadd, smul_pow_mul,
-          associative in ha.
-          assert (hb : (gop (h ^ vm) (h ^ (sub c mb * r))) = 
-            h ^ (vm + sub c mb * r)).
-          destruct Hvec. (* why do I need this destruct this? *)
-          setoid_rewrite <-vector_space_smul_distributive_fadd;
-          reflexivity.
-          rewrite hb in ha; clear hb.
-          eapply f_equal with (f := fun x => gop (h ^ (opp (vm + sub c mb * r))) x) in ha.
-          assert (hb : gop (h ^ opp (vm + sub c mb * r)) (h ^ (vm + sub c mb * r)) = gid).
-          destruct Hvec.
-          setoid_rewrite <-vector_space_smul_distributive_fadd.
-          assert (hb : (opp (vm + sub c mb * r) + (vm + sub c mb * r)) = zero). field.
-          rewrite hb; clear hb.
-          rewrite field_zero; reflexivity.
-          rewrite !hb in ha; clear hb.
-          rewrite associative in ha.
-          assert (hb : gop (h ^ opp (vm + sub c mb * r)) (h ^ (vm + sub c mb * r)) = 
-           gid). destruct Hvec.
-          rewrite <-vector_space_smul_distributive_fadd.
-          assert (hb : (opp (vm + sub c mb * r) + (vm + sub c mb * r)) = zero).
-          field. rewrite hb; clear hb.
-          rewrite field_zero; reflexivity.
-          rewrite hb in ha; clear hb.
-          rewrite left_identity in ha.
-          rewrite Heqgp in ha; clear Heqgp.
-          rewrite <- (vector_space_field_zero g) in ha.
-          assert (hb : gop (g ^ m) (ginv g) ^ sub c mb = 
-            gop ((g ^ m) ^ sub c mb) (ginv g ^ sub c mb)).
-          destruct Hvec.
-          rewrite vector_space_smul_distributive_vadd; reflexivity.
-          rewrite hb in ha; clear hb.
-          eapply f_equal with (f := fun x => gop x (g ^ sub c mb)) in ha.
-          rewrite <-associative in ha.
-          assert (hb : (gop (ginv g ^ sub c mb) (g ^ sub c mb)) = gid).
-          destruct Hvec.
-          rewrite <-vector_space_smul_distributive_vadd, left_inverse, 
-          <-field_zero, smul_pow_up.
-          assert (hb : zero * sub c mb = zero). field.
-          rewrite hb; clear hb.
-          reflexivity.
-          rewrite hb in ha; clear hb.
-          destruct Hvec.
-          rewrite <- vector_space_smul_distributive_fadd, right_identity,
-          smul_pow_up in ha.
-          assert (hb : zero + sub c mb = sub c mb). field.
-          rewrite hb in ha; clear hb.
+          (* challenging case *)
+          eapply generalised_accepting_elgamal_conversations_reject_correctness_gen.
+          refine 
+            (match generalised_construct_encryption_proof_elgamal_real (FS F1) r uscs [g ^ zero; g ^ m] g h (enc g h m r) c as s' return 
+            generalised_construct_encryption_proof_elgamal_real (FS F1) r uscs
+            [g ^ zero; g ^ m] g h (enc g h m r) c = s' -> _
+            with 
+            |(a₁; c₁; r₁) => fun hb => _ 
+            end eq_refl).
+          rewrite hb.
+          unfold generalised_construct_encryption_proof_elgamal_real in hb.
 
-          (* IMPORTATNT 
           
-          ha : g ^ sub c mb = g ^ (m * sub c mb) 
-          the goal is to prove False. 
-          Now m <> 0 ∧ m <> 1 how what if c = mb? 
+          
 
-          SO A VOTER CAN CONSTRUCT AN ARBITRARY VOTE AND IT 
-          STILL PASSES THE CHECK IF BY CHANCE mb happens to 
-          be equal to c? 
-          *)
+
+
+
+
 
           
     Admitted.
