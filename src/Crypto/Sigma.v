@@ -144,6 +144,7 @@ Section DL.
       Proof.
         intros *; 
         split; intros Ha.
+        unfold accepting_conversation in Ha.
         all:
           (apply (@dec_true _ Gdec) in Ha; 
           exact Ha).
@@ -220,6 +221,40 @@ Section DL.
         intros * Ha; rewrite Ha;
         now eapply schnorr_completeness.
       Qed.
+
+
+      (* 
+      
+      Important: 
+      I found this corner case when I was trying to prove 
+      vote_proof_invalid_reject in Approval.v. This proof 
+      simply tells that even if prover does not the relation 
+      between g and h, it construct a proof that will pass 
+      the check if the challenges happens to be 0. But the 
+      probability of happening it is extremely low, 1 / n where 
+      n is the size of challenge space. 
+      
+      *)
+
+      Lemma schnorr_completeness_corner_case_invalid_proof_accept 
+        (g h : G) (x : F) : forall (r c : F), c = zero -> 
+        accepting_conversation g h 
+          (schnorr_protocol x g r c) = true.
+      Proof.
+        intros * ha.
+        unfold schnorr_protocol, 
+        accepting_conversation,
+        schnorr_protocol_commitment; cbn.
+        eapply dec_true. subst.
+        assert (ha : r + zero * x = r) by field.
+        rewrite ha; clear ha.
+        rewrite field_zero, right_identity;
+        reflexivity.
+      Qed.
+
+
+
+
 
 
       (* simulator produces an accepting conversation,
