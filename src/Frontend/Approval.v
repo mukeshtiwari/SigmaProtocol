@@ -314,6 +314,7 @@ Section Approval.
           rewrite hb in haa; clear hb.
     Admitted.
 
+
     (* if it is the case c = c₁ then 
     an invalid proof will also be accepted but 
     c = c₁ will happen with 1/|C| probability.
@@ -324,6 +325,58 @@ Section Approval.
         verify_encryption_vote_proof g h 
           (encrypt_vote_and_generate_enc_proof r g h m [u₁; u₂; c₁] c) = true.
     Proof.
+      intros * [hal har] hb.
+       unfold encrypt_vote_and_generate_enc_proof, 
+      verify_encryption_vote_proof.
+      eapply generalised_accepting_elgamal_conversations_correctness_gen.
+      destruct (Fdec m zero) as [fa | fa]; try congruence.
+      subst.
+      unfold generalised_accepting_encryption_proof_elgamal, 
+      enc, generalised_construct_encryption_proof_elgamal_real.
+      simpl. 
+      destruct (vector_fin_app_pred 1 (FS F1) [u₁; u₂] [c]) as
+        (m₁ & m₂ & v₁ & v₃ & vm & v₂ & v₄ & pfaa & pfbb & haa).
+      destruct pfaa as [pfa].
+      destruct pfbb as [pfb].
+      destruct haa as [ha].
+      destruct ha as (ha & hb & hc & hd).
+      subst; cbn in * |- *.
+      assert (m₂ = 0). 
+      {
+        destruct m₂ as [|m₂].
+        reflexivity. nia.
+      }
+      subst. cbn. 
+      assert (pfa = eq_refl). 
+      eapply Eqdep_dec.UIP_refl_nat.
+      assert (pfb = eq_refl). 
+      eapply Eqdep_dec.UIP_refl_nat.
+      subst. cbn in * |- *.
+      pose proof (vector_inv_0 v₂) as hd.
+      pose proof (vector_inv_0 v₄) as he.
+      rewrite hd, he in * |- *. cbn.
+      subst; cbn.
+      destruct (vector_inv_S v₁) as (ma & msr & hmm).
+      rewrite hmm in * |- *.
+      subst; cbn.
+      pose proof (vector_inv_0 msr) as hd.
+      subst; cbn.
+      destruct (vector_inv_S v₃) as (mb & msr & hmm).
+      subst; cbn.
+      pose proof (vector_inv_0 msr) as hd.
+      subst; cbn.
+      assert (hd : c = (c + (sub c (c + zero) + zero))). field.
+      rewrite <-hd; clear hd.
+      split. reflexivity.
+      intros f. rewrite !dec_true.
+      destruct (fin_inv_S _ f) as [f' | (f' & hf)].
+      +
+        subst; cbn.
+        admit.
+      +
+        subst; cbn.
+        destruct (fin_inv_S _ f') as [f'' | (f'' & hf)];
+        subst; cbn; (try refine match f'' with end). 
     Admitted.
 
 
