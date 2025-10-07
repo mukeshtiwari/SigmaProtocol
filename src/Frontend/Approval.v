@@ -187,12 +187,12 @@ Section Approval.
 
     
     Theorem vote_proof_invalid_reject :
-      ∀ (r : F) (g h : G) (m : F) (uscs : Vector.t F (2 + 0 + (1 + 0))) (c : F),
-        (m <> zero ∧ m <> one) →
+      ∀ (r : F) (g h : G) (m : F)  (u₁ u₂ c₁ : F) (c : F),
+        (m <> zero ∧ m <> one) → c₁ <> c ->
         verify_encryption_vote_proof g h 
-          (encrypt_vote_and_generate_enc_proof r g h m uscs c) = false.
+          (encrypt_vote_and_generate_enc_proof r g h m [u₁; u₂; c₁] c) = false.
     Proof.
-      intros * hu.
+      intros * hu hv.
       unfold encrypt_vote_and_generate_enc_proof, 
       verify_encryption_vote_proof.
       destruct (Fdec m zero) as [fa | fa].
@@ -209,27 +209,125 @@ Section Approval.
           inversion har.
         ++
           (* challenging case *)
-          eapply generalised_accepting_elgamal_conversations_reject_correctness_gen.
-          refine 
-            (match generalised_construct_encryption_proof_elgamal_real (FS F1) r uscs [g ^ zero; g ^ m] g h (enc g h m r) c as s' return 
-            generalised_construct_encryption_proof_elgamal_real (FS F1) r uscs
-            [g ^ zero; g ^ m] g h (enc g h m r) c = s' -> _
-            with 
-            |(a₁; c₁; r₁) => fun hb => _ 
-            end eq_refl).
-          rewrite hb.
-          unfold generalised_construct_encryption_proof_elgamal_real in hb.
-
-          
-          
-
-
-
-
-
-
-          
+          unfold generalised_accepting_encryption_proof_elgamal, 
+          enc, generalised_construct_encryption_proof_elgamal_real.
+          simpl. 
+          destruct (vector_fin_app_pred 1 (FS F1) [u₁; u₂] [c₁]) as
+          (m₁ & m₂ & v₁ & v₃ & vm & v₂ & v₄ & pfaa & pfbb & haa).
+          destruct pfaa as [pfa].
+          destruct pfbb as [pfb].
+          destruct haa as [ha].
+          destruct ha as (ha & hb & hc & hd).
+          subst; cbn in * |- *.
+          assert (m₂ = 0). 
+          {
+            destruct m₂ as [|m₂].
+            reflexivity. nia.
+          }
+          subst. cbn. 
+          assert (pfa = eq_refl). 
+          eapply Eqdep_dec.UIP_refl_nat.
+          assert (pfb = eq_refl). 
+          eapply Eqdep_dec.UIP_refl_nat.
+          subst. cbn in * |- *.
+          pose proof (vector_inv_0 v₂) as hd.
+          pose proof (vector_inv_0 v₄) as he.
+          rewrite hd, he in * |- *. cbn.
+          subst; cbn.
+          destruct (vector_inv_S v₁) as (ma & msr & hmm).
+          rewrite hmm in * |- *.
+          subst; cbn.
+          pose proof (vector_inv_0 msr) as hd.
+          subst; cbn.
+          destruct (vector_inv_S v₃) as (mb & msr & hmm).
+          subst; cbn.
+          pose proof (vector_inv_0 msr) as hd.
+          subst; cbn.
+          assert (hd : c = (c₁ + (sub c (c₁ + zero) + zero))). field.
+          rewrite <-hd; clear hd.
+          destruct (Fdec c c)
+          as [hdec | hdec]; try auto. 
+          eapply Bool.andb_false_intro2.
+          eapply Bool.andb_false_intro1.
+          eapply Bool.andb_false_intro2.
+          eapply dec_false; intro haa.
+          assert (hb : c₁ + zero = c₁). field.
+          rewrite !hb in haa; clear hb.
+          assert(hb : g ^ one = g).
+          rewrite field_one; reflexivity.
+          rewrite !hb in haa; clear hb.
+          assert (hb : gop (g ^ m) (h ^ r) = gop (h ^ r) (g ^ m)).
+          rewrite commutative. reflexivity.
+          rewrite !hb in haa; clear hb.
+          assert (hb : (gop (gop (h ^ r) (g ^ m)) (ginv g)) = 
+           gop (h ^ r) (gop (g ^ m) (ginv g))).
+          rewrite associative; reflexivity.
+          rewrite !hb in haa; clear hb.
+          remember ((gop (g ^ m) (ginv g))) as gp.
+          rewrite smul_distributive_vadd, smul_pow_mul,
+          associative in haa.
+          assert (hb : (gop (h ^ u₂) (h ^ (sub c c₁ * r))) = 
+            h ^ (u₂ + sub c c₁ * r)).
+          destruct Hvec. (* why do I need this destruct this? *)
+          setoid_rewrite <-vector_space_smul_distributive_fadd;
+          reflexivity.
+          rewrite hb in haa; clear hb.
+          eapply f_equal with (f := fun x => 
+            gop (h ^ (opp (u₂ + sub c c₁ * r))) x) in haa.
+          assert (hb : gop (h ^ opp (u₂ + sub c c₁ * r)) (h ^ (u₂ + sub c c₁ * r)) = gid).
+          destruct Hvec.
+          setoid_rewrite <-vector_space_smul_distributive_fadd.
+          assert (hb : (opp (u₂ + sub c c₁ * r) + (u₂ + sub c c₁ * r)) = zero). field.
+          rewrite hb; clear hb.
+          rewrite field_zero; reflexivity.
+          rewrite !hb in haa; clear hb.
+          rewrite associative in haa.
+          assert (hb : gop (h ^ opp (u₂ + sub c c₁ * r)) (h ^ (u₂ + sub c c₁ * r)) = 
+           gid). destruct Hvec.
+          rewrite <-vector_space_smul_distributive_fadd.
+          assert (hb : (opp (u₂ + sub c c₁ * r) + (u₂ + sub c c₁ * r)) = zero).
+          field. rewrite hb; clear hb.
+          rewrite field_zero; reflexivity.
+          rewrite hb in haa; clear hb.
+          rewrite left_identity in haa.
+          rewrite Heqgp in haa; clear Heqgp.
+          rewrite <- (vector_space_field_zero g) in haa.
+          assert (hb : gop (g ^ m) (ginv g) ^ sub c c₁ = 
+            gop ((g ^ m) ^ sub c c₁) (ginv g ^ sub c c₁)).
+          destruct Hvec.
+          rewrite vector_space_smul_distributive_vadd; reflexivity.
+          rewrite hb in haa; clear hb.
+          eapply f_equal with (f := fun x => gop x (g ^ sub c c₁)) in haa.
+          rewrite <-associative in haa.
+          assert (hb : (gop (ginv g ^ sub c c₁) (g ^ sub c c₁)) = gid).
+          destruct Hvec.
+          rewrite <-vector_space_smul_distributive_vadd, left_inverse, 
+          <-field_zero, smul_pow_up.
+          assert (hb : zero * sub c c₁ = zero). field.
+          rewrite hb; clear hb.
+          reflexivity.
+          rewrite hb in haa; clear hb.
+          destruct Hvec.
+          rewrite <- vector_space_smul_distributive_fadd, right_identity,
+          smul_pow_up in haa.
+          assert (hb : zero + sub c c₁ = sub c c₁). field.
+          rewrite hb in haa; clear hb.
     Admitted.
+
+    (* if it is the case c = c₁ then 
+    an invalid proof will also be accepted but 
+    c = c₁ will happen with 1/|C| probability.
+    *)
+    Theorem vote_proof_invalid_accept :
+      ∀ (r : F) (g h : G) (m : F)  (u₁ u₂ c₁ : F) (c : F),
+        (m <> zero ∧ m <> one) → c₁ = c ->
+        verify_encryption_vote_proof g h 
+          (encrypt_vote_and_generate_enc_proof r g h m [u₁; u₂; c₁] c) = true.
+    Proof.
+    Admitted.
+
+
+
     
     (* ballot proof is valid *)
     Theorem ballot_proof_valid :

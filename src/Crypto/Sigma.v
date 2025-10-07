@@ -228,9 +228,9 @@ Section DL.
       Important: 
       I found this corner case when I was trying to prove 
       vote_proof_invalid_reject in Approval.v. This proof 
-      simply tells that even if prover does not the relation 
+      simply tells that even if prover does not know witness 
       between g and h, it construct a proof that will pass 
-      the check if the challenges happens to be 0. But the 
+      the check if the challenge happens to be 0. But the 
       probability of happening it is extremely low, 1 / n where 
       n is the size of challenge space. 
       
