@@ -208,7 +208,18 @@ Section Approval.
 
     Lemma sub_eq : forall (u v : F), sub u v = zero -> u = v.
     Proof.
-    Admitted.
+      intros * ha.
+      assert (hb : sub u v = u + opp v). field.
+      rewrite hb in ha.
+      eapply f_equal with (f := fun x => x + v) in ha.
+      assert (hc : opp v + v = zero). field.
+      rewrite <-associative in ha.
+      rewrite hc in ha; clear hc.
+      assert (hc : u + zero = u) by field.
+      rewrite hc in ha; clear hc.
+      assert (hc : zero + v = v) by field.
+      rewrite hc in ha. exact ha.
+    Qed.
       
     
     Theorem vote_proof_invalid_reject :
