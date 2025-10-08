@@ -315,9 +315,14 @@ Section Approval.
     Admitted.
 
 
-    (* if it is the case c = c₁ then 
-    an invalid proof will also be accepted but 
-    c = c₁ will happen with 1/|C| probability.
+    (* 
+      A theorem that states that if the prover can predict the challenge of 
+      the verifier, then it can fake the proof. 
+
+      
+      if it is the case c = c₁ then 
+      an invalid proof will also be accepted but 
+      c = c₁ will happen with 1/|C| probability.
     *)
     Theorem vote_proof_invalid_accept :
       ∀ (r : F) (g h : G) (m : F)  (u₁ u₂ c₁ : F) (c : F),
@@ -372,16 +377,52 @@ Section Approval.
       destruct (fin_inv_S _ f) as [f' | (f' & hf)].
       +
         subst; cbn.
-        admit.
+        split.
+        ++
+          pose proof @simulator_completeness F zero one add mul sub div opp inv 
+            G gid ginv gop gpow Gdec Hvec g (g ^ r) u₁ c as hb.
+          unfold accepting_conversation, schnorr_simulator in hb.
+          rewrite dec_true in hb; cbn in hb.
+          exact hb.
+        ++
+          assert(hb :  (ginv (g ^ zero)) = gid). 
+          rewrite field_zero, group_inv_id;
+          reflexivity.
+          rewrite !hb; clear hb.
+          remember (gop (g ^ m) (h ^ r)) as gm.
+          rewrite <-associative.
+          assert (hb : gop (gop gm gid ^ opp c) (gop gm gid ^ c) = gid). 
+          destruct Hvec.
+          rewrite <-vector_space_smul_distributive_fadd.
+          assert (hb : (opp c + c) = zero).
+          field. rewrite hb; clear hb.
+          rewrite field_zero; reflexivity.
+          rewrite hb; clear hb.
+          rewrite right_identity. 
+          reflexivity.
       +
         subst; cbn.
         destruct (fin_inv_S _ f') as [f'' | (f'' & hf)];
-        subst; cbn; (try refine match f'' with end). 
-    Admitted.
+        subst; cbn; (try refine match f'' with end).
+        split.
+        ++
+          assert (hb : sub c (c + zero) * r = zero). field.
+          rewrite !hb; clear hb.
+          assert(hb : sub c (c + zero) = zero). field.
+          rewrite hb; clear hb.
+          rewrite field_zero, right_identity.
+          rewrite right_identity; reflexivity.
+        ++
+          assert (hb : sub c (c + zero) * r = zero). field.
+          rewrite !hb; clear hb.
+          assert(hb : sub c (c + zero) = zero). field.
+          rewrite hb; clear hb.
+          rewrite field_one, field_zero, 
+          right_identity, right_identity.
+          reflexivity.
+    Qed.
 
 
-
-    
     (* ballot proof is valid *)
     Theorem ballot_proof_valid :
       ∀ (n : nat) (rs : Vector.t F n) (g h : G) 
