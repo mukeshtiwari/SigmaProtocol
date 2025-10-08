@@ -1,5 +1,5 @@
 From Stdlib Require Import Setoid
-  setoid_ring.Field  Lia Vector Utf8 Fin. 
+  setoid_ring.Field  Psatz Vector Utf8 Fin. 
 From Algebra Require Import
   Hierarchy Group Monoid
   Field Integral_domain
@@ -185,14 +185,39 @@ Section Approval.
         typeclasses eauto.
     Qed.
 
+
+    Lemma mul_eq_zero (a b : F) : a * b = zero → a = zero ∨ b = zero.
+    Proof.
+      intro ha.  (* Assume a * b = 0 *)
+      (* Case analysis on whether a = 0 *)
+      destruct (Fdec a zero) as [hb | hb].
+      - (* Case 1: a = 0 *)
+        left; assumption.
+      - (* Case 2: a ≠ 0 *)
+        right.
+        eapply f_equal with (f := fun x => inv a * x) in ha.
+        rewrite associative in ha.
+        assert (hc : inv a * a = one). field.
+        assumption.
+        rewrite hc in ha; clear hc.
+        assert (hc : inv a * zero = zero). field.
+        assumption. rewrite hc in ha; clear hc.
+        assert (hc : one * b = b). field.
+        rewrite hc in ha. exact ha.
+    Qed.
+
+    Lemma sub_eq : forall (u v : F), sub u v = zero -> u = v.
+    Proof.
+    Admitted.
+      
     
     Theorem vote_proof_invalid_reject :
       ∀ (r : F) (g h : G) (m : F)  (u₁ u₂ c₁ : F) (c : F),
-        (m <> zero ∧ m <> one) → c₁ <> c ->
+        g <> gid -> (m <> zero ∧ m <> one) → c₁ <> c ->
         verify_encryption_vote_proof g h 
           (encrypt_vote_and_generate_enc_proof r g h m [u₁; u₂; c₁] c) = false.
     Proof.
-      intros * hu hv.
+      intros * ht hu hv.
       unfold encrypt_vote_and_generate_enc_proof, 
       verify_encryption_vote_proof.
       destruct (Fdec m zero) as [fa | fa].
@@ -312,14 +337,42 @@ Section Approval.
           smul_pow_up in haa.
           assert (hb : zero + sub c c₁ = sub c c₁). field.
           rewrite hb in haa; clear hb.
-    Admitted.
+          eapply f_equal with (f := fun x => gop x (g ^ opp (sub c c₁))) in haa.
+          assert(hb : gop (g ^ sub c c₁) (g ^ opp (sub c c₁)) = gid).
+          destruct Hvec.
+          rewrite <-vector_space_smul_distributive_fadd.
+          assert(hb : (sub c c₁ + opp (sub c c₁)) = zero). field.
+          rewrite hb; clear hb.
+          rewrite field_zero; reflexivity.
+          rewrite !hb in haa; clear hb.
+          rewrite  <-smul_distributive_fadd in haa.
+          assert (hb : (m * sub c c₁ + opp (sub c c₁)) = 
+            (sub m one) * sub c c₁). field.
+          rewrite hb in haa; clear hb.
+          eapply eq_sym in haa.
+          eapply gid_power_zero in haa.
+          destruct haa as [haa | haa]; try congruence.
+          eapply mul_eq_zero in haa.
+          destruct haa as [haa | haa].
+          +++
+            eapply faa.
+            eapply sub_eq;
+            assumption.
+          +++
+            eapply hv.
+            eapply eq_sym.
+            eapply sub_eq.
+            assumption.
+        Unshelve.
+        exact g. exact Fdec.
+    Qed.
 
 
     (* 
       A theorem that states that if the prover can predict the challenge of 
       the verifier, then it can fake the proof. 
 
-      
+
       if it is the case c = c₁ then 
       an invalid proof will also be accepted but 
       c = c₁ will happen with 1/|C| probability.
