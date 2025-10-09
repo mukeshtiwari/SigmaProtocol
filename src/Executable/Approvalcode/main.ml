@@ -85,10 +85,10 @@ let generate_valid_ballot_and_proof (n : int) : ((Z.t * Z.t) * (Z.t, Z.t * Z.t) 
       Big_int_Z.string_of_big_int v ^ ")") "," x)) 
       (Big_int_Z.big_int_of_int n) cms in   
   let cha = Approvallib.Vector.map (fun x -> 
-    big_int_of_bytes_mod_q (String.to_bytes  ("p = " ^ Big_int_Z.string_of_big_int Approvallib.ApprovalIns.p ^ ", q = " ^ 
+    big_int_of_bytes_mod_q (shake256 ~msg:(String.to_bytes  ("p = " ^ Big_int_Z.string_of_big_int Approvallib.ApprovalIns.p ^ ", q = " ^ 
     Big_int_Z.string_of_big_int Approvallib.ApprovalIns.q  ^ ", g = " ^ 
     Big_int_Z.string_of_big_int Approvallib.ApprovalIns.g ^ ", h  = " ^ 
-    Big_int_Z.string_of_big_int Approvallib.ApprovalIns.h ^ ", com = " ^ x)) Approvallib.ApprovalIns.q) 
+    Big_int_Z.string_of_big_int Approvallib.ApprovalIns.h ^ ", com = " ^ x)) ~size:4) Approvallib.ApprovalIns.q) 
    (Big_int_Z.big_int_of_int n) com in 
   encrypt_ballot_and_generate_enc_proof_ins (Big_int_Z.big_int_of_int n) rs ms uscs cha
 
@@ -102,11 +102,11 @@ let generate_invalid_ballot_and_proof (n : int) : ((Z.t * Z.t) * (Z.t, Z.t * Z.t
       (vector_to_string (fun (u, v) -> "(" ^ Big_int_Z.string_of_big_int u ^ ", " ^ 
       Big_int_Z.string_of_big_int v ^ ")") "," x)) 
       (Big_int_Z.big_int_of_int 10) cms in   
-  let cha = Approvallib.Vector.map (fun x -> 
-    big_int_of_bytes_mod_q (String.to_bytes  ("p = " ^ Big_int_Z.string_of_big_int Approvallib.ApprovalIns.p ^ ", q = " ^ 
+   let cha = Approvallib.Vector.map (fun x -> 
+    big_int_of_bytes_mod_q (shake256 ~msg:(String.to_bytes  ("p = " ^ Big_int_Z.string_of_big_int Approvallib.ApprovalIns.p ^ ", q = " ^ 
     Big_int_Z.string_of_big_int Approvallib.ApprovalIns.q  ^ ", g = " ^ 
     Big_int_Z.string_of_big_int Approvallib.ApprovalIns.g ^ ", h  = " ^ 
-    Big_int_Z.string_of_big_int Approvallib.ApprovalIns.h ^ ", com = " ^ x)) Approvallib.ApprovalIns.q) 
+    Big_int_Z.string_of_big_int Approvallib.ApprovalIns.h ^ ", com = " ^ x)) ~size:4) Approvallib.ApprovalIns.q) 
    (Big_int_Z.big_int_of_int n) com in 
   encrypt_ballot_and_generate_enc_proof_ins (Big_int_Z.big_int_of_int n) rs ms uscs cha
 
