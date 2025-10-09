@@ -1,7 +1,7 @@
 From Stdlib Require Import Utf8 ZArith Vector.
 From Crypto Require Import Sigma EncProof.
 From Frontend Require Import Approval.
-From Utility Require Import Zpstar.
+From Utility Require Import Zpstar Util.
 From Examples Require Import Prime.
 Import Vspace Schnorr Zpfield Zpgroup
   VectorNotations.
@@ -34,7 +34,8 @@ Section Ins.
   Proof. compute. exact eq_refl. Qed.
 
   (* group generator *)
-  (* private is not provided because all the functions 
+  (* private key (the relation between g and h) 
+  is not provided in this file because all the functions 
   defined in this file runs on frontend, i.e., 
   on voters' computer. Private key for this 
   one is provided in the TallyIns.v file that 
@@ -76,11 +77,14 @@ Section Ins.
 
   *)
   
-  Definition encrypt_vote_and_generate_enc_proof_ins_commitment  
-    (uscs : Vector.t (@Zp q) 3)
-    (cp : (@Schnorr_group p q) * (@Schnorr_group p q)) : 
+  Definition generate_vote_commitment  
+    (g h : @Schnorr_group p q) (r m : (@Zp q)) (uscs : Vector.t (@Zp q) 3) : 
     Vector.t (@Schnorr_group p q * @Schnorr_group p q) 2.
   Proof.
+    set (cp := @encrypt_vote (@Zp q) (@Schnorr_group p q)  
+      (@mul_schnorr_group p q prime_p prime_q) 
+      (@pow 2 p q safe_prime prime_p prime_q)
+      r g h m).
     refine(@construct_encryption_proof_elgamal_commitment
     (@Zp q) zp_opp (@Schnorr_group p q) 
     (@inv_schnorr_group 2 p q safe_prime prime_p prime_q)
@@ -128,13 +132,34 @@ Section Ins.
     
 
 
+  Definition generate_ballot_commitment 
+    {n : nat} (rs ms : Vector.t (@Zp q) n)
+    (uscs : Vector.t (Vector.t (@Zp q) 3) n) :
+    Vector.t (Vector.t (@Schnorr_group p q * @Schnorr_group p q) 2) n.
+  Proof.
+    set (cp := @encrypt_ballot (@Zp q) (@Schnorr_group p q)  
+      (@mul_schnorr_group p q prime_p prime_q) 
+      (@pow 2 p q safe_prime prime_p prime_q)
+      _ rs g h ms).
+    refine(Vector.map (fun '(uscs', cp') => 
+      @construct_encryption_proof_elgamal_commitment
+      (@Zp q) zp_opp (@Schnorr_group p q) 
+      (@inv_schnorr_group 2 p q safe_prime prime_p prime_q)
+      (@mul_schnorr_group p q prime_p prime_q)
+      pow 1 0 uscs' [pow g Zpfield.zero; pow g Zpfield.one] g h cp')
+      (zip_with (fun u v => (u, v)) uscs cp)).
+    all: (try eapply prime_q).
+    all: (try eapply prime_p).
+    all: (try eapply safe_prime).
+  Qed.
+      
+      
 
   Definition encrypt_ballot_and_generate_enc_proof_ins {n : nat} 
     (rs : Vector.t (@Zp q) n) (ms : Vector.t (@Zp q) n) 
     (uscs : Vector.t (Vector.t (@Zp q) 3) n) (c : Vector.t (@Zp q) n) : 
     Vector.t ((@Schnorr_group p q) * (@Schnorr_group p q) * 
-    @Sigma.sigma_proto (@Zp q) 
-    (@Schnorr_group p q * @Schnorr_group p q) 2 3 2) n.
+      @Sigma.sigma_proto (@Zp q) (@Schnorr_group p q * @Schnorr_group p q) 2 3 2) n.
   Proof.
     refine(@encrypt_ballot_and_generate_enc_proof (@Zp q)
       Zpfield.zero Zpfield.one zp_add zp_mul zp_sub
@@ -165,6 +190,4 @@ Section Ins.
 
 End Ins.
   
-
-
 
