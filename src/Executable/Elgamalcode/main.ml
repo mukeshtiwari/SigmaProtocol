@@ -41,32 +41,6 @@ let rnd_list (q : Z.t) (n : int) : Z.t Elgamallib.VectorDef.t =
   in
   rnd_list_aux n
 
-let discrete_log_bsgs (g : Z.t) (c : Z.t) (p : Z.t) (n : int) : Z.t =
-  let m = n + 1 in
-  let table = Hashtbl.create m in
-  (* build baby-step table: g^j mod p for j = 0..m-1 *)
-  let rec build_table j acc =
-    if j < m then (
-      Hashtbl.replace table acc j;
-      build_table (j + 1) (Z.(mod_big_int (acc * g) p)))
-  in
-  build_table 0 Z.one;
-  (* compute g^(-m) mod p *)
-  let g_inv = Z.invert g p in
-  let g_m_inv = Z.powm g_inv (Z.of_int m) p in
-  (* giant steps: c * (g^(-m))^i for i = 0..m *)
-  let rec search i acc =
-    if i > m then failwith "No discrete log found"
-    else
-      match Hashtbl.find_opt table acc with
-      | Some j ->
-          let x = Z.(add (mul (of_int i) (of_int m)) (of_int j)) in
-          if Z.equal (Z.powm g x p) c then x else search (i + 1) (Z.(mod_big_int (acc * g_m_inv) p))
-      | None ->
-          search (i + 1) (Z.(mod_big_int (acc * g_m_inv) p))
-  in
-  search 0 c
-
 
 let discrete_log_search (g : Z.t) (c : Z.t) (p : Z.t) : Z.t =
   let rec search x acc =
@@ -81,7 +55,7 @@ let _ =
   let ms1 = rnd_list Elgamallib.ElgamalIns.q 10 in
   let cs1 = Elgamallib.ElgamalIns.encrypt_ballot (Big_int_Z.big_int_of_int 10) ms1 (rnd_list Elgamallib.ElgamalIns.q 10) in
   let fn = fun x -> 
-    discrete_log_bsgs Elgamallib.ElgamalIns.g x Elgamallib.ElgamalIns.p 1000000 in 
+    discrete_log_search Elgamallib.ElgamalIns.g x Elgamallib.ElgamalIns.p in 
   let ds1 = Elgamallib.Vector.map fn 
     (Big_int_Z.big_int_of_int 10) 
     (Elgamallib.ElgamalIns.decrypt_ballot (Big_int_Z.big_int_of_int 10) cs1) in

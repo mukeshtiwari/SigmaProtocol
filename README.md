@@ -51,13 +51,13 @@ generate OCaml code from it [_CoqProject file](/_CoqProject). It takes a while (
 5. Run `dune exec _build/default/src/Executable/Elgamalcode/main.exe` to run the Elgamal encryption functions. You will see an output like this: 
    ```OCaml
    (base) mukesh.tiwari@Mukeshs-MacBook-Pro-2 SigmaProtocol % dune exec _build/default/src/Executable/Elgamalcode/main.exe
-   message ms1 = 1438, 2189, 1367, 2838, 1976, 1242, 1293, 547, 318, 1642
-   encryption cs1 = (772, 982), (3598, 4290), (5616, 1176), (5606, 4148), (3815, 4574), (513, 21), (254, 2913), (5742, 588), (1318, 5099), (5253, 1443)
-   decryption ds1 = 999969, 997757, 999898, 998406, 997544, 999773, 999824, 999078, 998849, 997210
-   rencryption cs2 = (4238, 3122), (4202, 1029), (3807, 956), (3457, 5530), (4516, 331), (1267, 4202), (2610, 3111), (4665, 800), (3235, 145), (289, 3627)
-   decryption ds2 = 999969, 997757, 999898, 998406, 997544, 999773, 999824, 999078, 998849, 997210
-   multiplication enc ballot cs3 = (32, 1545), (4946, 4722), (1423, 4053), (4579, 950), (4678, 2609), (3928, 5264), (5043, 5887), (2317, 2167), (2217, 4407), (805, 220)
-   decryption ds3 = 998444, 999946, 998302, 998281, 999520, 998052, 998154, 999625, 999167, 998852%
+   message ms1 = 964, 671, 491, 2074, 2463, 2805, 2937, 1892, 1466, 275
+   encryption cs1 = (3805, 111), (2760, 2509), (3922, 3482), (2089, 5014), (1741, 3154), (5590, 5523), (467, 3231), (1014, 2342), (811, 4961), (1846, 4579)
+   decryption ds1 = 964, 671, 491, 2074, 2463, 2805, 2937, 1892, 1466, 275
+   rencryption cs2 = (813, 2489), (1928, 3368), (2613, 4572), (656, 2401), (3123, 4669), (2457, 1002), (5405, 200), (4538, 3859), (5604, 1199), (1771, 3421)
+   decryption ds2 = 964, 671, 491, 2074, 2463, 2805, 2937, 1892, 1466, 275
+   multiplication enc ballot cs3 = (5498, 3637), (4761, 4337), (403, 5709), (1247, 877), (2084, 3358), (1771, 4155), (5160, 157), (2180, 5030), (4762, 3458), (3489, 5625)
+   decryption ds3 = 1928, 1342, 982, 1185, 1963, 2647, 2911, 821, 2932, 550%
    ```
 6. Run `dune exec _build/default/src/Executable/OrSigmacode/main.exe` to run the OR Sigma protocol. You will see an output like this:
    ```OCaml 
