@@ -67,15 +67,7 @@ Section Ins.
   Defined.
  (*end of group generator *)
 
- (* I need to expose the And commitment function here so 
- that I can hash the values to compute the challenge. *)
- (* In this commitnement, the messages are 
-  [pow g Zpfield.zero; pow g Zpfield.one] 
-  because that's what we pass in 
-   Definition encrypt_vote_and_generate_enc_proof (r : F) (g h : G) (m : F) 
-   ... 
 
-  *)
   
   Definition generate_vote_commitment  
     (g h : @Schnorr_group p q) (r m : (@Zp q)) (uscs : Vector.t (@Zp q) 3) : 

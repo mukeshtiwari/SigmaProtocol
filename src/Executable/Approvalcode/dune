@@ -1,0 +1,3 @@
+(executable
+ (name main)
+ (libraries Approvallib cryptokit hacl-star))
