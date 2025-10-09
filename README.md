@@ -80,3 +80,10 @@ generate OCaml code from it [_CoqProject file](/_CoqProject). It takes a while (
    proof = {annoucement = 4026, 2686, 5005 challenge = 2010 response = 596}
    true%
    ```
+9. Run `dune exec _build/default/src/Executable/Approvalcode/main.exe` to run the Approval voting. You will see an output like this: 
+   ```OCaml 
+   valid proof: cipher-text = (739, 1728) proof = {annoucement = (325, 2653), (3216, 3080) challenge = 975, 598, 377 response = 862, 1700};  cipher-text = (1476, 1791) proof = {annoucement = (1320, 1981), (1868, 4048) challenge = 1829, 2934, 1858 response = 338, 249};  cipher-text = (2503, 471) proof = {annoucement = (1250, 747), (4958, 932) challenge = 589, 446, 143 response = 2357, 2510};  cipher-text = (411, 1372) proof = {annoucement = (3516, 5231), (5329, 4740) challenge = 3, 22, 2944 response = 2222, 810};  cipher-text = (2041, 246) proof = {annoucement = (832, 2661), (2826, 1012) challenge = 1444, 1199, 245 response = 104, 1377}
+   invalid proof: cipher-text = (5837, 234) proof = {annoucement = (2649, 806), (4295, 1612) challenge = 538, 2544, 957 response = 2180, 892};  cipher-text = (1643, 2070) proof = {annoucement = (2210, 3057), (4817, 5133) challenge = 2022, 2900, 2085 response = 678, 1891};  cipher-text = (2265, 4337) proof = {annoucement = (5491, 5732), (5119, 951) challenge = 2740, 2728, 12 response = 2951, 586};  cipher-text = (4413, 5025) proof = {annoucement = (4071, 3202), (1674, 5192) challenge = 2798, 576, 2222 response = 1196, 406};  cipher-text = (2686, 4657) proof = {annoucement = (165, 3006), (41, 3692) challenge = 519, 774, 2708 response = 1689, 2516}
+   valid proof returns: true
+   invalid proof returns: false%
+   ```
