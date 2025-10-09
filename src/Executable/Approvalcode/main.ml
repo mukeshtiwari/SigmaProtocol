@@ -49,17 +49,15 @@ let rec rnd_list_list (q : Z.t) (n : int) (m : int) : (Z.t Approvallib.VectorDef
  | _ -> Coq_cons (rnd_list q n, Big_int_Z.big_int_of_int 0, rnd_list_list q n (m - 1))  
 
 (* generates a ballot of 0/1 of length n *)
-let generate_valid_ballot_of_length_n (n : int) : Z.t Approvallib.VectorDef.t = 
+let generate_valid_ballot (n : int) : Z.t Approvallib.VectorDef.t = 
     rnd_list (Big_int_Z.big_int_of_int 2) n 
 
-let generate_invalid_ballot_of_length_n (n : int) : Z.t Approvallib.VectorDef.t = 
+(* generates a ballot of arbitary values of length n *)
+let generate_invalid_ballot (n : int) : Z.t Approvallib.VectorDef.t = 
     rnd_list Approvallib.ApprovalIns.q n 
 
-
-
-let _ = 
-  let ms = generate_valid_ballot_of_length_n 10 in 
-  let inms = generate_invalid_ballot_of_length_n 10 in 
+let generate_valid_ballot_and_proof (n : int) : ((Z.t * Z.t) * (Z.t, Z.t * Z.t) sigma_proto) Approvallib.VectorDef.t = 
+  let ms = generate_valid_ballot 10 in 
   let rs = rnd_list Approvallib.ApprovalIns.q 10 in 
   let uscs = rnd_list_list Approvallib.ApprovalIns.q 3 10 in 
   let cms = generate_ballot_commitment (Big_int_Z.big_int_of_int 10) rs ms uscs in
@@ -73,15 +71,33 @@ let _ =
     Big_int_Z.string_of_big_int Approvallib.ApprovalIns.g ^ ", h  = " ^ 
     Big_int_Z.string_of_big_int Approvallib.ApprovalIns.h ^ ", com = " ^ x)) Approvallib.ApprovalIns.q) 
    (Big_int_Z.big_int_of_int 10) com in 
-  let proof = encrypt_ballot_and_generate_enc_proof_ins (Big_int_Z.big_int_of_int 10) rs ms uscs cha in 
-  let verify = 
-        match verify_encryption_ballot_proof_ins  (Big_int_Z.big_int_of_int 10)  proof with
-        | true -> "true"
-        | _ -> "false"
-  in
-  print_string verify;
+  encrypt_ballot_and_generate_enc_proof_ins (Big_int_Z.big_int_of_int 10) rs ms uscs cha
+
+(* This would not pass the check *)
+let generate_invalid_ballot_and_proof (n : int) : ((Z.t * Z.t) * (Z.t, Z.t * Z.t) sigma_proto) Approvallib.VectorDef.t = 
+  let ms = generate_invalid_ballot n in 
+  let rs = rnd_list Approvallib.ApprovalIns.q n in 
+  let uscs = rnd_list_list Approvallib.ApprovalIns.q 3 n in 
+  let cms = generate_ballot_commitment (Big_int_Z.big_int_of_int n) rs ms uscs in
+  let com = Approvallib.Vector.map (fun x -> 
+      (vector_to_string (fun (u, v) -> "(" ^ Big_int_Z.string_of_big_int u ^ ", " ^ 
+      Big_int_Z.string_of_big_int v ^ ")") "," x)) 
+      (Big_int_Z.big_int_of_int 10) cms in   
+  let cha = Approvallib.Vector.map (fun x -> 
+    big_int_of_bytes_mod_q (String.to_bytes  ("p = " ^ Big_int_Z.string_of_big_int Approvallib.ApprovalIns.p ^ ", q = " ^ 
+    Big_int_Z.string_of_big_int Approvallib.ApprovalIns.q  ^ ", g = " ^ 
+    Big_int_Z.string_of_big_int Approvallib.ApprovalIns.g ^ ", h  = " ^ 
+    Big_int_Z.string_of_big_int Approvallib.ApprovalIns.h ^ ", com = " ^ x)) Approvallib.ApprovalIns.q) 
+   (Big_int_Z.big_int_of_int n) com in 
+  encrypt_ballot_and_generate_enc_proof_ins (Big_int_Z.big_int_of_int n) rs ms uscs cha
+
+
+let _ = 
+  let valid_proof = generate_valid_ballot_and_proof 10 in 
+  let invalid_proof = generate_invalid_ballot_and_proof 10 in 
+  let vf1 = verify_encryption_ballot_proof_ins  (Big_int_Z.big_int_of_int 10) valid_proof in 
+  let vf2 = verify_encryption_ballot_proof_ins  (Big_int_Z.big_int_of_int 10) invalid_proof in 
+  print_string ("valid proof " ^ string_of_bool vf1);
   print_endline "";
-  print_string (vector_string "," ms);
-  print_endline "";
-  print_string (vector_string "," inms); 
+  print_string ("invalid proof " ^ string_of_bool vf2)
 

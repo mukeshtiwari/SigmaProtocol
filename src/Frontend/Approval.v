@@ -36,125 +36,125 @@ Section Approval.
 
   Section Definitions.
 
-  (* 
-      In this case, a vote encrypts either 0 or 1.  
-      r : randomness for encryption 
-      g group generator, h : public key -- ∃ x : g ^ x = h 
-      m : vote value  
-      uscs : randomness for encryption proof 
-      c : challenge -- I need to think about making it non-interactive (fiat-shamir)
-   *)
-
-   
-
-    (* encrypt vote *)
-    Definition encrypt_vote (r : F) (g h : G) (m : F) : G * G :=
-      @enc F G gop gpow g h m r.
-
-    (* create a proof *)
-    Definition generate_enc_proof 
-      (r : F) (g h : G) (m : F) 
-      (uscs : Vector.t F 3) (cp : G * G) (c : F) : @Sigma.sigma_proto F (G * G) 2 3 2 :=
-        match Fdec m zero with 
-        | left _ => 
-          @generalised_construct_encryption_proof_elgamal_real F zero add mul sub 
-            opp G ginv gop gpow 0 Fin.F1 r uscs [g^m; g^one] g h cp c (* real one goes to 
-            the first place Fin.F1 *)
-        | right _ =>  
-          @generalised_construct_encryption_proof_elgamal_real F zero add mul sub 
-            opp G ginv gop gpow 0 (Fin.FS Fin.F1) r uscs [g^zero; g^m] g h cp c (* real one 
-            goes to the second place (Fin.FS Fin.F1) *)
-        end.
+    (* 
+        In this case, a vote encrypts either 0 or 1.  
+        r : randomness for encryption 
+        g group generator, h : public key -- ∃ x : g ^ x = h 
+        m : vote value  
+        uscs : randomness for encryption proof 
+        c : challenge -- I need to think about making it non-interactive (fiat-shamir)
+    *)
 
     
-    (* wrap both of them *)
-    (* In this function, when you pass a value of m that not 0 and 1, the 
-    function still creates a proof but it won't pass the check 
-    of verify_encryption_vote_proof, which checks if cp is encryption of 
-    zero or one. See the proofs vote_proof_valid and vote_proof_invalid *)
-    Definition encrypt_vote_and_generate_enc_proof 
-      (r : F) (g h : G) (m : F) 
-      (uscs : Vector.t F 3) (c : F) : G * G * @Sigma.sigma_proto F (G * G) 2 3 2 := 
-      let cp := @enc F G gop gpow g h m r in
-      let sig_proof := generate_enc_proof r g h m uscs cp c
-      in (cp, sig_proof).
 
-    (* verification of encryption proof *)
-    Definition verify_encryption_vote_proof (g h : G)
-       (cppf : G * G * @Sigma.sigma_proto F (G * G) 2 3 2) : bool :=
-       match cppf with 
-       | (cp, pf) => @generalised_accepting_encryption_proof_elgamal F zero add 
-        Fdec G ginv gop gpow Gdec _ [g^zero; g^one] g h cp pf
-      end.
+      (* encrypt vote *)
+      Definition encrypt_vote (r : F) (g h : G) (m : F) : G * G :=
+        @enc F G gop gpow g h m r.
 
+      (* create a proof *)
+      Definition generate_enc_proof 
+        (r : F) (g h : G) (m : F) 
+        (uscs : Vector.t F 3) (cp : G * G) (c : F) : @Sigma.sigma_proto F (G * G) 2 3 2 :=
+          match Fdec m zero with 
+          | left _ => 
+            @generalised_construct_encryption_proof_elgamal_real F zero add mul sub 
+              opp G ginv gop gpow 0 Fin.F1 r uscs [g^m; g^one] g h cp c (* real one goes to 
+              the first place Fin.F1 *)
+          | right _ =>  
+            @generalised_construct_encryption_proof_elgamal_real F zero add mul sub 
+              opp G ginv gop gpow 0 (Fin.FS Fin.F1) r uscs [g^zero; g^m] g h cp c (* real one 
+              goes to the second place (Fin.FS Fin.F1) *)
+          end.
 
-    (* encrypt the whole ballot *)
-    Fixpoint encrypt_ballot {n : nat}
-      (r : Vector.t F n) (g h : G) (m : Vector.t F n) : Vector.t (G * G) n.
-    Proof.
-       destruct n as [| n].
-      +
-        exact [].
-      +
-        destruct (vector_inv_S r) as (rh & rt & _).
-        destruct (vector_inv_S m) as (mh & mt & _).
-        exact (encrypt_vote rh g h mh :: encrypt_ballot _ rt g h mt).
-    Defined.
+      
+      (* wrap both of them *)
+      (* In this function, when you pass a value of m that not 0 and 1, the 
+      function still creates a proof but it won't pass the check 
+      of verify_encryption_vote_proof, which checks if cp is encryption of 
+      zero or one. See the proofs vote_proof_valid and vote_proof_invalid *)
+      Definition encrypt_vote_and_generate_enc_proof 
+        (r : F) (g h : G) (m : F) 
+        (uscs : Vector.t F 3) (c : F) : G * G * @Sigma.sigma_proto F (G * G) 2 3 2 := 
+        let cp := @enc F G gop gpow g h m r in
+        let sig_proof := generate_enc_proof r g h m uscs cp c
+        in (cp, sig_proof).
 
-    (* generate enc proof for a ballot *)
-    Fixpoint generate_enc_proof_ballot {n : nat}
-      (r : Vector.t F n) (g h : G) (m : Vector.t F n) 
-      (uscs : Vector.t (Vector.t F 3) n) 
-      (cp : Vector.t (G * G) n) (c : Vector.t F n) : 
-      Vector.t (@Sigma.sigma_proto F (G * G) 2 3 2) n.
-    Proof.
-       destruct n as [| n].
-      +
-        exact [].
-      +
-        destruct (vector_inv_S r) as (rh & rt & _).
-        destruct (vector_inv_S m) as (mh & mt & _).
-        destruct (vector_inv_S uscs) as (uscsh & uscst & _).
-        destruct (vector_inv_S cp) as (cph & cpt & _).
-        destruct (vector_inv_S c) as (ch & ct & _).
-        exact(generate_enc_proof rh g h mh uscsh cph ch :: 
-          generate_enc_proof_ballot _ rt g h mt uscst cpt ct).
-    Defined.
+      (* verification of encryption proof *)
+      Definition verify_encryption_vote_proof (g h : G)
+        (cppf : G * G * @Sigma.sigma_proto F (G * G) 2 3 2) : bool :=
+        match cppf with 
+        | (cp, pf) => @generalised_accepting_encryption_proof_elgamal F zero add 
+          Fdec G ginv gop gpow Gdec _ [g^zero; g^one] g h cp pf
+        end.
 
 
+      (* encrypt the whole ballot *)
+      Fixpoint encrypt_ballot {n : nat}
+        (r : Vector.t F n) (g h : G) (m : Vector.t F n) : Vector.t (G * G) n.
+      Proof.
+        destruct n as [| n].
+        +
+          exact [].
+        +
+          destruct (vector_inv_S r) as (rh & rt & _).
+          destruct (vector_inv_S m) as (mh & mt & _).
+          exact (encrypt_vote rh g h mh :: encrypt_ballot _ rt g h mt).
+      Defined.
+
+      (* generate enc proof for a ballot *)
+      Fixpoint generate_enc_proof_ballot {n : nat}
+        (r : Vector.t F n) (g h : G) (m : Vector.t F n) 
+        (uscs : Vector.t (Vector.t F 3) n) 
+        (cp : Vector.t (G * G) n) (c : Vector.t F n) : 
+        Vector.t (@Sigma.sigma_proto F (G * G) 2 3 2) n.
+      Proof.
+        destruct n as [| n].
+        +
+          exact [].
+        +
+          destruct (vector_inv_S r) as (rh & rt & _).
+          destruct (vector_inv_S m) as (mh & mt & _).
+          destruct (vector_inv_S uscs) as (uscsh & uscst & _).
+          destruct (vector_inv_S cp) as (cph & cpt & _).
+          destruct (vector_inv_S c) as (ch & ct & _).
+          exact(generate_enc_proof rh g h mh uscsh cph ch :: 
+            generate_enc_proof_ballot _ rt g h mt uscst cpt ct).
+      Defined.
 
 
-    (* encrypts the whole ballot and generate proof *)
-    Fixpoint encrypt_ballot_and_generate_enc_proof {n : nat}
-      (r : Vector.t F n) (g h : G) (m : Vector.t F n) 
-      (uscs : Vector.t (Vector.t F 3) n) (c : Vector.t F n) : 
-      Vector.t (G * G * @Sigma.sigma_proto F (G * G) 2 3 2) n.
-    Proof.
-      destruct n as [| n].
-      +
-        exact [].
-      +
-        destruct (vector_inv_S r) as (rh & rt & _).
-        destruct (vector_inv_S m) as (mh & mt & _).
-        destruct (vector_inv_S uscs) as (uscsh & uscst & _).
-        destruct (vector_inv_S c) as (ch & ct & _).
-        exact ((encrypt_vote_and_generate_enc_proof rh g h mh uscsh ch) ::
-          (encrypt_ballot_and_generate_enc_proof n 
-          rt g h mt uscst ct)).
-    Defined.
 
 
-    Fixpoint verify_encryption_ballot_proof {n : nat} (g h : G)
-      (cppf : Vector.t (G * G * @Sigma.sigma_proto F (G * G) 2 3 2) n) : bool.
-    Proof.
-      destruct n as [| n].
-      +
-        exact true.
-      +
-        destruct (vector_inv_S cppf) as (cppfh & cppft & _).
-        exact ((verify_encryption_vote_proof g h cppfh) && 
-          (verify_encryption_ballot_proof _ g h cppft))%bool.
-    Defined.
+      (* encrypts the whole ballot and generate proof *)
+      Fixpoint encrypt_ballot_and_generate_enc_proof {n : nat}
+        (r : Vector.t F n) (g h : G) (m : Vector.t F n) 
+        (uscs : Vector.t (Vector.t F 3) n) (c : Vector.t F n) : 
+        Vector.t (G * G * @Sigma.sigma_proto F (G * G) 2 3 2) n.
+      Proof.
+        destruct n as [| n].
+        +
+          exact [].
+        +
+          destruct (vector_inv_S r) as (rh & rt & _).
+          destruct (vector_inv_S m) as (mh & mt & _).
+          destruct (vector_inv_S uscs) as (uscsh & uscst & _).
+          destruct (vector_inv_S c) as (ch & ct & _).
+          exact ((encrypt_vote_and_generate_enc_proof rh g h mh uscsh ch) ::
+            (encrypt_ballot_and_generate_enc_proof n 
+            rt g h mt uscst ct)).
+      Defined.
+
+
+      Fixpoint verify_encryption_ballot_proof {n : nat} (g h : G)
+        (cppf : Vector.t (G * G * @Sigma.sigma_proto F (G * G) 2 3 2) n) : bool.
+      Proof.
+        destruct n as [| n].
+        +
+          exact true.
+        +
+          destruct (vector_inv_S cppf) as (cppfh & cppft & _).
+          exact ((verify_encryption_vote_proof g h cppfh) && 
+            (verify_encryption_ballot_proof _ g h cppft))%bool.
+      Defined.
 
 
     End Definitions.
