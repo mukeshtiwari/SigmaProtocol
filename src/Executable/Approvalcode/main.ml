@@ -30,7 +30,7 @@ let proof_string (proof : (Z.t, Z.t * Z.t) Approvallib.Sigma.sigma_proto) : stri
 
 let cipher_string (cp : (Z.t * Z.t)) : string = 
   match cp with 
-  |(cpa, cpb) -> "cipher text = (" ^ Big_int_Z.string_of_big_int cpa ^ ", " ^ Big_int_Z.string_of_big_int cpb ^ ")"
+  |(cpa, cpb) -> "cipher-text = (" ^ Big_int_Z.string_of_big_int cpa ^ ", " ^ Big_int_Z.string_of_big_int cpb ^ ")"
 
 let proof_and_enc_string (cppf : ((Z.t * Z.t) * (Z.t, Z.t * Z.t) sigma_proto)) : string = 
   match cppf with
@@ -112,15 +112,15 @@ let generate_invalid_ballot_and_proof (n : int) : ((Z.t * Z.t) * (Z.t, Z.t * Z.t
 
 
 let _ = 
-  let valid_proof = generate_valid_ballot_and_proof 10 in 
-  let invalid_proof = generate_invalid_ballot_and_proof 10 in 
-  let vf1 = verify_encryption_ballot_proof_ins  (Big_int_Z.big_int_of_int 10) valid_proof in 
-  let vf2 = verify_encryption_ballot_proof_ins  (Big_int_Z.big_int_of_int 10) invalid_proof in 
-  print_string ("valid proof = " ^ vector_proof_and_enc_string valid_proof); 
+  let valid_proof = generate_valid_ballot_and_proof 5 in 
+  let invalid_proof = generate_invalid_ballot_and_proof 5 in 
+  let vf1 = verify_encryption_ballot_proof_ins  (Big_int_Z.big_int_of_int 5) valid_proof in 
+  let vf2 = verify_encryption_ballot_proof_ins  (Big_int_Z.big_int_of_int 5) invalid_proof in 
+  print_string ("valid proof: " ^ vector_proof_and_enc_string valid_proof); 
   print_endline "";
-  print_string ("invalid proof = " ^ vector_proof_and_enc_string invalid_proof); 
+  print_string ("invalid proof: " ^ vector_proof_and_enc_string invalid_proof); 
   print_endline "";
-  print_string ("valid proof returns " ^ string_of_bool vf1);
+  print_string ("valid proof returns: " ^ string_of_bool vf1);
   print_endline "";
-  print_string ("invalid proof returns " ^ string_of_bool vf2)
+  print_string ("invalid proof returns: " ^ string_of_bool vf2)
 
