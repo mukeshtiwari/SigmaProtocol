@@ -68,15 +68,21 @@ Section Ins.
  (*end of group generator *)
 
 
-  
-  Definition generate_vote_commitment  
-    (g h : @Schnorr_group p q) (r m : (@Zp q)) (uscs : Vector.t (@Zp q) 3) : 
-    Vector.t (@Schnorr_group p q * @Schnorr_group p q) 2.
+  Definition encrypt_vote_ins (r m : (@Zp q)) : 
+    (@Schnorr_group p q * @Schnorr_group p q).
   Proof.
-    set (cp := @encrypt_vote (@Zp q) (@Schnorr_group p q)  
+    refine(@encrypt_vote (@Zp q) (@Schnorr_group p q)  
       (@mul_schnorr_group p q prime_p prime_q) 
       (@pow 2 p q safe_prime prime_p prime_q)
-      r g h m).
+      g h r m).
+  Defined.
+
+
+  Definition generate_vote_commitment_ins  
+    (r m : (@Zp q)) (uscs : Vector.t (@Zp q) 3) : 
+    Vector.t (@Schnorr_group p q * @Schnorr_group p q) 2.
+  Proof.
+    set (cp := encrypt_vote_ins r m).
     refine(@construct_encryption_proof_elgamal_commitment
     (@Zp q) zp_opp (@Schnorr_group p q) 
     (@inv_schnorr_group 2 p q safe_prime prime_p prime_q)
@@ -88,6 +94,23 @@ Section Ins.
   Defined.
   
 
+  Definition generate_vote_enc_proof_ins (r m : (@Zp q)) 
+    (uscs : Vector.t (@Zp q) 3) 
+    (cp : (@Schnorr_group p q * @Schnorr_group p q)) (c : (@Zp q)) : 
+    @Sigma.sigma_proto (@Zp q) (@Schnorr_group p q * @Schnorr_group p q) 
+    2 3 2.
+  Proof.
+    refine(@generate_enc_proof (@Zp q)
+     Zpfield.zero Zpfield.one zp_add zp_mul zp_sub zp_opp zp_dec 
+     (@Schnorr_group p q) 
+     (@inv_schnorr_group 2 p q safe_prime prime_p prime_q)
+     (@mul_schnorr_group p q prime_p prime_q) pow g h r m uscs cp c).
+    all:(try (eapply prime_q)).
+    all:(try (eapply prime_p)).
+    all:(try (eapply safe_prime)).
+  Defined.
+  
+  (* this combine above two but pick whatever you like. *)
   Definition encrypt_vote_and_generate_enc_proof_ins 
     (r m : (@Zp q)) (uscs : Vector.t (@Zp q) 3) (c : (@Zp q)) : 
     @Schnorr_group p q * @Schnorr_group p q * 
@@ -99,7 +122,7 @@ Section Ins.
      (@Schnorr_group p q) 
      (@inv_schnorr_group 2 p q safe_prime prime_p prime_q)
      (@mul_schnorr_group p q prime_p prime_q) pow 
-     r g h m uscs c).
+     g h r m uscs c).
     all: (try eapply prime_q).
     exact safe_prime.
     eapply prime_p.
@@ -123,16 +146,23 @@ Section Ins.
   Defined.
     
 
+  Definition encrypt_ballot_ins {n : nat} 
+    (rs ms : Vector.t (@Zp q) n) : 
+    Vector.t (@Schnorr_group p q * @Schnorr_group p q) n.
+  Proof.
+    refine(@encrypt_ballot (@Zp q) (@Schnorr_group p q)  
+      (@mul_schnorr_group p q prime_p prime_q) 
+      (@pow 2 p q safe_prime prime_p prime_q)
+      _ g h rs ms).
+  Defined.
 
-  Definition generate_ballot_commitment 
+
+  Definition generate_ballot_commitment_ins 
     {n : nat} (rs ms : Vector.t (@Zp q) n)
     (uscs : Vector.t (Vector.t (@Zp q) 3) n) :
     Vector.t (Vector.t (@Schnorr_group p q * @Schnorr_group p q) 2) n.
   Proof.
-    set (cp := @encrypt_ballot (@Zp q) (@Schnorr_group p q)  
-      (@mul_schnorr_group p q prime_p prime_q) 
-      (@pow 2 p q safe_prime prime_p prime_q)
-      _ rs g h ms).
+    set (cp := encrypt_ballot_ins rs ms).
     refine(Vector.map (fun '(uscs', cp') => 
       @construct_encryption_proof_elgamal_commitment
       (@Zp q) zp_opp (@Schnorr_group p q) 
@@ -144,8 +174,27 @@ Section Ins.
     all: (try eapply prime_p).
     all: (try eapply safe_prime).
   Qed.
-      
-      
+
+ 
+  Definition generate_ballot_enc_proof_ins {n : nat} 
+    (rs : Vector.t (@Zp q) n) (ms : Vector.t (@Zp q) n) 
+    (uscs : Vector.t (Vector.t (@Zp q) 3) n) 
+    (cp : Vector.t (@Schnorr_group p q * @Schnorr_group p q) n) 
+    (c : Vector.t (@Zp q) n) : 
+    Vector.t (@Sigma.sigma_proto (@Zp q) (@Schnorr_group p q * @Schnorr_group p q) 
+    2 3 2) n.
+  Proof.
+    refine(@generate_enc_proof_ballot (@Zp q)
+     Zpfield.zero Zpfield.one zp_add zp_mul zp_sub zp_opp zp_dec 
+     (@Schnorr_group p q) 
+     (@inv_schnorr_group 2 p q safe_prime prime_p prime_q)
+     (@mul_schnorr_group p q prime_p prime_q) pow n 
+     g h rs ms uscs cp c).
+    all: (try eapply prime_q).
+    all: (try eapply prime_p).
+    all: (try eapply safe_prime).
+  Qed. 
+
 
   Definition encrypt_ballot_and_generate_enc_proof_ins {n : nat} 
     (rs : Vector.t (@Zp q) n) (ms : Vector.t (@Zp q) n) 
@@ -157,12 +206,13 @@ Section Ins.
       Zpfield.zero Zpfield.one zp_add zp_mul zp_sub
       zp_opp zp_dec (@Schnorr_group p q) 
       (@inv_schnorr_group 2 p q safe_prime prime_p prime_q)
-      (@mul_schnorr_group p q prime_p prime_q) pow _ rs 
-      g h ms uscs c).
+      (@mul_schnorr_group p q prime_p prime_q) pow _  
+      g h rs ms uscs c).
     all: (try eapply prime_q).
     exact safe_prime.
     eapply prime_p.
   Defined.
+
 
   Definition verify_encryption_ballot_proof_ins {n : nat} 
     (proof : Vector.t ((@Schnorr_group p q) * (@Schnorr_group p q) * 
@@ -181,5 +231,5 @@ Section Ins.
   Defined.
 
 End Ins.
-  
+
 
