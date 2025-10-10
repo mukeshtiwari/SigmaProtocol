@@ -23,8 +23,9 @@ let big_int_of_bytes_mod_q (s : bytes) (q : Z.t) : Z.t =
     (Big_int_Z.big_int_of_int (Char.code c))) s;
   Big_int_Z.mod_big_int !n q 
 
-let rnd (q : Z.t) : Z.t = 
-  let rng = Random.device_rng "/dev/urandom" in 
+let rng = Random.device_rng "/dev/urandom"
+
+let rnd (q : Z.t) : Z.t =
   let buf  = Bytes.create 4 in 
   rng#random_bytes buf 0 4; 
   big_int_of_bytes_mod_q buf q 

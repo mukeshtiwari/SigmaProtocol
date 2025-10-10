@@ -23,9 +23,9 @@ let big_int_of_bytes_mod_q (s : bytes) (q : Z.t) : Z.t =
     (Big_int_Z.big_int_of_int (Char.code c))) s;
   Big_int_Z.mod_big_int !n q 
 
+let rng = Random.device_rng "/dev/urandom"
 
 let rnd_list (q : Z.t) (n : int) : Z.t ParaSigmalib.VectorDef.t =
-  let rng = Random.device_rng "/dev/urandom" in
   let buf = Bytes.create 4 in
   let rec rnd_list_aux m =
     match m with
