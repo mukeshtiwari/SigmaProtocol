@@ -119,3 +119,19 @@
    (name Approvallib)
    (libraries zarith)
    (modules :standard)))
+
+
+(subdir Tallylib
+ (coq.extraction
+  (prelude Extraction)
+  (extracted_modules TallyIns Tally Approval 
+   EncProof DecProof ChaumPedersen EqSigma
+   Datatypes Vector Nat Specif Sigma
+   VectorDef Zpstar BinInt PosDef Functions BinNat 
+   Util EqdepFacts Elgamal)
+  (theories ExtLib Stdlib Utility Crypto Algebra 
+   Probability Examples Frontend Backend))
+ (library 
+   (name Tallylib)
+   (libraries zarith)
+   (modules :standard)))

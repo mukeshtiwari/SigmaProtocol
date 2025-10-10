@@ -224,7 +224,10 @@ Section Tally.
     Qed.
   
          
-
+    (* rs is the randomness used to encrypt 0 
+      us and cs is the randomess used to construct 
+      decryption proof. 
+    *)
     Definition compute_final_tally (x : F) (rs us cs : Vector.t F n) : 
       g^x = h -> (* relation between public key and group generator *)  
       ∀ (bs : list (Vector.t (G * G * @Sigma.sigma_proto F (G * G) 2 3 2) n)), 
@@ -233,6 +236,7 @@ Section Tally.
         Permutation bs (vbs ++ inbs))%type.
     Proof.
       intro ha.
+      (* we walk through the whole bs and and build up a tally bottom-up *)
       refine(fix fn (bs : list (Vector.t (G * G * sigma_proto) n)) {struct bs} := 
         match bs with 
         | @List.nil _ => _ 
@@ -245,7 +249,8 @@ Section Tally.
           _ x g ms us cs).
         exists (@List.nil (Vector.t (G * G * @Sigma.sigma_proto F (G * G) 2 3 2) n)),
         (@List.nil (Vector.t (G * G * @Sigma.sigma_proto F (G * G) 2 3 2) n)), ms.
-        refine (pair (ax ms ds pf  _ _ ) _).
+        (* bootstrap *)
+        refine (pair (ax ms ds pf  _ _ ) _). 
         ++
           unfold ds, ms.
           intro f. 
@@ -263,6 +268,7 @@ Section Tally.
         ++
          reflexivity.
       +
+        (* check if bh is valid ballot or not *)
         refine 
           (match @verify_encryption_ballot_proof F zero one add Fdec G ginv gop gpow Gdec
           _ g h bh as v return 
@@ -334,7 +340,8 @@ Section Tally.
       (us cs : Vector.t F (n + n)) : 
       g^x = h -> (* relation between public key and group generator *)  
       ∀ (bs : list (Vector.t (G * G * @Sigma.sigma_proto F (G * G) 2 3 2) n)), 
-      existsT (vbs inbs :  list (Vector.t (G * G * @Sigma.sigma_proto F (G * G) 2 3 2) n))
+      existsT (vbs inbs :  
+        list (Vector.t (G * G * @Sigma.sigma_proto F (G * G) 2 3 2) n))
         (pt : Vector.t F n), count (finished bs vbs inbs pt).
     Proof.
       destruct (splitat n us) as (usa & usb).

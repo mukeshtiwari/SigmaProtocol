@@ -42,6 +42,7 @@ _build/default/src/Examples/OrSigmaIns.v
 _build/default/src/Examples/EncProofIns.v
 _build/default/src/Examples/EqSigmaIns.v
 _build/default/src/Examples/ApprovalIns.v
+_build/default/src/Examples/TallyIns.v
 _build/default/src/Extraction/Sigmalib/Extraction.v
 _build/default/src/Extraction/ParaSigmalib/Extraction.v
 _build/default/src/Extraction/SigmaHelioslib/Extraction.v
@@ -51,3 +52,4 @@ _build/default/src/Extraction/OrSigmalib/Extraction.v
 _build/default/src/Extraction/EncProoflib/Extraction.v
 _build/default/src/Extraction/EqSigmalib/Extraction.v
 _build/default/src/Extraction/Approvallib/Extraction.v
+_build/default/src/Extraction/Tallylib/Extraction.v
