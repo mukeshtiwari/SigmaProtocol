@@ -48,12 +48,12 @@ Section Approval.
     
 
       (* encrypt vote *)
-      Definition encrypt_vote (r : F) (g h : G) (m : F) : G * G :=
+      Definition encrypt_vote (g h : G) (r : F) (m : F) : G * G :=
         @enc F G gop gpow g h m r.
 
       (* create a proof *)
       Definition generate_enc_proof 
-        (r : F) (g h : G) (m : F) 
+        (g h : G) (r : F)  (m : F) 
         (uscs : Vector.t F 3) (cp : G * G) (c : F) : @Sigma.sigma_proto F (G * G) 2 3 2 :=
           match Fdec m zero with 
           | left _ => 
@@ -73,10 +73,10 @@ Section Approval.
       of verify_encryption_vote_proof, which checks if cp is encryption of 
       zero or one. See the proofs vote_proof_valid and vote_proof_invalid *)
       Definition encrypt_vote_and_generate_enc_proof 
-        (r : F) (g h : G) (m : F) 
+        (g h : G) (r : F)  (m : F) 
         (uscs : Vector.t F 3) (c : F) : G * G * @Sigma.sigma_proto F (G * G) 2 3 2 := 
         let cp := @enc F G gop gpow g h m r in
-        let sig_proof := generate_enc_proof r g h m uscs cp c
+        let sig_proof := generate_enc_proof g h r m uscs cp c
         in (cp, sig_proof).
 
       (* verification of encryption proof *)
@@ -90,7 +90,7 @@ Section Approval.
 
       (* encrypt the whole ballot *)
       Fixpoint encrypt_ballot {n : nat}
-        (r : Vector.t F n) (g h : G) (m : Vector.t F n) : Vector.t (G * G) n.
+        (g h : G) (r : Vector.t F n) (m : Vector.t F n) : Vector.t (G * G) n.
       Proof.
         destruct n as [| n].
         +
@@ -98,12 +98,12 @@ Section Approval.
         +
           destruct (vector_inv_S r) as (rh & rt & _).
           destruct (vector_inv_S m) as (mh & mt & _).
-          exact (encrypt_vote rh g h mh :: encrypt_ballot _ rt g h mt).
+          exact (encrypt_vote g h rh mh :: encrypt_ballot _ g h rt mt).
       Defined.
 
       (* generate enc proof for a ballot *)
       Fixpoint generate_enc_proof_ballot {n : nat}
-        (r : Vector.t F n) (g h : G) (m : Vector.t F n) 
+        (g h : G) (r : Vector.t F n) (m : Vector.t F n) 
         (uscs : Vector.t (Vector.t F 3) n) 
         (cp : Vector.t (G * G) n) (c : Vector.t F n) : 
         Vector.t (@Sigma.sigma_proto F (G * G) 2 3 2) n.
@@ -117,8 +117,8 @@ Section Approval.
           destruct (vector_inv_S uscs) as (uscsh & uscst & _).
           destruct (vector_inv_S cp) as (cph & cpt & _).
           destruct (vector_inv_S c) as (ch & ct & _).
-          exact(generate_enc_proof rh g h mh uscsh cph ch :: 
-            generate_enc_proof_ballot _ rt g h mt uscst cpt ct).
+          exact(generate_enc_proof g h rh mh uscsh cph ch :: 
+            generate_enc_proof_ballot _ g h rt mt uscst cpt ct).
       Defined.
 
 
@@ -126,7 +126,7 @@ Section Approval.
 
       (* encrypts the whole ballot and generate proof *)
       Fixpoint encrypt_ballot_and_generate_enc_proof {n : nat}
-        (r : Vector.t F n) (g h : G) (m : Vector.t F n) 
+        (g h : G) (r : Vector.t F n) (m : Vector.t F n) 
         (uscs : Vector.t (Vector.t F 3) n) (c : Vector.t F n) : 
         Vector.t (G * G * @Sigma.sigma_proto F (G * G) 2 3 2) n.
       Proof.
@@ -138,9 +138,9 @@ Section Approval.
           destruct (vector_inv_S m) as (mh & mt & _).
           destruct (vector_inv_S uscs) as (uscsh & uscst & _).
           destruct (vector_inv_S c) as (ch & ct & _).
-          exact ((encrypt_vote_and_generate_enc_proof rh g h mh uscsh ch) ::
+          exact ((encrypt_vote_and_generate_enc_proof g h rh mh uscsh ch) ::
             (encrypt_ballot_and_generate_enc_proof n 
-            rt g h mt uscst ct)).
+            g h rt mt uscst ct)).
       Defined.
 
 
@@ -174,8 +174,8 @@ Section Approval.
       Theorem first_projection_vote_encryption : 
         ∀ (r : F) (g h : G) (m : F) 
         (uscs : Vector.t F 3) (c : F), 
-        fst (encrypt_vote_and_generate_enc_proof r g h m uscs c) = 
-        encrypt_vote r g h m.
+        fst (encrypt_vote_and_generate_enc_proof g h r m uscs c) = 
+        encrypt_vote g h r m.
       Proof.
         intros *; 
         unfold encrypt_vote_and_generate_enc_proof, 
@@ -187,8 +187,8 @@ Section Approval.
         ∀ (r : F) (g h : G) (m : F) 
         (uscs : Vector.t F 3) (cp : G * G) (c : F), 
         cp =  @enc F G gop gpow g h m r  -> 
-        snd (encrypt_vote_and_generate_enc_proof r g h m uscs c) = 
-        generate_enc_proof r g h m uscs cp c.
+        snd (encrypt_vote_and_generate_enc_proof g h r m uscs c) = 
+        generate_enc_proof g h r m uscs cp c.
       Proof.
         intros * ha.
         unfold encrypt_vote_and_generate_enc_proof, 
@@ -200,8 +200,8 @@ Section Approval.
       Theorem first_project_ballot_encryption : 
         ∀ (n : nat) (r : Vector.t F n) (g h : G) (m : Vector.t F n) 
           (uscs : Vector.t (Vector.t F 3) n) (c : Vector.t F n),
-        Vector.map fst (encrypt_ballot_and_generate_enc_proof r g h m uscs c) = 
-        encrypt_ballot r g h m.
+        Vector.map fst (encrypt_ballot_and_generate_enc_proof g h r m uscs c) = 
+        encrypt_ballot g h r m.
       Proof.
         induction n as [|n ihn].
         +
@@ -225,8 +225,8 @@ Section Approval.
         ∀ (n : nat) (r : Vector.t F n) (g h : G) (m : Vector.t F n) 
         (uscs : Vector.t (Vector.t F 3) n) (cp : Vector.t (G * G) n) (c : Vector.t F n),
         (∀ (i : Fin.t n), Vector.nth cp i = @enc F G gop gpow g h (Vector.nth m i) (Vector.nth r i)) ->
-        Vector.map snd (encrypt_ballot_and_generate_enc_proof r g h m uscs c) = 
-        generate_enc_proof_ballot r g h m uscs cp c.
+        Vector.map snd (encrypt_ballot_and_generate_enc_proof g h r m uscs c) = 
+        generate_enc_proof_ballot g h r m uscs cp c.
       Proof.  
         induction n as [|n ihn].
         +
@@ -253,7 +253,7 @@ Section Approval.
       
       Theorem encryption_correct : ∀ (r : F) (g h : G) (m : F) 
         (uscs : Vector.t F 3) (c : F),
-        match encrypt_vote_and_generate_enc_proof r g h m uscs c with 
+        match encrypt_vote_and_generate_enc_proof g h r m uscs c with 
         | (cp, _) => cp = (gpow g r, gop (gpow g m) (gpow h r))
         end.
       Proof.
@@ -270,7 +270,7 @@ Section Approval.
         ∀ (r : F) (g h : G) (m : F) (uscs : Vector.t F 3) (c : F),
           (m = zero ∨ m = one) →
           verify_encryption_vote_proof g h 
-            (encrypt_vote_and_generate_enc_proof r g h m uscs c) = true.
+            (encrypt_vote_and_generate_enc_proof g h r m uscs c) = true.
       Proof.
         intros * ha.
         unfold encrypt_vote_and_generate_enc_proof, 
@@ -354,7 +354,7 @@ Section Approval.
         ∀ (r : F) (g h : G) (m : F)  (u₁ u₂ c₁ : F) (c : F),
           g <> gid -> (m <> zero ∧ m <> one) → c₁ <> c ->
           verify_encryption_vote_proof g h 
-            (encrypt_vote_and_generate_enc_proof r g h m [u₁; u₂; c₁] c) = false.
+            (encrypt_vote_and_generate_enc_proof g h r m [u₁; u₂; c₁] c) = false.
       Proof.
         intros * ht hu hv.
         unfold encrypt_vote_and_generate_enc_proof, 
@@ -521,7 +521,7 @@ Section Approval.
         ∀ (r : F) (g h : G) (m : F)  (u₁ u₂ c₁ : F) (c : F),
           (m <> zero ∧ m <> one) → c₁ = c ->
           verify_encryption_vote_proof g h 
-            (encrypt_vote_and_generate_enc_proof r g h m [u₁; u₂; c₁] c) = true.
+            (encrypt_vote_and_generate_enc_proof g h r m [u₁; u₂; c₁] c) = true.
       Proof.
         intros * [hal har] hb.
         unfold encrypt_vote_and_generate_enc_proof, 
@@ -623,7 +623,7 @@ Section Approval.
           (ms : Vector.t F n) (uscs : Vector.t (Vector.t F 3) n) (chs : Vector.t F n),
           (∀ (i : Fin.t n), Vector.nth ms i = zero ∨ Vector.nth ms i = one) ->
           verify_encryption_ballot_proof g h 
-            (encrypt_ballot_and_generate_enc_proof rs g h ms uscs chs) = true.
+            (encrypt_ballot_and_generate_enc_proof g h rs ms uscs chs) = true.
       Proof.
         induction n as [|n ihn].
         +
