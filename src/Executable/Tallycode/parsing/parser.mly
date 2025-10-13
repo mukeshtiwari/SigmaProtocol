@@ -8,7 +8,7 @@ open Tallylib.BinInt.Z
 %}
 
 
-%token <Z.t> INT
+%token <Big_int_Z.big_int> INT
 %token CIPHERTEXT PROOF ANNOUNCEMENT CHALLENGE RESPONSE
 %token EQ COMMA SEMI LPAR RPAR LBRACE RBRACE NEWLINE EOF
 
