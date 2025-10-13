@@ -1,4 +1,4 @@
 (executable
  (name main)
- (libraries  Tallylib cryptokit hacl-star))
+ (libraries Tallylib cryptokit hacl-star ballot_parser))
 
