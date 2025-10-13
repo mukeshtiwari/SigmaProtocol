@@ -6,5 +6,5 @@
 (library 
  (name ballot_parser)
  (modules Ast lexer parser)
- (libraries  Tallylib))
+ (libraries Tallylib))
 

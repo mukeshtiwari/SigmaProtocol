@@ -1,17 +1,15 @@
 {
+  open Tallylib.BinInt
   open Parser
+  open Tallylib.BinInt.Z
   exception Lexing_error of string
 }
 
 let whitespace = [' ' '\t']+
-let newline = '\n'
-let digit = ['0'-'9']
-let int = ['-']? digit+
-let keyword s = s
 
 rule token = parse
   | whitespace { token lexbuf }
-  | newline { NEWLINE }
+  | ['\n' '\r']+ {NEWLINE}
   | "ciphertext" { CIPHERTEXT }
   | "proof"      { PROOF }
   | "annoucement" { ANNOUNCEMENT }
@@ -25,6 +23,6 @@ rule token = parse
   | ","          { COMMA }
   | ";"          { SEMI }
   | "="          { EQ }
-  | int as i     { INT i }
+  | ['0' - '9']+ as num { INT (Big_int_Z.big_int_of_string num) }
   | eof          { EOF }
   | _ as c       { raise (Lexing_error (Printf.sprintf "Unexpected char: %c" c)) }

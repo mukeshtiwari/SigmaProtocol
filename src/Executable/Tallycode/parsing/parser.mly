@@ -2,60 +2,46 @@
 open Ast
 open Tallylib.BinInt
 open Tallylib.VectorDef
+open Tallylib.Sigma
+open Tallylib.BinInt.Z
+
 %}
 
 
-%token <string> INT
+%token <Z.t> INT
 %token CIPHERTEXT PROOF ANNOUNCEMENT CHALLENGE RESPONSE
 %token EQ COMMA SEMI LPAR RPAR LBRACE RBRACE NEWLINE EOF
 
-%start ballot_file
-%type <Ast.ballot_file> ballot_file
 
+%start<ballot list> prog
 
+%%
 
-ballot_file:
-  ballots EOF { $1 }
+prog:
+  | vs = ballots; EOF { vs : ballot list}
 
 ballots:
-    ballot { [$1] }
-  | ballot NEWLINE ballots { $1 :: $3 }
-
+  | bs = separated_nonempty_list(NEWLINE, ballot) {bs : ballot list}
+  
 ballot:
-  items { vector_of_list $1 }
+  | cpf = items { vector_of_list cpf :  ballot}
 
 
 items:
-    item { [$1] }
-  | item SEMI items { $1 :: $3 }
-  | item SEMI { [$1] } 
-
+  | pfs = separated_nonempty_list(SEMI, item) {pfs : ((Big_int_Z.big_int * Big_int_Z.big_int) * (Big_int_Z.big_int, (Big_int_Z.big_int * Big_int_Z.big_int)) Tallylib.Sigma.sigma_proto) list}
 
 item:
-  CIPHERTEXT EQ pair PROOF EQ LBRACE fields RBRACE
-  {
-    let (c1,c2) = $3 in
-    let (anns, chs, rs) = $7 in
-    ((c1, c2), 
-    {
-        announcement = vector_of_list anns;
-        challenge = vector_of_list chs;
-        response = vector_of_list rs;
-    })
-  }
-    
-
-pair:
-  LPAR INT COMMA INT RPAR { (Big_int_Z.big_int_of_string $2, Big_int_Z.big_int_of_string $4) }
+  | CIPHERTEXT; EQ; pr = cipherpair; PROOF; EQ; LBRACE; fs = fields; RBRACE { (pr, fs) : ((Big_int_Z.big_int * Big_int_Z.big_int) * (Big_int_Z.big_int, (Big_int_Z.big_int * Big_int_Z.big_int)) Tallylib.Sigma.sigma_proto)}
+  
+  
+cipherpair:
+  | LPAR; n1 = INT; COMMA; n2 = INT; RPAR { (n1, n2) : (Big_int_Z.big_int * Big_int_Z.big_int) }
 
 fields:
-    ANNOUNCEMENT EQ ann_list SEMI CHALLENGE EQ scalar_list SEMI RESPONSE EQ scalar_list
-    { ($3, $7, $11) }
+  | ANNOUNCEMENT; EQ; a = ann_list; SEMI; CHALLENGE; EQ; c = scalar_list; SEMI; RESPONSE; EQ; r = scalar_list { {announcement = vector_of_list a; challenge = vector_of_list c;  response = vector_of_list r} : (Big_int_Z.big_int, (Big_int_Z.big_int * Big_int_Z.big_int)) Tallylib.Sigma.sigma_proto}
 
 ann_list:
-    pair { [$1] }
-  | ann_list COMMA pair { $1 @ [$3] }
+  | vs = separated_nonempty_list(COMMA, pair) {vs : (Big_int_Z.big_int * Big_int_Z.big_int) list} 
 
 scalar_list:
-    INT { [Big_int_Z.big_int_of_string $1] }
-  | scalar_list COMMA INT { $1 @ [Big_int_Z.big_int_of_string $3] }
+  | vs = separated_nonempty_list(COMMA, INT) {vs : Big_int_Z.big_int list} 

@@ -1,18 +1,9 @@
 open Tallylib.BinInt
-open Tallylib.VectorDef 
+open Tallylib.VectorDef
+open Tallylib.Sigma
 
-type ciphertext = Big_int_Z.big_int * Big_int_Z.big_int
 
-type proof = {
-  announcement : (Big_int_Z.big_int * Big_int_Z.big_int) Tallylib.VectorDef.t;
-  challenge    : Big_int_Z.big_int Tallylib.VectorDef.t;
-  response     : Big_int_Z.big_int Tallylib.VectorDef.t;
-}
-
-type vote = ciphertext * proof 
-
-type ballot = vote Tallylib.VectorDef.t 
-type ballot_file = ballot list
+type ballot = ((Big_int_Z.big_int * Big_int_Z.big_int) * (Big_int_Z.big_int, Big_int_Z.big_int * Big_int_Z.big_int) Tallylib.Sigma.sigma_proto) Tallylib.VectorDef.t
 
 let vector_of_list (xs : 'a list) : 'a Tallylib.VectorDef.t =
   let rec aux l =
