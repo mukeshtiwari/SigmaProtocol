@@ -1,0 +1,10 @@
+(menhir
+ (modules parser))
+
+(ocamllex lexer)
+
+(library 
+ (name ballot_parser)
+ (modules Ast lexer parser)
+ (libraries  Tallylib))
+

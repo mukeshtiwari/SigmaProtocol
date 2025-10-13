@@ -36,16 +36,14 @@ item:
   {
     let (c1,c2) = $3 in
     let (anns, chs, rs) = $7 in
+    ((c1, c2), 
     {
-      ciphertext = (c1,c2);
-      proof = {
         announcement = vector_of_list anns;
         challenge = vector_of_list chs;
         response = vector_of_list rs;
-      }
-    }
+    })
   }
-
+    
 
 pair:
   LPAR INT COMMA INT RPAR { (Big_int_Z.big_int_of_string $2, Big_int_Z.big_int_of_string $4) }

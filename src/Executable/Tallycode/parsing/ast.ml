@@ -9,10 +9,7 @@ type proof = {
   response     : Big_int_Z.big_int Tallylib.VectorDef.t;
 }
 
-type vote = {
-  ciphertext : ciphertext;
-  proof      : proof;
-}
+type vote = ciphertext * proof 
 
 type ballot = vote Tallylib.VectorDef.t 
 type ballot_file = ballot list
