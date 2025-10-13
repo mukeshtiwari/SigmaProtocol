@@ -1,7 +1,6 @@
 {
   open Tallylib.BinInt
   open Parser
-  open Tallylib.BinInt.Z
   exception Lexing_error of string
 }
 

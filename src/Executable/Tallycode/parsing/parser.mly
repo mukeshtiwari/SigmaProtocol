@@ -1,10 +1,5 @@
 %{
 open Ast
-open Tallylib.BinInt
-open Tallylib.VectorDef
-open Tallylib.Sigma
-open Tallylib.BinInt.Z
-
 %}
 
 

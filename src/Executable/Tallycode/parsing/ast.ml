@@ -1,4 +1,4 @@
-open Tallylib.BinInt
+open Tallylib.BinInt.Z
 open Tallylib.VectorDef
 open Tallylib.Sigma
 
