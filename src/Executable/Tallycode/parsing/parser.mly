@@ -13,7 +13,7 @@ open Ast
 %%
 
 prog:
-  | vs = ballots; EOF { vs : ballot list}
+  | vs = ballots; EOF { List.rev vs : ballot list}
 
 ballots:
   | bs = separated_nonempty_list(NEWLINE, ballot) {bs : ballot list}
