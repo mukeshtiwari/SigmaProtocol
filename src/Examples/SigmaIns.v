@@ -1,8 +1,10 @@
-From Stdlib Require Import Utf8 ZArith.
+From Stdlib Require Import Utf8 ZArith
+Vector.
 From Crypto Require Import Sigma.
 From Utility Require Import Zpstar.
 From Examples Require Import Prime.
-Import Vspace Schnorr Zpfield Zpgroup.
+Import Vspace Schnorr Zpfield Zpgroup
+VectorNotations.
 
 
 Section Ins.
@@ -58,6 +60,8 @@ Section Ins.
     exact prime_q.
   Defined.
 
+
+
   (* u is the randomness for commitment and c is the challenge. 
   For the moment, it is random but I need to *)
   Definition schnorr_protocol_construction_ins (u c : @Zp q) : 
@@ -73,19 +77,19 @@ Section Ins.
 
   (* Non-interactive: u is randomness and c is computed using 
   hashing*)
-  (* 
+  
   Definition nizk_schnorr_protocol_construction_ins 
-    (fn : @Schnorr_group p q -> String.string) (gn : N -> @Zp q) (u : @Zp q) : 
+    (fn  : ∀ {m : nat}, Vector.t (Z + (@Schnorr_group p q)) m -> (@Zp q)) 
+    (u : @Zp q) : 
     @sigma_proto (@Zp q) (@Schnorr_group p q) 1 1 1.
   Proof.
-    refine (@nizk_schnorr_protocol (@Schnorr_group p q) (@Zp q) fn gn 
-      zp_add zp_mul pow x g h u).
-    instantiate (1 := 2%Z).
-    compute; reflexivity.
-    eapply prime_p.
-    eapply prime_q. 
+    set (comm := schnorr_protocol_commitment_ins u). 
+    (* Strong Fiat-Shamir *)
+    set (c := fn _ [inl p; inl q; 
+    inr g; inr h; inr comm]).
+    refine (schnorr_protocol_construction_ins u c).
   Defined.
-  *)
+  
 
 
   Definition schnorr_protocol_verification_ins : 
