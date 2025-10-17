@@ -101,6 +101,18 @@ Section Ins.
       eapply prime_q.
   Defined.
 
+  Definition nizk_generalised_construct_or_conversations_schnorr_ins 
+    (fn  : ∀ {m : nat}, Vector.t (Z + (@Schnorr_group p q)) m -> (@Zp q))
+    (uscs : Vector.t (@Zp q) 5) : 
+    @sigma_proto (@Zp q) (@Schnorr_group p q) 3 4 3.
+  Proof.
+    set (comm := construct_or_conversations_schnorr_commitment_ins uscs).
+    set (c := fn _ ([inl p; inl q; inr h₁; inr g; inr h₂; 
+      inr h₃] ++ Vector.map inr comm)).
+    refine(generalised_construct_or_conversations_schnorr_ins uscs c).
+  Defined.
+
+
   
   Definition generalised_or_accepting_conversations_ins 
     (pf :  @sigma_proto (@Zp q) (@Schnorr_group p q) 3 4 3) : bool.

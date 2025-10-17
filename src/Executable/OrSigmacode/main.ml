@@ -3,17 +3,23 @@ open Cryptokit
 open Hacl_star.Hacl.Keccak
 
 
-
-let rec vector_string (v : Z.t OrSigmalib.VectorDef.t) : string = 
+(* Convert vector of Z.t to a list of strings *)
+let rec vector_to_list (v : Z.t OrSigmalib.VectorDef.t) : string list =
   match v with
-  | Coq_nil -> ""
-  | Coq_cons (h, _, r) -> (Big_int_Z.string_of_big_int h) ^ ", " ^ vector_string r 
+  | Coq_nil -> []
+  | Coq_cons (h, _, r) -> Big_int_Z.string_of_big_int h :: vector_to_list r
 
-let proof_string (proof : (Z.t, Z.t) OrSigmalib.Sigma.sigma_proto) : string = 
-    match  proof with
-    | {announcement = a; challenge = c; 
-      response = r} -> "proof = {annoucement = "^ vector_string a ^ " challenge = " ^ vector_string c ^ 
-      " response = " ^ vector_string r ^ "}" 
+(* Join the elements with ", " without leaving a trailing comma *)
+let vector_string (v : Z.t OrSigmalib.VectorDef.t) : string =
+  String.concat ", " (vector_to_list v)
+
+(* Format the proof without trailing commas *)
+let proof_string (proof : (Z.t, Z.t) OrSigmalib.Sigma.sigma_proto) : string =
+  match proof with
+  | { announcement = a; challenge = c; response = r } ->
+      "proof = { announcement = " ^ vector_string a ^
+      "; challenge = " ^ vector_string c ^
+      "; response = " ^ vector_string r ^ " }"
 
 
 let big_int_of_bytes_mod_q (s : bytes) (q : Z.t) : Z.t =
@@ -38,7 +44,37 @@ let rnd_list (q : Z.t) (n : int) : Z.t OrSigmalib.VectorDef.t =
   in
   rnd_list_aux n
 
+let rec random_oracle (acc : string) 
+  (n : Z.t) (v : (Z.t, Z.t) OrSigmalib.Datatypes.sum OrSigmalib.VectorDef.t) : Z.t = 
+  match v with
+  | Coq_nil ->  big_int_of_bytes_mod_q (shake256 ~msg:(String.to_bytes acc) ~size:4) OrSigmalib.OrSigmaIns.q 
+  | Coq_cons (hv, _, tv) -> 
+      match hv with 
+      | Coq_inl hv' 
+      | Coq_inr hv' -> random_oracle (acc ^ Big_int_Z.string_of_big_int hv') n tv
 
+
+let _ = 
+  let uscs = rnd_list OrSigmalib.OrSigmaIns.q 5 in (* 3 randomness for commitment and 2 degree of freedom for cheating*)
+  let proof = nizk_generalised_construct_or_conversations_schnorr_ins (random_oracle "") uscs in 
+  let verify = 
+      match generalised_or_accepting_conversations_ins proof with
+      | true -> "true"
+      | _ -> "false"
+  in
+  print_string ("p = " ^ Big_int_Z.string_of_big_int OrSigmalib.OrSigmaIns.p ^ ", q = " ^ 
+    Big_int_Z.string_of_big_int OrSigmalib.OrSigmaIns.q  ^ ", g = " ^ 
+    Big_int_Z.string_of_big_int OrSigmalib.OrSigmaIns.g ^ ", h_UU2081_  = " ^ 
+    Big_int_Z.string_of_big_int OrSigmalib.OrSigmaIns.h_UU2081_ ^ ", h_UU2082_  = " ^ 
+    Big_int_Z.string_of_big_int OrSigmalib.OrSigmaIns.h_UU2082_ ^ ", h_UU2083_  = " ^ 
+    Big_int_Z.string_of_big_int OrSigmalib.OrSigmaIns.h_UU2083_);
+  print_endline "";
+  print_string (proof_string proof);
+  print_endline "";
+  print_string verify;
+
+
+(* 
 let _ = 
     let uscs = rnd_list OrSigmalib.OrSigmaIns.q 5 in (* 3 randomness for commitment and 2 degree of freedom for cheating*)
     let com =  vector_string (OrSigmalib.OrSigmaIns.construct_or_conversations_schnorr_commitment_ins uscs) in 
@@ -65,5 +101,5 @@ let _ =
     print_string (proof_string proof);
     print_endline "";
     print_string verify;
-
+*)
 
