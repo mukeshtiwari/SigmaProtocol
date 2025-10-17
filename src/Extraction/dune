@@ -28,7 +28,7 @@
   (prelude Extraction)
   (extracted_modules ParaSigmaIns ParallelSigma Sigma Datatypes Vector 
    VectorDef Zpstar BinInt PosDef Functions BinNat 
-   Specif Util EqdepFacts)
+   Specif Util EqdepFacts Nat)
   (theories ExtLib Stdlib Utility Crypto Algebra 
    Probability Examples))
  (library 

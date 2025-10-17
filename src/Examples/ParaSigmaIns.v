@@ -1,9 +1,11 @@
-From Stdlib Require Import Utf8 ZArith.
+From Stdlib Require Import Utf8 ZArith
+Vector.
 From Crypto Require Import Sigma 
   ParallelSigma.
 From Utility Require Import Zpstar.
 From Examples Require Import Prime.
-Import Vspace Schnorr Zpfield Zpgroup.
+Import Vspace Schnorr Zpfield Zpgroup
+  VectorNotations.
 
 Section Ins.
 
@@ -51,8 +53,7 @@ Section Ins.
 
   
   Definition construct_parallel_conversations_schnorr_commitment_ins  
-      (g :  @Schnorr_group p q) (us :  Vector.t (@Zp q) 2) : 
-      Vector.t (@Schnorr_group p q) 2.
+    (us :  Vector.t (@Zp q) 2) : Vector.t (@Schnorr_group p q) 2.
   Proof.
     refine(@construct_parallel_conversations_schnorr_commitment 
       (@Zp q) (@Schnorr_group p q) pow 2 g us).
@@ -74,6 +75,19 @@ Section Ins.
     exact prime_p.
     exact prime_q.
   Defined.
+
+  (* Non-interactive zkp *)
+  Definition nizk_construct_parallel_conversations_schnorr_ins 
+    (fn  : ∀ {m : nat}, Vector.t (Z + (@Schnorr_group p q)) m -> Vector.t (@Zp q) 2) 
+    (us : Vector.t (@Zp q) 2) : 
+    @sigma_proto (@Zp q) (@Schnorr_group p q) 2 2 2.
+  Proof.
+    set (comm := construct_parallel_conversations_schnorr_commitment_ins us). 
+    set (cs := fn _ ([inl p; inl q; 
+      inr g; inr h] ++ Vector.map inr comm)).
+    refine(construct_parallel_conversations_schnorr_ins us cs).
+  Defined.
+
 
   
   Definition generalised_parallel_accepting_conversations_ins : 
