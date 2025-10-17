@@ -62,8 +62,7 @@ Section Ins.
 
 
 
-  (* u is the randomness for commitment and c is the challenge. 
-  For the moment, it is random but I need to *)
+  (* u is the randomness for commitment and c is the challenge. *)
   Definition schnorr_protocol_construction_ins (u c : @Zp q) : 
     @sigma_proto (@Zp q) (@Schnorr_group p q) 1 1 1.
   Proof.
@@ -76,8 +75,8 @@ Section Ins.
   Defined.
 
   (* Non-interactive: u is randomness and c is computed using 
-  hashing*)
-  
+  hashing using strong Fiat-Shamir. Ideally, one would like to 
+  reason about Sigma protocols in random oracle model.*)
   Definition nizk_schnorr_protocol_construction_ins 
     (fn  : ∀ {m : nat}, Vector.t (Z + (@Schnorr_group p q)) m -> (@Zp q)) 
     (u : @Zp q) : 
