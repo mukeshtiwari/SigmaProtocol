@@ -107,6 +107,18 @@ Definition g₃ : @Schnorr_group p q.
     eapply prime_q.
   Defined.
 
+  Definition nizk_construct_eq_conversations_schnorr_ins 
+    (fn  : ∀ {m : nat}, Vector.t (Z + (@Schnorr_group p q)) m -> (@Zp q)) 
+    (u : @Zp q) : 
+    @sigma_proto (@Zp q) (@Schnorr_group p q) 3 1 1.
+  Proof.
+    set (comm := construct_eq_conversations_schnorr_commitment_ins u).
+    set (c := fn _ ([inl p; inl q; inr g₁; inr h₁; inr g₂; inr h₂; inr g₃;
+      inr h₃] ++ Vector.map inr comm)).
+    refine(construct_eq_conversations_schnorr_ins u c).
+  Defined.
+
+
   Definition generalised_eq_accepting_conversations_ins 
     (proof :  @sigma_proto (@Zp q) (@Schnorr_group p q) 3 1 1) : bool.
   Proof.

@@ -16,10 +16,6 @@ let rec vector_to_string (printer : 'a -> string) (v : 'a EqSigmalib.VectorDef.t
 let vector_string =
   vector_to_string Big_int_Z.string_of_big_int
 
-let vector_string_pair =
-  vector_to_string (fun (h1, h2) ->
-    "(" ^ Big_int_Z.string_of_big_int h1 ^ ", " ^ Big_int_Z.string_of_big_int h2 ^ ")")
-
 let proof_string (proof : (Z.t, Z.t) EqSigmalib.Sigma.sigma_proto) : string = 
     match  proof with
     | {announcement = a; challenge = c; 
@@ -42,7 +38,40 @@ let rnd (q : Z.t) : Z.t =
   big_int_of_bytes_mod_q buf q 
   
 
+let rec random_oracle (acc : string) 
+  (n : Z.t) (v : (Z.t, Z.t) EqSigmalib.Datatypes.sum EqSigmalib.VectorDef.t) : Z.t = 
+  match v with
+  | Coq_nil -> big_int_of_bytes_mod_q (shake256 ~msg:(String.to_bytes acc) ~size:4) 
+    EqSigmalib.EqSigmaIns.q
+  | Coq_cons (hv, _, tv) -> 
+      match hv with 
+      | Coq_inl hv' 
+      | Coq_inr hv' -> random_oracle (acc ^ Big_int_Z.string_of_big_int hv') n tv
 
+
+let _ = 
+  let u = rnd EqSigmalib.EqSigmaIns.q in 
+  let proof = nizk_construct_eq_conversations_schnorr_ins (random_oracle "") u in  
+  let verify = 
+    match generalised_eq_accepting_conversations_ins proof with
+    | true ->"true"
+    | false -> "false"
+  in 
+  print_string( "p = " ^ Big_int_Z.string_of_big_int EqSigmalib.EqSigmaIns.p ^ ", q = " ^ 
+    Big_int_Z.string_of_big_int EqSigmalib.EqSigmaIns.q ^ ", g_UU2081_ = " ^ 
+    Big_int_Z.string_of_big_int EqSigmalib.EqSigmaIns.g_UU2081_ ^ ", g_UU2082_ = " ^ 
+    Big_int_Z.string_of_big_int EqSigmalib.EqSigmaIns.g_UU2082_ ^ ", g_UU2083_ = " ^ 
+    Big_int_Z.string_of_big_int EqSigmalib.EqSigmaIns.g_UU2083_ ^ ", h_UU2081_ = " ^ 
+    Big_int_Z.string_of_big_int EqSigmalib.EqSigmaIns.h_UU2081_ ^ ", h_UU2082_ = " ^ 
+    Big_int_Z.string_of_big_int EqSigmalib.EqSigmaIns.h_UU2082_ ^ ", h_UU2083_ = " ^ 
+    Big_int_Z.string_of_big_int EqSigmalib.EqSigmaIns.g_UU2083_);
+  print_endline "";  
+  print_string (proof_string proof);
+  print_endline "";
+  print_string verify;
+
+
+(* 
 let _ = 
   let u = rnd EqSigmalib.EqSigmaIns.q in 
   let com = vector_string (EqSigmalib.EqSigmaIns.construct_eq_conversations_schnorr_commitment_ins u) in 
@@ -73,4 +102,4 @@ let _ =
   print_string (proof_string proof);
   print_endline "";
   print_string verify;
-
+*)
