@@ -128,8 +128,6 @@ Section Ins.
       (@mul_schnorr_group p q prime_p prime_q)
       pow 1 (Fin.FS (Fin.FS Fin.F1)) r (uscs) 
       [m₀; m₁; m₂] g h cp c).
-    (* Try to replace [m₀; m₁; m₂] with 
-      [m₀; m₁; mfake] *)
     eapply prime_q.
     eapply prime_q.
     exact safe_prime.
