@@ -48,7 +48,44 @@ let rnd_list (q : Z.t) (n : int) : Z.t EncProoflib.VectorDef.t =
   in
   rnd_list_aux n
 
+  (* Z.t -> (Z.t, (Z.t, Z.t * Z.t) sum) sum VectorDef.t -> Z.t *)
+ let rec random_oracle (acc : string) 
+  (n : Z.t) (v : (Z.t, (Z.t, Z.t * Z.t) EncProoflib.Datatypes.sum) EncProoflib.Datatypes.sum EncProoflib.VectorDef.t) : Z.t = 
+  match v with
+  | Coq_nil -> big_int_of_bytes_mod_q (shake256 ~msg:(String.to_bytes acc) ~size:4) 
+    EncProoflib.EncProofIns.q
+  | Coq_cons (hv, _, tv) -> 
+      match hv with 
+      | Coq_inl hv' -> random_oracle (acc ^ Big_int_Z.string_of_big_int hv') n tv 
+      | Coq_inr hv' -> 
+          match hv' with 
+          | Coq_inl hva ->  random_oracle (acc ^ Big_int_Z.string_of_big_int hva) n tv 
+          | Coq_inr (hva, hvb) -> random_oracle (acc ^ Big_int_Z.string_of_big_int hva ^ Big_int_Z.string_of_big_int hvb) n tv 
+     
 
+let _ = 
+    let uscs = rnd_list EncProoflib.EncProofIns.q 5 in (* 3 randomness for commitment and 2 degree of freedom for cheating*)
+    let proof = nizk_generalised_construct_encryption_proof_elgamal_real_ins (random_oracle "") uscs in
+    let verify = 
+          match generalised_accepting_encryption_proof_elgamal_ins  proof with
+          | true -> "true"
+          | _ -> "false"
+    in
+    print_string ("p = " ^ Big_int_Z.string_of_big_int EncProoflib.EncProofIns.p ^ ", q = " ^ 
+      Big_int_Z.string_of_big_int EncProoflib.EncProofIns.q  ^ ", g = " ^ 
+      Big_int_Z.string_of_big_int EncProoflib.EncProofIns.g ^ ", h  = " ^ 
+      Big_int_Z.string_of_big_int EncProoflib.EncProofIns.h ^ ", m_UU2080_  = " ^ 
+      Big_int_Z.string_of_big_int EncProoflib.EncProofIns.m_UU2080_ ^ ", m_UU2081_  = " ^ 
+      Big_int_Z.string_of_big_int EncProoflib.EncProofIns.m_UU2081_ ^ ", m_UU2082_ = " ^ 
+      Big_int_Z.string_of_big_int EncProoflib.EncProofIns.m_UU2082_ ^ ", cp = (" ^ 
+      Big_int_Z.string_of_big_int (fst EncProoflib.EncProofIns.cp) ^ ", " ^ 
+      Big_int_Z.string_of_big_int (snd EncProoflib.EncProofIns.cp) ^ ")");
+    print_endline "";
+    print_string (proof_string proof);
+    print_endline "";
+    print_string verify;
+
+(* 
 let _ = 
   let uscs = rnd_list EncProoflib.EncProofIns.q 5 in (* 3 randomness for commitment and 2 degree of freedom for cheating*)
   let com =  vector_string_pair (EncProoflib.EncProofIns.construct_encryption_proof_elgamal_commitment_ins uscs) in 
@@ -81,4 +118,4 @@ let _ =
   print_string (proof_string proof);
   print_endline "";
   print_string verify;
-
+*)

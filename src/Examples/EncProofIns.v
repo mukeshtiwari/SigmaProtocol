@@ -137,6 +137,22 @@ Section Ins.
     eapply prime_q.
   Defined.
 
+
+  Definition nizk_generalised_construct_encryption_proof_elgamal_real_ins 
+    (fn  : ∀ {m : nat}, Vector.t (Z + ((@Schnorr_group p q) + 
+      (@Schnorr_group p q * @Schnorr_group p q))) m -> (@Zp q)) 
+    (uscs : Vector.t (@Zp q) 5) :
+    @sigma_proto (@Zp q) (@Schnorr_group p q * @Schnorr_group p q) 3 4 3.
+  Proof.
+    set (comm := construct_encryption_proof_elgamal_commitment_ins uscs).
+    (* all the public values goes here into hashing. *)
+    set (c := fn _ ([inl p; inl q; inr (inl g); inr (inl h); 
+      inr (inl m₀); inr (inl m₁); inr (inl m₂)] ++ 
+      Vector.map (fun x => inr (inr x)) (cp :: comm))).
+    refine(generalised_construct_encryption_proof_elgamal_real_ins uscs c).
+  Defined.
+
+
   
   Definition generalised_accepting_encryption_proof_elgamal_ins 
     (proof : @sigma_proto (@Zp q) (@Schnorr_group p q * @Schnorr_group p q) 3 4 3) : bool.
