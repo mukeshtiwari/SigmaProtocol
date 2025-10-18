@@ -42,7 +42,7 @@
   (extracted_modules AndSigmaIns AndSigma Sigma Zpow_facts 
    Datatypes Vector 
    VectorDef Zpstar BinInt PosDef Functions BinNat 
-   Specif Util EqdepFacts)
+   Specif Util EqdepFacts Nat)
   (theories ExtLib Stdlib Utility Crypto Algebra 
    Probability Examples))
  (library 

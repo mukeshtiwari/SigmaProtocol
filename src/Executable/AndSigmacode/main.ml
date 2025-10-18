@@ -3,17 +3,22 @@ open AndSigmalib.Sigma
 open Cryptokit
 open Hacl_star.Hacl.Keccak
 
-let rec vector_string (v : Z.t AndSigmalib.VectorDef.t) : string = 
+let rec vector_to_list (v : Z.t AndSigmalib.VectorDef.t) : string list =
   match v with
-  | Coq_nil -> ""
-  | Coq_cons (h, _, r) -> (Big_int_Z.string_of_big_int h) ^ ", " ^ vector_string r 
+  | Coq_nil -> []
+  | Coq_cons (h, _, r) -> Big_int_Z.string_of_big_int h :: vector_to_list r
 
-let proof_string (proof : (Z.t, Z.t) AndSigmalib.Sigma.sigma_proto) : string = 
-    match  proof with
-    | {announcement = a; challenge = c; 
-      response = r} -> "proof = {annoucement = "^ vector_string a ^ " challenge = " ^ vector_string c ^ 
-      " response = " ^ vector_string r ^ "}" 
+(* Join the elements with ", " without leaving a trailing comma *)
+let vector_string (v : Z.t AndSigmalib.VectorDef.t) : string =
+  String.concat ", " (vector_to_list v)
 
+(* Format the proof without trailing commas *)
+let proof_string (proof : (Z.t, Z.t) AndSigmalib.Sigma.sigma_proto) : string =
+  match proof with
+  | { announcement = a; challenge = c; response = r } ->
+      "proof = { announcement = " ^ vector_string a ^
+      "; challenge = " ^ vector_string c ^
+      "; response = " ^ vector_string r ^ " }"
 
 
 let big_int_of_bytes_mod_q (s : bytes) (q : Z.t) : Z.t =
@@ -37,11 +42,42 @@ let rnd_list (q : Z.t) (n : int) : Z.t AndSigmalib.VectorDef.t =
   in
   rnd_list_aux n
 
-let () = 
+
+let rec random_oracle (acc : string) 
+  (n : Z.t) (v : (Z.t, Z.t) AndSigmalib.Datatypes.sum AndSigmalib.VectorDef.t) : Z.t = 
+  match v with
+  | Coq_nil -> big_int_of_bytes_mod_q (shake256 ~msg:(String.to_bytes acc) ~size:4) 
+    AndSigmalib.AndSigmaIns.q
+  | Coq_cons (hv, _, tv) -> 
+      match hv with 
+      | Coq_inl hv' 
+      | Coq_inr hv' -> random_oracle (acc ^ Big_int_Z.string_of_big_int hv') n tv
+
+
+let _ = 
+  let u = rnd_list AndSigmalib.AndSigmaIns.q 3 in 
+  let proof = nizk_construct_and_conversations_schnorr_ins (random_oracle "") u in
+  let verify = 
+    match generalised_and_accepting_conversations_ins proof with  
+    | true -> "true"
+    | _ -> "false"
+  in
+  print_string ("p = " ^ Big_int_Z.string_of_big_int AndSigmalib.AndSigmaIns.p ^ ", q = " ^ 
+    Big_int_Z.string_of_big_int AndSigmalib.AndSigmaIns.q  ^ ", g = " ^ 
+    Big_int_Z.string_of_big_int AndSigmalib.AndSigmaIns.g ^ ", h1 = " ^ 
+    Big_int_Z.string_of_big_int AndSigmalib.AndSigmaIns.h_UU2081_ ^ ", h2 = " ^ 
+    Big_int_Z.string_of_big_int AndSigmalib.AndSigmaIns.h_UU2082_ ^ ", h3 = " ^ 
+    Big_int_Z.string_of_big_int AndSigmalib.AndSigmaIns.h_UU2083_ ^ "\n"); 
+  print_string (proof_string proof);
+  print_endline "";
+  print_string verify;
+
+(* 
+let _ = 
   let u = rnd_list AndSigmalib.AndSigmaIns.q 3 in 
   (* c is computed using fiat-shamir but 
   we have hit bugs in extraction. *)
-  let com = vector_string (AndSigmalib.AndSigmaIns.construct_and_conversations_schnorr_commitment_ins g u) in 
+  let com = vector_string (AndSigmalib.AndSigmaIns.construct_and_conversations_schnorr_commitment_ins u) in 
   let cha = "p = " ^ Big_int_Z.string_of_big_int AndSigmalib.AndSigmaIns.p ^ ", q = " ^ 
     Big_int_Z.string_of_big_int AndSigmalib.AndSigmaIns.q  ^ 
     ", g = " ^ Big_int_Z.string_of_big_int AndSigmalib.AndSigmaIns.g ^ ", h_UU2081_ = " ^ 
@@ -66,3 +102,4 @@ let () =
   print_endline "";
   print_string verify;
 
+*)

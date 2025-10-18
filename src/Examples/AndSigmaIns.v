@@ -90,7 +90,7 @@ Section Ins.
   Defined.
 
   Definition construct_and_conversations_schnorr_commitment_ins
-    (g :  @Schnorr_group p q) (us : Vector.t (@Zp q) 3) : Vector.t (@Schnorr_group p q) 3.
+    (us : Vector.t (@Zp q) 3) : Vector.t (@Schnorr_group p q) 3.
   Proof.
     refine(@construct_and_conversations_schnorr_commitment 
       (@Zp q) (@Schnorr_group p q) pow _ g us).
@@ -109,6 +109,18 @@ Section Ins.
     eapply prime_p.
     eapply prime_q.
   Defined.
+
+  Definition nizk_construct_and_conversations_schnorr_ins 
+    (fn  : ∀ {m : nat}, Vector.t (Z + (@Schnorr_group p q)) m -> (@Zp q))
+    (us : Vector.t (@Zp q) 3)  : 
+    @sigma_proto (@Zp q) (@Schnorr_group p q) 3 1 3.
+  Proof.
+    set (comm := construct_and_conversations_schnorr_commitment_ins us).
+    set (c := fn _ ([inl p; inl q; inr g; inr h₁; inr h₂; inr h₃] ++ 
+      Vector.map inr comm)).
+    refine(construct_and_conversations_schnorr_ins us c).
+  Defined.
+
 
   Definition generalised_and_accepting_conversations_ins : 
     @sigma_proto (@Zp q) (@Schnorr_group p q) 3 1 3 ->  bool.
