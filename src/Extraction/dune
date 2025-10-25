@@ -135,3 +135,19 @@
    (name Tallylib)
    (libraries zarith)
    (modules :standard)))
+
+
+
+(subdir ChaumPedersenlib
+ (coq.extraction
+  (prelude Extraction)
+  (extracted_modules ChaumPedersenIns ChaumPedersen EqSigma
+   Datatypes Vector Nat Specif Sigma
+   VectorDef Zpstar BinInt PosDef Functions BinNat 
+   Util)
+  (theories ExtLib Stdlib Utility Crypto Algebra 
+   Probability Examples Frontend Backend))
+ (library 
+   (name ChaumPedersenlib)
+   (libraries zarith)
+   (modules :standard)))
