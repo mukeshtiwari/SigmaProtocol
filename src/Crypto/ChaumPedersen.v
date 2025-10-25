@@ -58,9 +58,15 @@ Section DL.
           g, h and  (c₁, c₂) : public inputs 
           c : single challenge
           c₁ = g^x ∧ c₂ = h^x 
-
         
       *)
+      (* Lifting this so that I can use it for hashing *)
+      Definition construct_cp_conversations_schnorr_commitment
+         (g h : G) (u : F) : Vector.t G 2 := 
+        @construct_eq_conversations_schnorr_commitment 
+          F G gpow _ [g; h] u.
+    
+
       Definition construct_cp_conversations_schnorr 
         (x : F) (g h : G) (u c : F) : @sigma_proto F G 2 1 1 :=
         @construct_eq_conversations_schnorr F add mul G gpow _ x 
