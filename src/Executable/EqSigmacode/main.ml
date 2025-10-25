@@ -64,7 +64,7 @@ let _ =
     Big_int_Z.string_of_big_int EqSigmalib.EqSigmaIns.g_UU2083_ ^ ", h_UU2081_ = " ^ 
     Big_int_Z.string_of_big_int EqSigmalib.EqSigmaIns.h_UU2081_ ^ ", h_UU2082_ = " ^ 
     Big_int_Z.string_of_big_int EqSigmalib.EqSigmaIns.h_UU2082_ ^ ", h_UU2083_ = " ^ 
-    Big_int_Z.string_of_big_int EqSigmalib.EqSigmaIns.g_UU2083_);
+    Big_int_Z.string_of_big_int EqSigmalib.EqSigmaIns.h_UU2083_);
   print_endline "";  
   print_string (proof_string proof);
   print_endline "";

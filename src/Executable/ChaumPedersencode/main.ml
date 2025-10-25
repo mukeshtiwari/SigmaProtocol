@@ -38,12 +38,21 @@ let rnd (q : Z.t) : Z.t =
   big_int_of_bytes_mod_q buf q 
   
 
+let rec random_oracle (acc : string) 
+  (n : Z.t) (v : (Z.t, Z.t) ChaumPedersenlib.Datatypes.sum ChaumPedersenlib.VectorDef.t) : Z.t = 
+  match v with
+  | Coq_nil -> big_int_of_bytes_mod_q (shake256 ~msg:(String.to_bytes acc) ~size:4) 
+    ChaumPedersenlib.ChaumPedersenIns.q
+  | Coq_cons (hv, _, tv) -> 
+      match hv with 
+      | Coq_inl hv' 
+      | Coq_inr hv' -> random_oracle (acc ^ Big_int_Z.string_of_big_int hv') n tv
+
 
 
 let _ = 
-  let u = rnd ChaumPedersenlib.ChaumPedersenIns.q in 
-  let c =  rnd ChaumPedersenlib.ChaumPedersenIns.q in 
-  let proof = construct_cp_conversations_schnorr_ins u c in  
+  let u = rnd ChaumPedersenlib.ChaumPedersenIns.q in
+  let proof = nizk_construct_cp_conversations_schnorr_ins (random_oracle "") u in  
   let verify = 
     match generalised_cp_accepting_conversations_ins proof with
     | true ->"true"

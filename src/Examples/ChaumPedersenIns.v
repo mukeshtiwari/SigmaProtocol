@@ -76,6 +76,16 @@ Section Ins.
     all:(try eapply prime_q).
   Qed.
 
+  
+  Definition construct_cp_conversations_schnorr_commitment_ins 
+    (u : @Zp q) : Vector.t (@Schnorr_group p q) 2.
+  Proof.
+    refine(@construct_cp_conversations_schnorr_commitment 
+      (@Zp q) (@Schnorr_group p q) pow g h u).
+    eapply safe_prime.
+    eapply prime_p.
+    eapply prime_q.
+  Defined. 
 
 
   Definition construct_cp_conversations_schnorr_ins 
@@ -87,6 +97,19 @@ Section Ins.
     all:(try eapply prime_p).
     all:(try eapply prime_q).
   Defined.
+
+  Definition nizk_construct_cp_conversations_schnorr_ins 
+    (fn : ∀ {m : nat}, Vector.t (Z + (@Schnorr_group p q)) m -> (@Zp q))
+    (u : (@Zp q)) : @sigma_proto (@Zp q) (@Schnorr_group p q) 2 1 1.
+  Proof.
+    set (comm := construct_cp_conversations_schnorr_commitment_ins u).
+    set (c := fn _ ([inl p; inl q; inr g; inr h; inr c₁; inr c₂] ++ 
+    Vector.map inr comm)).
+    exact(construct_cp_conversations_schnorr_ins u c).
+  Defined.
+
+
+
 
   Definition generalised_cp_accepting_conversations_ins : 
     @sigma_proto (@Zp q) (@Schnorr_group p q) 2 1 1 -> bool.
