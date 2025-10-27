@@ -1,4 +1,4 @@
-From Stdlib Require Import Utf8 ZArith Vector.
+From Stdlib Require Import Utf8 ZArith Vector Psatz.
 From Crypto Require Import Sigma EncProof.
 From Frontend Require Import Approval.
 From Utility Require Import Zpstar Util.
@@ -156,7 +156,7 @@ Section Ins.
       _ g h rs ms).
   Defined.
 
-
+  
   Definition generate_ballot_commitment_ins 
     {n : nat} (rs ms : Vector.t (@Zp q) n)
     (uscs : Vector.t (Vector.t (@Zp q) 3) n) :
@@ -211,6 +211,43 @@ Section Ins.
     all: (try eapply prime_q).
     exact safe_prime.
     eapply prime_p.
+  Defined.
+
+
+  (* move this to Util? *)
+  Definition vector_unfold : ∀ {n : nat}, Vector.t (Vector.t (@Schnorr_group p q * @Schnorr_group p q) 2) n ->
+    Vector.t (@Schnorr_group p q) (4 * n).
+  Proof.
+    refine
+    (fix fn {n : nat} (v : Vector.t (Vector.t (@Schnorr_group p q * @Schnorr_group p q) 2) n) : 
+      Vector.t (@Schnorr_group p q) (4 * n) := 
+      match v as v' in Vector.t _ n' return 
+        Vector.t ((@Schnorr_group p q)) (4 * n')
+      with  
+      | [] =>  []
+      | @Vector.cons _ vh nt vt => 
+         let ret := fn vt in _ 
+      end).
+    assert (ha : 4 * S nt = 4 + 4 * nt). nia.
+    rewrite ha; clear ha.
+    destruct (vector_inv_S vh) as ((vha, vhb) & vht & _).
+    destruct (vector_inv_S vht) as ((vhta, vhtb) & _ & _).
+    exact (vha :: vhb :: vhta :: vhtb :: ret).
+  Defined.
+
+
+
+  Definition nizk_encrypt_ballot_and_generate_enc_proof_ins {n : nat} 
+    (fn : ∀ {m : nat}, Vector.t (Z + (@Schnorr_group p q)) m -> Vector.t (@Zp q) n)
+    (rs : Vector.t (@Zp q) n) (ms : Vector.t (@Zp q) n) 
+    (uscs : Vector.t (Vector.t (@Zp q) 3) n) : 
+    Vector.t ((@Schnorr_group p q) * (@Schnorr_group p q) * 
+      @Sigma.sigma_proto (@Zp q) (@Schnorr_group p q * @Schnorr_group p q) 2 3 2) n.
+  Proof.
+    set (comm := generate_ballot_commitment_ins rs ms uscs).
+    set (c := fn _ ([inl p; inl q; inr g; inr h] ++ 
+      Vector.map inr (vector_unfold comm))).
+    exact(encrypt_ballot_and_generate_enc_proof_ins rs ms uscs c).
   Defined.
 
 

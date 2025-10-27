@@ -74,6 +74,40 @@ let generate_valid_ballot (n : int) : Z.t Approvallib.VectorDef.t =
 let generate_invalid_ballot (n : int) : Z.t Approvallib.VectorDef.t = 
     rnd_list Approvallib.ApprovalIns.q n 
 
+(* I need a function --random-oracle-- that takes m bytes and return n bytes *)
+(* Convert Z.t to string *)
+
+(* Flatten vector to bytes *)
+let vector_to_bytes (m : Z.t) (v : (Z.t, Z.t) Approvallib.Datatypes.sum Approvallib.VectorDef.t) : 
+  bytes =
+  Approvallib.Vector.fold_right
+    (fun x acc ->
+       let s = match x with
+         | Approvallib.Datatypes.Coq_inl xa
+         | Approvallib.Datatypes.Coq_inr xa -> Big_int_Z.string_of_big_int xa
+       in
+       Bytes.cat acc (Bytes.of_string s)) m v Bytes.empty
+
+let rec construct_challenge_vector (n : int) (msg : bytes) : Z.t Approvallib.VectorDef.t = 
+  match n with 
+  | 0 -> Approvallib.VectorDef.Coq_nil
+  | _ -> 
+    let start = (n - 1) * 4 in
+    let chunk = Bytes.sub msg start 4 in
+    let z = big_int_of_bytes_mod_q chunk q in
+    Approvallib.Vector.Coq_cons (z, Big_int_Z.big_int_of_int (n - 1), 
+    (construct_challenge_vector (n - 1) msg))
+
+
+let random_oracle (n : int) (m : Z.t) 
+  (v : (Z.t, Z.t) Approvallib.Datatypes.sum Approvallib.VectorDef.t) :
+  Z.t Approvallib.VectorDef.t =
+  let inp_msg = vector_to_bytes m v in
+  let out_msg = shake256 ~msg:inp_msg ~size:(4 * n) in (* 4 n bytes *) 
+  construct_challenge_vector (n : int) out_msg 
+  
+  
+(* 
 let generate_valid_ballot_and_proof (n : int) : ((Z.t * Z.t) * (Z.t, Z.t * Z.t) sigma_proto) Approvallib.VectorDef.t = 
   let ms = generate_valid_ballot n in 
   let rs = rnd_list Approvallib.ApprovalIns.q n in 
@@ -90,8 +124,19 @@ let generate_valid_ballot_and_proof (n : int) : ((Z.t * Z.t) * (Z.t, Z.t * Z.t) 
     Big_int_Z.string_of_big_int Approvallib.ApprovalIns.h ^ ", com = " ^ x)) ~size:4) Approvallib.ApprovalIns.q) 
    (Big_int_Z.big_int_of_int n) com in 
   encrypt_ballot_and_generate_enc_proof_ins (Big_int_Z.big_int_of_int n) rs ms uscs cha
+*)
 
+
+let generate_valid_ballot_and_proof (n : int) : ((Z.t * Z.t) * (Z.t, Z.t * Z.t) sigma_proto) Approvallib.VectorDef.t = 
+  let ms = generate_valid_ballot n in 
+  let rs = rnd_list Approvallib.ApprovalIns.q n in 
+  let uscs = rnd_list_list Approvallib.ApprovalIns.q 3 n in 
+  nizk_encrypt_ballot_and_generate_enc_proof_ins (Big_int_Z.big_int_of_int n) 
+  (random_oracle n) rs ms uscs 
+
+  
 (* This would not pass the check *)
+(* 
 let generate_invalid_ballot_and_proof (n : int) : ((Z.t * Z.t) * (Z.t, Z.t * Z.t) sigma_proto) Approvallib.VectorDef.t = 
   let ms = generate_invalid_ballot n in 
   let rs = rnd_list Approvallib.ApprovalIns.q n in 
@@ -109,19 +154,26 @@ let generate_invalid_ballot_and_proof (n : int) : ((Z.t * Z.t) * (Z.t, Z.t * Z.t
     Big_int_Z.string_of_big_int Approvallib.ApprovalIns.h ^ ", com = " ^ x)) ~size:4) Approvallib.ApprovalIns.q) 
    (Big_int_Z.big_int_of_int n) com in 
   encrypt_ballot_and_generate_enc_proof_ins (Big_int_Z.big_int_of_int n) rs ms uscs cha
+*)
 
+let generate_invalid_ballot_and_proof (n : int) : ((Z.t * Z.t) * (Z.t, Z.t * Z.t) sigma_proto) Approvallib.VectorDef.t = 
+  let ms = generate_invalid_ballot n in 
+  let rs = rnd_list Approvallib.ApprovalIns.q n in 
+  let uscs = rnd_list_list Approvallib.ApprovalIns.q 3 n in 
+  nizk_encrypt_ballot_and_generate_enc_proof_ins (Big_int_Z.big_int_of_int n) 
+  (random_oracle n) rs ms uscs 
 
-let generate_random_ballots (m : int) (n : int) : unit = 
-  let counter = ref m in 
-  while 0 < !counter do 
+let generate_random_ballots (m : int) (n : int) : unit =
+  for i = 1 to m do
     let valid_proof = generate_valid_ballot_and_proof n in
-    let invalid_proof = generate_invalid_ballot_and_proof n in 
+    let invalid_proof = generate_invalid_ballot_and_proof n in
     print_string (vector_proof_and_enc_string valid_proof);
-    print_newline ();
+    print_string "\n";
     print_string (vector_proof_and_enc_string invalid_proof);
-    print_newline ();
-    counter := !counter - 1 
+    (* Only print newline if not the last iteration *)
+    if i <> m then print_newline ()
   done
+
 
 let _ = 
     let m = 100 in 
