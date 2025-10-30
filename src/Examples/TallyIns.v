@@ -60,14 +60,14 @@ Section Ins.
   Defined.
  (*end of group generator *)
 
-  (* rs is the randomness used to encrypt 0 
+  (* 
       us and cs is the randomess used to construct 
       decryption proof. 
   *)
   Definition compute_final_count_ins {n : nat} 
     (discrete_logarithm_search : @Schnorr_group p q -> @Schnorr_group p q ->
     (@Zp q))
-    (rs : Vector.t (@Zp q) n) (us cs : Vector.t (@Zp q) (n + n))
+    (us cs : Vector.t (@Zp q) n)
     (bs :  list (Vector.t (@Schnorr_group p q * @Schnorr_group p q * 
       @Sigma.sigma_proto (@Zp q) (@Schnorr_group p q * @Schnorr_group p q) 2 3 2) n)) : 
     existsT (vbs inbs : 
@@ -77,6 +77,7 @@ Section Ins.
       @count (@Zp q) (@Zpfield.zero q prime_q) 
       (@Zpfield.one q prime_q) zp_add zp_dec
       (@Schnorr_group p q) 
+      (@Schnorr.one p q prime_p prime_q)
       (@inv_schnorr_group 2 p q safe_prime prime_p prime_q)
       (@mul_schnorr_group p q prime_p prime_q) 
       (@pow 2 p q safe_prime prime_p prime_q) 
@@ -91,7 +92,7 @@ Section Ins.
       (@mul_schnorr_group p q prime_p prime_q) 
       (@pow 2 p q safe_prime prime_p prime_q)
        Schnorr.dec_zpstar n g h pow_vspace 
-       discrete_logarithm_search x rs us cs _ bs).
+       discrete_logarithm_search x us cs _ bs).
     compute; f_equal.
     (* We have decidable equality so we can use 
     Eqdep_dec.eq_proofs_unicity_on  *)

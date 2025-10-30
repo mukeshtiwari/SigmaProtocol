@@ -95,7 +95,7 @@ let rec iterate_char (c : string) (n : int) : string =
 
 let rec print_count (bs : (Z.t, Z.t) Tallylib.Tally.count) : string = 
     match bs with 
-    | Coq_ax (ms, ds, pf) -> "Encrypted zero-tally : " ^ vector_string_pair " " ms ^ "\nDecrypted zero-tally (g^0) : " ^ vector_string " " ds ^ "\nDecryption zero-knowledge proof : "  ^ vector_proof_string " " pf  ^ "\n" ^ iterate_char "-" 150 ^ "\n"
+    | Coq_ax ms -> "Identity-tally : " ^ vector_string_pair " " ms ^ "\n" ^ iterate_char "-" 150 ^ "\n"
     | Coq_cvalid (u, us, vbs, inbs, ms, nms, p) -> print_count p ^ "Valid ballot : " ^ vector_to_string proof_and_enc_string " " u ^ " \nPrevious tally : " ^ vector_string_pair " " ms ^ "\nCurrent tally : " ^ vector_string_pair " " nms ^ "\n" ^ iterate_char "-" 150 ^ "\n"
     | Coq_cinvalid (u, us, vbs, inbs, ms, p) -> print_count p ^ "Invalid ballot : " ^ vector_to_string proof_and_enc_string " " u ^ " \nPrevious tally : " ^ vector_string_pair " " ms ^ "\nCurrent tally : " ^ vector_string_pair " " ms ^ "\n" ^ iterate_char "-" 150 ^ "\n"
     | Coq_cfinish (us, vbs, inbs, ms, ds, pf, pt, p) -> print_count p ^ "Final tally : " ^ vector_string_pair " " ms ^ "\nFinal Decrypted Tally : " ^ vector_string " " ds ^ "\nFinal Decrypted Tally (Discrete Logarithm Search) : " ^ vector_string " " pt ^ "\n" ^ iterate_char "-" 150 ^ "\n"
@@ -103,10 +103,9 @@ let rec print_count (bs : (Z.t, Z.t) Tallylib.Tally.count) : string =
 
 let _ =
   let bs = Parser.prog Lexer.token (Lexing.from_channel stdin) in 
-  let rs = rnd_list Tallylib.TallyIns.q 10 in (* goes for encryption zero values *)
-  let us = rnd_list Tallylib.TallyIns.q 20 in (* goes for decryption proof construciton *)
-  let cs = rnd_list Tallylib.TallyIns.q 20 in (* challenge but it needs to be hashed from all the public values so I need to change API. *)
-  let tally = compute_final_count_ins (Big_int_Z.big_int_of_int 10) discrete_log_search rs us cs bs in 
+  let us = rnd_list Tallylib.TallyIns.q 10 in (* goes for decryption proof construciton *)
+  let cs = rnd_list Tallylib.TallyIns.q 10 in (* challenge but it needs to be hashed from all the public values so I need to change API. *)
+  let tally = compute_final_count_ins (Big_int_Z.big_int_of_int 10) discrete_log_search us cs bs in 
   match tally with 
   | Tallylib.Specif.Coq_existT (vbs, 
     Tallylib.Specif.Coq_existT (inbs, Tallylib.Specif.Coq_existT (pt, count))) -> 

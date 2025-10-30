@@ -81,18 +81,10 @@ Section Tally.
     Inductive count : state -> Type :=
     (* 
     - ax bootstraps the election 
-      ms is encryption of zero -- ms = (@encrypted_ballot F G gop gpow g h _
-        (repeat_ntimes n zero) rs)
-      pf is decryption proof that ms decryptions to g^zero.
-      ds is decryption of ms
+      ms is a vector of (gid, gid) 
     *)
-    | ax 
-      (ms : Vector.t (G * G) n) 
-      (ds : Vector.t G n) 
-      (pf : Vector.t (@sigma_proto F G 2 1 1) n) : 
-      (∀ (i : Fin.t n), Vector.nth ds i = g ^ zero) -> 
-      @decryption_proof_accepting_conversations_vector F G ginv gop gpow 
-        Gdec _ g h ms ds pf = true ->
+    | ax  (ms : Vector.t (G * G) n) :  
+      (∀ (i : Fin.t n), Vector.nth ms i = (gid, gid)) -> 
       count (partial (@List.nil (Vector.t (G * G * @Sigma.sigma_proto F (G * G) 2 3 2) n))
         (@List.nil (Vector.t (G * G * @Sigma.sigma_proto F (G * G) 2 3 2) n)) 
         (@List.nil (Vector.t (G * G * @Sigma.sigma_proto F (G * G) 2 3 2) n)) ms)
@@ -166,23 +158,6 @@ Section Tally.
     Add Field field : (@field_theory_for_stdlib_tactic F
        eq zero one opp add mul sub inv div vector_space_field).
 
-    Theorem  compute_final_tally_aux1 : ∀ (m : nat) (f : Fin.t m), 
-      (@raise_message_gen F G gpow g _ (repeat_ntimes m zero))[@f] = g ^ zero. 
-    Proof.
-      induction m as [|m ihm].
-      +
-        intro f. refine match f with end.
-      +
-        intro f. 
-        destruct (fin_inv_S _ f) as [f' | (f' & ha)].
-        ++
-          subst; cbn.
-          reflexivity.
-        ++
-          subst; cbn.
-          eapply ihm.
-    Qed.
-
 
     Theorem  compute_final_tally_aux2 : ∀ (m : nat) (f : Fin.t m) 
       (ms : Vector.t (G * G) m) (x : F), g^x = h -> 
@@ -224,11 +199,11 @@ Section Tally.
     Qed.
   
          
-    (* rs is the randomness used to encrypt 0 
+    (* 
       us and cs is the randomess used to construct 
       decryption proof. 
     *)
-    Definition compute_final_tally (x : F) (rs us cs : Vector.t F n) : 
+    Definition compute_final_tally (x : F) (* rs us cs : Vector.t F n *) : 
       g^x = h -> (* relation between public key and group generator *)  
       ∀ (bs : list (Vector.t (G * G * @Sigma.sigma_proto F (G * G) 2 3 2) n)), 
       existsT (vbs inbs :  list (Vector.t (G * G * @Sigma.sigma_proto F (G * G) 2 3 2) n))
@@ -242,31 +217,17 @@ Section Tally.
         | @List.nil _ => _ 
         | @List.cons _ bh bt => _ 
         end).
-      +
-        set (ms := (@encrypted_ballot F G gop gpow g h _ (repeat_ntimes n zero) rs)).
-        set (ds := @decrypted_ballot F G ginv gop gpow x _ ms).
-        set (pf := @construct_decryption_proof_elgamal_real_vector F add mul G gpow 
-          _ x g ms us cs).
+      + 
+        set (ms := repeat_ntimes n (gid, gid)).
         exists (@List.nil (Vector.t (G * G * @Sigma.sigma_proto F (G * G) 2 3 2) n)),
         (@List.nil (Vector.t (G * G * @Sigma.sigma_proto F (G * G) 2 3 2) n)), ms.
-        (* bootstrap *)
-        refine (pair (ax ms ds pf  _ _ ) _). 
+        refine(pair (ax ms _) _).
         ++
-          unfold ds, ms.
-          intro f. 
-          pose proof (@ballot_encryption_decryption_raise_message F zero one 
-            add mul sub div opp inv G gid ginv gop gpow Hvec x g h (eq_sym ha)
-            _ (repeat_ntimes n zero) rs ms eq_refl) as hb.
-          unfold ms in hb. rewrite <-hb.
-          eapply compute_final_tally_aux1.
+          intros *.
+          unfold ms.
+          eapply repeat_ntimes_correct.
         ++
-          eapply decryption_proof_accepting_conversations_vector_completeness;
-          [exact ha | ].
-          unfold ms, ds, ms.
-          intro f.
-          eapply compute_final_tally_aux2; exact ha.
-        ++
-         reflexivity.
+          reflexivity.
       +
         (* check if bh is valid ballot or not *)
         refine 
@@ -334,24 +295,21 @@ Section Tally.
           subst; cbn.
           now eapply ihm.
     Qed.
-    
-
-    Definition compute_final_count (x : F) (rs : Vector.t F n) 
-      (us cs : Vector.t F (n + n)) : 
+   
+    (* us and cs is the randomness to produce final honest decryption proof *)
+    Definition compute_final_count (x : F) (us cs : Vector.t F n) : 
       g^x = h -> (* relation between public key and group generator *)  
       ∀ (bs : list (Vector.t (G * G * @Sigma.sigma_proto F (G * G) 2 3 2) n)), 
       existsT (vbs inbs :  
         list (Vector.t (G * G * @Sigma.sigma_proto F (G * G) 2 3 2) n))
         (pt : Vector.t F n), count (finished bs vbs inbs pt).
     Proof.
-      destruct (splitat n us) as (usa & usb).
-      destruct (splitat n cs) as (csa & csb).
       intros * ha *.
-      destruct (compute_final_tally x rs usa csa ha bs) as (vbs & inbs & ms & hb & hc).
+      destruct (compute_final_tally x ha bs) as (vbs & inbs & ms & hb & hc).
       set (ds := @decrypted_ballot F G ginv gop gpow x _ ms).
       set (pt := (map (fun hy => discrete_logarithm_search g hy) ds)).
       set (pf := @construct_decryption_proof_elgamal_real_vector F add mul G gpow 
-          _ x g ms usb csb).
+          _ x g ms us cs).
       exists vbs, inbs, pt.
       refine(cfinish bs vbs inbs ms ds pf pt hb hc _ _).
       intro f. eapply compute_final_count_aux;

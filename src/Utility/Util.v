@@ -231,6 +231,19 @@ Section Vect.
     | S n' => w :: repeat_ntimes n' w 
     end.
 
+  Theorem repeat_ntimes_correct : ∀ {n : nat}
+    (i : Fin.t n) (w : R), (repeat_ntimes n w)[@i] = w. 
+  Proof. 
+    induction n as [|n ihn].
+    + 
+      intros i w.
+      refine match i with end. 
+    +
+      intros *.
+      cbn.
+      destruct (fin_inv_S _ i) as [f | (f & ha)]; 
+      subst; cbn;[reflexivity | eapply ihn; assumption].
+  Qed.
 
   Definition take : forall (n : nat) {m : nat}, 
     Vector.t R (n + m) -> Vector.t R n.
