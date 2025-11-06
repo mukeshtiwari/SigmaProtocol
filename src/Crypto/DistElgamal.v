@@ -71,6 +71,17 @@ Section DistElgamal.
 
   Section Proofs. 
 
+
+    Add Field field : (@field_theory_for_stdlib_tactic F
+       eq zero one opp add mul sub inv div vector_space_field).
+       
+    
+    Theorem group_shuffle_commutative : ∀ (u v x y : G),
+      gop (gop u v) (gop x y) = gop (gop u x) (gop v y).
+    Proof.
+      intros *.
+    Admitted.
+
     Context 
       {n : nat}
       {g : G} 
@@ -80,9 +91,7 @@ Section DistElgamal.
       (hrel : ∀ (i : Fin.t (1 + n)), gpow g (Vector.nth xs i) = (Vector.nth hs i)).
     
 
-    Add Field field : (@field_theory_for_stdlib_tactic F
-       eq zero one opp add mul sub inv div vector_space_field).
-       
+
     Theorem fold_right_identity : ∀ (r : F) (ds : Vector.t G (1 + n)), 
       (∀ f : t (S n), ds[@f] = (g ^ r) ^ xs[@f]) ->
       gop (fold_right (λ hi acc : G, gop hi acc) hs gid ^ r) 
@@ -131,7 +140,38 @@ Section DistElgamal.
         rewrite he, hf. cbn.
         remember (fold_right (λ hi acc : G, gop hi acc) hs' gid) as hii.
         remember (fold_right (λ hi acc : G, gop hi acc) ds' gid) as dii.
-    Admitted.
+        (* why is rewrite not working? *)
+        pose proof vector_space_smul_distributive_vadd as hg.
+        unfold is_smul_distributive_vadd in hg.
+        specialize (hg r h hii).
+        rewrite hg; clear hg.
+        rewrite group_inv_flip.
+        assert (hj : gop (ginv dii) (ginv d) = gop (ginv d) (ginv dii)).
+        rewrite commutative; reflexivity. rewrite hj; clear hj.
+        (* rewrite fails but setoid_rewrite works! *)
+        setoid_rewrite <-Heqhii in ihn.
+        setoid_rewrite <-Heqdii in ihn.
+        rewrite group_shuffle_commutative, ihn.
+        rewrite hd, hf in hb.
+        pose proof (hb Fin.F1) as hg.
+        cbn in hg.
+        rewrite hd, he in ha.
+        pose proof (ha Fin.F1) as hh.
+        cbn in hh.
+        rewrite <-hh, hg.
+        (* setoid_rewrite is also not working! Why? *)
+        pose proof vector_space_smul_associative_fmul as hi.
+        unfold is_smul_associative_fmul in hi.
+        specialize (hi x r g).
+        rewrite <-hi. clear hi.
+        pose proof vector_space_smul_associative_fmul as hi.
+        unfold is_smul_associative_fmul in hi.
+        specialize (hi r x g). 
+        rewrite <-hi. clear hi.
+        assert (hi : x * r = r * x). field.
+        rewrite hi, right_inverse, right_identity.
+        reflexivity.
+    Qed.
 
 
     Theorem decryption_correct : ∀ (m r : F) (c : G * G) (ds : Vector.t G (1 + n)),
