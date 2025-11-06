@@ -162,9 +162,10 @@ Section DistElgamal.
     Context 
       {n : nat}
       {g : G} 
-      {xs : Vector.t F (1 + n)}
-      {hs : Vector.t G (1 + n)}
-      (* under the assumption each hi = g ^ xi *)
+      {xs : Vector.t F (1 + n)} (* private keys of trustess *)
+      {hs : Vector.t G (1 + n)} (* public keys of the trustess *)
+      (* under the assumption each hi = g ^ xi --there is zero-knowledge proof for this 
+      fact as well in the tallysheet. *)
       (hrel : ∀ (i : Fin.t (1 + n)), gpow g (Vector.nth xs i) = (Vector.nth hs i)).
     
 
@@ -251,7 +252,7 @@ Section DistElgamal.
     Qed.
 
 
-    Theorem decryption_correct : ∀ (m r : F) (c : G * G) (ds : Vector.t G (1 + n)),
+    Theorem decryption_value_correct : ∀ (m r : F) (c : G * G) (ds : Vector.t G (1 + n)),
       c = encrypt_value_dist g hs m r -> 
       (∀ (f : Fin.t (1 + n)), Vector.nth ds f = decrypt_value_partial c (Vector.nth xs f)) -> 
       decrypt_value c ds = g ^ m.
@@ -266,6 +267,45 @@ Section DistElgamal.
       rewrite right_identity; exact eq_refl.
       typeclasses eauto.
     Qed.
+
+
+    Theorem decrypt_ballot_value_correct : ∀ {m : nat} 
+      (ms rs : Vector.t F m) (cs : Vector.t (G * G) m)
+      (ds : Vector.t (Vector.t G m) (1 + n)), 
+      (* partial decryption factor is well-formed/correct *)
+      (∀ (fa : Fin.t (1 + n)) (fb : Fin.t m), ds[@fa][@fb] = (g ^ rs[@fb]) ^ xs[@fa]) ->
+      (* cs is encryption of ms *)
+      cs = @encrypt_ballot_dist n m g hs ms rs -> 
+      ∀ (f : Fin.t m), g ^ ms[@f] = (@decrypt_ballot_value n m cs ds)[@f].
+    Proof.
+      revert n xs hs hrel.
+      induction n as [|n' ihn].
+      + 
+        (* base case: one trustee *)
+        intros * ha * hb hc f.
+        cbn in * |-.
+        subst.
+        destruct (vector_inv_S ds) as (dsh & dst & hc). 
+        pose proof (vector_inv_0 dst) as hd.
+        destruct (vector_inv_S xs) as (xsh & xst & he).
+        pose proof (vector_inv_0 xst) as hf.
+        destruct (vector_inv_S hs) as (hsh & hst & hg).
+        pose proof (vector_inv_0 hst) as hh.
+        subst.
+        specialize (ha Fin.F1). 
+        specialize (hb Fin.F1).
+        cbn in ha, hb. cbn.
+        unfold encrypt_ballot_dist. cbn.
+        admit.
+      +
+        intros * ha * hb hc f.
+        
+
+
+    Admitted.
+
+
+
 
 
 
