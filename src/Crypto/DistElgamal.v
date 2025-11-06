@@ -34,6 +34,8 @@ Section DistElgamal.
 
   Section Def.
 
+      (* This function encrypts a value m as g ^ m by using public keys 
+      supplied as hs. *)
       Definition encrypt_value_dist {n : nat}
         (g : G) (hs : Vector.t G (1 + n)) (m r : F) : G * G.
       Proof.
@@ -52,7 +54,8 @@ Section DistElgamal.
           end. 
       Defined.
 
-      (* decrypt a ciphter text completely *)
+      (* decrypt a ciphter text completely, given all the 
+      decrypton factor  *)
       Definition decrypt_value {n : nat} (c : G * G)  
         (ds : Vector.t G (1 + n)) : G.
       Proof.
@@ -64,6 +67,49 @@ Section DistElgamal.
           | (c₁, c₂) => gop c₂ (ginv d)
           end. 
       Defined.
+
+      (* encrypts a ballot *)
+      Definition encrypt_ballot_dist {n m : nat}
+        (g : G) (hs : Vector.t G (1 + n)) 
+        (ms rs : Vector.t F m) : Vector.t (G * G) m.
+      Proof.
+        (* multiply all the public keys *)
+        set (h := Vector.fold_right (fun hi acc => gop hi acc) hs gid).
+        exact(@encrypted_ballot F G gop gpow g h _ ms rs).
+      Defined.
+
+      (* partially decrypts a ballot *)
+      Definition decrypt_ballot_partial {m : nat} 
+        (cs : Vector.t (G * G) m) (x : F) : Vector.t G m.
+      Proof.
+        exact (Vector.map (fun c => decrypt_value_partial c x) cs).
+      Defined.
+
+      (* decrypt a ciphter text completely. 1 + n election monitors 
+      produce their partial decryption of cs. To decrypt c_i from cs, 
+      we take the ith column of ds and run the decrypt_value function.
+          
+      cs : Vector.t (G * G) m  
+      [c0, c1, c2, ..., c_{m-1}]          
+      
+      
+      ds : Vector.t (Vector.t G m) (1 + n)
+      [ row0: [d0_0 d0_1 d0_2 ... d0_{m-1}]
+        row1: [d1_0 d1_1 d1_2 ... d1_{m-1}]
+        ...
+        row_{n}: [...]
+      ]
+
+      To decrypt c_i:
+        cs[i]  ----------------+
+                                |   take ith column of ds
+        decrypt_value( cs[i], [d0_i, d1_i, ..., d_{n}_i] )  --> plaintext g ^ m_i
+      *)
+
+      Definition decrypt_ballotvalue {n m : nat} (cs : Vector.t (G * G) m)
+        (ds : Vector.t (Vector.t G m) (1 + n)) : Vector.t G m.
+      Proof.
+      Admitted.
 
   End Def.
 
