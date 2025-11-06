@@ -89,27 +89,49 @@ Section DistElgamal.
       produce their partial decryption of cs. To decrypt c_i from cs, 
       we take the ith column of ds and run the decrypt_value function.
           
-      cs : Vector.t (G * G) m  
-      [c0, c1, c2, ..., c_{m-1}]          
-      
-      
-      ds : Vector.t (Vector.t G m) (1 + n)
-      [ row0: [d0_0 d0_1 d0_2 ... d0_{m-1}]
-        row1: [d1_0 d1_1 d1_2 ... d1_{m-1}]
-        ...
-        row_{n}: [...]
-      ]
+    decrypt_ballot_value
+    cs : [ (c₁₀,c₂₀), (c₁₁,c₂₁), ..., (c₁m,c₂m) ]          (ciphertext vector)
+    ds : [
+          [d₀₀ d₀₁ ... d₀m],   ← partial decryptions from monitor 0
+          [d₁₀ d₁₁ ... d₁m],   ← monitor 1
+          ...
+          [dₙ₀ dₙ₁ ... dₙm]    ← monitor n
+         ]
 
-      To decrypt c_i:
-        cs[i]  ----------------+
-                                |   take ith column of ds
-        decrypt_value( cs[i], [d0_i, d1_i, ..., d_{n}_i] )  --> plaintext g ^ m_i
+
+      cs:       (c₁,c₂) (c₁,c₂) (c₁,c₂) ... (c₁,c₂)
+                │        │        │            │
+                ▼        ▼        ▼            ▼
+      ds:   d00   d01   d02  ...   d0m     ← combine into initial decrypt
+            │     │     │          │
+            ▼     ▼     ▼          ▼
+            dr0   dr1   dr2  ...   drm      ← recursive partial decrypt
+            │     │     │          │
+        d10 │ d11 │ d12 │ ...  d1m │
+            ▼     ▼     ▼          ▼
+      final: f0    f1    f2   ...   fm
+
+      Where:
+        base layer      fi = gop c₂ ginv d0i
+        recursive layer fi = gop dsh[i] dret[i]
+
       *)
 
-      Definition decrypt_ballotvalue {n m : nat} (cs : Vector.t (G * G) m)
+      Definition decrypt_ballot_value {n m : nat} (cs : Vector.t (G * G) m)
         (ds : Vector.t (Vector.t G m) (1 + n)) : Vector.t G m.
       Proof.
-      Admitted.
+        revert n m cs ds.
+        induction n as [|n ihn].
+        +
+          intros * cs ds.
+          destruct (vector_inv_S ds) as (dsh & dst & _).
+          exact (Vector.map (fun '((c₁, c₂), d) =>  gop c₂ (ginv d)) (zip_with (fun x y => (x, y)) cs dsh)).
+        +
+          intros * cs ds.
+          destruct (vector_inv_S ds) as (dsh & dst & _).
+          remember (ihn m cs dst) as dret.
+          exact (Vector.map (fun '(df, dr) =>  gop df dr) (zip_with (fun x y => (x, y)) dsh dret)).
+      Defined.
 
   End Def.
 
@@ -235,6 +257,8 @@ Section DistElgamal.
       rewrite right_identity; exact eq_refl.
       typeclasses eauto.
     Qed.
+
+    
 
   End Proofs. 
 End DistElgamal.
