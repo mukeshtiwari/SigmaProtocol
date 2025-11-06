@@ -343,16 +343,16 @@ Section DistElgamal.
           intros *.
           subst. exact (ha (Fin.FS i)).
         }
-        specialize (ihn hg m ms rs cs dst); clear hg.
+        specialize (ihn hg m ms rs 
+          (Vector.map (fun '((c₁, c₂), r) => 
+          (c₁, gop c₂ (ginv (hsh ^ r)))) (zip_with (fun x y => (x, y)) cs rs)) dst); clear hg.
         assert(hg : (∀ (fa : Fin.t (1 + n')) (fb : Fin.t m), (dst[@fa])[@fb] = (g ^ rs[@fb]) ^ xst[@fa])).
         {
           intros *. subst.
           exact (hb (Fin.FS fa) fb).
         }
         specialize (ihn hg).
-        unfold encrypt_ballot_dist in hc.
-        rewrite hf in hc. cbn in hc.
-
+        
         
 
 
