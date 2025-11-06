@@ -86,8 +86,7 @@ Section DistElgamal.
       Defined.
 
       (* decrypt a ciphter text completely. 1 + n election monitors 
-      produce their partial decryption of cs. To decrypt c_i from cs, 
-      we take the ith column of ds and run the decrypt_value function.
+      produce their partial decryption of cs. 
           
     decrypt_ballot_value
     cs : [ (c₁₀,c₂₀), (c₁₁,c₂₁), ..., (c₁m,c₂m) ]          (ciphertext vector)
@@ -143,12 +142,22 @@ Section DistElgamal.
     Add Field field : (@field_theory_for_stdlib_tactic F
        eq zero one opp add mul sub inv div vector_space_field).
        
-    
+    (* This and a lot of other proofs can be automated. *)
     Theorem group_shuffle_commutative : ∀ (u v x y : G),
       gop (gop u v) (gop x y) = gop (gop u x) (gop v y).
     Proof.
       intros *.
-    Admitted.
+      rewrite <-associative.
+      assert (ha : (gop v (gop x y) = (gop x (gop v y)))).
+      rewrite associative. 
+      assert (hb : gop v x = gop x v). rewrite commutative;
+      reflexivity. rewrite hb. rewrite <-associative.
+      reflexivity.
+      rewrite ha. clear ha.
+      rewrite associative.
+      reflexivity.
+    Qed.
+    
 
     Context 
       {n : nat}
@@ -258,7 +267,7 @@ Section DistElgamal.
       typeclasses eauto.
     Qed.
 
-    
+
 
   End Proofs. 
 End DistElgamal.
