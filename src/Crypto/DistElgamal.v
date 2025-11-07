@@ -159,16 +159,82 @@ Section DistElgamal.
     Qed.
 
   
+    (*
+      This theorem states the correctness of decrypting a single encrypted ballot entry
+      in the base case (i.e., without recursion over trustee layers).
+
+      We assume:
+        - g : G is a group generator.
+        - x : F is the secret key.
+        - h = g^x is the public key.
+        - ms : Vector.t F n contains the message exponents (the actual vote values).
+        - rs : Vector.t F n contains the random exponents used during encryption.
+        - ds : Vector.t G n contains the decryption factors.
+
+      Each ciphertext in the encrypted ballot is formed as:
+          c1 = g^(rs[i])
+          c2 = (g^x)^(rs[i]) * g^(ms[i])
+            = g^(x * rs[i]) * g^(ms[i])
+
+      The corresponding decryption factor is:
+          d[i] = g^(x * rs[i])
+
+      Therefore, decrypting is simply:
+          c2 * (d[i])^(-1) = g^(ms[i])
+
+      The theorem asserts exactly this: for every index f, when we take the second
+      component of the ciphertext and multiply it by the inverse of the matching
+      decryption factor, we recover g^(ms[f]). In other words, ElGamal decryption
+      works correctly for each entry of an encrypted ballot.
+*)
+
+
     Theorem decrypt_ballot_value_correct_base_case : 
       ∀ (n : nat) (x : F) (g h : G)
       (ms rs : Vector.t F n) (ds : Vector.t G n),
       h = g ^ x -> (∀ (fa : Fin.t n), ds[@fa] = (g ^ rs[@fa]) ^ x) ->
       ∀ (f : Fin.t n),g ^ ms[@f] = (map (λ '(_, c₂, d), gop c₂ (ginv d))
-      (zip_with (λ (x : G * G) (y : G), (x, y)) 
+      (zip_with (λ (u : G * G) (v : G), (u, v)) 
         (@encrypted_ballot F G gop gpow g (gop h gid) _ ms rs) ds))[@f].
     Proof.
-    Admitted.
-
+      induction n as [|n ihn].
+      +
+        intros * ha hb *.
+        refine match f with end.
+      +
+        intros * ha hb *.
+        destruct (vector_inv_S ms) as (msh & mst & hc).
+        destruct (vector_inv_S rs) as (rsh & rst & hd).
+        destruct (vector_inv_S ds) as (dsh & dst & he).
+        destruct (fin_inv_S _ f) as [|(f' & hf)].
+        ++
+          subst. specialize (hb Fin.F1).
+          cbn in * |- *. subst.
+          rewrite right_identity.
+          pose proof vector_space_smul_associative_fmul as hi.
+          unfold is_smul_associative_fmul in hi.
+          specialize (hi x rsh g).
+          rewrite <-hi. clear hi.
+          pose proof vector_space_smul_associative_fmul as hi.
+          unfold is_smul_associative_fmul in hi.
+          specialize (hi rsh x g). 
+          rewrite <-hi. clear hi.
+          assert (hi : x * rsh = rsh * x). field.
+          rewrite hi. rewrite <-associative, right_inverse,
+          right_identity.
+          reflexivity.
+        ++
+          specialize (ihn x g h mst rst dst ha).
+          assert (hi : (∀ fa : t n, dst[@fa] = (g ^ rst[@fa]) ^ x)).
+          {
+            intro fa. subst.
+            exact (hb (Fin.FS fa)).
+          }
+          specialize (ihn hi f'); clear hi. 
+          subst. specialize (hb (Fin.FS f')).
+          cbn in * |- *. exact ihn.
+    Qed.
+    
     
     Theorem decrypt_ballot_value_correct_induction_enc_forward {m : nat} : 
       ∀ (n : nat) (g h : G) (hs : Vector.t G (1 + n)) (ms rs : Vector.t F m)
@@ -351,8 +417,8 @@ Section DistElgamal.
           intros *. subst.
           exact (hb (Fin.FS fa) fb).
         }
-        specialize (ihn hg).
-        
+        specialize (ihn hg); clear hg.
+
         
 
 
