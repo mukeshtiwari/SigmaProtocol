@@ -116,7 +116,9 @@ Section DistElgamal.
 
       *)
 
-      Definition decrypt_ballot_value {n m : nat} (cs : Vector.t (G * G) m)
+    
+      Definition decrypt_ballot_value {n m : nat} 
+        (cs : Vector.t (G * G) m) 
         (ds : Vector.t (Vector.t G m) (1 + n)) : Vector.t G m.
       Proof.
         revert n m cs ds.
@@ -124,14 +126,17 @@ Section DistElgamal.
         +
           intros * cs ds.
           destruct (vector_inv_S ds) as (dsh & dst & _).
-          exact (Vector.map (fun '((c₁, c₂), d) =>  gop c₂ (ginv d)) (zip_with (fun x y => (x, y)) cs dsh)).
+          exact (Vector.map (fun '((c₁, c₂), d) => 
+            gop c₂ (ginv d)) (zip_with (fun x y => (x, y)) cs dsh)).
         +
           intros * cs ds.
           destruct (vector_inv_S ds) as (dsh & dst & _).
-          remember (ihn m cs dst) as dret.
-          exact (Vector.map (fun '(df, dr) =>  gop df dr) (zip_with (fun x y => (x, y)) dsh dret)).
+          destruct (vector_inv_S dst) as (dsth & dstt & _).
+          set (acc := Vector.map (fun '(df, dr) => 
+            gop df dr) (zip_with (fun x y => (x, y)) dsh dsth)).
+          exact (ihn _ cs (acc :: dstt)).
       Defined.
-
+      
   End Def.
 
   Section Util. 
@@ -595,9 +600,10 @@ Section DistElgamal.
     Qed.
 
 
-    Theorem decryption_value_correct : ∀ (m r : F) (c : G * G) (ds : Vector.t G (1 + n)),
-      c = encrypt_value_dist g hs m r -> 
-      (∀ (f : Fin.t (1 + n)), Vector.nth ds f = decrypt_value_partial c (Vector.nth xs f)) -> 
+    Theorem decryption_value_correct : ∀ (m r : F) (c : G * G) 
+      (ds : Vector.t G (1 + n)), c = encrypt_value_dist g hs m r -> 
+      (∀ (f : Fin.t (1 + n)), Vector.nth ds f = 
+      decrypt_value_partial c (Vector.nth xs f)) -> 
       decrypt_value c ds = g ^ m.
     Proof.
       intros m r (c₁, c₂) * ha hb.
@@ -620,10 +626,12 @@ Section DistElgamal.
         and (g ^ rs[@fb]) ^ xs[@fa]) is equal to 
         map (^x) (map fst cs)
       *)
-      (∀ (fa : Fin.t (1 + n)) (fb : Fin.t m), ds[@fa][@fb] = (g ^ rs[@fb]) ^ xs[@fa]) ->
+      (∀ (fa : Fin.t (1 + n)) (fb : Fin.t m), 
+        ds[@fa][@fb] = (g ^ rs[@fb]) ^ xs[@fa]) ->
       (* cs is encryption of ms *)
       cs = @encrypt_ballot_dist n m g hs ms rs -> 
-      ∀ (f : Fin.t m), g ^ ms[@f] = (@decrypt_ballot_value n m cs ds)[@f].
+      ∀ (f : Fin.t m), g ^ ms[@f] = 
+      (@decrypt_ballot_value n m cs ds)[@f].
     Proof.
       revert n xs hs hrel.
       induction n as [|n' ihn].
@@ -676,9 +684,9 @@ Section DistElgamal.
         specialize (ihn hg f); clear hg.
         rewrite ihn. 
         rewrite hc, hd. 
-        unfold encrypt_ballot_dist. simpl.
-        
-        
+        unfold encrypt_ballot_dist. 
+
+       
 
 
         
