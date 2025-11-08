@@ -134,6 +134,25 @@ Section DistElgamal.
 
   End Def.
 
+  Section Util. 
+
+    (* small inversion is a life saviour*)
+    Theorem vec_inv_tail {n : nat} {A : Type} (a b : A) 
+      (u v : Vector.t A n) (e : a :: u = b :: v) : u = v.
+    Proof.
+      refine 
+        match e in _ = y return 
+        (match y in Vector.t _ n' return Vector.t _ (pred n') -> Prop 
+        with
+        | [] => fun _ => False
+        | _ :: y' => fun i => i = y'  
+        end u)
+        with 
+        | eq_refl => eq_refl 
+        end.
+    Defined.
+
+  End Util. 
 
 
   Section Proofs. 
@@ -239,7 +258,8 @@ Section DistElgamal.
       ∀ (n : nat) (g h hsh : G) (ms rs : Vector.t F n), 
       @encrypted_ballot F G gop gpow g (gop h (gop hsh gid)) _ ms rs =
       map (λ '(c₁, c₂, r), (c₁, gop c₂ (h ^ r)))
-        (zip_with (λ (x : G * G) (y : F), (x, y)) (@encrypted_ballot F G gop gpow g (gop hsh gid) _ ms rs) rs).
+        (zip_with (λ (x : G * G) (y : F), (x, y)) 
+        (@encrypted_ballot F G gop gpow g (gop hsh gid) _ ms rs) rs).
     Proof.
       induction n as [|n ihn].
       +
@@ -347,17 +367,139 @@ Section DistElgamal.
         eapply decrypt_ballot_value_correct_induction_enc_forward_induction_case.
     Qed.
 
+    Theorem decrypt_ballot_value_correct_induction_enc_backward_base_case : 
+      ∀ (n : nat) (g h hsh : G) (ms rs : Vector.t F n),
+      @encrypted_ballot F G gop gpow g (gop hsh gid) _ ms rs =
+      map (λ '(c₁, c₂, r), (c₁, gop c₂ (ginv (h ^ r))))
+        (zip_with (λ (x : G * G) (y : F), (x, y))
+        (@encrypted_ballot F G gop gpow g (gop h (gop hsh gid)) _ ms rs) rs).
+    Proof.
+      induction n as [|n ihn].
+      +
+        intros *.
+        pose proof (vector_inv_0 ms) as ha.
+        pose proof (vector_inv_0 rs) as hb.
+        subst; cbn. reflexivity.
+      +
+        intros *.
+        destruct (vector_inv_S ms) as (msh & mst & ha).
+        destruct (vector_inv_S rs) as (rsh & rst & hb).
+        subst. cbn. 
+        f_equal.
+        ++
+          unfold enc.
+          f_equal.
+          rewrite <-associative.
+          remember (gop hsh gid) as ghi.
+          f_equal.
+          (*  setoid_rewrite vector_space_smul_distributive_vadd. not 
+          working? *)
+          pose proof vector_space_smul_distributive_vadd as hg.
+          unfold is_smul_distributive_vadd in hg.
+          specialize (hg rsh h ghi).
+          rewrite hg.
+          rewrite commutative, associative.
+          rewrite group_is_left_inverse, left_identity.
+          reflexivity.
+        ++
+          eapply ihn.
+    Qed.
+
+   
+
+
+
+    Theorem decrypt_ballot_value_correct_induction_enc_backward_induction_case : 
+      ∀ (n : nat) (g h hsh hii : G) (ms rs : Vector.t F n), 
+      @encrypted_ballot F G gop gpow g hii _ ms rs =
+      map (λ '(c₁, c₂, r), (c₁, gop c₂ (ginv (h ^ r))))
+        (zip_with (λ (x : G * G) (y : F), (x, y))
+        (@encrypted_ballot F G gop gpow g (gop h hii) _ ms rs) rs) ->
+      @encrypted_ballot F G gop gpow g (gop hsh hii) _ ms rs =
+      map (λ '(c₁, c₂, r), (c₁, gop c₂ (ginv (h ^ r))))
+        (zip_with (λ (x : G * G) (y : F), (x, y))
+        (@encrypted_ballot F G gop gpow g (gop hsh (gop h hii)) _ ms rs) rs).
+    Proof.
+      induction n as [|n ihn].
+      +
+        intros * ha. 
+        pose proof (vector_inv_0 ms) as hb.
+        pose proof (vector_inv_0 rs) as hc.
+        subst; cbn. reflexivity.
+      +
+        intros * ha.
+        destruct (vector_inv_S ms) as (msh & mst & hb).
+        destruct (vector_inv_S rs) as (rsh & rst & hc).
+        subst. cbn.
+        f_equal.
+        ++
+          unfold enc. f_equal.
+          rewrite <-associative.
+          f_equal. 
+          pose proof vector_space_smul_distributive_vadd as hg.
+          unfold is_smul_distributive_vadd in hg.
+          pose proof (hg rsh hsh (gop h hii)) as hb.
+          rewrite hb. clear hb.
+          rewrite <-associative.
+          pose proof (hg rsh h hii) as hb.
+          rewrite hb; clear hb.
+          assert (hb : (gop (h ^ rsh) (hii ^ rsh)) = 
+            (gop (hii ^ rsh) (h ^ rsh))).
+          rewrite commutative; reflexivity.
+          rewrite hb; clear hb.
+          rewrite <-associative.
+          rewrite group_is_right_inverse, 
+          right_identity.
+          eapply hg.
+        ++
+          eapply ihn.
+          cbn in ha. unfold encrypted_ballot.
+          pose proof @vec_inv_tail _ _ (enc g hii msh rsh)
+          ((g ^ rsh, gop (gop (g ^ msh) (gop h hii ^ rsh)) (ginv (h ^ rsh))))
+          (zip_with (λ m r : F, enc g hii m r) mst rst)
+          (map (λ '(c₁, c₂, r), (c₁, gop c₂ (ginv (h ^ r))))
+          (zip_with (λ (x : G * G) (y : F), (x, y))
+          (zip_with (λ m r : F, enc g (gop h hii) m r) mst rst) rst))
+          ha as hb.
+          exact hb.
+    Qed.
+              
 
     Theorem decrypt_ballot_value_correct_induction_enc_backward {m : nat} : 
-      ∀ (n : nat) (g h : G) (hs : Vector.t G (1 + n)) (ms rs : Vector.t F m)
-      (cs : Vector.t (G * G) m), 
+      ∀ (n : nat) (g h : G) (hs : Vector.t G (1 + n)) (ms rs : Vector.t F m), 
       encrypt_ballot_dist g hs ms rs = 
       Vector.map (fun '((c₁, c₂), r) => 
       (c₁, gop c₂ (ginv (h ^ r)))) (zip_with (fun x y => (x, y)) 
       (encrypt_ballot_dist g (h :: hs) ms rs) rs).
     Proof.
-    Admitted.
-    
+       induction n as [|n ihn].
+      +
+        intros *. 
+        unfold encrypt_ballot_dist.
+        cbn.
+        destruct (vector_inv_S hs) as (hsh & hst & ha).
+        pose proof (vector_inv_0 hst) as hb.
+        subst. cbn.
+        eapply decrypt_ballot_value_correct_induction_enc_backward_base_case.
+      +
+        intros *.
+        destruct (vector_inv_S hs) as (hsh & hst & ha).
+        unfold encrypt_ballot_dist in ihn |- *.
+        cbn in ihn |- *. subst. cbn.
+        specialize (ihn g h hst ms rs).
+        remember ((fold_right (λ hi acc : G, gop hi acc) hst gid)) as hii.
+        assert(ha : (gop h (gop hsh hii)) = 
+          (gop hsh (gop h hii))).
+        rewrite associative.
+        assert (hb : gop h hsh = gop hsh h).
+        rewrite commutative; reflexivity.
+        rewrite hb; clear hb.
+        rewrite associative; reflexivity.
+        rewrite ha; clear ha.
+        eapply decrypt_ballot_value_correct_induction_enc_backward_induction_case.
+        exact ihn.
+    Qed.
+        
     
 
     Context 
@@ -473,7 +615,11 @@ Section DistElgamal.
     Theorem decrypt_ballot_value_correct : ∀ {m : nat} 
       (ms rs : Vector.t F m) (cs : Vector.t (G * G) m)
       (ds : Vector.t (Vector.t G m) (1 + n)), 
-      (* partial decryption factor is well-formed/correct *)
+      (* partial decryption factor is well-formed/correct 
+        g ^ rs[@fb] is equal to map fst cs (first componenet of cs)
+        and (g ^ rs[@fb]) ^ xs[@fa]) is equal to 
+        map (^x) (map fst cs)
+      *)
       (∀ (fa : Fin.t (1 + n)) (fb : Fin.t m), ds[@fa][@fb] = (g ^ rs[@fb]) ^ xs[@fa]) ->
       (* cs is encryption of ms *)
       cs = @encrypt_ballot_dist n m g hs ms rs -> 
@@ -520,6 +666,20 @@ Section DistElgamal.
           exact (hb (Fin.FS fa) fb).
         }
         specialize (ihn hg); clear hg.
+        assert (hg : map (λ '(c₁, c₂, r), (c₁, gop c₂ (ginv (hsh ^ r))))
+          (zip_with (λ (x : G * G) (y : F), (x, y)) cs rs) = 
+          encrypt_ballot_dist g hst ms rs).
+        {
+          subst. eapply eq_sym.
+          eapply  decrypt_ballot_value_correct_induction_enc_backward.
+        }
+        specialize (ihn hg f); clear hg.
+        rewrite ihn. 
+        rewrite hc, hd. 
+        unfold encrypt_ballot_dist. simpl.
+        
+        
+
 
         
 
