@@ -85,36 +85,58 @@ Section DistElgamal.
         exact (Vector.map (fun c => decrypt_value_partial c x) cs).
       Defined.
 
-      (* decrypt a ciphter text completely. 1 + n election monitors 
-      produce their partial decryption of cs. 
-          
-    decrypt_ballot_value
-    cs : [ (c₁₀,c₂₀), (c₁₁,c₂₁), ..., (c₁m,c₂m) ]          (ciphertext vector)
-    ds : [
-          [d₀₀ d₀₁ ... d₀m],   ← partial decryptions from monitor 0
-          [d₁₀ d₁₁ ... d₁m],   ← monitor 1
-          ...
-          [dₙ₀ dₙ₁ ... dₙm]    ← monitor n
-         ]
+     (*
+  decrypt_ballot_value computes the full decryption of a vector of ciphertexts
+  in a distributed / threshold ElGamal setting.
 
+  Input:
+    cs : a vector of m ciphertexts, each of the form (c₁, c₂) = (g^r, h^m * g^r)
+    ds : a vector of (1 + n) partial decryption rows, each row being a vector of m
+         group elements.  Each row corresponds to a trustee / monitor's share.
 
-      cs:       (c₁,c₂) (c₁,c₂) (c₁,c₂) ... (c₁,c₂)
-                │        │        │            │
-                ▼        ▼        ▼            ▼
-      ds:   d00   d01   d02  ...   d0m     ← combine into initial decrypt
-            │     │     │          │
-            ▼     ▼     ▼          ▼
-            dr0   dr1   dr2  ...   drm      ← recursive partial decrypt
-            │     │     │          │
-        d10 │ d11 │ d12 │ ...  d1m │
-            ▼     ▼     ▼          ▼
-      final: f0    f1    f2   ...   fm
+         Conceptually:
+           ds =
+             [ dsh           ]   <- first monitor's partial decryptions
+             [ dsth          ]   <- second monitor's partial decryptions
+             [ dstt ...    ]     <- remaining monitors
+           where each row is length m and i-th entry is (g^{rᵢ})^{x_j}.
 
-      Where:
-        base layer      fi = gop c₂ ginv d0i
-        recursive layer fi = gop dsh[i] dret[i]
+  Behaviour:
+    The function works by progressively combining partial decryption rows.
+    For two vectors dsh and dsth (each of length m), we produce:
+      acc[i] = gop dsh[i] dsth[i]
+    which corresponds to multiplying partial decryptions column-wise.
 
-      *)
+    This reduces the number of rows by one, and we recurse until only one
+    combined row remains.  This final row represents the combined decryption
+    factor ( g^{rᵢ} )^{x₀ + … + xₙ} for each ciphertext index i.
+
+  Base case (n = 0):
+    Only one row of partial decryptions is present:
+      ds = [dsh]
+    To recover a decrypted message value, we compute:
+      result[i] = gop c₂ᵢ (ginv dsh[i])
+    removing the accumulated decryption factor from the second component
+    of the ciphertext.
+
+  Recursive case (n = S n):
+    Split ds into head row dsh and tail dst.
+    Then split dst into dsth (the next row) and dstt (remaining rows).
+    Combine dsh and dsth column-wise to produce a new decryption accumulator 'acc'.
+    Recurse with acc :: dstt.
+
+  In effect:
+      row0 ⊙ row1 ⊙ row2 ⊙ ... ⊙ row_n
+    is computed column-wise, where (⊙) is gop.
+
+    Once all partial decryptions are combined, the ciphertexts are fully decrypted
+    by dividing out the combined g^{rᵢ} factor from c₂ᵢ.
+
+  This realizes threshold decryption: No single monitor can decrypt alone, but
+  all together reconstruct the full decryption factors without revealing any
+  secret key shares.
+*)
+
 
     
       Definition decrypt_ballot_value {n m : nat} 
@@ -126,14 +148,15 @@ Section DistElgamal.
         +
           intros * cs ds.
           destruct (vector_inv_S ds) as (dsh & dst & _).
+          exact (zip_with (fun '(c₁, c₂) d =>  gop c₂ (ginv d)) cs dsh).
+          (* 
           exact (Vector.map (fun '((c₁, c₂), d) => 
-            gop c₂ (ginv d)) (zip_with (fun x y => (x, y)) cs dsh)).
+            gop c₂ (ginv d)) (zip_with (fun x y => (x, y)) cs dsh)). *)
         +
           intros * cs ds.
           destruct (vector_inv_S ds) as (dsh & dst & _).
           destruct (vector_inv_S dst) as (dsth & dstt & _).
-          set (acc := Vector.map (fun '(df, dr) => 
-            gop df dr) (zip_with (fun x y => (x, y)) dsh dsth)).
+          set (acc := zip_with (fun x y => gop x y) dsh dsth).
           exact (ihn _ cs (acc :: dstt)).
       Defined.
       
@@ -212,14 +235,13 @@ Section DistElgamal.
       works correctly for each entry of an encrypted ballot.
 *)
 
-
-    Theorem decrypt_ballot_value_correct_base_case : 
+    Theorem decrypt_ballot_value_correct_base_case :
       ∀ (n : nat) (x : F) (g h : G)
       (ms rs : Vector.t F n) (ds : Vector.t G n),
       h = g ^ x -> (∀ (fa : Fin.t n), ds[@fa] = (g ^ rs[@fa]) ^ x) ->
-      ∀ (f : Fin.t n),g ^ ms[@f] = (map (λ '(_, c₂, d), gop c₂ (ginv d))
-      (zip_with (λ (u : G * G) (v : G), (u, v)) 
-        (@encrypted_ballot F G gop gpow g (gop h gid) _ ms rs) ds))[@f].
+      ∀ (f : Fin.t n),
+      g ^ ms[@f] =  (zip_with (λ '(_, c₂) (d : G), gop c₂ (ginv d))
+      (@encrypted_ballot F G gop gpow g (gop h gid) _ ms rs) ds)[@f].
     Proof.
       induction n as [|n ihn].
       +
@@ -259,14 +281,15 @@ Section DistElgamal.
           cbn in * |- *. exact ihn.
     Qed.
 
+    
+
     Theorem decrypt_ballot_value_correct_induction_enc_forward_base_case : 
       ∀ (n : nat) (g h hsh : G) (ms rs : Vector.t F n), 
       @encrypted_ballot F G gop gpow g (gop h (gop hsh gid)) _ ms rs =
-      map (λ '(c₁, c₂, r), (c₁, gop c₂ (h ^ r)))
-        (zip_with (λ (x : G * G) (y : F), (x, y)) 
-        (@encrypted_ballot F G gop gpow g (gop hsh gid) _ ms rs) rs).
+      zip_with (λ '(c₁, c₂) (r : F), (c₁, gop c₂ (h ^ r))) 
+        (@encrypted_ballot F G gop gpow g (gop hsh gid) _ ms rs) rs.
     Proof.
-      induction n as [|n ihn].
+       induction n as [|n ihn].
       +
         intros *.
         pose proof (vector_inv_0 ms) as ha.
@@ -294,15 +317,16 @@ Section DistElgamal.
         ++
           eapply ihn.
     Qed.
+    
+    
+
 
     Theorem decrypt_ballot_value_correct_induction_enc_forward_induction_case :
       ∀ (n : nat) (g h hsh hii : G) (ms rs : Vector.t F n), 
-      map (λ '(c₁, c₂, r), (c₁, gop c₂ (gop h hsh ^ r)))
-        (zip_with (λ (x : G * G) (y : F), (x, y)) 
-        (@encrypted_ballot F G gop gpow g hii _ ms rs) rs) =
-      map (λ '(c₁, c₂, r), (c₁, gop c₂ (h ^ r)))
-        (zip_with (λ (x : G * G) (y : F), (x, y)) 
-        (@encrypted_ballot F G gop gpow g (gop hsh hii) _ ms rs) rs).
+      zip_with (λ '(c₁, c₂) (r : F), (c₁, gop c₂ (gop h hsh ^ r))) 
+        (@encrypted_ballot F G gop gpow g hii _ ms rs) rs = 
+      zip_with (λ '(c₁, c₂) (r : F), (c₁, gop c₂ (h ^ r))) 
+        (@encrypted_ballot F G gop gpow g (gop hsh hii) _ ms rs) rs.
     Proof.
       induction n as [|n ihn].
       +
@@ -340,13 +364,14 @@ Section DistElgamal.
           rewrite ihn. reflexivity.
     Qed.
 
+      
+    
 
     Theorem decrypt_ballot_value_correct_induction_enc_forward {m : nat} : 
       ∀ (n : nat) (g h : G) (hs : Vector.t G (1 + n)) (ms rs : Vector.t F m), 
       encrypt_ballot_dist g (h :: hs) ms rs = 
-      Vector.map (fun '((c₁, c₂), r) => 
-      (c₁, gop c₂ (h ^ r))) (zip_with (fun x y => (x, y)) 
-      (encrypt_ballot_dist g hs ms rs) rs).
+      zip_with (fun '(c₁, c₂) r =>  (c₁, gop c₂ (h ^ r))) 
+      (encrypt_ballot_dist g hs ms rs) rs.
     Proof.
       induction n as [|n ihn].
       +
@@ -372,12 +397,13 @@ Section DistElgamal.
         eapply decrypt_ballot_value_correct_induction_enc_forward_induction_case.
     Qed.
 
+    
+
     Theorem decrypt_ballot_value_correct_induction_enc_backward_base_case : 
       ∀ (n : nat) (g h hsh : G) (ms rs : Vector.t F n),
       @encrypted_ballot F G gop gpow g (gop hsh gid) _ ms rs =
-      map (λ '(c₁, c₂, r), (c₁, gop c₂ (ginv (h ^ r))))
-        (zip_with (λ (x : G * G) (y : F), (x, y))
-        (@encrypted_ballot F G gop gpow g (gop h (gop hsh gid)) _ ms rs) rs).
+      zip_with (λ '(c₁, c₂) r, (c₁, gop c₂ (ginv (h ^ r))))
+        (@encrypted_ballot F G gop gpow g (gop h (gop hsh gid)) _ ms rs) rs.
     Proof.
       induction n as [|n ihn].
       +
@@ -410,20 +436,16 @@ Section DistElgamal.
           eapply ihn.
     Qed.
 
-   
-
-
+     
 
     Theorem decrypt_ballot_value_correct_induction_enc_backward_induction_case : 
       ∀ (n : nat) (g h hsh hii : G) (ms rs : Vector.t F n), 
       @encrypted_ballot F G gop gpow g hii _ ms rs =
-      map (λ '(c₁, c₂, r), (c₁, gop c₂ (ginv (h ^ r))))
-        (zip_with (λ (x : G * G) (y : F), (x, y))
-        (@encrypted_ballot F G gop gpow g (gop h hii) _ ms rs) rs) ->
+      zip_with (λ '(c₁, c₂) r, (c₁, gop c₂ (ginv (h ^ r))))
+        (@encrypted_ballot F G gop gpow g (gop h hii) _ ms rs) rs ->
       @encrypted_ballot F G gop gpow g (gop hsh hii) _ ms rs =
-      map (λ '(c₁, c₂, r), (c₁, gop c₂ (ginv (h ^ r))))
-        (zip_with (λ (x : G * G) (y : F), (x, y))
-        (@encrypted_ballot F G gop gpow g (gop hsh (gop h hii)) _ ms rs) rs).
+      zip_with (λ '(c₁, c₂) r, (c₁, gop c₂ (ginv (h ^ r))))
+        (@encrypted_ballot F G gop gpow g (gop hsh (gop h hii)) _ ms rs) rs.
     Proof.
       induction n as [|n ihn].
       +
@@ -458,24 +480,23 @@ Section DistElgamal.
           eapply hg.
         ++
           eapply ihn.
-          cbn in ha. unfold encrypted_ballot.
-          pose proof @vec_inv_tail _ _ (enc g hii msh rsh)
-          ((g ^ rsh, gop (gop (g ^ msh) (gop h hii ^ rsh)) (ginv (h ^ rsh))))
-          (zip_with (λ m r : F, enc g hii m r) mst rst)
-          (map (λ '(c₁, c₂, r), (c₁, gop c₂ (ginv (h ^ r))))
-          (zip_with (λ (x : G * G) (y : F), (x, y))
-          (zip_with (λ m r : F, enc g (gop h hii) m r) mst rst) rst))
+          cbn in ha. unfold encrypted_ballot, enc in ha.
+          pose proof @vec_inv_tail _ _ (g ^ rsh, gop (g ^ msh) (hii ^ rsh))
+          (g ^ rsh, gop (gop (g ^ msh) (gop h hii ^ rsh)) (ginv (h ^ rsh)))
+          (zip_with (λ m r : F, (g ^ r, gop (g ^ m) (hii ^ r))) mst rst)
+          (zip_with (λ '(c₁, c₂) (r : F), (c₁, gop c₂ (ginv (h ^ r)))) 
+            (zip_with (λ m r : F, (g ^ r, gop (g ^ m) (gop h hii ^ r))) mst rst) rst)
           ha as hb.
           exact hb.
     Qed.
-              
 
+
+               
     Theorem decrypt_ballot_value_correct_induction_enc_backward {m : nat} : 
       ∀ (n : nat) (g h : G) (hs : Vector.t G (1 + n)) (ms rs : Vector.t F m), 
       encrypt_ballot_dist g hs ms rs = 
-      Vector.map (fun '((c₁, c₂), r) => 
-      (c₁, gop c₂ (ginv (h ^ r)))) (zip_with (fun x y => (x, y)) 
-      (encrypt_ballot_dist g (h :: hs) ms rs) rs).
+      zip_with (fun '(c₁, c₂) r => (c₁, gop c₂ (ginv (h ^ r)))) 
+      (encrypt_ballot_dist g (h :: hs) ms rs) rs.
     Proof.
        induction n as [|n ihn].
       +
@@ -504,7 +525,8 @@ Section DistElgamal.
         eapply decrypt_ballot_value_correct_induction_enc_backward_induction_case.
         exact ihn.
     Qed.
-        
+
+     
     
 
     Context 
@@ -666,17 +688,15 @@ Section DistElgamal.
           subst. exact (ha (Fin.FS i)).
         }
         specialize (ihn hg m ms rs 
-          (Vector.map (fun '((c₁, c₂), r) => 
-          (c₁, gop c₂ (ginv (hsh ^ r)))) (zip_with (fun x y => (x, y)) cs rs)) dst); clear hg.
+          (zip_with (fun '(c₁, c₂) r => (c₁, gop c₂ (ginv (hsh ^ r)))) cs rs) dst); clear hg.
         assert(hg : (∀ (fa : Fin.t (1 + n')) (fb : Fin.t m), (dst[@fa])[@fb] = (g ^ rs[@fb]) ^ xst[@fa])).
         {
           intros *. subst.
           exact (hb (Fin.FS fa) fb).
         }
         specialize (ihn hg); clear hg.
-        assert (hg : map (λ '(c₁, c₂, r), (c₁, gop c₂ (ginv (hsh ^ r))))
-          (zip_with (λ (x : G * G) (y : F), (x, y)) cs rs) = 
-          encrypt_ballot_dist g hst ms rs).
+        assert (hg : zip_with (λ '(c₁, c₂) (r : F), (c₁, gop c₂ (ginv (hsh ^ r)))) cs rs =
+         encrypt_ballot_dist g hst ms rs).
         {
           subst. eapply eq_sym.
           eapply  decrypt_ballot_value_correct_induction_enc_backward.
@@ -685,6 +705,9 @@ Section DistElgamal.
         rewrite ihn. 
         rewrite hc, hd. 
         unfold encrypt_ballot_dist. 
+        destruct (vector_inv_S dst) as (dsth & dstt & hg).
+        subst. simpl.
+        
 
        
 
