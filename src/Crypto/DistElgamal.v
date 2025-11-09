@@ -149,9 +149,6 @@ Section DistElgamal.
           intros * cs ds.
           destruct (vector_inv_S ds) as (dsh & dst & _).
           exact (zip_with (fun '(c₁, c₂) d =>  gop c₂ (ginv d)) cs dsh).
-          (* 
-          exact (Vector.map (fun '((c₁, c₂), d) => 
-            gop c₂ (ginv d)) (zip_with (fun x y => (x, y)) cs dsh)). *)
         +
           intros * cs ds.
           destruct (vector_inv_S ds) as (dsh & dst & _).
