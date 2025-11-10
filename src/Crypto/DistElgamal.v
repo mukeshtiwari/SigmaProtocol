@@ -699,11 +699,24 @@ Section DistElgamal.
           eapply  decrypt_ballot_value_correct_induction_enc_backward.
         }
         specialize (ihn hg f); clear hg.
-        rewrite ihn. 
-        rewrite hc, hd. 
-        unfold encrypt_ballot_dist. 
+        rewrite ihn, hc, hd. 
+        unfold encrypt_ballot_dist.  
         destruct (vector_inv_S dst) as (dsth & dstt & hg).
         subst. simpl.
+        remember ((fold_right (λ hi acc : G, gop hi acc) hst gid)) as hii.
+        assert (hc : (zip_with (λ '(c₁, c₂) (r : F), (c₁, gop c₂ (ginv (hsh ^ r)))) 
+          (@encrypted_ballot F G gop gpow g (gop hsh hii)_ ms rs) rs) = 
+          (@encrypted_ballot F G gop gpow g hii _ ms rs)). 
+        {
+          pose proof decrypt_ballot_value_correct_induction_enc_backward_base_case as hc.
+          specialize (hc _ g hsh hii ms rs).
+          assert (hd : gop hii gid = hii).
+          setoid_rewrite right_identity; reflexivity.
+          rewrite !hd in hc.
+          eapply eq_sym. exact hc.
+        }
+        rewrite !hc.
+        f_equal. 
         
 
        
