@@ -602,7 +602,64 @@ Section DistElgamal.
         eapply encryption_factor_combine_induction_case; 
         assumption.
     Qed.
-      
+
+
+    Theorem simplify_decryption :
+      ∀ (n : nat) g (ms rs : Vector.t F n) (xsacc : F),
+      Vector.map (λ x : F, g ^ x) ms =
+      zip_with (λ '(_, c₂) (d : G), gop c₂ (ginv d))
+        (zip_with (λ m r : F, (g ^ r, gop (g ^ m) ((g ^ xsacc) ^ r))) 
+          ms rs)
+        (Vector.map (λ r : F, (g ^ xsacc) ^ r) rs).
+    Proof.
+      induction n as [|n ihn].
+      +
+        intros *.
+        pose proof (vector_inv_0 ms) as hc.
+        pose proof (vector_inv_0 rs) as hd.
+        subst. cbn.
+        reflexivity.
+      +
+        intros *.
+        destruct (vector_inv_S ms) as (msh & mst & hc).
+        destruct (vector_inv_S rs) as (rsh & rst & hd).
+        subst. cbn.
+        f_equal.
+        ++
+          rewrite <-associative.
+          pose proof vector_space_smul_associative_fmul as ha.
+          rewrite <-(ha xsacc rsh g).
+          rewrite group_is_right_inverse, right_identity.
+          reflexivity.
+        ++
+          eapply ihn.
+    Qed.
+
+
+    Theorem fin_map_rel : ∀ (n : nat)
+      (g : G) (ms : Vector.t F n),
+      ∀ (f : Fin.t n), 
+      g ^ ms[@f] = (map (λ x : F, g ^ x) ms)[@f].
+    Proof.
+      induction n as [|n ihn].
+      +
+        intros *.
+        refine match f with end.
+      +
+        intros *.
+        destruct (vector_inv_S ms) as (msh & mst & ha).
+        destruct (fin_inv_S _ f) as [f' | (f' & hb)].
+        ++
+          subst; cbn.
+          reflexivity.
+        ++
+          subst; cbn.
+          eapply ihn.
+    Qed.
+
+
+
+ 
 
     Context 
       {n : nat}
@@ -715,7 +772,7 @@ Section DistElgamal.
     Qed.
 
 
-    Theorem decrypt_ballot_value_correct : ∀ {m : nat} 
+    Theorem decrypt_ballot_value_correct_aux : ∀ {m : nat} 
       (ms rs : Vector.t F m) 
       (dsh : (Vector.t G m)) (dst : Vector.t (Vector.t G m) n), 
       (∀ (fa : Fin.t (1 + n)) (fb : Fin.t m), 
@@ -741,13 +798,14 @@ Section DistElgamal.
       apply encryption_factor_combine; try assumption.
       rewrite he.
       remember (xsh + fold_right (λ hi acc : F, hi + acc) xst zero) as xsacc.
+      unfold encrypted_ballot, enc.
+      eapply simplify_decryption.
+    Qed.
       
 
-    Admitted.
 
 
-
-    (* 
+    
     Theorem decrypt_ballot_value_correct : ∀ {m : nat} 
       (ms rs : Vector.t F m) (cs : Vector.t (G * G) m)
       (ds : Vector.t (Vector.t G m) (1 + n)), 
@@ -763,98 +821,26 @@ Section DistElgamal.
       ∀ (f : Fin.t m), g ^ ms[@f] = 
       (@decrypt_ballot_value n m cs ds)[@f].
     Proof.
-
-      revert n xs hs hrel.
-      induction n as [|n' ihn].
-      + 
-        (* base case: one trustee *)
-        intros * ha * hb hc f.
-        cbn in * |-.
-        subst.
-        destruct (vector_inv_S ds) as (dsh & dst & hc). 
-        pose proof (vector_inv_0 dst) as hd.
-        destruct (vector_inv_S xs) as (xsh & xst & he).
-        pose proof (vector_inv_0 xst) as hf.
-        destruct (vector_inv_S hs) as (hsh & hst & hg).
-        pose proof (vector_inv_0 hst) as hh.
-        subst.
-        specialize (ha Fin.F1). 
-        specialize (hb Fin.F1).
-        cbn in ha, hb. cbn.
-        unfold encrypt_ballot_dist. cbn.
-        eapply  decrypt_ballot_value_correct_base_case.
-        rewrite ha; reflexivity.
-        exact hb.
-      +
-        (* work from below *)
-        intros * ha * hb hc f.
-        destruct (vector_inv_S ds) as (dsh & dst & hd). 
-        destruct (vector_inv_S xs) as (xsh & xst & he).
-        destruct (vector_inv_S hs) as (hsh & hst & hf).
-        specialize (ihn xst hst).
-        assert(hg : (∀ i : Fin.t (1 + n'), g ^ xst[@i] = hst[@i])).
-        {
-          intros *.
-          subst. exact (ha (Fin.FS i)).
-        }
-        specialize (ihn hg m ms rs 
-          (zip_with (fun '(c₁, c₂) r => (c₁, gop c₂ (ginv (hsh ^ r)))) cs rs) dst); clear hg.
-        assert(hg : (∀ (fa : Fin.t (1 + n')) (fb : Fin.t m), (dst[@fa])[@fb] = (g ^ rs[@fb]) ^ xst[@fa])).
-        {
-          intros *. subst.
-          exact (hb (Fin.FS fa) fb).
-        }
-        specialize (ihn hg); clear hg.
-        assert (hg : zip_with (λ '(c₁, c₂) (r : F), (c₁, gop c₂ (ginv (hsh ^ r)))) cs rs =
-         encrypt_ballot_dist g hst ms rs).
-        {
-          subst. eapply eq_sym.
-          eapply  decrypt_ballot_value_correct_induction_enc_backward.
-        }
-        specialize (ihn hg f); clear hg.
-        rewrite ihn, hc, hd. 
-        unfold encrypt_ballot_dist.  
-        destruct (vector_inv_S dst) as (dsth & dstt & hg).
-        subst. simpl.
-        remember ((fold_right (λ hi acc : G, gop hi acc) hst gid)) as hii.
-        assert (hc : (zip_with (λ '(c₁, c₂) (r : F), (c₁, gop c₂ (ginv (hsh ^ r)))) 
-          (@encrypted_ballot F G gop gpow g (gop hsh hii)_ ms rs) rs) = 
-          (@encrypted_ballot F G gop gpow g hii _ ms rs)). 
-        {
-          pose proof decrypt_ballot_value_correct_induction_enc_backward_base_case as hc.
-          specialize (hc _ g hsh hii ms rs).
-          assert (hd : gop hii gid = hii).
-          setoid_rewrite right_identity; reflexivity.
-          rewrite !hd in hc.
-          eapply eq_sym. exact hc.
-        }
-        rewrite !hc; clear ihn hc.
-        f_equal.
-
-
-        unfold encrypted_ballot.
-
-
-
-        pose proof (ha Fin.F1) as hc; 
-        cbn in hc.
-        assert (hd : ∀ (ft : Fin.t (1 + n')), g ^ xst[@ft] = hst[@ft]).
-        intro ft. specialize (ha (Fin.FS ft)); cbn in ha; 
-        exact ha.
-        pose proof (hb Fin.F1) as he; 
-        cbn in he. 
-        assert (hf : ∀ (fu : Fin.t (1 + n')) (fv : Fin.t m), 
-          ((dsth :: dstt)[@fu])[@fv] = (g ^ rs[@fv]) ^ xst[@fu]).
-        intros *. specialize (hb (Fin.FS fu) fv). simpl in hb.
-        exact hb.
-        eapply decrypt_ballot_value_correct_ind_rewrite; try assumption.
-        exact hc. exact hd. exact he.
-        exact hf.
-    Admitted.
-
-    *)
-
-
-
+      intros * ha hb f. 
+      destruct (vector_inv_S ds) as (dsh & dst & hc). 
+      pose proof Vector.eq_nth_iff G m
+      (Vector.map (fun x => g ^ x) ms)
+      (decrypt_ballot_value cs ds) as hd.
+      assert (he : (∀ fa fb : Fin.t m, fa = fb → 
+        (map (λ x : F, g ^ x) ms)[@fa] =
+        (decrypt_ballot_value cs ds)[@fb])).
+      {
+        intros * hf.
+        subst. 
+        erewrite decrypt_ballot_value_correct_aux.
+        reflexivity.
+        assumption.
+      }
+      destruct hd as (hdl & hdr).
+      specialize (hdl he). 
+      rewrite <-hdl.
+      eapply fin_map_rel.
+    Qed.
+    
   End Proofs. 
 End DistElgamal.
