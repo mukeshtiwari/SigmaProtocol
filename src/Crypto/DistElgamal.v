@@ -85,78 +85,16 @@ Section DistElgamal.
         exact (Vector.map (fun c => decrypt_value_partial c x) cs).
       Defined.
 
-     (*
-  decrypt_ballot_value computes the full decryption of a vector of ciphertexts
-  in a distributed / threshold ElGamal setting.
-
-  Input:
-    cs : a vector of m ciphertexts, each of the form (c₁, c₂) = (g^r, h^m * g^r)
-    ds : a vector of (1 + n) partial decryption rows, each row being a vector of m
-         group elements.  Each row corresponds to a trustee / monitor's share.
-
-         Conceptually:
-           ds =
-             [ dsh           ]   <- first monitor's partial decryptions
-             [ dsth          ]   <- second monitor's partial decryptions
-             [ dstt ...    ]     <- remaining monitors
-           where each row is length m and i-th entry is (g^{rᵢ})^{x_j}.
-
-  Behaviour:
-    The function works by progressively combining partial decryption rows.
-    For two vectors dsh and dsth (each of length m), we produce:
-      acc[i] = gop dsh[i] dsth[i]
-    which corresponds to multiplying partial decryptions column-wise.
-
-    This reduces the number of rows by one, and we recurse until only one
-    combined row remains.  This final row represents the combined decryption
-    factor ( g^{rᵢ} )^{x₀ + … + xₙ} for each ciphertext index i.
-
-  Base case (n = 0):
-    Only one row of partial decryptions is present:
-      ds = [dsh]
-    To recover a decrypted message value, we compute:
-      result[i] = gop c₂ᵢ (ginv dsh[i])
-    removing the accumulated decryption factor from the second component
-    of the ciphertext.
-
-  Recursive case (n = S n):
-    Split ds into head row dsh and tail dst.
-    Then split dst into dsth (the next row) and dstt (remaining rows).
-    Combine dsh and dsth column-wise to produce a new decryption accumulator 'acc'.
-    Recurse with acc :: dstt.
-
-  In effect:
-      row0 ⊙ row1 ⊙ row2 ⊙ ... ⊙ row_n
-    is computed column-wise, where (⊙) is gop.
-
-    Once all partial decryptions are combined, the ciphertexts are fully decrypted
-    by dividing out the combined g^{rᵢ} factor from c₂ᵢ.
-
-  This realizes threshold decryption: No single monitor can decrypt alone, but
-  all together reconstruct the full decryption factors without revealing any
-  secret key shares.
-*)
-
-
     
       Definition decrypt_ballot_value {n m : nat} 
         (cs : Vector.t (G * G) m) 
         (ds : Vector.t (Vector.t G m) (1 + n)) : Vector.t G m.
       Proof.
-        revert n m cs ds.
-        induction n as [|n ihn].
-        +
-          intros * cs ds.
-          destruct (vector_inv_S ds) as (dsh & dst & _).
-          exact (zip_with (fun '(c₁, c₂) d =>  gop c₂ (ginv d)) cs dsh).
-        +
-          intros * cs ds.
-          destruct (vector_inv_S ds) as (dsh & dst & _).
-          destruct (vector_inv_S dst) as (dsth & dstt & _).
-          set (acc := zip_with (fun x y => gop x y) dsh dsth).
-          exact (ihn _ cs (acc :: dstt)).
-      Defined.
-      
+        destruct (vector_inv_S ds) as (dsh & dst & _).
+        set (acc := fold_right (zip_with gop) dst dsh).
+        exact (zip_with (fun '(c₁, c₂) d =>  gop c₂ (ginv d)) cs acc).
+      Defined.        
+
   End Def.
 
   Section Util. 
@@ -523,8 +461,148 @@ Section DistElgamal.
         exact ihn.
     Qed.
 
-     
-    
+    Theorem group_gen_mul_power_add : ∀ (n : nat)
+      (g : G) (hs : Vector.t G n) (xs : Vector.t F n),
+      (∀ i : Fin.t n, g ^ xs[@i] = hs[@i]) ->
+      (fold_right (λ hi acc : G, gop hi acc) hs gid) = 
+      g ^ (fold_right (λ hi acc : F, add hi acc) xs zero).
+    Proof.
+      induction n as [|n ihn].
+      +
+        intros * hf.
+        pose proof (vector_inv_0 hs) as ha.
+        pose proof (vector_inv_0 xs) as hb.
+        subst. cbn. 
+        rewrite vector_space_field_zero;
+        reflexivity.
+      +
+        intros * hf.
+        destruct (vector_inv_S hs) as (hsh & hst & ha).
+        destruct (vector_inv_S xs) as (xsh & xst & hb).
+        subst. cbn.
+        pose proof (hf Fin.F1) as ha.
+        cbn in ha.
+        assert(hb : (∀ i : Fin.t n, g ^ xst[@i] = hst[@i])).
+        refine (fun i : Fin.t n => _). specialize (hf (Fin.FS i)).
+        cbn in hf. exact hf. 
+        specialize (ihn g hst xst hb).
+        rewrite ihn. subst.
+        (* why does this rewrite fail: setoid_rewrite vector_space_smul_distributive_fadd. ?*)
+        pose proof vector_space_smul_distributive_fadd as hc.
+        specialize (hc xsh (fold_right (λ hi acc : F, hi + acc) xst zero) g).
+        rewrite hc.
+        reflexivity.
+    Qed.
+
+
+    Theorem encryption_factor_combine_base_case : 
+      ∀ (m : nat) (g : G) (xsh : F) 
+      (dsh : Vector.t G m) (rs : Vector.t F m),
+      (∀ fb : t m, dsh[@fb] = (g ^ rs[@fb]) ^ xsh) -> 
+      dsh = map (λ r : F, (g ^ (xsh + zero)) ^ r) rs.
+    Proof.
+      induction m as [|m ihm].
+      +
+        intros * ha.
+        pose proof (vector_inv_0 dsh) as hb.
+        pose proof (vector_inv_0 rs) as hc.
+        subst. cbn.
+        reflexivity.
+      +
+        intros * ha.
+        destruct (vector_inv_S dsh) as (dshh & dsht & hc).
+        destruct (vector_inv_S rs) as (rsh & rst & hd).
+        subst. cbn.
+        f_equal.
+        ++
+          specialize (ha Fin.F1).
+          cbn in ha.
+          subst.
+          rewrite right_identity.
+          pose proof vector_space_smul_associative_fmul as ha.
+          rewrite <-(ha rsh xsh g).
+          rewrite <-(ha xsh rsh g).
+          assert (hb : rsh * xsh = xsh * rsh). field.
+          rewrite hb. reflexivity.
+        ++
+          eapply ihm. 
+          exact (fun f : Fin.t m => ha (Fin.FS f)).
+    Qed.
+
+    Theorem encryption_factor_combine_induction_case : 
+      ∀ (m : nat) (g : G) (xa xb : F) (ds : Vector.t G m)
+      (rs : Vector.t F m), 
+      (∀ fb : Fin.t m, ds[@fb] = (g ^ rs[@fb]) ^ xa) -> 
+      zip_with gop ds (map (λ r : F, (g ^ xb) ^ r) rs) =
+      map (λ r : F, (g ^ (xa + xb)) ^ r) rs.
+    Proof.
+      induction m as [|m ihm].
+      +
+        intros * ha.
+        pose proof (vector_inv_0 ds) as hc.
+        pose proof (vector_inv_0 rs) as hd.
+        subst. cbn.
+        reflexivity.
+      +
+        intros * ha.
+        destruct (vector_inv_S ds) as (dsh & dst & hc).
+        destruct (vector_inv_S rs) as (rsh & rst & hd).
+        subst. cbn.
+        f_equal.
+        ++
+          specialize (ha Fin.F1).
+          cbn in ha. subst.
+          pose proof vector_space_smul_associative_fmul as ha.
+          rewrite <-(ha rsh xa g).
+          rewrite <-(ha xb rsh g).
+          rewrite <-(ha (xa + xb) rsh g).
+          pose proof vector_space_smul_distributive_fadd as hc.
+          rewrite <-(hc (rsh * xa) (xb * rsh)).
+          assert (hd : (rsh * xa + xb * rsh) = ((xa + xb) * rsh)).
+          field.
+          rewrite hd. reflexivity.
+        ++
+          eapply ihm.
+          exact (fun f : Fin.t m => ha (Fin.FS f)).
+    Qed.
+
+
+    Theorem encryption_factor_combine : ∀ (n m : nat)
+      (g : G) (dst : Vector.t (Vector.t G m) n) 
+      (dsh : Vector.t G m) (rs : Vector.t F m)
+      (xsh : F) (xst : Vector.t F n),
+      (∀ fb : t m, dsh[@fb] = (g ^ rs[@fb]) ^ xsh) -> 
+      (∀ (f : t n) (fb : t m), (dst[@f])[@fb] = (g ^ rs[@fb]) ^ xst[@f]) ->
+      fold_right (zip_with gop) dst dsh =
+      map (λ r : F, (g ^ (xsh + fold_right 
+        (λ hi acc : F, hi + acc) xst zero)) ^ r) rs.
+    Proof.
+      induction n as [|n ihn].
+      +
+        intros * ha hb.
+        pose proof (vector_inv_0 dst) as hc.
+        pose proof (vector_inv_0 xst) as hd.
+        subst. cbn.
+        eapply encryption_factor_combine_base_case; 
+        assumption.
+      +
+        intros * ha hb.
+        destruct (vector_inv_S dst) as (dsth & dstt & hc).
+        destruct (vector_inv_S xst) as (xsth & xstt & hd).
+        subst. cbn.
+        specialize (ihn _ g dstt dsh rs xsh xstt ha
+          (fun f : Fin.t n => hb (Fin.FS f))).
+        rewrite ihn.
+        remember (fold_right (λ hi acc : F, hi + acc) xstt zero) as xsacc.
+        specialize (hb Fin.F1). cbn in hb.
+        assert (hc : (xsh + (xsth + xsacc)) = 
+          (xsth + (xsh + xsacc))). field.
+        rewrite hc.
+        remember (xsh + xsacc) as xc.
+        eapply encryption_factor_combine_induction_case; 
+        assumption.
+    Qed.
+      
 
     Context 
       {n : nat}
@@ -638,6 +716,39 @@ Section DistElgamal.
 
 
     Theorem decrypt_ballot_value_correct : ∀ {m : nat} 
+      (ms rs : Vector.t F m) 
+      (dsh : (Vector.t G m)) (dst : Vector.t (Vector.t G m) n), 
+      (∀ (fa : Fin.t (1 + n)) (fb : Fin.t m), 
+        (dsh :: dst)[@fa][@fb] = (g ^ rs[@fb]) ^ xs[@fa]) ->
+      Vector.map (fun x => g ^ x) ms = @decrypt_ballot_value n m 
+        (@encrypt_ballot_dist n m g hs ms rs) (dsh :: dst).
+    Proof.
+      intros * ha.
+      cbn. unfold encrypt_ballot_dist.
+      assert (hb : (fold_right (λ hi acc : G, gop hi acc) hs gid) = 
+        g ^ (fold_right (λ hi acc : F, add hi acc) xs zero)). 
+      eapply  group_gen_mul_power_add; assumption.
+      rewrite hb; clear hb.
+      remember (fold_right (λ hi acc : F, hi + acc) xs zero) as xsacc.
+      pose proof (ha Fin.F1) as hc. cbn in hc.
+      pose proof (fun f : Fin.t n => ha (Fin.FS f)) as hd.
+      cbn in hd.
+      destruct (vector_inv_S xs) as (xsh & xst & he).
+      subst. cbn in hc, hd. cbn.
+      assert (he : (fold_right (zip_with gop) dst dsh) = 
+        map (fun r => (g ^ (xsh + fold_right (λ hi acc : F, hi + acc) 
+          xst zero)) ^ r) rs).
+      apply encryption_factor_combine; try assumption.
+      rewrite he.
+      remember (xsh + fold_right (λ hi acc : F, hi + acc) xst zero) as xsacc.
+      
+
+    Admitted.
+
+
+
+    (* 
+    Theorem decrypt_ballot_value_correct : ∀ {m : nat} 
       (ms rs : Vector.t F m) (cs : Vector.t (G * G) m)
       (ds : Vector.t (Vector.t G m) (1 + n)), 
       (* partial decryption factor is well-formed/correct 
@@ -652,6 +763,7 @@ Section DistElgamal.
       ∀ (f : Fin.t m), g ^ ms[@f] = 
       (@decrypt_ballot_value n m cs ds)[@f].
     Proof.
+
       revert n xs hs hrel.
       induction n as [|n' ihn].
       + 
@@ -674,6 +786,7 @@ Section DistElgamal.
         rewrite ha; reflexivity.
         exact hb.
       +
+        (* work from below *)
         intros * ha * hb hc f.
         destruct (vector_inv_S ds) as (dsh & dst & hd). 
         destruct (vector_inv_S xs) as (xsh & xst & he).
@@ -715,23 +828,31 @@ Section DistElgamal.
           rewrite !hd in hc.
           eapply eq_sym. exact hc.
         }
-        rewrite !hc.
-        f_equal. 
-        
-
-       
+        rewrite !hc; clear ihn hc.
+        f_equal.
 
 
-        
+        unfold encrypted_ballot.
 
 
 
-
-
+        pose proof (ha Fin.F1) as hc; 
+        cbn in hc.
+        assert (hd : ∀ (ft : Fin.t (1 + n')), g ^ xst[@ft] = hst[@ft]).
+        intro ft. specialize (ha (Fin.FS ft)); cbn in ha; 
+        exact ha.
+        pose proof (hb Fin.F1) as he; 
+        cbn in he. 
+        assert (hf : ∀ (fu : Fin.t (1 + n')) (fv : Fin.t m), 
+          ((dsth :: dstt)[@fu])[@fv] = (g ^ rs[@fv]) ^ xst[@fu]).
+        intros *. specialize (hb (Fin.FS fu) fv). simpl in hb.
+        exact hb.
+        eapply decrypt_ballot_value_correct_ind_rewrite; try assumption.
+        exact hc. exact hd. exact he.
+        exact hf.
     Admitted.
 
-
-
+    *)
 
 
 
