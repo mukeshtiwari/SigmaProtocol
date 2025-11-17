@@ -64,6 +64,20 @@
    (libraries zarith)
    (modules :standard)))
 
+(subdir DistElgamallib
+ (coq.extraction
+  (prelude Extraction)
+  (extracted_modules Elgamal DistElgamal DistElgamalIns
+   Datatypes Vector 
+   VectorDef Zpstar BinInt PosDef Functions BinNat 
+   Util EqdepFacts Specif Nat)
+  (theories ExtLib Stdlib Utility Crypto Algebra 
+   Probability Examples))
+ (library 
+   (name DistElgamallib)
+   (libraries zarith)
+   (modules :standard)))
+
 (subdir OrSigmalib
  (coq.extraction
   (prelude Extraction)
