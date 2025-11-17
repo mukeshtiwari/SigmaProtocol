@@ -27,6 +27,7 @@ _build/default/src/Crypto/EqSigma.v
 _build/default/src/Crypto/OrSigma.v
 _build/default/src/Crypto/ChaumPedersen.v
 _build/default/src/Crypto/Elgamal.v
+_build/default/src/Crypto/DistElgamal.v
 _build/default/src/Crypto/EncProof.v
 _build/default/src/Crypto/DecProof.v
 _build/default/src/Frontend/Approval.v
@@ -38,6 +39,7 @@ _build/default/src/Examples/SigmaIns.v
 _build/default/src/Examples/SigmaInsHelios.v
 _build/default/src/Examples/ParaSigmaIns.v
 _build/default/src/Examples/ElgamalIns.v
+_build/default/src/Examples/DistElgamal.v
 _build/default/src/Examples/OrSigmaIns.v
 _build/default/src/Examples/EncProofIns.v
 _build/default/src/Examples/EqSigmaIns.v
@@ -49,6 +51,7 @@ _build/default/src/Extraction/ParaSigmalib/Extraction.v
 _build/default/src/Extraction/SigmaHelioslib/Extraction.v
 _build/default/src/Extraction/AndSigmalib/Extraction.v
 _build/default/src/Extraction/Elgamallib/Extraction.v
+_build/default/src/Extraction/DistElgamallib/Extraction.v
 _build/default/src/Extraction/OrSigmalib/Extraction.v
 _build/default/src/Extraction/EncProoflib/Extraction.v
 _build/default/src/Extraction/EqSigmalib/Extraction.v
