@@ -119,4 +119,10 @@ generate OCaml code from it [_CoqProject file](/_CoqProject). It takes a while (
    Second decryption factors: [5103, 5093, 2084, 1351, 5306, 5887, 5557, 5912, 350, 1728]
    Third decryption factors: [1037, 852, 4709, 5514, 4380, 3038, 2072, 5322, 1086, 3707]
    Decrypted messages: [2185, 159, 409, 2552, 2649, 1893, 649, 1227, 685, 2455]
-   ``` 
+   ```
+12. Run `dune exec _build/default/src/Executable/ChaumPedersencode/main.exe` to run the Chaum-Pedersen code. You will see an output like this:
+   ```OCaml
+   p = 5927, q = 2963, g = 4, h = 7
+   proof = {annoucement = 1944, 2503 challenge = 721 response = 2482}
+   true%
+   ```
