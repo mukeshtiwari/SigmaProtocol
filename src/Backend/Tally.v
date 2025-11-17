@@ -53,17 +53,6 @@ Section Tally.
       (g h : G).
 
    
-    (* 
-    Definition wins_type {n : nat} (c : @cand n) (f : Vector.t F n) : Type := 
-      ∀ (d : cand), f d <= f c.
-
-    Definition loses_type {cand : Type} (c : cand) (f : cand -> nat) : Type :=
-      existsT (d : cand), f c < f d.
-
-    Fixpoint wins_loses_type {cand : Type} (l : list cand) (f : cand -> nat) 
-      : ∀ (c : cand), wins_type c f + loses_type c f. 
-    *)
-
     (* each ciphertext comes with encryption sigma proof so a ballot is 
     a ciphertext and encryption proof of 0 or 1: 
     G * G *  @Sigma.sigma_proto F (G * G) 2 3 2 *)
