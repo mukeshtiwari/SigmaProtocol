@@ -113,7 +113,7 @@ generate OCaml code from it [_CoqProject file](/_CoqProject). It takes a while (
    ```
 11. Run `dune exec _build/default/src/Executable/DistElgamalcode/main.exe` to run the Distributed Elgamal code. You will see an output like this: 
     ```OCaml 
-    Original messages: [2185, 159, 409, 2552, 2649, 1893, 649, 1227, 685, 2455]
+   Original messages: [2185, 159, 409, 2552, 2649, 1893, 649, 1227, 685, 2455]
    Ciphertexts: [(4824, 378), (4617, 385), (379, 791), (1014, 201), (1964, 5245), (3214, 5550), (215, 1641), (3426, 4870), (5708, 4867), (3553, 1444)]
    First decryption factors: [489, 2319, 444, 1809, 3900, 4238, 4723, 1861, 5112, 4614]
    Second decryption factors: [5103, 5093, 2084, 1351, 5306, 5887, 5557, 5912, 350, 1728]
