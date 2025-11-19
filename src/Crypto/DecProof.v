@@ -55,7 +55,7 @@ Section DL.
       (* Decryption proof (c₁, c₂) m *)
       (* https://github.com/benadida/helios-server/blob/master/helios/crypto/elgamal.py#L174 *)
       (* """
-        given g, y, alpha, beta/(encoded m), prove equality of discrete log
+        given g, y, c₁, c₂/(encoded m), prove equality of discrete log
         with Chaum Pedersen, and that discrete log is x, the secret key.
 
         Prover sends a=g^u, b=c₁^u for random u
