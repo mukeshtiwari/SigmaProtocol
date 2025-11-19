@@ -486,7 +486,57 @@ Section Vect.
     rewrite Fin.R_sanity. 
     cbn. rewrite <-ha. nia.
   Qed.
-  
+
+ 
+  Definition vector_forallb {n : nat} (f : R -> bool) 
+    (v : Vector.t R n) : bool :=
+    Vector.fold_right (fun x acc => f x && acc) v true.
+
+  Theorem vector_forallb_correct : 
+    forall (n : nat) (f : R -> bool) (v : Vector.t R n),
+    vector_forallb f v = true <->
+    forall (i : Fin.t n), f (Vector.nth v i) = true.
+  Proof.
+    induction n as [| n ihn].
+    +
+      intros *.
+      split. 
+      ++
+        intros ha i.
+        refine match i with end.
+      ++
+        intros ha.
+        pose proof (vector_inv_0 v) as hb.
+        subst. reflexivity.
+    +
+      intros *.
+      split.
+      ++
+        intros ha i.
+        destruct (vector_inv_S v) as (vh & vt & hb).
+        destruct (fin_inv_S _ i) as [i' | (i' & hc)].
+        +++
+          subst. cbn in ha |- *.
+          apply andb_true_iff in ha.
+          destruct ha as (ha & _).
+          exact ha.
+        +++
+          subst. cbn in ha |- *.
+          apply andb_true_iff in ha.
+          destruct ha as (_ & ha).
+          eapply ihn; exact ha.
+      ++
+        intros ha.
+        destruct (vector_inv_S v) as (vh & vt & hb).
+        subst. cbn in ha |- *.
+        pose proof (ha Fin.F1) as hb.
+        cbn in hb. rewrite hb.
+        cbn. eapply ihn.
+        intro i. specialize (ha (Fin.FS i)).
+        cbn in ha. exact ha.
+  Qed.  
+
+    
   (* Write Ltac *)
 
 End Vect. 
