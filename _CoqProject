@@ -32,6 +32,7 @@ _build/default/src/Crypto/EncProof.v
 _build/default/src/Crypto/DecProof.v
 _build/default/src/Frontend/Approval.v
 _build/default/src/Backend/Tally.v
+_build/default/src/Backend/HeliosTally.v
 _build/default/src/Examples/Prime.v
 _build/default/src/Examples/primeQ.v
 _build/default/src/Examples/primeP.v
@@ -45,10 +46,12 @@ _build/default/src/Examples/EncProofIns.v
 _build/default/src/Examples/EqSigmaIns.v
 _build/default/src/Examples/ApprovalIns.v
 _build/default/src/Examples/TallyIns.v
+_build/default/src/Examples/HeliosTallyIns.v
 _build/default/src/Examples/ChaumPedersenIns.v
 _build/default/src/Extraction/Sigmalib/Extraction.v
 _build/default/src/Extraction/ParaSigmalib/Extraction.v
 _build/default/src/Extraction/SigmaHelioslib/Extraction.v
+_build/default/src/Extraction/HeliosTallylib/Extraction.v
 _build/default/src/Extraction/AndSigmalib/Extraction.v
 _build/default/src/Extraction/Elgamallib/Extraction.v
 _build/default/src/Extraction/DistElgamallib/Extraction.v
