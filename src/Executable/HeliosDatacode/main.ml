@@ -30,7 +30,7 @@ let fetch_votes_for_voters base_url (voters : string list) : unit Lwt.t =
     (fun voter_uuid ->
        let url = Printf.sprintf "%s/ballots/%s/last" base_url voter_uuid in
        fetch_url url >>= fun vote_json ->
-       Printf.printf "\n=== Voter %s ===\n%s\n%!" voter_uuid vote_json;
+       Printf.printf "%s\n%!" vote_json;
        Lwt.return_unit)
     voters
 
@@ -47,9 +47,9 @@ let _ =
     (* --- 2. Download trustees JSON --- *)
     let trustees_url = base_url ^ "/trustees/" in
     fetch_url trustees_url >>= fun trustees_json ->
-    Printf.printf "\n=== TRUSTEES DATA ===\n%s\n%!" trustees_json;
+    Printf.printf ";%s\n%!" trustees_json;
     (* --- 3. Download result JSON --- *)
     let result_url = base_url ^ "/result" in
     fetch_url result_url >>= fun result_json ->
-    Printf.printf "\n=== RESULT DATA ===\n%s\n%!" result_json;
+    Printf.printf ";%s\n%!" result_json;
     Lwt.return_unit)
