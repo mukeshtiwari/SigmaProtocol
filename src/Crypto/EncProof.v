@@ -206,7 +206,7 @@ Section DL.
         destruct (vector_inv_S ms) as (m & msr & _).
         destruct cp as (c₁, c₂).
         (* g^rh = ah₁ * c₁^ch ∧ 
-          g^rh = ah₂ * (c₂ * m^{-1})^ch 
+          h^rh = ah₂ * (c₂ * m^{-1})^ch 
         *)
         exact ((@accepting_conversation F G gop gpow Gdec g c₁ ([ah₁]; [ch]; [rh])) && 
           (@accepting_conversation F G gop gpow Gdec h (gop c₂ (ginv m)) ([ah₂]; [ch]; [rh])) &&

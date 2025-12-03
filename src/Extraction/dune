@@ -28,7 +28,7 @@
   (prelude Extraction)
   (extracted_modules HeliosTallyIns HeliosTally Sigma Datatypes Vector 
    VectorDef Zpstar BinInt PosDef Functions BinNat Approval
-   EncProof Specif Util EqdepFacts DecProof
+   EncProof Specif Util EqdepFacts
    ChaumPedersen EqSigma DistElgamal Elgamal 
    Nat)
   (theories ExtLib Stdlib Utility Crypto Algebra 

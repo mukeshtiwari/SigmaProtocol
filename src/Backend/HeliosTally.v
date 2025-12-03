@@ -7,8 +7,8 @@ From Algebra Require Import
   Ring Vector_space.
 From Utility Require Import Util.
 From Crypto Require Import 
-  Elgamal EncProof Sigma DecProof
-  DistElgamal.
+  Elgamal EncProof Sigma
+  DistElgamal ChaumPedersen.
 From Frontend Require Import Approval.
 Import VectorNotations.
 
@@ -66,17 +66,17 @@ Section HeliosTally.
 
     Definition ballot : Type := (string * Vector.t (G * G) n * 
       Vector.t (@Sigma.sigma_proto F (G * G) 2 3 2) n * 
-      string * string * string * string)%type.
+      string * string * string * string * string)%type.
 
     Definition get_ballot_ciphertext (b : ballot) : Vector.t (G * G) n :=
       match b with
-      | (_, c, _, _, _, _, _) => c
+      | (_, c, _, _, _, _, _, _) => c
       end.
 
     Definition get_ballot_encryption_proof (b : ballot) : 
       Vector.t (@Sigma.sigma_proto F (G * G) 2 3 2) n :=
       match b with
-      | (_, _, c, _, _, _, _) => c
+      | (_, _, c, _, _, _, _, _) => c
       end.
 
     (*
@@ -160,6 +160,7 @@ Section HeliosTally.
       The constructors below specify a small-step operational semantics for the
       entire election verification procedure.
     *)
+    
 
     Inductive count : state -> Type :=
    (* [ax] — Initial state.
@@ -273,12 +274,18 @@ Section HeliosTally.
         | _ => false
         end) pt ds)) = bptds ->
       (* all talliers' decryption factor and proofs are valid *)
-      (vector_forallb (fun u => 
-        @decryption_proof_accepting_conversations_vector F G ginv gop gpow 
-          Gdec _ g (match get_tallier_public_key u with
+      (* The decryption proof is typically a Chaum-Pedersen proof that proves the following:
+      Let (α, β) be the ciphertext (for the candidate's total) and (g, y_i) be the trustee's public key (with y_i = g^(s_i) where s_i is the secret key).
+      The decryption factor is d_i = α^(s_i).
+      The proof proves that (g, y_i, α, d_i) is a Diffie-Hellman tuple, i.e., that the same exponent s_i was used to compute y_i from g and d_i from α. *)
+      (vector_forallb (fun u => vector_forallb (fun '(mx, (ux, sx)) => 
+        @generalised_cp_accepting_conversations F G gop gpow Gdec g mx
+        (match get_tallier_public_key u with
           | (_, _, _, pk_y) => pk_y
-          end) ms (get_tallier_decryption_factor u)
-          (get_tallier_decryption_proof u)) ts = bdec) ->
+        end) ux sx)
+        (zip_with pair (Vector.map fst ms) (zip_with pair 
+        (get_tallier_decryption_factor u)
+        (get_tallier_decryption_proof u)))) ts = bdec) ->
       (* talliers' pok is valid *)
       (vector_forallb (fun u =>
       match get_tallier_public_key u with
@@ -395,12 +402,14 @@ Section HeliosTally.
         | left _ => true
         | _ => false
         end) pt ds))).
-      set (bdec := (vector_forallb (fun u => 
-        @decryption_proof_accepting_conversations_vector F G ginv gop gpow 
-          Gdec _ g (match get_tallier_public_key u with
-          | (pk_g, pk_p, pk_q, pk_y) => pk_y
-          end) ms (get_tallier_decryption_factor u)
-          (get_tallier_decryption_proof u)) ts)).
+      set (bdec := (vector_forallb (fun u => vector_forallb (fun '(mx, (ux, sx)) => 
+        @generalised_cp_accepting_conversations F G gop gpow Gdec g mx
+        (match get_tallier_public_key u with
+          | (_, _, _, pk_y) => pk_y
+        end) ux sx)
+        (zip_with pair (Vector.map fst ms) (zip_with pair 
+        (get_tallier_decryption_factor u)
+        (get_tallier_decryption_proof u)))) ts)).
       set (bpok := (vector_forallb (fun u =>
       match get_tallier_public_key u with
       | (_, _, _, pk_y) => 

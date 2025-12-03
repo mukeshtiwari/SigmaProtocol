@@ -1,0 +1,11 @@
+(menhir
+ (modules parser)
+ (flags --inspection --table --dump))
+
+(ocamllex lexer)
+
+(library 
+ (name helios_parser)
+ (modules Ast lexer parser)
+ (libraries menhirLib HeliosTallylib))
+
