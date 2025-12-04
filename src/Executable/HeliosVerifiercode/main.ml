@@ -6,43 +6,6 @@ open Helios_parser
 open Helios_parser.Parser
 open Ast 
 
-let string_of_token = function
-  | LBRACE -> "LBRACE"
-  | RBRACE -> "RBRACE"
-  | LBRACKET -> "LBRACKET"
-  | RBRACKET -> "RBRACKET"
-  | COLON -> "COLON"
-  | COMMA -> "COMMA"
-  | STRING s -> "STRING(" ^ s ^ ")"
-  | BIGINT s -> "BIGINT(" ^ s ^ ")"
-  | EOF -> "EOF"
-  | Y -> "Y"
-  | VOTE_HASH -> "VOTE_HASH"
-  | VOTER_HASH -> "VOTER_HASH"
-  | VOTER_UUID -> "VOTER_UUID"
-  | ELECTION_HASH -> "ELECTION_HASH"
-  | ELECTION_UUID -> "ELECTION_UUID"
-  | CAST_AT -> "CAST_AT"
-  | ALPHA -> "ALPHA"
-  | BETA -> "BETA"
-  | SEMICOLON -> "SEMICOLON"
-  | _ -> "OTHER_TOKEN"
-
-
-  (* 
-  type ballot = 
-  ((((((string * ('g * 'g) t) * ('f, 'g * 'g) sigma_proto t)
-   * string)
-  * string)
- * string)
-* string)
-* string
-  
-
-type ballot' = (Big_int_Z.big_int, Big_int_Z.big_int) ballot
-  
-*)
-
 let rec vector_to_string (printer : 'a -> string) (sep : string) (v : 'a HeliosTallylib.VectorDef.t) : string =
   match v with
   | Coq_nil -> ""
@@ -104,22 +67,11 @@ let _ =
   | HeliosTallylib.Specif.Coq_existT (bfinal, 
     HeliosTallylib.Specif.Coq_existT (vbs, 
     HeliosTallylib.Specif.Coq_existT (inbs, count))) -> 
-    Printf.printf "Count : %s\n" (print_count count)
-    (*  
+    Printf.printf "Count : %s\n" (print_count count);
     Printf.printf "Final tally: [%b]\n" bfinal;
     Printf.printf "All votes : [%d]\n" (List.length bs);
     Printf.printf "Valid vote : [%d]\n" (List.length vbs);
     Printf.printf "Invalid votes : [%d]\n" (List.length inbs);
-    *)
-(* 
-let _ =
-  let lexbuf = Lexing.from_channel stdin in
-  let rec loop () =
-    let tok = Lexer.token lexbuf in
-    print_endline (string_of_token tok);
-    if tok <> EOF then loop ()
-  in
-  loop ()
-*)
+    
 
   
