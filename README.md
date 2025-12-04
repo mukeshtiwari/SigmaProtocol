@@ -122,8 +122,8 @@ generate OCaml code from it [_CoqProject file](/_CoqProject). It takes a while (
    ```
 12. Run `dune exec _build/default/src/Executable/ChaumPedersencode/main.exe` to run the Chaum-Pedersen code. You will see an output like this:
    ```OCaml
-   p = 5927, q = 2963, g = 4, h = 7
-   proof = {annoucement = 1944, 2503 challenge = 721 response = 2482}
+   p = 5927, q = 2963, g = 4, h = 7, c1 = 1017, c2 = 1692
+   proof = {annoucement = 1433, 440 challenge = 2589 response = 1065}
    true%
    ```
 13. Rune `dune exec _build/default/src/Executable/HeliosDatacode/main.exe < src/Executable/HeliosDatacode/input.txt > src/Executable/HeliosDatacode/File-Name` to download the Helios data in the `File-Name` file. You will see an output like this in `File-Name`. Put the election-id in the [input.txt](src/Executable/HeliosDatacode/input.txt) file (currently it has [IACR 2024](https://vote.heliosvoting.org/helios/elections/a447fe8a-80c8-11ef-923c-7aae6cdba09d)). You can already see the [IACR 2024](src/Executable/HeliosDatacode/IACR2024.txt) and [IACR 2023](src/Executable/HeliosDatacode/IACR2023.txt) for your reference.

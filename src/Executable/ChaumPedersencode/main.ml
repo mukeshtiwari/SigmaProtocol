@@ -61,7 +61,9 @@ let _ =
   print_string( "p = " ^ Big_int_Z.string_of_big_int ChaumPedersenlib.ChaumPedersenIns.p ^ 
     ", q = " ^ Big_int_Z.string_of_big_int ChaumPedersenlib.ChaumPedersenIns.q  ^ ", g = " ^ 
     Big_int_Z.string_of_big_int ChaumPedersenlib.ChaumPedersenIns.g ^  ", h = " ^ 
-    Big_int_Z.string_of_big_int ChaumPedersenlib.ChaumPedersenIns.h);
+    Big_int_Z.string_of_big_int ChaumPedersenlib.ChaumPedersenIns.h ^ ", c1 = " ^ 
+    Big_int_Z.string_of_big_int ChaumPedersenlib.ChaumPedersenIns.c_UU2081_ ^ ", c2 = " ^ 
+    Big_int_Z.string_of_big_int ChaumPedersenlib.ChaumPedersenIns.c_UU2082_);
   print_endline "";  
   print_string (proof_string proof);
   print_endline "";
