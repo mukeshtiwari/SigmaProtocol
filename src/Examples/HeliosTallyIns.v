@@ -6,8 +6,17 @@ From Backend Require Import HeliosTally.
 From Examples Require Import primeP primeQ. 
 Import Vspace Schnorr Zpfield Zpgroup.
 
-(* https://vote.heliosvoting.org/helios/elections/a447fe8a-80c8-11ef-923c-7aae6cdba09d *)
-Section IACR2024.
+(* 2024 https://vote.heliosvoting.org/helios/elections/a447fe8a-80c8-11ef-923c-7aae6cdba09d *)
+(* 2023 https://vote.heliosvoting.org/helios/elections/c3dd2456-6a89-11ee-b981-bad8622d1122 *)
+(* 2022 https://vote.heliosvoting.org/helios/elections/2565efe0-4958-11ed-b89e-7ad723fa8d9f *)
+(* 
+    In all these elections, p, q, and g are the same but h is different.
+    We create a module Helios to encapsulate these parameters and the function to compute final count.
+    In Helios, we create a sub-module IACR2022, IACR2023, IACR2024 for each year's election parameters
+    and since only h is different, we define h separately in each sub-module.
+
+*)
+Section Helios.
 
   (* 256 bit Prime q*)
   Definition q : Z := 61329566248342901292543872769978950870633559608669337131139375508370458778917%Z.
@@ -87,6 +96,6 @@ Section IACR2024.
     Schnorr.dec_zpstar n m g h bs ts pt).
   Defined.
 
-End IACR2024.
+End Helios.
 
   

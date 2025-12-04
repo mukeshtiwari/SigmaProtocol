@@ -41,20 +41,44 @@ let cipher_string (cp : (Z.t * Z.t)) : string =
   match cp with 
   |(cpa, cpb) -> "ciphertext = (" ^ Big_int_Z.string_of_big_int cpa ^ ", " ^ Big_int_Z.string_of_big_int cpb ^ ")"
 
-let proof_and_enc_string (cppf : ((Z.t * Z.t) * (Z.t, Z.t * Z.t) sigma_proto)) : string = 
-  match cppf with
-  | (cp, pf) ->  cipher_string cp ^ " "^  proof_string_pair pf 
+
+(* 
+(Z.t, Z.t) HeliosTallylib.HeliosTally.ballot =
+    ((((((string * (Z.t * Z.t) HeliosTallylib.VectorDef.t) *
+         (Z.t, Z.t * Z.t) sigma_proto HeliosTallylib.VectorDef.t) *
+        string) *
+       string) *
+      string) *
+     string) *
+    string
+*)
+
+let proof_and_enc_string (u : (Z.t, Z.t) HeliosTallylib.HeliosTally.ballot) = 
+    match u with 
+    | (((((((cast_at, cipher_vec), proof_vec), election_hash), election_uuid), vote_hash), voter_hash), voter_uuid) -> 
+      "cast_at: " ^ cast_at ^"; encrypted ballot: [" ^ vector_string_pair ", " cipher_vec ^ "]; encryption proof of 0 or 1: [" ^ 
+      vector_to_string proof_string_pair "," proof_vec ^ "]; election_hash: " ^ election_hash ^ "; election_uuid: " ^ election_uuid ^ "; " ^ 
+      "vote_hash: " ^ vote_hash ^ "; voter_hash: " ^ voter_hash ^ "; voter_uuid: " ^ voter_uuid 
+
+
+
 
 let rec print_count (bs : (Z.t, Z.t) HeliosTallylib.HeliosTally.count) : string = 
   match bs with 
   | Coq_ax ms -> "Identity-tally : " ^ vector_string_pair " " ms ^ "\n" ^ iterate_char "-" 150 ^ "\n"
-  | Coq_cvalid (u, us, vbs, inbs, ms, nms, p) -> print_count p ^ "Valid ballot : " (*^ vector_to_string proof_and_enc_string " " u *) ^ " \nPrevious tally : " ^ vector_string_pair " " ms ^ 
-    "\nCurrent tally : " ^ vector_string_pair " " ms ^ "\n" ^ iterate_char "-" 150 ^ "\n" 
-  | Coq_cinvalid (u, us, vbs, inbs, ms, p) -> print_count p ^ "Invalid ballot : " (* ^ vector_to_string proof_and_enc_string " " u *) ^ " \nPrevious tally : " ^ vector_string_pair " " ms ^ 
+  | Coq_cvalid (u, us, vbs, inbs, ms, nms, p) -> print_count p ^ "Valid ballot : " ^ proof_and_enc_string u  ^ 
+    "\nPrevious tally : " ^ vector_string_pair " " ms ^ 
+    "\nCurrent tally : " ^ vector_string_pair " " nms ^ "\n" ^ iterate_char "-" 150 ^ "\n" 
+  | Coq_cinvalid (u, us, vbs, inbs, ms, p) -> print_count p ^ "Invalid ballot : " ^ proof_and_enc_string u ^ 
+    "\nPrevious tally : " ^ vector_string_pair " " ms ^ 
     "\nCurrent tally : " ^ vector_string_pair " " ms ^ "\n" ^ iterate_char "-" 150 ^ "\n"
-  | Coq_finish (us, vbs, inbs, ms, ts, pt, ds, bptds, bdec, bpok, bhmul, b, p) -> print_count p ^ "pt is the correct plaintext tally: " ^ string_of_bool bptds ^ 
-    ", all talliers' decryption factor and proofs are valid: "  ^ string_of_bool bdec ^ ", talliers' pok is valid: " ^ string_of_bool bpok ^ 
-    ", public key h is equal to all public keys of talliers: " ^ string_of_bool bhmul ^ "\n" ^ iterate_char "-" 150 ^ "\n"
+  | Coq_finish (us, vbs, inbs, ms, ts, pt, ds, bptds, bdec, bpok, bhmul, b, p) -> print_count p ^
+    "Final tally: [" ^ vector_string_pair " " ms ^ "]\nFinal decrypted tally: [" ^ vector_string " " ds 
+    ^ "]\nFinal DL-search tally: [" ^ vector_string " " pt ^ "]\n" ^ 
+    "Plaintext tally is correct decryption of the encrypted tally : " ^ string_of_bool bptds ^ 
+    "\nTalliers' decryption factor and proofs are valid : "  ^ string_of_bool bdec ^ 
+    "\nTalliers' pok are valid : " ^ string_of_bool bpok ^ 
+    "\nPublic key h is equal to all public keys of talliers : " ^ string_of_bool bhmul ^ "\n" ^ iterate_char "-" 150 ^ "\n"
 
 
  
