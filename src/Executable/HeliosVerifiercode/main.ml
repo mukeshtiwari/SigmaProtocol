@@ -31,28 +31,6 @@ let proof_string_pair (proof : (Z.t, Z.t * Z.t) HeliosTallylib.Sigma.sigma_proto
       response = r} -> "proof = {announcement = "^ vector_string_pair "," a  ^ "; challenge = " ^ vector_string  "," c ^ 
       "; response = " ^ vector_string  "," r ^ "}" 
 
-
-let proof_string (proof : (Z.t, Z.t) HeliosTallylib.Sigma.sigma_proto) : string = 
-    match  proof with
-    | {announcement = a; challenge = c; 
-      response = r} -> "proof = {announcement = "^ vector_string "," a  ^ "; challenge = " ^ vector_string  "," c ^ 
-      "; response = " ^ vector_string  "," r ^ "}" 
-let cipher_string (cp : (Z.t * Z.t)) : string = 
-  match cp with 
-  |(cpa, cpb) -> "ciphertext = (" ^ Big_int_Z.string_of_big_int cpa ^ ", " ^ Big_int_Z.string_of_big_int cpb ^ ")"
-
-
-(* 
-(Z.t, Z.t) HeliosTallylib.HeliosTally.ballot =
-    ((((((string * (Z.t * Z.t) HeliosTallylib.VectorDef.t) *
-         (Z.t, Z.t * Z.t) sigma_proto HeliosTallylib.VectorDef.t) *
-        string) *
-       string) *
-      string) *
-     string) *
-    string
-*)
-
 let proof_and_enc_string (u : (Z.t, Z.t) HeliosTallylib.HeliosTally.ballot) = 
     match u with 
     | (((((((cast_at, cipher_vec), proof_vec), election_hash), election_uuid), vote_hash), voter_hash), voter_uuid) -> 
