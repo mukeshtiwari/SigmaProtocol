@@ -63,8 +63,8 @@ let rec print_count (bs : (Z.t, Z.t) HeliosTallylib.HeliosTally.count) : string 
 let _ = 
   let (bs, us, rs) = Parser.main Lexer.token (Lexing.from_channel stdin) in
   let result = HeliosTallylib.HeliosTallyIns.compute_final_count_ins 
-    (Big_int_Z.big_int_of_int 7) 
-    (Big_int_Z.big_int_of_int 2) bs us rs in 
+    (Big_int_Z.big_int_of_int 6) (Big_int_Z.big_int_of_int 2) 
+    (HeliosTallylib.HeliosTallyIns.h2023) bs us rs in 
   match result with
   | HeliosTallylib.Specif.Coq_existT (bfinal, 
     HeliosTallylib.Specif.Coq_existT (vbs, 
