@@ -17,7 +17,7 @@ Section Vector_Space.
 
 
   
-  (* Vector Element *)
+  (* Vector Element (Group ) *)
   Context 
     {V : Type} 
     {eqv : V -> V -> Prop}

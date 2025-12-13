@@ -140,9 +140,9 @@ Section DL.
         {n : nat} (lf : list F) 
         (Hlfn : lf <> List.nil) (gs hs : Vector.t G (2 + n)) 
         (c : F) : dist (@sigma_proto F G (2 + n) 1 1) :=
-        (* draw u random  *)
-        u <- uniform_with_replacement lf Hlfn ;;
-        Ret (construct_eq_conversations_simulator gs hs u c).
+        (* draw r random  *)
+        r <- uniform_with_replacement lf Hlfn ;;
+        Ret (construct_eq_conversations_simulator gs hs r c).
 
 
     End Def.
@@ -967,6 +967,18 @@ Section DL.
           intros (aa, cc, rr) y Ha.
           eapply generalised_eq_special_honest_verifier_simulator_dist.
           exact Ha.
+      Qed.
+
+      (* This is true under the assumption that protocol is complete. *)
+      Lemma generalised_eq_special_honest_verifier_zkp_not_in_lang 
+        {n : nat} (gs hs : Vector.t G (2 + n)) : 
+        forall (lf : list F) (Hlfn : lf <> List.nil) (c : F) (a : sigma_proto) b, 
+        List.In (a, b) (generalised_eq_simulator_distribution lf Hlfn gs hs c) ->
+        generalised_eq_accepting_conversations gs hs a = true.
+      Proof. 
+        intros * ha.
+        eapply generalised_eq_special_honest_verifier_simulator_dist.
+        exact ha.
       Qed.
       
     End Proofs. 

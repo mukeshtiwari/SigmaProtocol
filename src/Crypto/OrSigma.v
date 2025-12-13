@@ -195,7 +195,7 @@ Section DL.
           (g : G) (hs : Vector.t G (2 + n)) (uscs : Vector.t F ((2 + n) + (1 + n)))  
           (c : F) :  @sigma_proto F G (2 + n) (1 + (2 + n)) (2 + n).
         Proof.
-          destruct (splitat (2 + n)uscs) as (us & cs).
+          destruct (splitat (2 + n) uscs) as (us & cs).
           (* (c - Σcs) :: cs *)
           set (cm := (c - (Vector.fold_right add cs zero) :: cs)).
           set (comm := zip_with (fun ui ci => (ui, ci)) us cm).
