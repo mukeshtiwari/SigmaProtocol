@@ -155,8 +155,20 @@ Section Okamoto.
           destruct (vector_inv_S ust) as (usth & ustt & hh).
           pose proof (vector_inv_0 ustt) as hi.
           subst. cbn. intro R.
-          rewrite R.
-          admit.
+          rewrite R, !right_identity.
+          rewrite <-associative,
+           !smul_distributive_fadd, 
+           <-associative. f_equal.
+          rewrite smul_distributive_vadd,
+          <-!smul_associative_fmul, 
+          associative, associative.
+          f_equal. 
+          rewrite commutative.
+          f_equal.
+          assert (ha : c * xh = xh * c) by field.
+          rewrite ha. reflexivity.
+          assert (ha : c * xsth = xsth * c) by field.
+          rewrite ha. reflexivity.
         +
           (* inductive case *)
           intros * R.
@@ -180,10 +192,40 @@ Section Okamoto.
           rewrite ihn.
           clear ihn.
           remember (fold_right (λ '(g, u) (acc : G), gop (g ^ u) acc) (zip_with pair gst ust) gid) as retw.
-          rewrite R.
+          rewrite R. 
+          rewrite !smul_distributive_vadd,
+          <-!smul_associative_fmul,
+          smul_distributive_fadd.
+          rewrite <-!associative.
+          f_equal.
+          assert (hb : gop retw (gop (gh ^ (xh * c)) (ret ^ c)) = 
+            gop (gh ^ (xh * c)) (gop retw (ret ^ c))).
+          {
+            rewrite associative.
+            assert (hb : (gop retw (gh ^ (xh * c))) = 
+              (gop (gh ^ (xh * c)) retw)).
+            rewrite commutative. reflexivity.
+            rewrite hb; clear hb.
+            rewrite associative.
+            reflexivity.
+          }
+          rewrite hb; clear hb. f_equal.
+          assert (hb : c * xh = xh * c) by field.
+          rewrite hb; clear hb; reflexivity.
+          f_equal.
+          rewrite commutative, <-associative.
+          pose proof vector_space_smul_distributive_fadd as hb.
+          unfold is_smul_distributive_fadd in hb.
+          specialize (hb (opp xh * c) (xh * c) gh).
+          rewrite <-hb. clear hb.
+          assert (hb : (opp xh * c + xh * c) = zero).
+          field. rewrite hb; clear hb.
+          rewrite vector_space_field_zero, right_identity.
+          reflexivity.
+      Qed.
+         
           (* automation like field 
             should discharge this goal. *)
-      Admitted.
 
       Theorem generalised_okamoto_simulator_accepting_conversation :
         ∀ (n : nat) (gs : Vector.t G (2 + n)) 
