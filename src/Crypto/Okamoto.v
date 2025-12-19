@@ -282,10 +282,231 @@ Section Okamoto.
         Vector.fold_right (fun '(g, x) acc => gop (g^x) acc) 
         (zip_with pair gs xi) gid.
       Proof.
+        intros * ha hb hc. cbn in hb, hc; 
+        rewrite dec_true in hb, hc.
+        revert n gs h a c₁ c₂ r₁ r₂ ha hb hc.
       Admitted.
 
 
       (* special honest-verifier zero-knowledge proof *)
+      (* honest verifier zero knowledge proof *)
+
+      #[local] Notation "p / q" := (mk_prob p (Pos.of_nat q)).
+
+      Lemma generalised_okamoto_real_distribution_transcript_accepting_generic {n : nat} : 
+        forall (l : dist (Vector.t F (2 + n))) (xs : Vector.t F (2 + n))
+        (gs : Vector.t G (2 + n)) (h : G)
+        (trans : sigma_proto) (pr : prob) (c : F),
+        (* relationship between gs, h, and xs *)
+        h = fold_right (λ '(g, x) (acc : G), gop (g ^ x) acc) 
+        (zip_with pair gs xs) gid ->
+        List.In (trans, pr) (Bind l (λ us : t F (2 + n), 
+            Ret (generalised_okamoto_real_protocol xs gs h us c))) → 
+        generalised_okamoto_accepting_conversation gs h trans = true.
+      Proof.
+        induction l as [|(a, p) l IHl].
+        +
+          intros * Hrel Ha.
+          cbn in Ha; 
+          inversion Ha.
+        +
+          (* destruct l *)
+          destruct l as [|(la, lp) l].
+          ++
+            intros * Hrel Ha.
+            cbn in Ha.
+            destruct Ha as [Ha | Ha];
+            inversion Ha.
+            eapply generalised_okamoto_real_accepting_conversation.
+            exact Hrel.
+          ++
+            intros * Hrel Ha.
+            remember (((la, lp) :: l)%list) as ls.
+            cbn in Ha.
+            destruct Ha as [Ha | Ha].
+            +++
+              inversion Ha.
+              eapply generalised_okamoto_real_accepting_conversation.
+              exact Hrel.
+            +++
+              eapply IHl; try assumption.
+              exact Hrel. exact Ha.
+      Qed.
+
+      Lemma generalised_okamoto_real_distribution_transcript_probability_generic {n : nat} : 
+        forall (l : dist (Vector.t F (2 + n))) (xs : Vector.t F (2 + n))
+        (gs : Vector.t G (2 + n)) (h : G)
+        (trans : sigma_proto) (pr : prob) (c : F) (m : nat),
+        (∀ (trx : Vector.t F (2 + n)) (prx : prob), 
+          List.In (trx, prx) l → prx = 1 / m) ->
+        List.In (trans, pr) (Bind l (λ us : t F (2 + n), 
+          Ret (generalised_okamoto_real_protocol xs gs h us c))) → 
+        pr = 1 / m.
+      Proof.
+        induction l as [|(a, p) l IHl].
+        + intros * Ha Hin.
+          simpl in Hin.
+          inversion Hin.
+        + intros * Ha Hin.
+          pose proof (Ha a p (or_introl eq_refl)).
+          destruct Hin as [Hwa | Hwb].
+          inversion Hwa; subst; 
+          clear Hwa.
+          unfold mul_prob, 
+          Prob.one; simpl.
+          f_equal.
+          nia.
+          simpl in Hwb.
+          eapply IHl.
+          intros ? ? Hinn.
+          exact (Ha trx prx (or_intror Hinn)).
+          exact Hwb.
+      Qed.
+
+
+      Lemma generalised_okamoto_real_distribution_transcript_generic {n : nat} : 
+        forall (lf : list F) (Hlf : lf <> List.nil) 
+        (xs : Vector.t F (2 + n)) (gs : Vector.t G (2 + n)) (h : G)
+        (a : sigma_proto) (b : prob) (c : F),
+        (* relationship between gs, h, and xs *)
+        h = fold_right (λ '(g, x) (acc : G), gop (g ^ x) acc) 
+        (zip_with pair gs xs) gid ->
+        List.In (a, b) (generalised_okamoto_real_distribution lf Hlf xs gs h c) ->
+        generalised_okamoto_accepting_conversation gs h a = true ∧
+        b = mk_prob 1 (Pos.of_nat (Nat.pow (List.length lf) (2 + n))).
+      Proof.
+        intros * Hrel Ha.
+        refine(conj _ _).
+        +
+          eapply generalised_okamoto_real_distribution_transcript_accepting_generic.
+          exact Hrel. exact Ha.
+        +
+          eapply generalised_okamoto_real_distribution_transcript_probability_generic.
+          intros * Hb.
+          eapply  uniform_probability_multidraw_prob.
+          exact Hb.
+          exact Ha.
+      Qed.
+
+
+       Lemma generalised_okamoto_simulator_distribution_transcript_accepting_generic {n : nat} : 
+        forall (l : dist (Vector.t F (2 + n))) 
+        (gs : Vector.t G (2 + n)) (h : G) (trans : sigma_proto) (pr : prob) (c : F),
+        List.In (trans, pr) (Bind l (λ us : t F (2 + n), 
+            Ret (generalised_okamoto_simulator_protocol gs h us c))) → 
+        generalised_okamoto_accepting_conversation gs h trans = true.
+      Proof.
+        induction l as [|(a, p) l IHl].
+        +
+          intros * Ha.
+          cbn in Ha; 
+          inversion Ha.
+        +
+          (* destruct l *)
+          destruct l as [|(la, lp) l].
+          ++
+            intros * Ha.
+            cbn in Ha.
+            destruct Ha as [Ha | Ha];
+            inversion Ha.
+            eapply generalised_okamoto_simulator_accepting_conversation.
+          ++
+            intros * Ha.
+            remember (((la, lp) :: l)%list) as ls.
+            cbn in Ha.
+            destruct Ha as [Ha | Ha].
+            +++
+              inversion Ha.
+              eapply generalised_okamoto_simulator_accepting_conversation.
+            +++
+              eapply IHl; try assumption.
+              exact Ha.
+      Qed.
+
+
+      Lemma generalised_okamoto_simulator_distribution_transcript_probability_generic {n : nat} : 
+        forall (l : dist (Vector.t F (2 + n))) 
+        (gs : Vector.t G (2 + n)) (h : G)
+        (trans : sigma_proto) (pr : prob) (c : F) (m : nat),
+        (∀ (trx : Vector.t F (2 + n)) (prx : prob), 
+          List.In (trx, prx) l → prx = 1 / m) ->
+        List.In (trans, pr) (Bind l (λ us : t F (2 + n), 
+          Ret (generalised_okamoto_simulator_protocol gs h us c))) → 
+        pr = 1 / m.
+      Proof.
+        induction l as [|(a, p) l IHl].
+        + intros * Ha Hin.
+          simpl in Hin.
+          inversion Hin.
+        + intros * Ha Hin.
+          pose proof (Ha a p (or_introl eq_refl)).
+          destruct Hin as [Hwa | Hwb].
+          inversion Hwa; subst; 
+          clear Hwa.
+          unfold mul_prob, 
+          Prob.one; simpl.
+          f_equal.
+          nia.
+          simpl in Hwb.
+          eapply IHl.
+          intros ? ? Hinn.
+          exact (Ha trx prx (or_intror Hinn)).
+          exact Hwb.
+      Qed.
+
+
+       Lemma generalised_okamoto_simulator_distribution_transcript_generic {n : nat} : 
+        forall (lf : list F) (Hlf : lf <> List.nil) 
+        (gs : Vector.t G (2 + n)) (h : G)
+        (a : sigma_proto) (b : prob) (c : F),
+        List.In (a, b) (generalised_okamoto_simulator_distribution lf Hlf gs h c) ->
+        generalised_okamoto_accepting_conversation gs h a = true ∧
+        b = mk_prob 1 (Pos.of_nat (Nat.pow (List.length lf) (2 + n))).
+      Proof.
+        intros * Ha.
+        refine(conj _ _).
+        +
+          eapply generalised_okamoto_simulator_distribution_transcript_accepting_generic.
+          exact Ha.
+        +
+          eapply generalised_okamoto_simulator_distribution_transcript_probability_generic.
+          intros * Hb.
+          eapply  uniform_probability_multidraw_prob.
+          exact Hb.
+          exact Ha.
+      Qed.
+
+
+      (* Two distributions are identical (information theoretic security)*)
+      Lemma generalised_okamoto_special_honest_verifier_zkp {n : nat} : 
+        forall (lf : list F) (Hlfn : lf <> List.nil) 
+        (xs : Vector.t F (2 + n)) (gs : Vector.t G (2 + n)) (h : G) (c : F),
+        (* relationship between gs, h, and xs *)
+        h = fold_right (λ '(g, x) (acc : G), gop (g ^ x) acc) 
+          (zip_with pair gs xs) gid ->
+        List.map (fun '(a, p) => 
+          (generalised_okamoto_accepting_conversation gs h a, p))
+          (@generalised_okamoto_real_distribution n lf Hlfn xs gs h c) = 
+        List.map (fun '(a, p) => 
+          (generalised_okamoto_accepting_conversation gs h a, p))
+          (@generalised_okamoto_simulator_distribution n lf Hlfn gs h c).
+      Proof.
+        intros * Hrel.
+        eapply map_ext_eq.
+        + 
+          unfold generalised_okamoto_real_distribution,
+          generalised_okamoto_simulator_distribution; cbn.
+          repeat rewrite distribution_length.
+          reflexivity.
+        +
+          intros (aa, cc, rr) y Ha.
+          eapply generalised_okamoto_real_distribution_transcript_generic.
+          exact Hrel. exact Ha.
+        +
+          intros (aa, cc, rr) y Ha.
+          eapply generalised_okamoto_simulator_distribution_transcript_generic.
+          exact Ha.
+        Qed.
 
 
       (* witness indistinguishability *)
