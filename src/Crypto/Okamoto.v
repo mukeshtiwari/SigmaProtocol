@@ -492,8 +492,17 @@ Section Okamoto.
           destruct (vector_inv_S rst₂) as (rsth₂ & rstt₂ & hh).
           pose proof (vector_inv_0 rstt₂) as hi.
           subst. cbn.
-          rewrite !right_identity.
-          admit.
+          rewrite !right_identity, 
+          !smul_distributive_vadd,
+          <-!smul_associative_fmul.
+          assert (ha : (rh₁ + opp rh₂) * inv (c₁ + opp c₂) = 
+          (inv (c₁ + opp c₂) * (rh₁ + opp rh₂))). 
+          rewrite commutative. reflexivity.
+          rewrite ha; clear ha.
+          assert (ha : (rsth₁ + opp rsth₂) * inv (c₁ + opp c₂) = 
+          (inv (c₁ + opp c₂) * (rsth₁ + opp rsth₂))).
+          rewrite commutative. reflexivity.
+          rewrite ha. reflexivity.
         +
           intros *.
           destruct (vector_inv_S gs) as (gh & gst & ha).
@@ -504,12 +513,16 @@ Section Okamoto.
           remember (fold_right (λ '(g, x) (acc : G), gop (g ^ x) acc)
           (zip_with pair gst (zip_with (λ x y : F, x + opp y) 
           rst₁ rst₂)) gid) as ret.
-          setoid_rewrite <-Heqret.
-          admit.
+          setoid_rewrite <-Heqret. 
+          rewrite !smul_distributive_vadd,
+          <-!smul_associative_fmul.
+          assert (ha : ((rh₁ + opp rh₂) * inv (c₁ + opp c₂)) = 
+          (inv (c₁ + opp c₂) * (rh₁ + opp rh₂))). 
+          rewrite commutative. reflexivity.
+          rewrite ha. reflexivity.
+      Qed.
 
-      Admitted.
-
-
+      
       (* special honest-verifier zero-knowledge proof *)
       (* honest verifier zero knowledge proof *)
 
