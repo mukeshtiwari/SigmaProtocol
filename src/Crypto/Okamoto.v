@@ -268,23 +268,154 @@ Section Okamoto.
           reflexivity.
       Qed.
       
+      Theorem ginv_fold_right_connection : 
+        ∀ (n : nat) (gs : Vector.t G (2 + n))
+        (rs : Vector.t F (2 + n)),
+        ginv (fold_right (λ gr acc : G, gop gr acc)
+        (zip_with (λ (g : G) (r : F), g ^ r) gs rs) gid) = 
+        (fold_right (λ gr acc : G, gop gr acc)
+        (zip_with (λ (g : G) (r : F), g ^ r) gs 
+        (Vector.map opp rs)) gid).
+      Proof.
+        induction n as [|n ihn].
+        +
+          intros *.
+          destruct (vector_inv_S gs) as (gh & gst & ha).
+          destruct (vector_inv_S gst) as (gsth & gstt & hb).
+          pose proof (vector_inv_0 gstt) as hc.
+          destruct (vector_inv_S rs) as (rh & rst & hd).
+          destruct (vector_inv_S rst) as (rsth & rstt & he).
+          pose proof (vector_inv_0 rstt) as hf.
+          subst. cbn.
+          rewrite !right_identity, group_inv_flip,
+          !connection_between_vopp_and_fopp, 
+          commutative; reflexivity.
+        +
+          intros *.
+          destruct (vector_inv_S gs) as (gh & gst & ha).
+          destruct (vector_inv_S rs) as (rh & rst & hb).
+          subst. cbn.
+          specialize (ihn gst rst).
+          setoid_rewrite <-ihn.
+          rewrite group_inv_flip, commutative,
+          connection_between_vopp_and_fopp.
+          reflexivity.
+      Qed.
+
+
+      Theorem gop_simp : ∀ (a b c d : G),
+        gop (gop a b) (gop c d) = gop (gop a c) (gop b d).
+      Proof.
+        intros *.
+        rewrite <-!associative.
+        setoid_rewrite commutative at 2.
+        rewrite <-!associative.
+        setoid_rewrite commutative at 3.
+        reflexivity.
+      Qed.
+
+      Theorem gop_fold_right_connection : 
+        ∀ (n : nat) (gs : Vector.t G (2 + n))
+        (rs₁ rs₂ : Vector.t F (2 + n)),
+        gop
+        (fold_right (λ gr acc : G, gop gr acc)
+        (zip_with (λ (g : G) (r : F), g ^ r) gs rs₁) gid)
+        (fold_right (λ gr acc : G, gop gr acc)
+        (zip_with (λ (g : G) (r : F), g ^ r) gs rs₂) gid) = 
+        fold_right (λ gr acc : G, gop gr acc)
+        (zip_with (λ (g : G) (r : F), g ^ r) gs
+          (zip_with (fun x y => x + y) rs₁ rs₂)) gid.
+      Proof.
+        induction n as [|n ihn].
+        +
+          intros *.
+          destruct (vector_inv_S gs) as (gh & gst & ha).
+          destruct (vector_inv_S gst) as (gsth & gstt & hb).
+          pose proof (vector_inv_0 gstt) as hc.
+          destruct (vector_inv_S rs₁) as (rh₁ & rst₁ & hd).
+          destruct (vector_inv_S rst₁) as (rsth₁ & rstt₁ & he).
+          pose proof (vector_inv_0 rstt₁) as hf.
+          destruct (vector_inv_S rs₂) as (rh₂ & rst₂ & hg).
+          destruct (vector_inv_S rst₂) as (rsth₂ & rstt₂ & hh).
+          pose proof (vector_inv_0 rstt₂) as hi.
+          subst. cbn.
+          rewrite !right_identity.
+          rewrite gop_simp.
+          pose proof vector_space_smul_distributive_fadd as ha.
+          unfold is_smul_distributive_fadd in ha.
+          rewrite <-!ha.
+          reflexivity.
+        +
+          intros *.
+          destruct (vector_inv_S gs) as (gh & gst & ha).
+          destruct (vector_inv_S rs₁) as (rh₁ & rst₁ & hb).
+          destruct (vector_inv_S rs₂) as (rh₂ & rst₂ & hc).
+          subst. cbn.
+          specialize (ihn gst rst₁ rst₂).
+          setoid_rewrite <-ihn.
+          remember (fold_right (λ gr acc : G, gop gr acc)
+          (zip_with (λ (g : G) (r : F), g ^ r) gst rst₁) gid) as ret₁.
+          setoid_rewrite <-Heqret₁.
+          remember (fold_right (λ gr acc : G, gop gr acc)
+          (zip_with (λ (g : G) (r : F), g ^ r) gst rst₂) gid) as ret₂.
+          setoid_rewrite <-Heqret₂.
+          rewrite gop_simp.
+          pose proof vector_space_smul_distributive_fadd as ha.
+          unfold is_smul_distributive_fadd in ha.
+          rewrite <-!ha.
+          reflexivity.
+      Qed.
+      
+
+
+
 
       (* special soundness *)
       Theorem generalised_okamoto_real_special_soundenss : 
         ∀ (n : nat) (gs : Vector.t G (2 + n)) (h : G)
-        (a : G) (c₁ c₂ : F) (r₁ r₂ : Vector.t F (2 + n)),
+        (a : G) (c₁ c₂ : F) (rs₁ rs₂ : Vector.t F (2 + n)),
         c₁ <> c₂ -> 
         @generalised_okamoto_accepting_conversation n gs h 
-          ([a]; [c₁]; r₁) = true ->
+          ([a]; [c₁]; rs₁) = true ->
         @generalised_okamoto_accepting_conversation n gs h 
-          ([a]; [c₂]; r₂) = true ->
+          ([a]; [c₂]; rs₂) = true ->
         ∃ (xi : Vector.t F (2 + n)), h = 
         Vector.fold_right (fun '(g, x) acc => gop (g^x) acc) 
         (zip_with pair gs xi) gid.
       Proof.
         intros * ha hb hc. cbn in hb, hc; 
         rewrite dec_true in hb, hc.
-        revert n gs h a c₁ c₂ r₁ r₂ ha hb hc.
+        eapply f_equal with (f := fun x => 
+            gop x (ginv (gop a (h ^ c₂))))
+        in hb.
+        rewrite <-hc in hb at 1.
+        clear hc.
+        assert (hc : gop (gop a (h ^ c₁)) (ginv (gop a (h ^ c₂))) = 
+          h ^ (c₁ + opp c₂)).
+        {
+          
+          rewrite group_inv_flip, associative, commutative, 
+          <-associative, associative.
+          rewrite left_inverse, left_identity,
+          connection_between_vopp_and_fopp.
+          pose proof vector_space_smul_distributive_fadd as hc.
+          unfold is_smul_distributive_fadd in hc.
+          rewrite <-hc.
+          reflexivity.
+        }
+        rewrite hc in hb; clear hc.
+        setoid_rewrite ginv_fold_right_connection in hb.
+        setoid_rewrite gop_fold_right_connection in hb.
+        
+
+
+
+ 
+
+
+          
+
+
       Admitted.
 
 
@@ -506,10 +637,12 @@ Section Okamoto.
           intros (aa, cc, rr) y Ha.
           eapply generalised_okamoto_simulator_distribution_transcript_generic.
           exact Ha.
-        Qed.
+      Qed.
 
 
       (* witness indistinguishability *)
+
+     
     
       
     
