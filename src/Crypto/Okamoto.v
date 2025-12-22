@@ -302,6 +302,33 @@ Section Okamoto.
           reflexivity.
       Qed.
 
+      Theorem zip_map_connection : 
+        ∀ (n : nat) (rs₁ rs₂ : Vector.t F (2 + n)),
+        (zip_with (λ x y : F, x + y) rs₁ (map opp rs₂)) = 
+        (zip_with (λ x y : F, x + opp y) rs₁ rs₂).
+      Proof.
+        induction n as [|n ihn].
+        +
+          intros *.
+          destruct (vector_inv_S rs₁) as (rh₁ & rst₁ & ha).
+          destruct (vector_inv_S rst₁) as (rsth₁ & rstt₁ & hb).
+          pose proof (vector_inv_0 rstt₁) as hc.
+          destruct (vector_inv_S rs₂) as (rh₂ & rst₂ & hd).
+          destruct (vector_inv_S rst₂) as (rsth₂ & rstt₂ & he).
+          pose proof (vector_inv_0 rstt₂) as hf.
+          subst. cbn.
+          reflexivity.
+        +
+          intros *.
+          destruct (vector_inv_S rs₁) as (rh₁ & rst₁ & ha).
+          destruct (vector_inv_S rs₂) as (rh₂ & rst₂ & hb).
+          subst. cbn.
+          now rewrite ihn.
+      Qed.
+
+          
+
+
 
       Theorem gop_simp : ∀ (a b c d : G),
         gop (gop a b) (gop c d) = gop (gop a c) (gop b d).
@@ -365,8 +392,34 @@ Section Okamoto.
           rewrite <-!ha.
           reflexivity.
       Qed.
-      
 
+      Theorem fold_right_zip_connection : 
+        ∀ (n : nat) (gs : Vector.t G (2 + n))
+        (rs : Vector.t F (2 + n)),
+        fold_right (λ gr acc : G, gop gr acc)
+        (zip_with (λ (g : G) (r : F), g ^ r) gs rs) gid = 
+        fold_right (λ '(g, x) (acc : G), gop (g ^ x) acc)
+        (zip_with pair gs rs) gid.
+      Proof.
+        induction n as [|n ihn].
+        +
+          intros *.
+          destruct (vector_inv_S gs) as (gh & gst & ha).
+          destruct (vector_inv_S gst) as (gsth & gstt & hb).
+          pose proof (vector_inv_0 gstt) as hc.
+          destruct (vector_inv_S rs) as (rh & rst & hd).
+          destruct (vector_inv_S rst) as (rsth & rstt & he).
+          pose proof (vector_inv_0 rstt) as hf.
+          subst. cbn.
+          reflexivity.
+        +
+          intros *.
+          destruct (vector_inv_S gs) as (gh & gst & ha).
+          destruct (vector_inv_S rs) as (rh & rst & hd).
+          subst. cbn.
+          rewrite ihn.
+          reflexivity.
+      Qed.
 
 
 
@@ -406,7 +459,25 @@ Section Okamoto.
         rewrite hc in hb; clear hc.
         setoid_rewrite ginv_fold_right_connection in hb.
         setoid_rewrite gop_fold_right_connection in hb.
-        
+        rewrite zip_map_connection in hb.
+        rewrite fold_right_zip_connection in hb.
+        eapply f_equal with (f := fun x => 
+          x ^ (inv (c₁ + opp c₂))) in hb.
+        rewrite <-smul_associative_fmul in hb.
+        assert (hc : c₁ + opp c₂ <> zero). 
+        intro hc. eapply ha.
+        eapply f_equal with (f := fun x => 
+          x + c₂) in hc.
+        rewrite left_identity in hc.
+        rewrite <-hc. field. 
+        assert (hd : ((c₁ + opp c₂) * inv (c₁ + opp c₂)) = one).
+        field. exact hc.
+        rewrite hd in hb; clear hc hd.
+        setoid_rewrite field_one in hb.
+        exists (zip_with (λ x y : F, inv (c₁ + opp c₂) * (x + opp y)) 
+        rs₁ rs₂).
+
+
 
 
 
