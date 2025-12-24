@@ -130,47 +130,6 @@ Section Okamoto.
 
     End Def. 
 
-     Section Util. 
-
-      (* small inversion is a life saviour*)
-      Theorem vec_inv_head {n : nat} {A : Type} (a b : A) 
-        (u v : Vector.t A n) (e : a :: u = b :: v) : a = b.
-      Proof.
-        refine 
-          (match e in _ = y return 
-            (match y in Vector.t _ n' return A -> Prop
-            with 
-            | [] => fun _ => False 
-            | b' :: _ => fun i => i = b'
-            end a)
-          with 
-          | eq_refl => eq_refl
-          end).
-      Defined.
-
-      Theorem vec_inv_tail {n : nat} {A : Type} (a b : A) 
-        (u v : Vector.t A n) (e : a :: u = b :: v) : u = v.
-      Proof.
-        refine 
-          match e in _ = y return 
-          (match y in Vector.t _ n' return Vector.t _ (pred n') -> Prop 
-          with
-          | [] => fun _ => False
-          | _ :: y' => fun i => i = y'  
-          end u)
-          with 
-          | eq_refl => eq_refl 
-          end.
-      Defined.
-
-      Theorem vec_inv {n : nat} {A : Type} (a b : A) 
-        (u v : Vector.t A n) (e : a :: u = b :: v) : a = b ∧ u = v.
-      Proof.
-        split;[eapply vec_inv_head | eapply vec_inv_tail]; exact e.
-      Qed.
-
-    End Util. 
-
     Section Proofs.
       
 
@@ -906,6 +865,7 @@ Section Okamoto.
         (zip_with (λ (u : F) '(x₁, x₂), u + c * (x₁ - x₂)) us 
         (zip_with pair xs₁ xs₂)).
       Proof.
+
       Admitted.
 
 
@@ -1014,7 +974,7 @@ Section Okamoto.
             rewrite <-haal. field.
             eapply ihn. exact haar.
       Qed.
-      
+
     End Proofs.
   End WI.
 End Okamoto. 

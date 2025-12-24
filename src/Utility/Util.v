@@ -536,10 +536,53 @@ Section Vect.
         cbn in ha. exact ha.
   Qed.  
 
+  
     
   (* Write Ltac *)
 
 End Vect. 
+
+Section Vecutil.
+      (* small inversion is a life saviour*)
+      Theorem vec_inv_head {n : nat} {A : Type} (a b : A) 
+        (u v : Vector.t A n) (e : a :: u = b :: v) : a = b.
+      Proof.
+        refine 
+          (match e in _ = y return 
+            (match y in Vector.t _ n' return A -> Prop
+            with 
+            | [] => fun _ => False 
+            | b' :: _ => fun i => i = b'
+            end a)
+          with 
+          | eq_refl => eq_refl
+          end).
+      Defined.
+
+      Theorem vec_inv_tail {n : nat} {A : Type} (a b : A) 
+        (u v : Vector.t A n) (e : a :: u = b :: v) : u = v.
+      Proof.
+        refine 
+          match e in _ = y return 
+          (match y in Vector.t _ n' return Vector.t _ (pred n') -> Prop 
+          with
+          | [] => fun _ => False
+          | _ :: y' => fun i => i = y'  
+          end u)
+          with 
+          | eq_refl => eq_refl 
+          end.
+      Defined.
+
+      Theorem vec_inv {n : nat} {A : Type} (a b : A) 
+        (u v : Vector.t A n) (e : a :: u = b :: v) : a = b ∧ u = v.
+      Proof.
+        split;[eapply vec_inv_head | eapply vec_inv_tail]; exact e.
+      Qed.
+
+End Vecutil.
+
+
 
 From Stdlib Require Import List.
 Section ListUtil.

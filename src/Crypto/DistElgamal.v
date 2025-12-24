@@ -97,26 +97,7 @@ Section DistElgamal.
 
   End Def.
 
-  Section Util. 
-
-    (* small inversion is a life saviour*)
-    Theorem vec_inv_tail {n : nat} {A : Type} (a b : A) 
-      (u v : Vector.t A n) (e : a :: u = b :: v) : u = v.
-    Proof.
-      refine 
-        match e in _ = y return 
-        (match y in Vector.t _ n' return Vector.t _ (pred n') -> Prop 
-        with
-        | [] => fun _ => False
-        | _ :: y' => fun i => i = y'  
-        end u)
-        with 
-        | eq_refl => eq_refl 
-        end.
-    Defined.
-
-  End Util. 
-
+  
 
   Section Proofs. 
 
