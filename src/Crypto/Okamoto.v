@@ -828,7 +828,76 @@ Section Okamoto.
           eapply ihn.
       Qed.
 
-  
+      Lemma generalised_okamoto_commitment_homomorphic {n : nat} :
+        ∀ (gs : Vector.t G (2+n)) (us vs : Vector.t F (2+n)),
+          generalised_okamoto_commitment gs 
+          (zip_with (λ x₁ x₂ : F, x₁ - x₂) us vs) =
+          gop (generalised_okamoto_commitment gs us) 
+              (generalised_okamoto_commitment gs (map opp vs)).
+      Proof.
+        (* By induction on vectors, using:
+          - g^(u+v) = g^u * g^v  (distributivity of scalar multiplication)
+          - Group is abelian (from vector_space structure) *)
+        induction n as [|n ihn].
+        +
+          intros *.
+          destruct (vector_inv_S gs) as (gh & gst & ha).
+          destruct (vector_inv_S gst) as (gsth & gstt & hb).
+          pose proof (vector_inv_0 gstt) as hc.
+          destruct (vector_inv_S us) as (uh & ust & hd).
+          destruct (vector_inv_S ust) as (usth & ustt & he).
+          pose proof (vector_inv_0 ustt) as hf.
+          destruct (vector_inv_S vs) as (vh & vst & hg).
+          destruct (vector_inv_S vst) as (vsth & vstt & hh).
+          pose proof (vector_inv_0 vstt) as hi.
+          subst; cbn.
+          rewrite !right_identity.
+          admit.
+        +
+          intros *.
+          destruct (vector_inv_S gs) as (gh & gst & ha).
+          destruct (vector_inv_S us) as (uh & ust & hb).
+          destruct (vector_inv_S vs) as (vh & vst & hc).
+          subst; cbn.
+          specialize (ihn gst ust vst).
+          cbn in ihn.
+          unfold generalised_okamoto_commitment in ihn.
+          setoid_rewrite ihn.
+      Admitted.
+
+      Lemma generalised_okamoto_commitment_inv {n : nat} :
+        ∀ (gs : Vector.t G (2+n)) (us : Vector.t F (2+n)),
+          generalised_okamoto_commitment gs (Vector.map opp us) =
+          ginv (generalised_okamoto_commitment gs us).
+      Proof.
+        (* Using: g^(-u) = (g^u)^{-1} *)
+        induction n as [|n ihn].
+        +
+          intros *.
+          destruct (vector_inv_S gs) as (gh & gst & ha).
+          destruct (vector_inv_S gst) as (gsth & gstt & hb).
+          pose proof (vector_inv_0 gstt) as hc.
+          destruct (vector_inv_S us) as (uh & ust & hd).
+          destruct (vector_inv_S ust) as (usth & ustt & he).
+          pose proof (vector_inv_0 ustt) as hf.
+          subst; cbn.
+          rewrite !right_identity.
+          setoid_rewrite <-connection_between_vopp_and_fopp.
+          rewrite <-group_inv_flip, commutative.
+          reflexivity.
+        +
+          intros *.
+          destruct (vector_inv_S gs) as (gh & gst & ha).
+          destruct (vector_inv_S us) as (uh & ust & hb).
+          subst; cbn.
+          specialize (ihn gst ust). 
+          setoid_rewrite ihn.
+          unfold generalised_okamoto_commitment.
+          setoid_rewrite <-connection_between_vopp_and_fopp.
+          rewrite <-group_inv_flip, commutative.
+          reflexivity.
+      Qed.
+
       Theorem generalised_okamoto_commitment_connection {n : nat} : 
         ∀ (gs : Vector.t G (2 + n)) (h : G) (xs₁ xs₂ : Vector.t F (2 + n)),
         h = generalised_okamoto_commitment gs xs₁ ->
@@ -836,8 +905,13 @@ Section Okamoto.
         generalised_okamoto_commitment gs 
           (zip_with (fun x₁ x₂ => x₁ - x₂) xs₁ xs₂) = gid.
       Proof.
+        intros * ha hb.
+        setoid_rewrite generalised_okamoto_commitment_homomorphic.
+        setoid_rewrite generalised_okamoto_commitment_inv.
+        rewrite <-ha, <-hb.
+        rewrite right_inverse; reflexivity.
+      Qed.
 
-      Admitted.
 
 
       Theorem generalised_okamoto_commitment_tranform_connection {n : nat} :
@@ -854,6 +928,41 @@ Section Okamoto.
           (zip_with pair gs (zip_with (fun x₁ x₂ => (x₁ - x₂)) 
             xs₁ xs₂)) gid) ^ c).
       Proof.
+        induction n as [|n ihn].
+        +
+          intros *.
+          destruct (vector_inv_S xs₁) as (xh₁ & xst₁ & ha).
+          destruct (vector_inv_S xst₁) as (xsth₁ & xstt₁ & hb).
+          pose proof (vector_inv_0 xstt₁) as hc.
+          destruct (vector_inv_S xs₂) as (xh₂ & xst₂ & hd).
+          destruct (vector_inv_S xst₂) as (xsth₂ & xstt₂ & he).
+          pose proof (vector_inv_0 xstt₂) as hf.
+          destruct (vector_inv_S us) as (uh & ust & hg).
+          destruct (vector_inv_S ust) as (usth & ustt & hh).
+          pose proof (vector_inv_0 ustt) as hi.
+          destruct (vector_inv_S gs) as (gh & gst & hj).
+          destruct (vector_inv_S gst) as (gsth & gstt & hk).
+          pose proof (vector_inv_0 gstt) as hl.
+          subst; cbn.
+          rewrite !right_identity, !smul_distributive_vadd,
+          <-!smul_associative_fmul.
+          admit.
+        +
+          intros *.
+          destruct (vector_inv_S xs₁) as (xh₁ & xst₁ & ha).
+          destruct (vector_inv_S xs₂) as (xh₂ & xst₂ & hb).
+          destruct (vector_inv_S us) as (uh & ust & hc).
+          destruct (vector_inv_S gs) as (gh & gst & hd).
+          subst; cbn.
+          rewrite ihn; clear ihn.
+          remember (fold_right (λ '(g, u) (acc : G), gop (g ^ u) acc)
+          (zip_with pair gst ust) gid) as reta.
+          remember (fold_right (λ '(g, u) (acc : G), gop (g ^ u) acc)
+          (zip_with pair gst (zip_with (λ x₁ x₂ : F, x₁ - x₂) xst₁ xst₂))
+          gid) as retb.
+          setoid_rewrite <-Heqreta. setoid_rewrite <-Heqretb.
+          rewrite  !smul_distributive_vadd,
+          <-!smul_associative_fmul.
       Admitted.
 
 
@@ -865,10 +974,30 @@ Section Okamoto.
         (zip_with (λ (u : F) '(x₁, x₂), u + c * (x₁ - x₂)) us 
         (zip_with pair xs₁ xs₂)).
       Proof.
-
-      Admitted.
-
-
+        induction n as [|n ihn].
+        +
+          intros *.
+          destruct (vector_inv_S xs₁) as (xh₁ & xst₁ & ha).
+          destruct (vector_inv_S xst₁) as (xsth₁ & xstt₁ & hb).
+          pose proof (vector_inv_0 xstt₁) as hc.
+          destruct (vector_inv_S xs₂) as (xh₂ & xst₂ & hd).
+          destruct (vector_inv_S xst₂) as (xsth₂ & xstt₂ & he).
+          pose proof (vector_inv_0 xstt₂) as hf.
+          destruct (vector_inv_S us) as (uh & ust & hg).
+          destruct (vector_inv_S ust) as (usth & ustt & hh).
+          pose proof (vector_inv_0 ustt) as hi.
+          subst; cbn.
+          f_equal. field.
+          f_equal. field.
+        +
+          intros *.
+          destruct (vector_inv_S xs₁) as (xh₁ & xst₁ & ha).
+          destruct (vector_inv_S xs₂) as (xh₂ & xst₂ & hb).
+          destruct (vector_inv_S us) as (uh & ust & hc).
+          subst; cbn.
+          f_equal. field.
+          eapply ihn.
+      Qed.
 
 
       Theorem generalised_okamoto_witness_indistinguishable {n : nat} :
