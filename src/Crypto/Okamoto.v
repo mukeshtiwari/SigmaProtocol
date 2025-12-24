@@ -63,8 +63,9 @@ Section Okamoto.
         (zip_with pair gs us) gid.
 
       Definition generalised_okamoto_response {n : nat}
-        (xs : Vector.t F (2 + n)) (us : Vector.t F (2 + n)) (c : F) :=
-      zip_with (fun x u => u + c * x) xs us.
+        (xs : Vector.t F (2 + n)) (us : Vector.t F (2 + n)) (c : F) : 
+        Vector.t F (2 + n) :=
+        zip_with (fun x u => u + c * x) xs us.
 
       Definition generalised_okamoto_real_protocol {n : nat}
         (xs : Vector.t F (2 + n)) (gs : Vector.t G (2 + n)) 
@@ -114,9 +115,62 @@ Section Okamoto.
         us <- repeat_dist_ntimes_vector 
           (uniform_with_replacement lf Hlfn) (2 + n);; 
         Ret (generalised_okamoto_simulator_protocol gs h us c).
-        
       
+      (* WI *)
+      Definition transform_us {n : nat} (xs₁ xs₂ : Vector.t F (2 + n)) 
+        (c : F) (us : Vector.t F (2 + n)) : Vector.t F (2 + n) :=
+        zip_with (fun u '(x₁, x₂) => u + c * (x₁ - x₂)) us 
+        (zip_with pair xs₁ xs₂).
+      
+
+      Definition inverse_transform {n : nat} (xs₁ xs₂ : Vector.t F (2 + n)) 
+        (c : F) (us : Vector.t F (2 + n)) : Vector.t F (2 + n) :=
+        zip_with (fun u '(x₁, x₂) => u + c * (x₂ - x₁)) us 
+        (zip_with pair xs₁ xs₂).
+
     End Def. 
+
+     Section Util. 
+
+      (* small inversion is a life saviour*)
+      Theorem vec_inv_head {n : nat} {A : Type} (a b : A) 
+        (u v : Vector.t A n) (e : a :: u = b :: v) : a = b.
+      Proof.
+        refine 
+          (match e in _ = y return 
+            (match y in Vector.t _ n' return A -> Prop
+            with 
+            | [] => fun _ => False 
+            | b' :: _ => fun i => i = b'
+            end a)
+          with 
+          | eq_refl => eq_refl
+          end).
+      Defined.
+
+      Theorem vec_inv_tail {n : nat} {A : Type} (a b : A) 
+        (u v : Vector.t A n) (e : a :: u = b :: v) : u = v.
+      Proof.
+        refine 
+          match e in _ = y return 
+          (match y in Vector.t _ n' return Vector.t _ (pred n') -> Prop 
+          with
+          | [] => fun _ => False
+          | _ :: y' => fun i => i = y'  
+          end u)
+          with 
+          | eq_refl => eq_refl 
+          end.
+      Defined.
+
+      Theorem vec_inv {n : nat} {A : Type} (a b : A) 
+        (u v : Vector.t A n) (e : a :: u = b :: v) : a = b ∧ u = v.
+      Proof.
+        split;[eapply vec_inv_head | eapply vec_inv_tail]; exact e.
+      Qed.
+
+    End Util. 
+
     Section Proofs.
       
 
@@ -522,7 +576,7 @@ Section Okamoto.
           rewrite ha. reflexivity.
       Qed.
 
-      
+
       (* special honest-verifier zero-knowledge proof *)
       (* honest verifier zero knowledge proof *)
 
@@ -746,10 +800,221 @@ Section Okamoto.
 
       (* witness indistinguishability *)
 
-     
     
       
-    
+      Lemma transform_inverse_foward {n : nat} :
+        ∀ (xs₁ xs₂ : Vector.t F (2 + n)) (c : F) (us : Vector.t F (2 + n)),
+        inverse_transform xs₁ xs₂ c (transform_us xs₁ xs₂ c us) = us.
+      Proof.
+        induction n as [|n ihn].
+        +
+          intros *.
+          destruct (vector_inv_S xs₁) as (xh₁ & xst₁ & ha).
+          destruct (vector_inv_S xst₁) as (xsth₁ & xstt₁ & hb).
+          pose proof (vector_inv_0 xstt₁) as hc.
+          destruct (vector_inv_S xs₂) as (xh₂ & xst₂ & hd).
+          destruct (vector_inv_S xst₂) as (xsth₂ & xstt₂ & he).
+          pose proof (vector_inv_0 xstt₂) as hf.
+          destruct (vector_inv_S us) as (uh & ust & hg).
+          destruct (vector_inv_S ust) as (usth & ustt & hh).
+          pose proof (vector_inv_0 ustt) as hi.
+          subst. cbn.
+          assert (ha : c * (xh₁ - xh₂) + c * (xh₂ - xh₁) = zero).
+          field.
+          assert (hb : c * (xsth₁ - xsth₂) + c * (xsth₂ - xsth₁) = zero).
+          field.
+          f_equal. rewrite <-associative. rewrite ha.
+          field. f_equal. rewrite <-associative. rewrite hb.
+          field.
+        +
+          intros *.
+          destruct (vector_inv_S xs₁) as (xh₁ & xst₁ & ha).
+          destruct (vector_inv_S xs₂) as (xh₂ & xst₂ & hb).
+          destruct (vector_inv_S us) as (uh & ust & hc).
+          subst. cbn.
+          specialize (ihn xst₁ xst₂ c ust).
+          f_equal.
+          rewrite <-associative. field.
+          eapply ihn.
+      Qed.
+
+      Lemma transform_inverse_backward {n : nat} :
+        ∀ (xs₁ xs₂ : Vector.t F (2 + n)) (c : F) (us : Vector.t F (2 + n)),
+        transform_us xs₁ xs₂ c (inverse_transform xs₁ xs₂ c us) = us.
+      Proof.
+        induction n as [|n ihn].
+        +
+          intros *.
+          destruct (vector_inv_S xs₁) as (xh₁ & xst₁ & ha).
+          destruct (vector_inv_S xst₁) as (xsth₁ & xstt₁ & hb).
+          pose proof (vector_inv_0 xstt₁) as hc.
+          destruct (vector_inv_S xs₂) as (xh₂ & xst₂ & hd).
+          destruct (vector_inv_S xst₂) as (xsth₂ & xstt₂ & he).
+          pose proof (vector_inv_0 xstt₂) as hf.
+          destruct (vector_inv_S us) as (uh & ust & hg).
+          destruct (vector_inv_S ust) as (usth & ustt & hh).
+          pose proof (vector_inv_0 ustt) as hi.
+          subst. cbn.
+          f_equal. rewrite <-associative. field.
+          f_equal. rewrite <-associative. field.
+        +
+          intros *.
+          destruct (vector_inv_S xs₁) as (xh₁ & xst₁ & ha).
+          destruct (vector_inv_S xs₂) as (xh₂ & xst₂ & hb).
+          destruct (vector_inv_S us) as (uh & ust & hc).
+          subst. cbn.
+          specialize (ihn xst₁ xst₂ c ust).
+          f_equal.
+          rewrite <-associative. field.
+          eapply ihn.
+      Qed.
+
+  
+      Theorem generalised_okamoto_commitment_connection {n : nat} : 
+        ∀ (gs : Vector.t G (2 + n)) (h : G) (xs₁ xs₂ : Vector.t F (2 + n)),
+        h = generalised_okamoto_commitment gs xs₁ ->
+        h = generalised_okamoto_commitment gs xs₂ ->
+        generalised_okamoto_commitment gs 
+          (zip_with (fun x₁ x₂ => x₁ - x₂) xs₁ xs₂) = gid.
+      Proof.
+
+      Admitted.
+
+
+      Theorem generalised_okamoto_commitment_tranform_connection {n : nat} :
+        ∀ (gs : Vector.t G (2 + n)) (xs₁ xs₂ : Vector.t F (2 + n))
+          (us : Vector.t F (2 + n)) (c : F),
+        fold_right (λ '(g, u) (acc : G), gop (g ^ u) acc)
+          (zip_with pair gs
+          (zip_with (λ (u : F) '(x₁, x₂), u + c * (x₁ - x₂)) us
+          (zip_with pair xs₁ xs₂))) gid = 
+        gop 
+          (fold_right (λ '(g, u) (acc : G), gop (g ^ u) acc)
+          (zip_with pair gs us) gid)
+          ((fold_right (λ '(g, u) (acc : G), gop (g ^ u) acc)
+          (zip_with pair gs (zip_with (fun x₁ x₂ => (x₁ - x₂)) 
+            xs₁ xs₂)) gid) ^ c).
+      Proof.
+      Admitted.
+
+
+      Theorem zip_with_transform {n : nat} : 
+        ∀ (xs₁ xs₂ : Vector.t F (2 + n)) 
+        (us : Vector.t F (2 + n)) (c : F),
+        zip_with (λ x u : F, u + c * x) xs₁ us =
+        zip_with (λ x u : F, u + c * x) xs₂
+        (zip_with (λ (u : F) '(x₁, x₂), u + c * (x₁ - x₂)) us 
+        (zip_with pair xs₁ xs₂)).
+      Proof.
+      Admitted.
+
+
+
+
+      Theorem generalised_okamoto_witness_indistinguishable {n : nat} :
+        ∀ (gs : Vector.t G (2 + n)) (h : G) (xs₁ xs₂ : Vector.t F (2 + n)),
+        (* Both witnesses produce the same public key h *)
+        h = generalised_okamoto_commitment gs xs₁ ->
+        h = generalised_okamoto_commitment gs xs₂ ->
+        (* For every conversation (a, c, rs) from xs, there exists unique us' 
+          such that the same conversation is produced by xs' *)
+        ∀ (us : Vector.t F (2 + n)) (a : G) (c : F) (rs : Vector.t F (2 + n)),
+        ([a]; [c]; rs) = generalised_okamoto_real_protocol xs₁ gs h us c ->
+        (* Then there exists unique us' producing the same transcript for xs' *)
+        exists! us' : Vector.t F (2 + n),
+          ([a]; [c]; rs) = generalised_okamoto_real_protocol xs₂ gs h us' c.
+      Proof.
+        intros * ha hb * hc.
+        unfold unique.
+        exists (transform_us xs₁ xs₂ c us).
+        split.
+        +
+          rewrite hc; clear hc.
+          pose proof @generalised_okamoto_commitment_connection n 
+            gs h xs₁ xs₂ ha hb as hd.  
+          unfold generalised_okamoto_real_protocol, 
+          generalised_okamoto_commitment, 
+          generalised_okamoto_response,
+          transform_us.
+          f_equal. 
+          ++
+            f_equal.
+            unfold generalised_okamoto_commitment in hd.
+            rewrite generalised_okamoto_commitment_tranform_connection.
+            remember (fold_right (λ '(g, u) (acc : G), gop (g ^ u) acc) 
+            (zip_with pair gs us) gid) as ret.
+            rewrite hd.
+            rewrite vid_identity, right_identity; reflexivity.
+          ++
+            eapply zip_with_transform.
+        +
+          intros ys hd.
+          rewrite hc in hd; clear hc.
+          unfold generalised_okamoto_real_protocol, 
+          generalised_okamoto_commitment, 
+          generalised_okamoto_response in hd.
+          inversion hd as [[hu hv]]; clear hd.
+          clear ha hb hu gs h a rs.
+          revert n xs₁ xs₂ us c ys hv.
+          induction n as [|n ihn].
+          ++
+            intros * haa.
+            destruct (vector_inv_S xs₁) as (xh₁ & xst₁ & ha).
+            destruct (vector_inv_S xst₁) as (xsth₁ & xstt₁ & hb).
+            pose proof (vector_inv_0 xstt₁) as hc.
+            destruct (vector_inv_S xs₂) as (xh₂ & xst₂ & hd).
+            destruct (vector_inv_S xst₂) as (xsth₂ & xstt₂ & he).
+            pose proof (vector_inv_0 xstt₂) as hf.
+            destruct (vector_inv_S us) as (uh & ust & hg).
+            destruct (vector_inv_S ust) as (usth & ustt & hh).
+            pose proof (vector_inv_0 ustt) as hi.
+            destruct (vector_inv_S ys) as (yh & yst & hj).
+            destruct (vector_inv_S yst) as (ysth & ystt & hk).
+            pose proof (vector_inv_0 ystt) as hl.
+            subst. cbn in haa |- *.
+            inversion haa as [[haal haar]]; clear haa.
+            f_equal.
+            eapply f_equal with (f := fun x => 
+               x - (c * xh₂)) in haal.
+            assert (ha : yh + c * xh₂ - c * xh₂ = 
+              yh + (c * xh₂ - c * xh₂)). field.
+            rewrite ha in haal; clear ha.
+            assert (ha : c * xh₂ - c * xh₂ = zero). field.
+            rewrite ha in haal. 
+            rewrite right_identity in haal. 
+            rewrite <-haal. field.
+            f_equal. 
+            apply f_equal with (f := fun x => 
+               x - (c * xsth₂)) in haar.
+            assert (ha : ysth + c * xsth₂ - c * xsth₂ = 
+              ysth + (c * xsth₂ - c * xsth₂)). field.
+            rewrite ha in haar; clear ha.
+            assert (ha : (c * xsth₂ - c * xsth₂) = zero).
+            field.
+            rewrite ha, right_identity in haar.
+            rewrite <-haar; field.
+          ++
+            intros * haa.
+            destruct (vector_inv_S xs₁) as (xh₁ & xst₁ & ha).
+            destruct (vector_inv_S xs₂) as (xh₂ & xst₂ & hb).
+            destruct (vector_inv_S us) as (uh & ust & hc).
+            destruct (vector_inv_S ys) as (yh & yst & hd).
+            subst. cbn in haa |- *.
+            eapply vec_inv in haa. 
+            destruct haa as [haal haar].
+            f_equal. 
+            eapply f_equal with (f := fun x => 
+              x - (c * xh₂)) in haal.
+            assert (ha : yh + c * xh₂ - c * xh₂ = 
+              yh + (c * xh₂ - c * xh₂)). field.
+            rewrite ha in haal; clear ha.
+            assert (ha : c * xh₂ - c * xh₂ = zero). field.
+            rewrite ha in haal. 
+            rewrite right_identity in haal. 
+            rewrite <-haal. field.
+            eapply ihn. exact haar.
+      Qed.
+      
     End Proofs.
   End WI.
 End Okamoto. 
