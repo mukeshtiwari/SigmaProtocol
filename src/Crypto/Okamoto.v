@@ -852,7 +852,13 @@ Section Okamoto.
           pose proof (vector_inv_0 vstt) as hi.
           subst; cbn.
           rewrite !right_identity.
-          admit.
+          rewrite gop_simp, 
+          <-!smul_distributive_fadd.
+          assert (ha : uh + opp vh = uh - vh). field.
+          rewrite ha; clear ha.
+          assert (ha : (usth + opp vsth) = (usth - vsth)). field.
+          rewrite ha; clear ha.
+          reflexivity.
         +
           intros *.
           destruct (vector_inv_S gs) as (gh & gst & ha).
@@ -863,7 +869,12 @@ Section Okamoto.
           cbn in ihn.
           unfold generalised_okamoto_commitment in ihn.
           setoid_rewrite ihn.
-      Admitted.
+          rewrite gop_simp,
+          <-!smul_distributive_fadd.
+          assert (ha : uh + opp vh = uh - vh). field.
+          rewrite ha; clear ha.
+          reflexivity.
+      Qed.
 
       Lemma generalised_okamoto_commitment_inv {n : nat} :
         ∀ (gs : Vector.t G (2+n)) (us : Vector.t F (2+n)),
@@ -946,7 +957,13 @@ Section Okamoto.
           subst; cbn.
           rewrite !right_identity, !smul_distributive_vadd,
           <-!smul_associative_fmul.
-          admit.
+          rewrite gop_simp, 
+          <-!smul_distributive_fadd.
+          assert (ha : c * (xh₁ - xh₂) = (xh₁ - xh₂) * c). field.
+          rewrite ha; clear ha.
+          assert (ha : c * (xsth₁ - xsth₂) = (xsth₁ - xsth₂) * c). field.
+          rewrite ha; clear ha.
+          reflexivity.
         +
           intros *.
           destruct (vector_inv_S xs₁) as (xh₁ & xst₁ & ha).
@@ -963,7 +980,12 @@ Section Okamoto.
           setoid_rewrite <-Heqreta. setoid_rewrite <-Heqretb.
           rewrite  !smul_distributive_vadd,
           <-!smul_associative_fmul.
-      Admitted.
+          rewrite gop_simp, 
+          <-!smul_distributive_fadd.
+          assert (ha : c * (xh₁ - xh₂) = (xh₁ - xh₂) * c). field.
+          rewrite ha; clear ha.
+          reflexivity.
+      Qed.
 
 
       Theorem zip_with_transform {n : nat} : 
