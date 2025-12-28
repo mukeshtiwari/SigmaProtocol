@@ -69,6 +69,14 @@ Section DL.
           {n : nat} (gs : Vector.t G n ) (us : Vector.t F n) : Vector.t G n := 
           zip_with (fun g y => g^y) gs us.
 
+        Definition construct_and_conversations_schnorr_response 
+          {n : nat} (xs us : Vector.t F n) (c : F)  : Vector.t F n.
+        Proof.
+          set (usxs := zip_with (fun u x => (u, x)) us xs).
+          set (res := Vector.map (fun '(u, x) => u + c * x) usxs).
+          exact res.
+        Defined.
+
         Definition construct_and_conversations_schnorr {n : nat}
           (xs : Vector.t F n) (gs : Vector.t G n)  
           (us : Vector.t F n) (c : F) :  @sigma_proto F G n 1 n.
@@ -77,8 +85,11 @@ Section DL.
           set (comm := construct_and_conversations_schnorr_commitment
             gs us).
           (* challenge is already there *)
+          set (res := construct_and_conversations_schnorr_response xs us c).
+          (* 
           set (usxs := zip_with (fun u x => (u, x)) us xs).
           set (res := Vector.map (fun '(u, x) => u + c * x) usxs).
+          *)
           exact (comm; [c]; res).
         Defined.
 
@@ -477,7 +488,8 @@ Section DL.
           intros *.
           eapply  generalised_and_accepting_conversations_correctness.
           unfold construct_and_conversations_schnorr.
-          intro f. unfold construct_and_conversations_schnorr_commitment.
+          intro f. unfold construct_and_conversations_schnorr_commitment,
+          construct_and_conversations_schnorr_response.
           eapply construct_and_conversations_schnorr_completeness_generic.
           exact R.
         Qed.

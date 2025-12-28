@@ -130,8 +130,63 @@ Section Okamoto.
 
     End Def. 
 
+    (* This is specialised Okamoto h = g₁ ^ x₁ ⋅ g₂ ^ x₂. I needed 
+    this specialised instance for NEQ *)
+    Section Ins.
+
+      Definition okamoto_real_protocol 
+        (xs : Vector.t F 2) (gs : Vector.t G 2) 
+        (h : G) (us : Vector.t F 2) (c : F) : @sigma_proto F G 1 1 2 :=
+        @generalised_okamoto_real_protocol 0 xs gs h us c.
+
+      
+      Definition okamoto_simulator_protocol 
+        (gs : Vector.t G 2) (h : G) (us : Vector.t F 2) (c : F) : 
+        @sigma_proto F G 1 1 2 := 
+        @generalised_okamoto_simulator_protocol _ gs h us c. 
+
+      
+      Definition okamoto_accepting_conversation 
+        (gs : Vector.t G 2) (h : G) (v : @sigma_proto F G 1 1 2) : bool :=
+        @generalised_okamoto_accepting_conversation _ gs h v. 
+        
+
+    End Ins.
+
     Section Proofs.
       
+
+      Theorem generalised_okamoto_accepting_conversation_true : 
+        ∀ (n : nat)  (gs : Vector.t G (2 + n)) (h : G) 
+        (v : @sigma_proto F G 1 1 (2 + n)),
+        @generalised_okamoto_accepting_conversation n gs h v = true <->
+        match v with 
+        | (a; c; rs) => 
+          Vector.fold_right (fun gr acc => gop gr acc) 
+          (zip_with (fun g r => g^r) gs rs) gid = gop (hd a) (h ^ (hd c))
+        end.
+      Proof.
+        intros *; split.
+        intro ha.
+        refine 
+          (match v as v' in sigma_proto return v = v' -> _ 
+          with 
+          | (a; c; rs) => fun hb => _  
+          end eq_refl).
+        subst. unfold generalised_okamoto_accepting_conversation in ha.
+        rewrite dec_true in ha. exact ha.
+        intros ha.
+        refine 
+          (match v as v' in sigma_proto return v = v' -> _ 
+          with 
+          | (a; c; rs) => fun hb => _  
+          end eq_refl); subst.
+        unfold generalised_okamoto_accepting_conversation.
+        rewrite dec_true.
+        exact ha.
+      Qed.
+
+
 
       Context
         {Hvec: @vector_space F (@eq F) zero one add mul sub 
