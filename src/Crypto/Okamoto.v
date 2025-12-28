@@ -134,6 +134,16 @@ Section Okamoto.
     this specialised instance for NEQ *)
     Section Ins.
 
+      Definition okamoto_commitment
+        (gs : Vector.t G 2) (us : Vector.t F 2) : G := 
+        generalised_okamoto_commitment gs us. 
+        
+      
+      Definition okamoto_response         
+        (xs : Vector.t F 2) (us : Vector.t F 2) (c : F) : 
+        Vector.t F 2 := 
+        generalised_okamoto_response xs us c. 
+
       Definition okamoto_real_protocol 
         (xs : Vector.t F 2) (gs : Vector.t G 2) 
         (h : G) (us : Vector.t F 2) (c : F) : @sigma_proto F G 1 1 2 :=
