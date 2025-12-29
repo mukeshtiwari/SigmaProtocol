@@ -118,6 +118,20 @@ Section Util.
         exact (vh ++ pair_unzip _ _ vt).
     Defined.
       
+    Fixpoint pair_zip {A : Type} {n : nat} : 
+      Vector.t A (2 * n) ->  Vector.t (Vector.t A 2) n.
+    Proof.
+      destruct n as [|n].
+      +
+        intros vs.
+        exact [].
+      +
+        intros vs.
+        replace (2 * S n) with  (S (S (2 * n))) in vs; try (abstract nia).
+        destruct (vector_inv_S vs) as (vsh & vst & _).
+        destruct (vector_inv_S vst) as (vsth & vstt & _).
+        refine(Vector.cons _ [vsh; vsth] _ (pair_zip _ _ vstt)).
+    Defined.
 
 
 End Util.
@@ -321,14 +335,20 @@ Section DL.
             | true => _ 
             | _ => false (* No point of checking futher *) 
             end.
+          assert(ha : (2 * (Nat.div ((2 + n) * (1 + n)) 2) = 
+          ((2 + n) * (1 + n)))%nat). eapply nat_div_2.
+          rewrite <-ha in rr; clear ha.
           (* run Okamoto verifier on (ar; c; rr) *)
-          set (gs_pairs := Vector.map (fun '(g₁, g₂) => gop g₁ g₂)
-            (generate_pairs_of_vector gs)).
-          set (hs_pairs := Vector.map (fun '(h₁, h₂) => gop h₁ h₂) 
-            (generate_pairs_of_vector hs)).
-
-
-        Admitted.
+          set (oka_veri :=  
+            (zip_with (fun '((g₁, g₂), (h₁, h₂)) '(a, rs) =>
+            @okamoto_accepting_conversation F G gid gop gpow Gdec 
+              [gop g₁ g₂; gop h₁ h₂] g₂ ([a]; c; rs))
+              (zip_with pair 
+                (generate_pairs_of_vector gs) 
+                (generate_pairs_of_vector hs))
+              (zip_with pair ar (pair_zip rr)))).
+            exact (vector_forallb (fun x => x) oka_veri).
+        Defined.
 
         (* distribution (zero-knowledge) *)
 
