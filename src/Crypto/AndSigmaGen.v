@@ -95,14 +95,24 @@ Section DL.
 
         (* Does not involve the secret x *)
         (*input: gs hs us c *)
+        Definition construct_and_conversations_simulator_commitment {n : nat}
+          (gs : Vector.t G n) (hs : Vector.t G n) (us : Vector.t F n) 
+          (c : F) : Vector.t G n.
+        Proof.
+          set (ushs := zip_with (fun u h => (u, h)) us hs).
+          set (gsushs := zip_with (fun g uh => (g, uh)) gs ushs).
+          set (comm := Vector.map (fun '(g, (u, h)) => gop (g^u) (h^(opp c))) gsushs).
+          exact comm.
+        Defined.
+
+
         Definition construct_and_conversations_simulator {n : nat}
           (gs : Vector.t G n) (hs : Vector.t G n) (us : Vector.t F n) 
           (c : F) : @sigma_proto F G n 1 n.
         Proof.
           (* commitment *)
-          set (ushs := zip_with (fun u h => (u, h)) us hs).
-          set (gsushs := zip_with (fun g uh => (g, uh)) gs ushs).
-          set (comm := Vector.map (fun '(g, (u, h)) => gop (g^u) (h^(opp c))) gsushs).
+          set (comm := construct_and_conversations_simulator_commitment 
+            gs hs us c).
           refine(comm; [c]; us).
         Defined.
 

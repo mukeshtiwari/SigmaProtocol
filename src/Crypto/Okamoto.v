@@ -75,10 +75,16 @@ Section Okamoto.
         @generalised_okamoto_response n xs us c).
 
       (* https://cs.pwr.edu.pl/kutylowski/articles/prezentacja_SCC-AsiaCCS.pdf *)
+      Definition generalised_okamoto_simulator_protocol_commitment {n : nat}
+        (gs : Vector.t G (2 + n)) (h : G) (us : Vector.t F (2 + n)) 
+        (c : F) : G := 
+        gop (generalised_okamoto_commitment gs us) (h ^ (opp c)).
+
+
       Definition generalised_okamoto_simulator_protocol {n : nat}
         (gs : Vector.t G (2 + n)) (h : G) (us : Vector.t F (2 + n)) (c : F) : 
         @sigma_proto F G 1 1 (2 + n) := 
-        ([gop (generalised_okamoto_commitment gs us) (h ^ (opp c))]; 
+        ([generalised_okamoto_simulator_protocol_commitment gs h us c]; 
         [c]; us).
 
       
@@ -149,7 +155,11 @@ Section Okamoto.
         (h : G) (us : Vector.t F 2) (c : F) : @sigma_proto F G 1 1 2 :=
         @generalised_okamoto_real_protocol 0 xs gs h us c.
 
-      
+      Definition okamoto_simulator_protocol_commitment 
+        (gs : Vector.t G 2) (h : G) (us : Vector.t F 2) 
+        (c : F) : G := generalised_okamoto_simulator_protocol_commitment 
+          gs h us c.
+
       Definition okamoto_simulator_protocol 
         (gs : Vector.t G 2) (h : G) (us : Vector.t F 2) (c : F) : 
         @sigma_proto F G 1 1 2 := 
@@ -313,7 +323,8 @@ Section Okamoto.
           gs h us c) = true.
       Proof.
         intros *. cbn.
-        unfold generalised_okamoto_commitment.
+        unfold generalised_okamoto_commitment,
+        generalised_okamoto_simulator_protocol_commitment.
         eapply dec_true.
         revert n gs h us c.
         induction n as [|n ihn].
