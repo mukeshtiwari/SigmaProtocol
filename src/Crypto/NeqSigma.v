@@ -280,6 +280,7 @@ Section DL.
           generalised_construct_neq_response xs us c).
         Defined.
 
+        
         Definition generalised_construct_neq_conversations_simulator_transcript 
           {n : nat} : Vector.t G (2 + n) -> Vector.t G (2 + n) -> 
           Vector.t F ((2 + n) + ((2 + n) * (1 + n))) -> F ->
@@ -347,7 +348,7 @@ Section DL.
                 (generate_pairs_of_vector gs) 
                 (generate_pairs_of_vector hs))
               (zip_with pair ar (pair_zip rr)))).
-            exact (vector_forallb (fun x => x) oka_veri).
+            exact (vector_forallb id oka_veri).
         Defined.
 
         (* distribution (zero-knowledge) *)
