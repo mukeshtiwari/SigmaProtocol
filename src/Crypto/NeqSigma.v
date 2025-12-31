@@ -317,10 +317,10 @@ Section DL.
           @sigma_proto F G ((2 + n) + Nat.div ((2 + n) * (1 + n)) 2) 1
             ((2 + n) + (2 + n) * (1 + n)) -> bool.
         Proof.
-          intros gs hs sig.
+          intros gs hs pf.
           (* split the sig at (2 + n) *)
           refine 
-            match sig with 
+            match pf with 
             |(a; c; r) => _ 
             end.
           (* split commitments at (2 + n )*)
@@ -376,7 +376,263 @@ Section DL.
 
     End Def. 
 
-    Section Proofs. 
+    Section Proofs.
+
+      (* completeness *)
+      Theorem generalised_neq_real_transcript_accepting_conversations : 
+        ∀ (n : nat) (gs hs : Vector.t G (2 + n)) (xs : Vector.t F (2 + n))
+        (us : Vector.t F (2 + n + (2 + n) * (1 + n))) (c : F), 
+        (∀ (i : Fin.t (2 + n)), hs[@i] = gs[@i] ^ xs[@i]) -> 
+        (∀ (i j : Fin.t (2 + n)), i ≠ j -> xs[@i] ≠ xs[@j]) ->
+        generalised_neq_accepting_conversations gs hs 
+          (generalised_construct_neq_conversations_real_transcript xs gs hs us c) = true.
+      Proof.
+        intros * ha hb.
+
+      Admitted.
+
+
+      Theorem generalised_neq_simulator_transcript_accepting_conversations : 
+        ∀ (n : nat) (gs hs : Vector.t G (2 + n))
+        (us : Vector.t F (2 + n + (2 + n) * (1 + n))) (c : F),
+        generalised_neq_accepting_conversations gs hs 
+          (generalised_construct_neq_conversations_simulator_transcript gs hs us c) = true.
+      Proof.
+        intros *.
+      Admitted.
+
+
+      (* special soundness *)
+
+      Theorem generalised_neq_accepting_conversations_soundenss :
+        ∀ (n : nat) a c₁ c₂ rs₁ rs₂ gs hs, 
+        generalised_neq_accepting_conversations gs hs (a; [c₁]; rs₁) = true ->
+        generalised_neq_accepting_conversations gs hs (a; [c₂]; rs₂) = true ->
+        ∃ (xs : Vector.t F (2 + n)), (∀ (i : Fin.t (2 + n)), hs[@i] = gs[@i] ^ xs[@i]) ∧
+        (∀ (i j : Fin.t (2 + n)), i ≠ j -> xs[@i] ≠ xs[@j]).
+      Proof.
+      Admitted.
+
+      (* zero-knowledge proof *)
+
+      (* special honest-verifier zero-knowledge proof *)
+      (* honest verifier zero knowledge proof *)
+
+      #[local] Notation "p / q" := (mk_prob p (Pos.of_nat q)).
+
+      Lemma generalised_neq_real_distribution_transcript_accepting_generic {n : nat} : 
+        forall (l : dist (Vector.t F (2 + n + (2 + n) * (1 + n)))) (xs : Vector.t F (2 + n))
+        (gs hs : Vector.t G (2 + n)) 
+        (trans : sigma_proto) (pr : prob) (c : F),
+        (* relationship between gs, hs, and xs *)
+        (∀ (i : Fin.t (2 + n)), hs[@i] = gs[@i] ^ xs[@i]) ->
+        (∀ (i j : Fin.t (2 + n)), i ≠ j -> xs[@i] ≠ xs[@j]) ->
+        List.In (trans, pr) (Bind l (λ us : Vector.t F (2 + n + (2 + n) * (1 + n)), 
+            Ret (generalised_construct_neq_conversations_real_transcript xs gs hs us c))) → 
+        generalised_neq_accepting_conversations gs hs trans = true.
+      Proof.
+        induction l as [|(a, p) l IHl].
+        +
+          intros * Hrel Hr Ha.
+          cbn in Ha; 
+          inversion Ha.
+        +
+          (* destruct l *)
+          destruct l as [|(la, lp) l].
+          ++
+            intros * Hrel Hr Ha.
+            cbn in Ha.
+            destruct Ha as [Ha | Ha];
+            inversion Ha.
+            eapply generalised_neq_real_transcript_accepting_conversations; 
+            assumption.
+          ++
+            intros * Hrel Hr Ha.
+            remember (((la, lp) :: l)%list) as ls.
+            cbn in Ha.
+            destruct Ha as [Ha | Ha].
+            +++
+              inversion Ha.
+              eapply generalised_neq_real_transcript_accepting_conversations; 
+              assumption.
+            +++
+              eapply IHl; try assumption.
+              exact Hrel. exact Hr.
+              exact Ha.
+      Qed.
+
+      Lemma generalised_neq_real_distribution_transcript_probability_generic {n : nat} : 
+        forall (l : dist (Vector.t F (2 + n + (2 + n) * (1 + n)))) (xs : Vector.t F (2 + n))
+        (gs hs : Vector.t G (2 + n))
+        (trans : sigma_proto) (pr : prob) (c : F) (m : nat),
+        (∀ (trx : Vector.t F (2 + n + (2 + n) * (1 + n))) (prx : prob), 
+          List.In (trx, prx) l → prx = 1 / m) ->
+        List.In (trans, pr) (Bind l (λ us : Vector.t F (2 + n + (2 + n) * (1 + n)), 
+          Ret (generalised_construct_neq_conversations_real_transcript xs gs hs us c))) → 
+        pr = 1 / m.
+      Proof.
+        induction l as [|(a, p) l IHl].
+        + intros * Ha Hin.
+          simpl in Hin.
+          inversion Hin.
+        + intros * Ha Hin.
+          pose proof (Ha a p (or_introl eq_refl)).
+          destruct Hin as [Hwa | Hwb].
+          inversion Hwa; subst; 
+          clear Hwa.
+          unfold mul_prob, 
+          Prob.one; simpl.
+          f_equal.
+          nia.
+          simpl in Hwb.
+          eapply IHl.
+          intros ? ? Hinn.
+          exact (Ha trx prx (or_intror Hinn)).
+          exact Hwb.
+      Qed.
+
+
+      Lemma generalised_neq_real_distribution_transcript_generic {n : nat} : 
+        forall (lf : list F) (Hlf : lf <> List.nil) 
+        (xs : Vector.t F (2 + n)) (gs hs : Vector.t G (2 + n)) 
+        (a : sigma_proto) (b : prob) (c : F),
+        (* relationship between gs, hs, and xs *)
+        (∀ (i : Fin.t (2 + n)), hs[@i] = gs[@i] ^ xs[@i]) ->
+        (∀ (i j : Fin.t (2 + n)), i ≠ j -> xs[@i] ≠ xs[@j]) ->
+        List.In (a, b) (generalised_neq_schnorr_distribution lf Hlf xs gs hs c) ->
+        generalised_neq_accepting_conversations gs hs a = true ∧
+        b = mk_prob 1 (Pos.of_nat (Nat.pow (List.length lf) (2 + n + (2 + n) * (1 + n)))).
+      Proof.
+        intros * Hrel Hr Ha.
+        refine(conj _ _).
+        +
+          eapply generalised_neq_real_distribution_transcript_accepting_generic.
+          exact Hrel. exact Hr. exact Ha.
+        +
+          eapply generalised_neq_real_distribution_transcript_probability_generic.
+          intros * Hb.
+          eapply  uniform_probability_multidraw_prob.
+          exact Hb.
+          exact Ha.
+      Qed.
+
+
+       Lemma generalised_neq_simulator_distribution_transcript_accepting_generic {n : nat} : 
+        forall (l : dist (Vector.t F (2 + n + (2 + n) * (1 + n)))) 
+        (gs hs : Vector.t G (2 + n)) (trans : sigma_proto) (pr : prob) (c : F),
+        List.In (trans, pr) (Bind l (λ us : Vector.t F (2 + n + (2 + n) * (1 + n)), 
+            Ret (generalised_construct_neq_conversations_simulator_transcript gs hs us c))) → 
+        generalised_neq_accepting_conversations gs hs trans = true.
+      Proof.
+        induction l as [|(a, p) l IHl].
+        +
+          intros * Ha.
+          cbn in Ha; 
+          inversion Ha.
+        +
+          (* destruct l *)
+          destruct l as [|(la, lp) l].
+          ++
+            intros * Ha.
+            cbn in Ha.
+            destruct Ha as [Ha | Ha];
+            inversion Ha.
+            eapply generalised_neq_simulator_transcript_accepting_conversations.
+          ++
+            intros * Ha.
+            remember (((la, lp) :: l)%list) as ls.
+            cbn in Ha.
+            destruct Ha as [Ha | Ha].
+            +++
+              inversion Ha.
+              eapply generalised_neq_simulator_transcript_accepting_conversations.
+            +++
+              eapply IHl; exact Ha.
+      Qed.
+
+
+      Lemma generalised_neq_simulator_distribution_transcript_probability_generic {n : nat} : 
+        forall (l : dist (Vector.t F (2 + n + (2 + n) * (1 + n)))) 
+        (gs hs : Vector.t G (2 + n)) 
+        (trans : sigma_proto) (pr : prob) (c : F) (m : nat),
+        (∀ (trx : Vector.t F (2 + n + (2 + n) * (1 + n))) (prx : prob), 
+          List.In (trx, prx) l → prx = 1 / m) ->
+        List.In (trans, pr) (Bind l (λ us : Vector.t F (2 + n + (2 + n) * (1 + n)), 
+          Ret (generalised_construct_neq_conversations_simulator_transcript gs hs us c))) → 
+        pr = 1 / m.
+      Proof.
+        induction l as [|(a, p) l IHl].
+        + intros * Ha Hin.
+          simpl in Hin.
+          inversion Hin.
+        + intros * Ha Hin.
+          pose proof (Ha a p (or_introl eq_refl)).
+          destruct Hin as [Hwa | Hwb].
+          inversion Hwa; subst; 
+          clear Hwa.
+          unfold mul_prob, 
+          Prob.one; simpl.
+          f_equal.
+          nia.
+          simpl in Hwb.
+          eapply IHl.
+          intros ? ? Hinn.
+          exact (Ha trx prx (or_intror Hinn)).
+          exact Hwb.
+      Qed.
+
+
+       Lemma generalised_neq_simulator_distribution_transcript_generic {n : nat} : 
+        forall (lf : list F) (Hlf : lf <> List.nil) 
+        (gs hs : Vector.t G (2 + n)) 
+        (a : sigma_proto) (b : prob) (c : F),
+        List.In (a, b) (generalised_neq_simulator_distribution lf Hlf gs hs c) ->
+        generalised_neq_accepting_conversations gs hs a = true ∧
+        b = mk_prob 1 (Pos.of_nat (Nat.pow (List.length lf) (2 + n + (2 + n) * (1 + n)))).
+      Proof.
+        intros * Ha.
+        refine(conj _ _).
+        +
+          eapply generalised_neq_simulator_distribution_transcript_accepting_generic.
+          exact Ha.
+        +
+          eapply generalised_neq_simulator_distribution_transcript_probability_generic.
+          intros * Hb.
+          eapply  uniform_probability_multidraw_prob.
+          exact Hb.
+          exact Ha.
+      Qed.
+
+
+      (* Two distributions are identical (information theoretic security)*)
+      Lemma generalised_okamoto_special_honest_verifier_zkp {n : nat} : 
+        forall (lf : list F) (Hlfn : lf <> List.nil) 
+        (xs : Vector.t F (2 + n)) (gs hs : Vector.t G (2 + n)) (c : F),
+        (∀ (i : Fin.t (2 + n)), hs[@i] = gs[@i] ^ xs[@i]) ->
+        (∀ (i j : Fin.t (2 + n)), i ≠ j -> xs[@i] ≠ xs[@j]) ->
+        List.map (fun '(a, p) => 
+          (generalised_neq_accepting_conversations gs hs a, p))
+          (@generalised_neq_schnorr_distribution n lf Hlfn xs gs hs c) = 
+        List.map (fun '(a, p) => 
+          (generalised_neq_accepting_conversations gs hs a, p))
+          (@generalised_neq_simulator_distribution n lf Hlfn gs hs c).
+      Proof.
+        intros * Hrel Hr.
+        eapply map_ext_eq.
+        + 
+          unfold generalised_neq_schnorr_distribution,
+          generalised_neq_simulator_distribution; cbn.
+          repeat rewrite distribution_length.
+          reflexivity.
+        +
+          intros (aa, cc, rr) y Ha.
+          eapply generalised_neq_real_distribution_transcript_generic.
+          exact Hrel. exact Hr. exact Ha.
+        +
+          intros (aa, cc, rr) y Ha.
+          eapply generalised_neq_simulator_distribution_transcript_generic.
+          exact Ha.
+      Qed.
     
     End Proofs. 
   End Neq.
