@@ -56,9 +56,8 @@ Section Util.
       cbn. change 2 with (1 + 1).
       rewrite add_mul_comm, add_comm_dist_transparent.
       cbn; rewrite !add_zero_trans.
-      f_equal.
-  *)
-
+    Admitted.
+    *)
 
     (* computes pair of vectors: *)
     Fixpoint generate_pairs_of_vector {A : Type} {n : nat}  
@@ -388,6 +387,16 @@ Section DL.
           (generalised_construct_neq_conversations_real_transcript xs gs hs us c) = true.
       Proof.
         intros * ha hb.
+        unfold generalised_neq_accepting_conversations,
+        generalised_construct_neq_conversations_real_transcript.
+        destruct (splitat (2 + n) (generalised_construct_neq_commitment gs hs us)) as 
+        [al ar] eqn:hc.
+        destruct (splitat (2 + n) (generalised_construct_neq_response xs us c)) as
+        [rl rr] eqn:hd.
+        (* al; [c]; rl is AND accpeting conversation *)
+        destruct (splitat (2 + n) us) as (usl & usr) eqn:he.
+        eapply append_splitat in hc, hd, he.
+        subst.
 
       Admitted.
 
