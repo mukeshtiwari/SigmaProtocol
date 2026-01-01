@@ -26,6 +26,7 @@ _build/default/src/Crypto/AndSigma.v
 _build/default/src/Crypto/AndSigmaGen.v
 _build/default/src/Crypto/EqSigma.v
 _build/default/src/Crypto/OrSigma.v
+_build/default/src/Crypto/OrSigmaGen.v
 _build/default/src/Crypto/ChaumPedersen.v
 _build/default/src/Crypto/Elgamal.v
 _build/default/src/Crypto/DistElgamal.v
