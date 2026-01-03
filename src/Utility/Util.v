@@ -887,11 +887,115 @@ Section TransProofs.
       intros *.
       rewrite nat_succ.
       reflexivity.
-    Qed.
+    Defined.
+
+    Lemma add_0_r : forall (n : nat), (n + 0 = n)%nat.
+    Proof.
+      induction n as [|n ihn].
+      - reflexivity.
+      - simpl. rewrite ihn. reflexivity.
+    Defined.
+
+    (* Second helper lemma: right successor *)
+    Lemma add_succ_r : forall (n m : nat), (n + S m = S (n + m))%nat.
+    Proof.
+      induction n as [|n ihn].
+      - intro m. reflexivity.
+      - intro m. simpl. 
+        rewrite ihn. 
+        reflexivity.
+    Defined.
+
+    (* Main theorem using the helper lemmas *)
+    Theorem add_comm : forall (n m : nat), (n + m = m + n)%nat.
+    Proof.
+      induction n as [|n ihn].
+      - intro m. simpl. rewrite add_0_r. reflexivity.
+      - intro m. simpl. rewrite ihn. rewrite add_succ_r. reflexivity.
+    Defined.
 
 
-        
-    
+    Theorem add_assoc : ∀ (n m o : nat), 
+      (n + m + o = n + (m + o))%nat.
+    Proof.
+      induction n as [|n ihn].
+      - (* Case n = 0 *)
+        simpl.
+        reflexivity.
+      - (* Case n = S n' *)
+        simpl; intros *.
+        rewrite ihn.
+        reflexivity.
+    Defined.
+
+
+    (* Helper lemma 1: Right zero property *)
+    Lemma mul_0_r : ∀ (n : nat), (n * 0 = 0)%nat.
+    Proof.
+      induction n as [|n ihn].
+      - reflexivity.
+      - simpl. rewrite ihn. 
+        reflexivity.
+    Defined.
+
+    (* Helper lemma 2: Right successor property *)
+    Lemma mul_succ_r : ∀ (n m : nat), 
+      (n * (S m) = n * m + n)%nat.
+    Proof.
+      induction n as [|n ihn]; intro m.
+      - reflexivity.
+      - simpl. rewrite ihn.
+        assert(ha : (m + n * m + S n = S n + (m + n * m))%nat).
+        eapply add_comm.
+        rewrite ha; clear ha; 
+        cbn. f_equal.
+        rewrite add_comm.
+        assert (ha : (n * m + n = n + n * m)%nat) 
+        by (eapply add_comm).
+        rewrite ha; clear ha.
+        rewrite add_assoc.
+        assert(ha : (n * m + m = m + n * m)%nat) 
+        by (eapply add_comm).
+        rewrite ha; clear ha.
+        reflexivity.
+    Defined.
+
+
+    (* Main theorem *)
+    Theorem mul_comm : forall (n m : nat), (n * m = m * n)%nat.
+    Proof.
+      induction n as [|n ihn]; 
+      intro m.
+      - (* Base case: a = 0 *)
+        simpl. rewrite mul_0_r. 
+        reflexivity.
+      - (* Inductive case: a = S a' *)
+        simpl.
+        rewrite ihn, mul_succ_r,
+        add_comm;
+        reflexivity.
+    Defined.
+
+    Theorem add_mul_dist : forall (n m o : nat), 
+      (n * (m + o) = n * m + n * o)%nat.
+    Proof.
+      induction n as [|n ihn].
+      - (* Base case: a = 0 *)
+        intros *.
+        reflexivity.
+      - (* Inductive case: a = S a' *)
+        intros *. cbn.
+        rewrite ihn.
+        rewrite <- add_assoc.
+        rewrite <-add_assoc.
+        f_equal.
+        rewrite add_assoc.
+        rewrite add_assoc.
+        f_equal.
+        eapply add_comm.
+    Defined.
+
+  
     
     Definition nat_eq_succ : 
       ∀ (n m : nat), S (Nat.add n (S m)) = S (S (Nat.add n m)).
@@ -904,13 +1008,12 @@ Section TransProofs.
         end).
     Defined.
   
-
     
     Theorem subst_vector {A : Type} : forall {n m : nat},
       Vector.t A n -> n = m -> Vector.t A m.
     Proof.
       intros * u Ha.
-      exact (@eq_rect nat n (fun x => Vector.t A x) u m Ha).
+      exact (@eq_rect nat n (Vector.t A) u m Ha).
     Defined.
 
 
@@ -923,9 +1026,17 @@ Section TransProofs.
       induction x;
       intros *; simpl;
       [ | destruct u; rewrite IHx;
-      [erewrite IHx with (q := 1%nat) | erewrite IHx]];
-      try nia.
+      [erewrite IHx with (q := 1%nat) | erewrite IHx]].
+      rewrite add_comm. reflexivity.
+      cbn.
+      assert (ha : (q + S (fst (Nat.divmod x y 0 y)) = 
+        S (fst (Nat.divmod x y 0 y)) + q)%nat).
+      rewrite add_comm; reflexivity.
+      rewrite ha; cbn. f_equal.
+      eapply add_comm.
+      reflexivity.
     Defined.
+
 
 
     Lemma nat_divmod : 
@@ -950,6 +1061,159 @@ Section TransProofs.
       nia.
     Defined.
       
+
+    Theorem div_add_ind : ∀ (n m : nat),
+      (fst (Nat.divmod (2 * n + m) 1 0 1) =  
+      n + fst (Nat.divmod m 1 0 1))%nat.
+    Proof.
+      induction n as [|n ihn].
+      +
+        cbn; intro m; 
+        reflexivity.
+      +
+        intros *.
+        replace (2 * S n)%nat with 
+        (2 + 2 * n)%nat.
+        cbn.
+        rewrite divmod_simplification.
+        replace (n + (n + 0))%nat with 
+        (2 * n)%nat. 
+        rewrite ihn. 
+        reflexivity.
+        reflexivity.
+        cbn. 
+        f_equal.
+        assert (ha : (n + S (n + 0) = S (n + 0) + n)%nat).
+        now rewrite add_comm.
+        rewrite ha. cbn. f_equal.
+        rewrite add_comm.
+        reflexivity.
+    Defined.
+
+
+    Theorem div_add : ∀ (n m : nat),
+      (m + (m * n) / 2 = (m * (2 + n)) / 2)%nat.
+    Proof.
+      destruct m as [|m]; cbn.
+      +
+        reflexivity.
+      +
+        change (S (S n)) with (2 + n)%nat.
+        assert (ha : (fst (Nat.divmod (n + m * (2 + n)) 1 1 1) = 
+          S (fst (Nat.divmod (n + m * (2 + n)) 1 0 1)))%nat).
+        rewrite divmod_simplification.
+        reflexivity. rewrite ha; clear ha.
+        f_equal. 
+        replace (n + m * (2 + n))%nat with 
+        (2 * m + n + m * n)%nat.
+        rewrite add_assoc.
+        remember (n + m * n)%nat as a.
+        rewrite div_add_ind.
+        reflexivity.
+        rewrite add_mul_dist, <-add_assoc.
+        assert (ha : (n + m * 2 = m * 2 + n)%nat) 
+        by (now eapply add_comm).
+        rewrite ha; clear ha.
+        assert (ha : (2 * m = m * 2)%nat) by 
+        (eapply mul_comm).
+        rewrite ha. reflexivity.
+    Defined.
+
+    Theorem nat_div_even : ∀ (n : nat), 
+      ∃ (k : nat), ((1 + n) * n)%nat = (2 * k)%nat.
+    Proof.
+      induction n as [|n ihn].
+      +
+        exists 0%nat.
+        reflexivity.
+      +
+        destruct ihn as (k & ihn).
+        cbn. exists (k + n + 1)%nat.
+        rewrite add_0_r.
+        replace (n * S n)%nat with 
+        ((1 + n) * n)%nat.
+        rewrite ihn.
+        rewrite add_comm.
+        cbn.
+        rewrite add_0_r.
+        assert (ha : (k + n + 1 = 1 + n + k)%nat).
+        rewrite add_comm, add_assoc.
+        f_equal. eapply add_comm.
+        rewrite !ha; clear ha.
+        cbn. f_equal.
+        assert (ha : (n + k + S (n + k))%nat = 
+          (S (n + k) + n + k)%nat).
+        rewrite add_comm. cbn.
+        f_equal. rewrite <-add_assoc.
+        reflexivity.
+        rewrite !ha; clear ha.
+        cbn; f_equal.
+        rewrite <-add_assoc.
+        rewrite add_comm.
+        assert (ha : (n + k + n)%nat = 
+        (n + n + k)%nat).
+        rewrite add_assoc.
+        rewrite add_assoc.
+        f_equal. eapply add_comm.
+        rewrite ha; clear ha.
+        assert (ha : (n + n + k + k)%nat = 
+          (n + (n + k + k))%nat).
+        rewrite <-add_assoc.
+        rewrite <-add_assoc.
+        reflexivity.
+        rewrite ha; clear ha.
+        reflexivity.
+        eapply mul_comm.
+    Defined.
+        
+
+    Theorem nat_div_adds : ∀ (n : nat), 
+      (2 * n / 2 + 2 * n / 2)%nat = (2 * n)%nat.
+    Proof.
+      induction n as [|n ihn].
+      +
+        reflexivity.
+      +
+        replace (2 * S n)%nat with (2 + 2 * n)%nat.
+        cbn in ihn |- *.
+        rewrite add_0_r in ihn |- *.
+        rewrite divmod_simplification.
+        remember (fst (Nat.divmod (n + n) 1 0 1)) as ret.
+        cbn. f_equal.
+        rewrite add_comm.
+        cbn. f_equal.
+        exact ihn.
+        change (S n)%nat with (1 + n)%nat.
+        rewrite add_mul_dist.
+        reflexivity.
+    Defined.
+  
+
+    Theorem nat_div_gen : ∀ (n : nat), 
+      (Nat.div ((1 + n) * n) 2 +  Nat.div ((1 + n) * n) 2)%nat = 
+      ((1 + n) * n)%nat.
+    Proof.
+      intros n.
+      destruct (nat_div_even n) as (k & ha).
+      rewrite !ha.
+      eapply nat_div_adds.
+    Defined.
+
+   
+      
+    Definition nat_div_2 : ∀ (n : nat), 
+      (Nat.div ((2 + n) * (1 + n)) 2 + 
+      Nat.div ((2 + n) * (1 + n)) 2)%nat = ((2 + n) * (1 + n))%nat.
+    Proof.
+      intros *.
+      specialize (nat_div_gen (S n)) as ha.
+      change (1 + S n)%nat with (2 + n)%nat in ha.
+      exact ha.
+    Defined.
+
+       
+    
+
     (* end of proofs *)
 
 
