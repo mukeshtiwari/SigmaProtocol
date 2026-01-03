@@ -1,7 +1,7 @@
 From Stdlib Require Import Setoid
   setoid_ring.Field Lia Vector Utf8
   Psatz Bool Pnat BinNatDef 
-  BinPos Arith.
+  BinPos Arith Eqdep_dec.
 From Algebra Require Import 
   Hierarchy Group Monoid
   Field Integral_domain
@@ -20,45 +20,23 @@ Import MonadNotation
 
 Section Util.
 
-  (* 
-    Theorem add_zero_trans : ∀ (n : nat), n + 0 = n.
-    Admitted. 
+   
+
+    Theorem generate_pairs_of_vector_proof : 
+      ∀ (n m : nat), m + Nat.div (m * n) 2 = 
+      Nat.div ((2 + n) * m) 2.
+    Proof.
+        intros *. 
+        rewrite div_add.
+        f_equal. rewrite add_mul_dist.
+        assert (ha : (2 + n) * m = m * (2 + n)) by 
+        (now rewrite mul_comm). 
+        rewrite ha; clear ha.
+        rewrite add_mul_dist.
+        exact eq_refl.
+    Defined.
+
     
-    Theorem add_commutative : ∀ (a b : nat), a + b = b + a.
-    Admitted.
-
-    Theorem add_mul_comm : ∀ (a b : nat), a * b = b * a. 
-    Admitted. 
-
-    Theorem add_comm_dist_transparent : ∀ (a b c : nat), 
-     (a + b) * c = a * c + b * c.
-    Proof.
-    Admitted.
-      
-      
-
-    Theorem add_comm_transparent : ∀ (n : nat),
-      (1 + S n) * 2 + ((2 + n) * (1 + n)) = (2 + S n) * (1 + S n).
-    Proof.
-      intros *. change (S n) with (1 + n).
-      rewrite !add_comm_dist_transparent.
-      setoid_rewrite add_mul_comm.
-      cbn.  f_equal. f_equal.
-      f_equal. f_equal.
-      rewrite add_zero_trans.
-      rewrite add_commutative.
-      setoid_rewrite add_commutative at 1.
-      f_equal. 
-      change 2 with (1 + 1).
-      rewrite add_mul_comm, add_comm_dist_transparent.
-      cbn; rewrite !add_zero_trans; reflexivity.
-      f_equal. f_equal.
-      cbn. change 2 with (1 + 1).
-      rewrite add_mul_comm, add_comm_dist_transparent.
-      cbn; rewrite !add_zero_trans.
-    Admitted.
-    *)
-
     (* computes pair of vectors: *)
     Fixpoint generate_pairs_of_vector {A : Type} {n : nat}  
       (gs : Vector.t A (2 + n)) : Vector.t (A * A) (Nat.div ((2 + n) * (1 + n)) 2).
@@ -73,52 +51,31 @@ Section Util.
         (* map gsh over gst *)
         set (reta := Vector.map (fun x => (gsh, x)) gst).
         specialize (generate_pairs_of_vector _ _ gst).
-        (* make this proof transparent. *)
-        assert (ha : ((1 + S n) * 2 + ((2 + n) * (1 + n)) = 
-        ((2 + S n) * (1 + S n)))%nat) by (abstract nia).
-        eapply f_equal with (f := fun x => Nat.div x 2) in ha.
-        rewrite PeanoNat.Nat.div_add_l in ha; try (abstract nia).
-        refine(@eq_rect nat _ (Vector.t (A * A)) (reta ++ generate_pairs_of_vector) _
-          ha).
-    Defined.
-
-   
-    Definition nat_div_2 : ∀ (n : nat), 
-        (2 * Nat.div ((2 + n) * (1 + n)) 2)%nat = ((2 + n) * (1 + n))%nat.
-      Proof.
-        induction n as [| n IH].
-        - (* Base case: n = 0 *)
-          cbn; reflexivity.
-        - (* Inductive step *)
-          change ((2 + S n))%nat with (3 + n)%nat.
-          change ((1 + S n))%nat with (2 + n)%nat.
-          (* We show that (n+3)(n+2) = (n+2)(n+1) + 2(n+2) *)
-          replace ((3 + n) * (2 + n))%nat
-            with (((2 + n) * (1 + n)) + 2 * (2 + n))%nat
-            by (abstract nia).
-          replace (2 * (2 + n))%nat with 
-          ((2 + n) * 2)%nat by (abstract nia).
-          rewrite Nat.div_add; 
-          try (abstract nia).
+        refine(@eq_rect nat _ (Vector.t (A * A)) 
+        (reta ++ generate_pairs_of_vector) _ _).
+        eapply generate_pairs_of_vector_proof.
     Defined.
 
    
     Fixpoint pair_unzip {A : Type} {n : nat} : 
-      Vector.t (Vector.t A 2) n -> Vector.t A (2 * n).
+      Vector.t (Vector.t A 2) n -> Vector.t A (n + n).
     Proof.
       intros v.
       refine
-        (match v in Vector.t _ n' return Vector.t _ (2 * n')  
+        (match v in Vector.t _ n' return Vector.t _ (n' + n')  
         with 
         | [] => []
         | Vector.cons _ vh nt vt => _ 
-        end).
-        replace (2 * S nt) with  (2 + 2 * nt); try (abstract nia).
+        end). 
+        replace (S nt +  S nt) with  (S (S (nt + nt))).
         exact (vh ++ pair_unzip _ _ vt).
+        cbn. f_equal.
+        rewrite add_succ_r.
+        reflexivity.
     Defined.
       
     Fixpoint pair_zip {A : Type} {n : nat} : 
-      Vector.t A (2 * n) ->  Vector.t (Vector.t A 2) n.
+      Vector.t A (n + n) ->  Vector.t (Vector.t A 2) n.
     Proof.
       destruct n as [|n].
       +
@@ -126,10 +83,13 @@ Section Util.
         exact [].
       +
         intros vs.
-        replace (2 * S n) with  (S (S (2 * n))) in vs; try (abstract nia).
+        replace (S n +  S n) with  (S (S (n + n))) in vs.
         destruct (vector_inv_S vs) as (vsh & vst & _).
         destruct (vector_inv_S vst) as (vsth & vstt & _).
         refine(Vector.cons _ [vsh; vsth] _ (pair_zip _ _ vstt)).
+        cbn. f_equal.
+        rewrite add_succ_r.
+        reflexivity.
     Defined.
 
 
@@ -218,11 +178,9 @@ Section DL.
             (generate_pairs_of_vector gs)).
           set (hs_pairs := Vector.map (fun '(h₁, h₂) => gop h₁ h₂) 
             (generate_pairs_of_vector hs)).
-          assert(ha : (2 * (Nat.div ((2 + n) * (1 + n)) 2) = 
+          assert(ha : ((Nat.div ((2 + n) * (1 + n)) 2) + 
+           (Nat.div ((2 + n) * (1 + n)) 2) = 
           ((2 + n) * (1 + n)))%nat). eapply nat_div_2.
-          replace (2 * Nat.div ((2 + n) * (1 + n)) 2)%nat with 
-          (Nat.div ((2 + n) * (1 + n)) 2 + Nat.div ((2 + n) * (1 + n)) 2)%nat in ha;
-          try (abstract nia).
           rewrite <-ha in usr; clear ha.
           destruct (splitat (Nat.div ((2 + n) * (1 + n)) 2) usr) as 
           (usrl & usrr).
@@ -247,11 +205,9 @@ Section DL.
           (* usl goes for AND response *)
           set (and_response := @construct_and_conversations_schnorr_response
             F add mul _ xs usl c).
-          assert(ha : (2 * (Nat.div ((2 + n) * (1 + n)) 2) = 
+          assert(ha : ((Nat.div ((2 + n) * (1 + n)) 2) + 
+           (Nat.div ((2 + n) * (1 + n)) 2) = 
           ((2 + n) * (1 + n)))%nat). eapply nat_div_2.
-          replace (2 * Nat.div ((2 + n) * (1 + n)) 2)%nat with 
-          (Nat.div ((2 + n) * (1 + n)) 2 + Nat.div ((2 + n) * (1 + n)) 2)%nat in ha;
-          try (abstract nia).
           rewrite <-ha in usr; clear ha.
           destruct (splitat (Nat.div ((2 + n) * (1 + n)) 2) usr) as 
           (usrl & usrr).
@@ -292,11 +248,9 @@ Section DL.
           set (and_sim_comm := 
             @construct_and_conversations_simulator_commitment
             F opp G gop gpow _ gs hs usl c).
-          assert(ha : (2 * (Nat.div ((2 + n) * (1 + n)) 2) = 
+          assert(ha : ((Nat.div ((2 + n) * (1 + n)) 2) + 
+           (Nat.div ((2 + n) * (1 + n)) 2) = 
           ((2 + n) * (1 + n)))%nat). eapply nat_div_2.
-          replace (2 * Nat.div ((2 + n) * (1 + n)) 2)%nat with 
-          (Nat.div ((2 + n) * (1 + n)) 2 + Nat.div ((2 + n) * (1 + n)) 2)%nat in ha;
-          try (abstract nia).
           rewrite <-ha in usr; clear ha.
           destruct (splitat (Nat.div ((2 + n) * (1 + n)) 2) usr) as 
           (usrl & usrr).
@@ -335,7 +289,8 @@ Section DL.
             | true => _ 
             | _ => false (* No point of checking futher *) 
             end.
-          assert(ha : (2 * (Nat.div ((2 + n) * (1 + n)) 2) = 
+          assert(ha : ((Nat.div ((2 + n) * (1 + n)) 2) + 
+           (Nat.div ((2 + n) * (1 + n)) 2) = 
           ((2 + n) * (1 + n)))%nat). eapply nat_div_2.
           rewrite <-ha in rr; clear ha.
           (* run Okamoto verifier on (ar; c; rr) *)
@@ -377,6 +332,34 @@ Section DL.
 
     Section Proofs.
 
+
+      Theorem generalised_construct_neq_commitment_and : 
+        ∀ (n : nat) (gs hs al : Vector.t G (2 + n))
+        (ar : Vector.t G ((2 + n) * (1 + n) / 2))
+        (usl : Vector.t F (2 + n)) 
+        (usrl usrr : Vector.t F (Nat.div ((2 + n) * (1 + n)) 2)), 
+        generalised_construct_neq_commitment gs hs 
+          (usl ++ @eq_rect _ _ (Vector.t F) 
+          (usrl ++ usrr) _ (nat_div_2 n)) = al ++ ar ->
+        @construct_and_conversations_schnorr_commitment F G gpow _ 
+        gs usl = al ∧
+        zip_with (λ '(gg, hh) '(u₁, u₂), 
+          @okamoto_commitment F G gid gop gpow [gg; hh] [u₁; u₂])
+          (zip_with pair
+          (map (λ '(g₁, g₂), gop g₁ g₂) (generate_pairs_of_vector gs))
+          (map (λ '(h₁, h₂), gop h₁ h₂) (generate_pairs_of_vector hs)))
+          (zip_with pair usrl usrr) = ar.
+      Proof.
+        intros * ha.
+        unfold generalised_construct_neq_commitment in ha.
+        rewrite !VectorSpec.splitat_append in ha.
+        rewrite rew_opp_l in ha.
+        rewrite splitat_append in ha.
+        eapply VectorSpec.append_inj in ha.
+        exact ha.
+      Qed.
+      
+
       (* completeness *)
       Theorem generalised_neq_real_transcript_accepting_conversations : 
         ∀ (n : nat) (gs hs : Vector.t G (2 + n)) (xs : Vector.t F (2 + n))
@@ -397,7 +380,8 @@ Section DL.
         destruct (splitat (2 + n) us) as (usl & usr) eqn:he.
         eapply append_splitat in hc, hd, he.
         subst.
-
+        
+        
       Admitted.
 
 
@@ -645,4 +629,4 @@ Section DL.
     
     End Proofs. 
   End Neq.
-End DL.
+End DL. 
