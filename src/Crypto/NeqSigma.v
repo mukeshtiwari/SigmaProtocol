@@ -14,7 +14,8 @@ From Crypto Require Import Sigma
   AndSigmaGen Okamoto.
 
 Import MonadNotation 
-  VectorNotations.
+  VectorNotations 
+  EqNotations.
           
 #[local] Open Scope monad_scope.
 
@@ -168,7 +169,8 @@ Section Util.
 
 
 
-    Lemma generate_pairs_distinct {A : Type} : ∀ (n : nat) (vs : Vector.t A (2+n)) 
+    Lemma generate_pairs_distinct {A : Type} : 
+      ∀ (n : nat) (vs : Vector.t A (2+n)) 
       (i : Fin.t ((2 + n) * (1 + n)/ 2)) (a b : A),
       (generate_pairs_of_vector vs)[@i] = (a, b) ->
       ∃ (j k : Fin.t (2 + n)), j ≠ k ∧ a = vs[@j] ∧ b = vs[@k].
@@ -191,7 +193,16 @@ Section Util.
       +
         intros * ha.
     Admitted.
-       
+
+   
+
+    Lemma invert_eq_rect {A : Type} {x y : A} 
+      (P : A -> Type) (hb : y = x) (ha : P x) (hc : P y) :
+      rew <-[P] hb in ha = hc → rew [P] hb in hc = ha.
+    Proof.
+      intros hd. subst.
+      cbn. reflexivity.
+    Defined.
         
 
 
@@ -287,13 +298,11 @@ Section DL.
            (Nat.div ((2 + n) * (1 + n)) 2) = 
           ((2 + n) * (1 + n)))%nat). eapply nat_div_2.
           rewrite <-ha in usr; clear ha.
-          destruct (splitat (Nat.div ((2 + n) * (1 + n)) 2) usr) as 
-          (usrl & usrr).
           (* Okamoto commitment *)
-          set (oka_commitment := zip_with (fun '(gg, hh) '(u₁, u₂) =>
+          set (oka_commitment := zip_with (fun '(gg, hh) us =>
             @okamoto_commitment F G gid gop gpow
-            [gg; hh] [u₁; u₂]) (zip_with pair gs_pairs hs_pairs)
-            (zip_with pair usrl usrr)).
+            [gg; hh] us) (zip_with pair gs_pairs hs_pairs)
+            (pair_zip usr)).
           refine(and_commit ++ oka_commitment).
         Defined.
 
@@ -314,12 +323,10 @@ Section DL.
            (Nat.div ((2 + n) * (1 + n)) 2) = 
           ((2 + n) * (1 + n)))%nat). eapply nat_div_2.
           rewrite <-ha in usr; clear ha.
-          destruct (splitat (Nat.div ((2 + n) * (1 + n)) 2) usr) as 
-          (usrl & usrr).
           (* Okamoto response *)
-          set (oka_response := pair_unzip (zip_with (fun '(x₁, x₂) '(u₁, u₂) => 
+          set (oka_response := pair_unzip (zip_with (fun '(x₁, x₂) us => 
               @okamoto_response F add mul [x₁ * inv (x₁ - x₂); inv (x₂ - x₁)]
-              [u₁; u₂] c) xs_pair (zip_with pair usrl usrr))).
+              us c) xs_pair (pair_zip usr))).
           rewrite nat_div_2 in oka_response.
           exact (and_response ++ oka_response).
         Defined.
@@ -357,15 +364,13 @@ Section DL.
            (Nat.div ((2 + n) * (1 + n)) 2) = 
           ((2 + n) * (1 + n)))%nat). eapply nat_div_2.
           rewrite <-ha in usr; clear ha.
-          destruct (splitat (Nat.div ((2 + n) * (1 + n)) 2) usr) as 
-          (usrl & usrr).
-          set (oka_sim_comm := zip_with (fun '((g₁, g₂), (h₁, h₂)) '(u₁, u₂) =>
+          set (oka_sim_comm := zip_with (fun '((g₁, g₂), (h₁, h₂)) vs =>
             @okamoto_simulator_protocol_commitment F opp G gid gop gpow 
-              [gop g₁ g₂; gop h₁ h₂] g₂ [u₁; u₂] c)
+              [gop g₁ g₂; gop h₁ h₂] g₂ vs c)
               (zip_with pair 
                 (generate_pairs_of_vector gs) 
                 (generate_pairs_of_vector hs))
-              (zip_with pair usrl usrr)).
+              (pair_zip usr)).
           refine (and_sim_comm ++ oka_sim_comm; [c]; us).
         Defined.
 
@@ -456,18 +461,17 @@ Section DL.
           (usrl ++ usrr) _ (nat_div_2 n)) = al ++ ar ->
         @construct_and_conversations_schnorr_commitment F G gpow _ 
         gs usl = al ∧
-        zip_with (λ '(gg, hh) '(u₁, u₂), 
-          @okamoto_commitment F G gid gop gpow [gg; hh] [u₁; u₂])
+        zip_with (λ '(gg, hh) us, 
+          @okamoto_commitment F G gid gop gpow [gg; hh] us)
           (zip_with pair
           (map (λ '(g₁, g₂), gop g₁ g₂) (generate_pairs_of_vector gs))
           (map (λ '(h₁, h₂), gop h₁ h₂) (generate_pairs_of_vector hs)))
-          (zip_with pair usrl usrr) = ar.
+          (pair_zip (usrl ++ usrr)) = ar.
       Proof.
         intros * ha.
         unfold generalised_construct_neq_commitment in ha.
         rewrite !VectorSpec.splitat_append in ha.
         rewrite rew_opp_l in ha.
-        rewrite splitat_append in ha.
         eapply VectorSpec.append_inj in ha.
         exact ha.
       Qed.
@@ -509,8 +513,6 @@ Section DL.
         rewrite !VectorSpec.splitat_append in hc.
         unfold generalised_construct_neq_response in hd.
         rewrite splitat_append in hd.
-        destruct (splitat ((2 + n) * (1 + n) / 2)
-        (eq_rect_r (λ n : nat, t F n) usr (nat_div_2 n))) as (usrl & usrr) eqn:he.
         eapply VectorSpec.append_inj in hc, hd.
         destruct hc as (hcl & hcd).
         destruct hd as (hdl & hdr).
@@ -520,26 +522,30 @@ Section DL.
           _ xs gs hs ha usl c) as hf.
         unfold construct_and_conversations_schnorr in hf.
         rewrite hf; clear hf.
+        rewrite !rew_opp_l.
         rewrite vector_forallb_correct.
         intro i. 
-        rewrite rew_opp_l, pair_zip_unzip_id, 
-        !nth_zip_with.
+        rewrite !nth_zip_with.
         destruct ((generate_pairs_of_vector gs)[@i]) as (g₁ & g₂) eqn:hc.
         destruct ((generate_pairs_of_vector hs)[@i]) as (h₁ & h₂) eqn:hd.
         destruct ((generate_pairs_of_vector xs)[@i]) as (x₁ & x₂) eqn:hf.
         unfold okamoto_accepting_conversation, okamoto_commitment,
         okamoto_response.
+        rewrite !map_fin.
+        rewrite !hc, !hd, !pair_zip_unzip_id.
+
+
+
         pose proof @generalised_okamoto_real_accepting_conversation F zero one 
           add mul sub div opp inv G gid ginv gop gpow Gdec Hvec _
           ([x₁ * inv (x₁ - x₂); inv (x₂ - x₁)])
           ([gop g₁ g₂; gop h₁ h₂])
-          g₂ [usrl[@i]; usrr[@i]] c as hg.
-        rewrite !map_fin.
-        rewrite hc, hd.
-        unfold generalised_okamoto_real_protocol in hg.
-        eapply hg; clear hg.
-        cbn.
-
+          g₂ as hg.
+          cbn in hg |- *.
+        setoid_rewrite dec_true.  *.
+        eapply f_equal with (f := pair_zip) in hw.
+        rewrite pair_zip_unzip_id in hw.
+        
       Admitted.
 
 
@@ -557,8 +563,11 @@ Section DL.
         (eq_rect_r (λ n0 : nat, t F n0) usr (nat_div_2 n))) as (usrl & usrr) eqn:hb.
         rewrite ha, splitat_append.
         setoid_rewrite construct_and_conversations_simulator_completeness.
+        eapply append_splitat, invert_eq_rect in hb.
+        rewrite <-hb. rewrite rew_opp_l.
+        rewrite splitat_append.
         rewrite vector_forallb_correct.
-        intro i. 
+        intro i.
         rewrite !nth_zip_with.
         destruct ((generate_pairs_of_vector gs)[@i]) as (g₁ & g₂) eqn:hc.
         destruct ((generate_pairs_of_vector hs)[@i]) as (h₁ & h₂) eqn:hd.
@@ -569,12 +578,8 @@ Section DL.
         unfold okamoto_accepting_conversation, okamoto_simulator_protocol_commitment,
         generalised_okamoto_simulator_protocol_commitment.
         f_equal.
-        unfold generalised_okamoto_simulator_protocol,
-        generalised_okamoto_simulator_protocol_commitment. 
-        f_equal.
-        clear hc hd he.
-        admit.
-      Admitted.
+        exact Fdec.
+      Qed.
 
 
       (* special soundness *)
