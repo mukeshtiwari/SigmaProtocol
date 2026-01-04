@@ -535,20 +535,13 @@ Section DL.
         rewrite !hc, !hd, !pair_zip_unzip_id.
         rewrite !nth_zip_with.
         rewrite hf.
-
-
-        (* 
-
         pose proof @generalised_okamoto_real_accepting_conversation F zero one 
           add mul sub div opp inv G gid ginv gop gpow Gdec Hvec _
           ([x₁ * inv (x₁ - x₂); inv (x₂ - x₁)])
           ([gop g₁ g₂; gop h₁ h₂])
-          g₂ as hg.
-          cbn in hg |- *.
-        setoid_rewrite dec_true.  *.
-        eapply f_equal with (f := pair_zip) in hw.
-        rewrite pair_zip_unzip_id in hw.
-        *)
+          g₂ ((pair_zip (rew <- [λ n0 : nat, t F n0] nat_div_2 n in usr))[@i]) as hg.
+        unfold generalised_okamoto_real_protocol in hg.
+        eapply hg; clear hg.
         
       Admitted.
 
