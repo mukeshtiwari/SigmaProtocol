@@ -92,6 +92,111 @@ Section Util.
         reflexivity.
     Defined.
 
+    Theorem pair_zip_unzip_id {A : Type} : 
+      ∀ (n : nat) (vs : Vector.t (Vector.t A 2) n), 
+        @pair_zip A n (@pair_unzip A n vs) = vs.
+    Proof.
+      induction n as [|n ihn].
+      +
+        intros *.
+        pose proof (vector_inv_0 vs) as ha.
+        subst; reflexivity.
+      +
+        intros *.
+        destruct (vector_inv_S vs) as (vsh & vst & ha).
+        subst; cbn.
+        rewrite rew_opp_l.
+        destruct (vector_inv_S (vsh ++ pair_unzip vst)) as (vh & vt & ha).
+        destruct (vector_inv_S vsh) as (vshh & vsht & hb).
+        rewrite hb in ha.
+        cbn in ha. 
+        eapply vec_inv in ha.
+        destruct ha as (hal & har).
+        subst. 
+        destruct (vector_inv_S vsht) as (vshth & vshtt & ha).
+        pose proof (vector_inv_0 vshtt) as hb.
+        subst. cbn. 
+        rewrite ihn; reflexivity.
+    Qed.
+
+    Lemma nth_zip_with : forall (A B C : Type) (f : A -> B -> C) (n : nat)
+      (i : Fin.t n) (vsa : Vector.t A n) (vsb  : Vector.t B n) ,
+      (zip_with f vsa vsb)[@i] = f (vsa[@i]) (vsb[@i]).
+    Proof.
+      intros until f.
+      induction n as [|n ihn].
+      +
+        intros *.
+        refine match i with end.
+      +
+        intros *.
+        destruct (vector_inv_S vsa) as (vsah & vsat & ha).
+        destruct (vector_inv_S vsb) as (vsbh & vsbt & hb).
+        subst. 
+        destruct (fin_inv_S _ i) as [hc | (i' & ha)].
+        ++
+          subst; cbn; reflexivity.
+        ++
+          subst; cbn.
+          eapply ihn.
+    Qed.
+
+    Lemma map_fin {A B : Type} (f : A -> B) :
+      ∀ (n : nat) (i : Fin.t n) (vs : Vector.t A n), 
+      (Vector.map f vs)[@i] = f (vs[@i]).
+    Proof.
+      induction n as [|n ihn].
+      +
+        intros *.
+        refine match i with end.
+      +
+        intros *.
+        destruct (vector_inv_S vs) as (vsh & vst & ha).
+        subst. 
+        destruct (fin_inv_S _ i) as [hc | (i' & ha)].
+        ++
+          subst; cbn; reflexivity.
+        ++
+          subst; cbn; eapply ihn.
+    Qed.
+
+    
+    Lemma Fin_append_inv : ∀ (m n : nat) (i : Fin.t (m+n)),
+      (∃ j : Fin.t m, i = Fin.L n j) ∨ (∃ j : Fin.t n, i = Fin.R m j).
+    Proof.
+    Admitted.
+
+
+
+    Lemma generate_pairs_distinct {A : Type} : ∀ (n : nat) (vs : Vector.t A (2+n)) 
+      (i : Fin.t ((2 + n) * (1 + n)/ 2)) (a b : A),
+      (generate_pairs_of_vector vs)[@i] = (a, b) ->
+      ∃ (j k : Fin.t (2 + n)), j ≠ k ∧ a = vs[@j] ∧ b = vs[@k].
+    Proof.
+      induction n as [|n ihn].
+      +
+        intros * ha.
+        cbn in vs, i.
+        destruct (vector_inv_S vs) as (vsh & vst & hb).
+        destruct (vector_inv_S vst) as (vsth & vstt & hc).
+        pose proof (vector_inv_0 vstt) as hd.
+        subst.
+        destruct (fin_inv_S _ i) as [i' | (i' & hb)]; 
+        subst.
+        exists (Fin.F1), (Fin.FS (Fin.F1)); split.
+        intro hb. congruence.
+        cbn in ha |- *.
+        inversion ha; subst; split; reflexivity.
+        refine match i' with end.
+      +
+        intros * ha.
+    Admitted.
+       
+        
+
+
+
+
 
 End Util.
 
@@ -302,7 +407,7 @@ Section DL.
                 (generate_pairs_of_vector gs) 
                 (generate_pairs_of_vector hs))
               (zip_with pair ar (pair_zip rr)))).
-            exact (vector_forallb id oka_veri).
+            exact (vector_forallb (fun x => x) oka_veri).
         Defined.
 
         (* distribution (zero-knowledge) *)
@@ -333,7 +438,15 @@ Section DL.
     Section Proofs.
 
 
-      Theorem generalised_construct_neq_commitment_and : 
+        Context
+          {Hvec: @vector_space F (@eq F) zero one add mul sub 
+            div opp inv G (@eq G) gid ginv gop gpow}.
+
+        (* add field *)
+        Add Field field : (@field_theory_for_stdlib_tactic F
+          eq zero one opp add mul sub inv div vector_space_field).
+
+      Theorem generalised_construct_neq_commitment_proof : 
         ∀ (n : nat) (gs hs al : Vector.t G (2 + n))
         (ar : Vector.t G ((2 + n) * (1 + n) / 2))
         (usl : Vector.t F (2 + n)) 
@@ -358,13 +471,25 @@ Section DL.
         eapply VectorSpec.append_inj in ha.
         exact ha.
       Qed.
+
+      (* 
+      Theorem generalised_construct_neq_response_proof : 
+        ∀ (n : nat), (xs : Vector.t F (2 + n)) 
+        (usl : Vector.t F (2 + n))
+        (usrl usrr : Vector.t F (Nat.div ((2 + n) * (1 + n)) 2))
+        (c : F) (rl : Vector.t F (2 + n))
+        (rr : Vector.t F ((2 + n) * (1 + n)))
+        generalised_construct_neq_response xs (usl ++ @eq_rect _ _ (Vector.t F) 
+        (usrl ++ usrr) _ (nat_div_2 n)) c = rl ++ rr -> 
+        construct_and_conversations_schnorr_response xs usl c = true ∧
+      *)
       
 
       (* completeness *)
       Theorem generalised_neq_real_transcript_accepting_conversations : 
         ∀ (n : nat) (gs hs : Vector.t G (2 + n)) (xs : Vector.t F (2 + n))
         (us : Vector.t F (2 + n + (2 + n) * (1 + n))) (c : F), 
-        (∀ (i : Fin.t (2 + n)), hs[@i] = gs[@i] ^ xs[@i]) -> 
+        (∀ (i : Fin.t (2 + n)), gs[@i] ^ xs[@i] = hs[@i]) -> 
         (∀ (i j : Fin.t (2 + n)), i ≠ j -> xs[@i] ≠ xs[@j]) ->
         generalised_neq_accepting_conversations gs hs 
           (generalised_construct_neq_conversations_real_transcript xs gs hs us c) = true.
@@ -380,8 +505,41 @@ Section DL.
         destruct (splitat (2 + n) us) as (usl & usr) eqn:he.
         eapply append_splitat in hc, hd, he.
         subst.
-        
-        
+        unfold generalised_construct_neq_commitment in hc.
+        rewrite !VectorSpec.splitat_append in hc.
+        unfold generalised_construct_neq_response in hd.
+        rewrite splitat_append in hd.
+        destruct (splitat ((2 + n) * (1 + n) / 2)
+        (eq_rect_r (λ n : nat, t F n) usr (nat_div_2 n))) as (usrl & usrr) eqn:he.
+        eapply VectorSpec.append_inj in hc, hd.
+        destruct hc as (hcl & hcd).
+        destruct hd as (hdl & hdr).
+        subst.
+        pose proof (@construct_and_conversations_schnorr_completeness F zero one 
+          add mul sub div opp inv G gid ginv gop gpow Gdec Hvec
+          _ xs gs hs ha usl c) as hf.
+        unfold construct_and_conversations_schnorr in hf.
+        rewrite hf; clear hf.
+        rewrite vector_forallb_correct.
+        intro i. 
+        rewrite rew_opp_l, pair_zip_unzip_id, 
+        !nth_zip_with.
+        destruct ((generate_pairs_of_vector gs)[@i]) as (g₁ & g₂) eqn:hc.
+        destruct ((generate_pairs_of_vector hs)[@i]) as (h₁ & h₂) eqn:hd.
+        destruct ((generate_pairs_of_vector xs)[@i]) as (x₁ & x₂) eqn:hf.
+        unfold okamoto_accepting_conversation, okamoto_commitment,
+        okamoto_response.
+        pose proof @generalised_okamoto_real_accepting_conversation F zero one 
+          add mul sub div opp inv G gid ginv gop gpow Gdec Hvec _
+          ([x₁ * inv (x₁ - x₂); inv (x₂ - x₁)])
+          ([gop g₁ g₂; gop h₁ h₂])
+          g₂ [usrl[@i]; usrr[@i]] c as hg.
+        rewrite !map_fin.
+        rewrite hc, hd.
+        unfold generalised_okamoto_real_protocol in hg.
+        eapply hg; clear hg.
+        cbn.
+
       Admitted.
 
 
@@ -392,6 +550,30 @@ Section DL.
           (generalised_construct_neq_conversations_simulator_transcript gs hs us c) = true.
       Proof.
         intros *.
+        unfold generalised_neq_accepting_conversations,
+        generalised_construct_neq_conversations_simulator_transcript.
+        destruct (splitat (2 + n) us) as (usl & usr) eqn:ha.
+        destruct (splitat ((2 + n) * (1 + n) / 2)
+        (eq_rect_r (λ n0 : nat, t F n0) usr (nat_div_2 n))) as (usrl & usrr) eqn:hb.
+        rewrite ha, splitat_append.
+        setoid_rewrite construct_and_conversations_simulator_completeness.
+        rewrite vector_forallb_correct.
+        intro i. 
+        rewrite !nth_zip_with.
+        destruct ((generate_pairs_of_vector gs)[@i]) as (g₁ & g₂) eqn:hc.
+        destruct ((generate_pairs_of_vector hs)[@i]) as (h₁ & h₂) eqn:hd.
+        pose proof @generalised_okamoto_simulator_accepting_conversation F 
+        zero one add mul sub div opp inv G gid ginv gop gpow Gdec Hvec
+        _ [gop g₁ g₂; gop h₁ h₂] g₂ [usrl[@i]; usrr[@i]] c as he.
+        rewrite <-he.
+        unfold okamoto_accepting_conversation, okamoto_simulator_protocol_commitment,
+        generalised_okamoto_simulator_protocol_commitment.
+        f_equal.
+        unfold generalised_okamoto_simulator_protocol,
+        generalised_okamoto_simulator_protocol_commitment. 
+        f_equal.
+        clear hc hd he.
+        admit.
       Admitted.
 
 
