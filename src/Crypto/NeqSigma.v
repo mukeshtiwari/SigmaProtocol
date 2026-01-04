@@ -533,8 +533,11 @@ Section DL.
         okamoto_response.
         rewrite !map_fin.
         rewrite !hc, !hd, !pair_zip_unzip_id.
+        rewrite !nth_zip_with.
+        rewrite hf.
 
 
+        (* 
 
         pose proof @generalised_okamoto_real_accepting_conversation F zero one 
           add mul sub div opp inv G gid ginv gop gpow Gdec Hvec _
@@ -545,6 +548,7 @@ Section DL.
         setoid_rewrite dec_true.  *.
         eapply f_equal with (f := pair_zip) in hw.
         rewrite pair_zip_unzip_id in hw.
+        *)
         
       Admitted.
 
@@ -559,13 +563,8 @@ Section DL.
         unfold generalised_neq_accepting_conversations,
         generalised_construct_neq_conversations_simulator_transcript.
         destruct (splitat (2 + n) us) as (usl & usr) eqn:ha.
-        destruct (splitat ((2 + n) * (1 + n) / 2)
-        (eq_rect_r (λ n0 : nat, t F n0) usr (nat_div_2 n))) as (usrl & usrr) eqn:hb.
         rewrite ha, splitat_append.
         setoid_rewrite construct_and_conversations_simulator_completeness.
-        eapply append_splitat, invert_eq_rect in hb.
-        rewrite <-hb. rewrite rew_opp_l.
-        rewrite splitat_append.
         rewrite vector_forallb_correct.
         intro i.
         rewrite !nth_zip_with.
@@ -573,11 +572,9 @@ Section DL.
         destruct ((generate_pairs_of_vector hs)[@i]) as (h₁ & h₂) eqn:hd.
         pose proof @generalised_okamoto_simulator_accepting_conversation F 
         zero one add mul sub div opp inv G gid ginv gop gpow Gdec Hvec
-        _ [gop g₁ g₂; gop h₁ h₂] g₂ [usrl[@i]; usrr[@i]] c as he.
-        rewrite <-he.
-        unfold okamoto_accepting_conversation, okamoto_simulator_protocol_commitment,
-        generalised_okamoto_simulator_protocol_commitment.
-        f_equal.
+        _ [gop g₁ g₂; gop h₁ h₂] g₂ 
+        ((pair_zip (rew <- [λ n0 : nat, t F n0] nat_div_2 n in usr))[@i]) c as he.
+        eapply he.
         exact Fdec.
       Qed.
 
