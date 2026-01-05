@@ -1,6 +1,6 @@
 From Stdlib Require Import 
   Vector Fin Bool Utf8
-  Psatz BinIntDef.
+  Psatz BinIntDef Arith.
 
 Import VectorNotations EqNotations. 
 
@@ -620,238 +620,6 @@ Section ListUtil.
 
 End ListUtil.
 
-From Stdlib Require Import PArith.PArith 
-  ZArith.ZArith Lia
-  ZArith.Znumtheory
-  Arith 
-  Zpow_facts.
-
-Section Modutil.
-
-  Context 
-      {p : Z}
-      {Hp : prime p}.
-
-  
-  Fact Hp_2_p : 2 <= p.
-  Proof.
-    pose proof (prime_ge_2 p Hp) as Ht.
-    nia.
-  Qed.
-
-  Fact H_0_p : 0 < p.
-  Proof.
-    pose proof (prime_ge_2 p Hp).
-    nia.
-  Qed.
-  
-  Fact Hp_1_p : 1 < p.
-  Proof.
-    pose proof (prime_ge_2 p Hp).
-    nia.
-  Qed.
-
-  Lemma mod_eq_custom : 
-    forall (a b : Z), 
-    (0 < b)%Z -> 
-    Z.modulo a b = (a - b * (a / b))%Z.
-  Proof.
-    intros a b Hb.
-    rewrite Zmod_eq; nia.
-  Qed. 
-
-
-  Lemma mod_not_zero_one : 
-    forall w,
-    (0 < w < p)%Z -> Z.modulo w p = w.
-  Proof.
-    intros ? Hw.
-    rewrite mod_eq_custom.
-    assert (Hwp: (w/p = 0)%Z).
-    apply Zdiv_small; nia.
-    rewrite Hwp. nia. nia.
-  Qed.
-
-  Lemma mod_more_gen_bound : 
-    forall w,
-    (0 <= w < p)%Z <-> Z.modulo w p = w.
-  Proof.
-    intros ?. split; intro Hw.
-    +
-    rewrite mod_eq_custom.
-    assert (Hwp: (w/p = 0)%Z).
-    apply Zdiv_small; nia.
-    rewrite Hwp. nia. nia.
-    + rewrite <-Hw.
-      apply Z_mod_lt.
-      pose proof (Hp_2_p).
-      nia. 
-  Qed.
-
-
-  Lemma mod_not_eq_zero : 
-    forall m, 
-    m mod p <> 0 <-> 
-    exists k w, m = k * p + w /\ 1 <= w < p.
-  Proof.
-    intros ?; split; intros Hm.
-    exists (Z.div m p), (Z.modulo m p). 
-    split.
-    rewrite mod_eq_custom. nia.
-    apply H_0_p. 
-    remember (m mod p) as mp.
-    assert (Hpt : 0 <= mp < p)
-      by (rewrite Heqmp; 
-      apply Z.mod_pos_bound; apply H_0_p). 
-    nia.
-    destruct Hm as [k [w [Hk Hw]]].
-    rewrite Hk, Z.add_comm, Z.mod_add.
-    rewrite mod_eq_custom.
-    assert (Hwp: w / p = 0). 
-    apply Zdiv_small; nia.
-    intro. rewrite Hwp in H. nia.
-    apply H_0_p. pose Hp_2_p. nia.
-  Qed.
-
-
-  Lemma mod_exists: 
-    forall m,
-    exists k w, m = k * p + w /\ 0 <= w < p.
-  Proof.
-    intros ?.
-    exists (Z.div m p), (Z.modulo m p). 
-    split.
-    rewrite mod_eq_custom. nia.
-    apply H_0_p.
-    apply Z.mod_pos_bound.
-    apply H_0_p.
-  Qed.
-
-
-  Lemma mod_exists_pos : 
-    forall m,
-    0 <= m -> 
-    exists k w, m = k * p + w /\ 0 <= w < p 
-    /\ 0 <= k.
-  Proof.
-    intros ? Hm.
-    exists (Z.div m p), (Z.modulo m p). 
-    split.
-    rewrite mod_eq_custom. nia.
-    apply H_0_p.
-    split.
-    apply Z.mod_pos_bound.
-    apply H_0_p.
-    pose proof Hp_2_p as Hw.
-    apply Z.div_pos;
-    try nia.
-  Qed.
- 
-  
-  Lemma mod_not_zero : 
-    forall w₁ w₂,  
-    1 <= w₁ < p ->  
-    1 <= w₂ < p -> 
-    (w₁ * w₂) mod p <> 0.
-  Proof.
-    intros ? ? Hw₁ Hw₂.
-    assert (Hwm: 1 <= w₁ * w₂ < p * p) by nia.
-    pose proof Hp_2_p.
-    pose proof (rel_prime_le_prime w₁ p Hp Hw₁) as Hwp1.
-    pose proof (rel_prime_le_prime w₂ p Hp Hw₂) as Hwp2.
-    apply rel_prime_sym in Hwp1; 
-    apply rel_prime_sym in Hwp2.
-    pose proof (rel_prime_mult _ _ _ Hwp1 Hwp2) as Hwpp.
-    apply rel_prime_sym in Hwpp.
-    apply Zrel_prime_neq_mod_0. 
-    nia. exact Hwpp.
-  Qed. 
-
-
-  Lemma mod_single_not_zero : 
-    forall w : Z,
-    1 <= w < p ->
-    w mod p <> 0.
-  Proof.
-    intros ? Hw.
-    pose proof (rel_prime_le_prime w p Hp Hw) as Hwp.
-    apply Zrel_prime_neq_mod_0.
-    nia.
-    exact Hwp.
-  Qed.
-      
-
-  Lemma mod_not_zero_general: 
-    forall vm vn, 
-    vm mod p <> 0 -> 
-    vn mod p <> 0 -> 
-    ((vm * vn) mod p) mod p <> 0.
-  Proof.
-    intros ? ? Hvm Hvn. 
-    apply mod_not_eq_zero in Hvm.
-    apply mod_not_eq_zero in Hvn.
-    apply mod_not_eq_zero.
-    destruct Hvm as [k1 [w1 [Hk1 Hw1]]].
-    destruct Hvn as [k2 [w2 [Hk2 Hw2]]].
-    assert (Hvmn : (vn * vm) mod p = (w1 * w2) mod p).
-    rewrite Hk1, Hk2. 
-    rewrite Zmult_mod, Z.add_comm, 
-    Z.mod_add, Z.add_comm, Z.mod_add.
-    rewrite <-Zmult_mod, Z.mul_comm; 
-    reflexivity.
-    pose proof Hp_2_p. abstract nia.
-    pose proof Hp_2_p. abstract nia.
-    exists 0, ((w1 * w2) mod p).
-    split. simpl. rewrite Z.mul_comm, Hvmn; 
-    reflexivity.
-    assert (Hwt: 0 <= (w1 * w2) mod p < p) by 
-      apply (Z.mod_pos_bound (w1 * w2) p H_0_p).
-    assert ((w1 * w2) mod p <> 0).
-    pose proof (mod_not_zero w1 w2 Hw1 Hw2).
-    exact H. abstract nia.
-  Qed.
-
-  (* moved the proof as a lemma to avoid blowing of proof terms *)
-  Lemma znot_zero_mul_proof: 
-    forall vx vy, 
-    1 <= vx < p -> 
-    1 <= vy < p -> 
-    1 <= (vx * vy) mod p < p.
-  Proof.
-    intros ? ? Hvx Hvy.
-    assert (Hwt: 0 <= (vx * vy) mod p < p) by 
-    apply (Z.mod_pos_bound (vx * vy) p H_0_p).
-    assert ((vx * vy) mod p <> 0).
-    pose proof (@mod_not_zero vx vy Hvx Hvy).
-    exact H.
-    nia.
-  Qed.
-
-  Lemma multiplication_bound : 
-    forall vx vy, 
-    0 < vx < p -> 
-    0 < vy < p -> 
-    0 < (vx * vy) mod p < p.
-  Proof.
-    intros ? ? Ha Hb.
-    assert (Hc : 1 <= vx < p) by
-    nia.
-    assert (Hd : 1 <= vy < p) by 
-    nia.
-    pose proof (znot_zero_mul_proof _ _ Hc Hd) as He.
-    nia. 
-  Qed.
-
-  Lemma rewrite_gop {G : Type} (gop : G -> G -> G) : 
-    forall a b c d : G, 
-    a = b -> c = d -> gop a c = gop b d.
-  Proof.
-    intros * Hab Hcd;
-    subst;
-    reflexivity.
-  Qed.
-
-End Modutil. 
 
 Section TransProofs. 
 
@@ -1210,11 +978,653 @@ Section TransProofs.
       change (1 + S n)%nat with (2 + n)%nat in ha.
       exact ha.
     Defined.
-
-       
-    
-
     (* end of proofs *)
+End TransProofs.
+
+From Stdlib Require Import Vector Fin.
+Import VectorNotations EqNotations.
+
+Section NeqUtil.
+
+   
+
+    Theorem generate_pairs_of_vector_proof : 
+      ∀ (n m : nat), m + Nat.div (m * n) 2 = 
+      Nat.div ((2 + n) * m) 2.
+    Proof.
+        intros *. 
+        rewrite div_add.
+        f_equal. rewrite add_mul_dist.
+        assert (ha : (2 + n) * m = m * (2 + n)) by 
+        (now rewrite mul_comm). 
+        rewrite ha; clear ha.
+        rewrite add_mul_dist.
+        exact eq_refl.
+    Defined.
+
+    
+    (* computes pair of vectors: *)
+    Fixpoint generate_pairs_of_vector {A : Type} {n : nat}  
+      (gs : Vector.t A (2 + n)) : Vector.t (A * A) (Nat.div ((2 + n) * (1 + n)) 2).
+    Proof.
+      destruct n as [|n].
+      +
+        destruct (vector_inv_S gs) as (gsh & gst & _).
+        destruct (vector_inv_S gst) as (gsth & _).
+        exact [(gsh, gsth)].
+      +
+        destruct (vector_inv_S gs) as (gsh & gst & _).
+        (* map gsh over gst *)
+        set (reta := Vector.map (fun x => (gsh, x)) gst).
+        specialize (generate_pairs_of_vector _ _ gst).
+        refine(@eq_rect nat _ (Vector.t (A * A)) 
+        (reta ++ generate_pairs_of_vector) _ _).
+        eapply generate_pairs_of_vector_proof.
+    Defined.
+
+   
+    Fixpoint pair_unzip {A : Type} {n : nat} : 
+      Vector.t (Vector.t A 2) n -> Vector.t A (n + n).
+    Proof.
+      intros v.
+      refine
+        (match v in Vector.t _ n' return Vector.t _ (n' + n')  
+        with 
+        | [] => []
+        | Vector.cons _ vh nt vt => _ 
+        end). 
+        replace (S nt +  S nt) with  (S (S (nt + nt))).
+        exact (vh ++ pair_unzip _ _ vt).
+        cbn. f_equal.
+        rewrite add_succ_r.
+        reflexivity.
+    Defined.
+      
+    Fixpoint pair_zip {A : Type} {n : nat} : 
+      Vector.t A (n + n) ->  Vector.t (Vector.t A 2) n.
+    Proof.
+      destruct n as [|n].
+      +
+        intros vs.
+        exact [].
+      +
+        intros vs.
+        replace (S n +  S n) with  (S (S (n + n))) in vs.
+        destruct (vector_inv_S vs) as (vsh & vst & _).
+        destruct (vector_inv_S vst) as (vsth & vstt & _).
+        refine(Vector.cons _ [vsh; vsth] _ (pair_zip _ _ vstt)).
+        cbn. f_equal.
+        rewrite add_succ_r.
+        reflexivity.
+    Defined.
+
+    Theorem pair_zip_unzip_id {A : Type} : 
+      ∀ (n : nat) (vs : Vector.t (Vector.t A 2) n), 
+        @pair_zip A n (@pair_unzip A n vs) = vs.
+    Proof.
+      induction n as [|n ihn].
+      +
+        intros *.
+        pose proof (vector_inv_0 vs) as ha.
+        subst; reflexivity.
+      +
+        intros *.
+        destruct (vector_inv_S vs) as (vsh & vst & ha).
+        subst; cbn.
+        rewrite rew_opp_l.
+        destruct (vector_inv_S (vsh ++ pair_unzip vst)) as (vh & vt & ha).
+        destruct (vector_inv_S vsh) as (vshh & vsht & hb).
+        rewrite hb in ha.
+        cbn in ha. 
+        eapply vec_inv in ha.
+        destruct ha as (hal & har).
+        subst. 
+        destruct (vector_inv_S vsht) as (vshth & vshtt & ha).
+        pose proof (vector_inv_0 vshtt) as hb.
+        subst. cbn. 
+        rewrite ihn; reflexivity.
+    Qed.
+
+    Lemma nth_zip_with : forall (A B C : Type) (f : A -> B -> C) (n : nat)
+      (i : Fin.t n) (vsa : Vector.t A n) (vsb  : Vector.t B n) ,
+      (zip_with f vsa vsb)[@i] = f (vsa[@i]) (vsb[@i]).
+    Proof.
+      intros until f.
+      induction n as [|n ihn].
+      +
+        intros *.
+        refine match i with end.
+      +
+        intros *.
+        destruct (vector_inv_S vsa) as (vsah & vsat & ha).
+        destruct (vector_inv_S vsb) as (vsbh & vsbt & hb).
+        subst. 
+        destruct (fin_inv_S _ i) as [hc | (i' & ha)].
+        ++
+          subst; cbn; reflexivity.
+        ++
+          subst; cbn.
+          eapply ihn.
+    Qed.
+
+    Lemma map_fin {A B : Type} (f : A -> B) :
+      ∀ (n : nat) (i : Fin.t n) (vs : Vector.t A n), 
+      (Vector.map f vs)[@i] = f (vs[@i]).
+    Proof.
+      induction n as [|n ihn].
+      +
+        intros *.
+        refine match i with end.
+      +
+        intros *.
+        destruct (vector_inv_S vs) as (vsh & vst & ha).
+        subst. 
+        destruct (fin_inv_S _ i) as [hc | (i' & ha)].
+        ++
+          subst; cbn; reflexivity.
+        ++
+          subst; cbn; eapply ihn.
+    Qed.
+
+    
+    Lemma fin_append_inv : ∀ (m n : nat) (i : Fin.t (m+n)),
+      (∃ j : Fin.t m, i = Fin.L n j) ∨ (∃ j : Fin.t n, i = Fin.R m j).
+    Proof.
+      induction m as [|m ihm].
+      +
+        intros *. 
+        cbn in i. 
+        right; exists i.
+        reflexivity.
+      +
+        intros *.
+        cbn in i.
+        destruct (fin_inv_S _ i) as [i' | (i' & ha)].
+        ++
+          subst. cbn. left.
+          unfold Fin.L.
+          exists Fin.F1.
+          reflexivity.
+        ++
+          destruct (ihm _ i') as [(j & hb) | (j & hb)].
+          -
+            subst. left.
+            exists (Fin.FS j).
+            reflexivity.
+          -
+            subst. right.
+            exists j.
+            reflexivity.
+    Qed.
 
 
-  End TransProofs.
+
+    Lemma nth_rew {A : Type} {n m : nat} (v : Vector.t A n) (ha : n = m) 
+      (i : Fin.t m) :
+      (rew [Vector.t A] ha in v)[@i] = v[@rew [Fin.t] (eq_sym ha) in i]. 
+    Proof.
+      revert v i.
+      refine(
+        match ha in _ = m' return 
+          ∀ (v : Vector.t A n) (i : Fin.t m'), (rew [Vector.t A] ha in v)[@i] = v[@rew [Fin.t] eq_sym ha in i]
+        with
+        | eq_refl => fun v i => eq_refl
+        end).
+    Defined.
+
+    Theorem fin_inv {n : nat} (a b : Fin.t n) 
+      (e : Fin.FS a = Fin.FS b) : a = b.
+    Proof.
+      refine 
+        match e in _ = y return 
+          (match y in Fin.t n' return Fin.t (pred n') -> Prop 
+          with 
+          | Fin.FS i => fun x => x = i 
+          | Fin.F1 => fun _ => False 
+          end a)
+        with 
+        | eq_refl => eq_refl
+        end.
+    Defined.
+
+    Lemma generate_pairs_distinct {A : Type} : 
+      ∀ (n : nat) (vs : Vector.t A (2+n)) 
+      (i : Fin.t ((2 + n) * (1 + n)/ 2)) (v₁ v₂ : A),
+      (generate_pairs_of_vector vs)[@i] = (v₁, v₂) ->
+      ∃ (j k : Fin.t (2 + n)), j ≠ k ∧ v₁ = vs[@j] ∧ v₂ = vs[@k].
+    Proof.
+      induction n as [|n ihn].
+      +
+        intros * ha.
+        cbn in vs, i.
+        destruct (vector_inv_S vs) as (vsh & vst & hb).
+        destruct (vector_inv_S vst) as (vsth & vstt & hc).
+        pose proof (vector_inv_0 vstt) as hd.
+        subst.
+        destruct (fin_inv_S _ i) as [i' | (i' & hb)]; 
+        subst.
+        exists (Fin.F1), (Fin.FS (Fin.F1)); split.
+        intro hb. congruence.
+        cbn in ha |- *.
+        inversion ha; subst; split; reflexivity.
+        refine match i' with end.
+      +
+        intros * ha.
+        destruct (vector_inv_S vs) as (vsh & vst & hb).
+        subst. change (S (S n)) with (2 + n) in vst.
+        cbn in ha.
+        assert (hb : (2 + S n) * (1 + S n) = (2 + n) * 2 + (2 + n) * (1 + n)) 
+        by nia.
+        assert (hc : ((2 + S n) * (1 + S n) / 2) = 
+          (2 + n) + ((2 + n) * (1 + n) / 2)).
+        rewrite hb; clear hb. 
+        rewrite <-Nat.div_add_l.
+        reflexivity. nia. clear hb.
+        rename hc into hb.
+        revert i ha.
+        generalize (generate_pairs_of_vector_proof 
+          (S n) (S (S n))). 
+        intros * ha.
+        rewrite nth_rew in ha.
+        assert (hc : hb = eq_sym e).
+        eapply UIP_nat.
+        setoid_rewrite <-hc in ha.
+        clear e hc.
+        remember (rew [Fin.t] hb in i) as i'.
+        setoid_rewrite <-Heqi' in ha.
+        clear Heqi' i hb.
+        rename i' into i. cbn in ha.
+        destruct (fin_append_inv _ _ i) as [(j & hb) | (j & hb)].
+        ++
+          subst.
+          pose proof @nth_append_L _ _ _ (map (λ x : A, (vsh, x)) vst)
+          (generate_pairs_of_vector vst) j as hb.
+          cbn in ha, hb. rewrite hb in ha.
+          clear hb. 
+          exists Fin.F1, (Fin.FS j).
+          split. intro hb. congruence.
+          cbn. rewrite map_fin in ha.
+          inversion ha; subst.
+          split; reflexivity.
+        ++
+          subst.
+          cbn in ha. 
+          (* why rewrite is not working? *)
+          pose proof @nth_append_R _ _ _ (map (λ x : A, (vsh, x)) vst)
+          (generate_pairs_of_vector vst) j as hb.
+          cbn in hb. rewrite hb in ha.
+          clear hb.
+          destruct (ihn vst j v₁ v₂ ha) as (jj & kk & hb & hc & hd).
+          exists (Fin.FS jj), (Fin.FS kk).
+          cbn. split. intro he. eapply hb.
+          eapply fin_inv in he. exact he.
+          subst. split; reflexivity.
+    Qed.
+
+    Lemma generate_pairs_distinct_triple {A B : Type} : 
+      ∀ (n : nat) (gs hs : Vector.t A (2+n)) 
+      (xs :  Vector.t B (2+n)) (i : Fin.t ((2 + n) * (1 + n)/ 2)) 
+      (g₁ g₂ h₁ h₂ : A) (x₁ x₂ : B),
+      (generate_pairs_of_vector gs)[@i] = (g₁, g₂) ->
+      (generate_pairs_of_vector hs)[@i] = (h₁, h₂) ->
+      (generate_pairs_of_vector xs)[@i] = (x₁, x₂) ->
+      ∃ (j k : Fin.t (2 + n)), j ≠ k ∧ g₁ = gs[@j] ∧ g₂ = gs[@k] ∧
+      h₁ = hs[@j] ∧ h₂ = hs[@k] ∧ x₁ = xs[@j] ∧ x₂ = xs[@k].
+    Proof.
+      induction n as [|n ihn].
+      +
+        intros * ha hb hc.
+        destruct (vector_inv_S gs) as (gsh & gst & hd).
+        destruct (vector_inv_S gst) as (gsth & gstt & he).
+        pose proof (vector_inv_0 gstt) as hf.
+        subst.
+        destruct (vector_inv_S hs) as (hsh & hst & hd).
+        destruct (vector_inv_S hst) as (hsth & hstt & he).
+        pose proof (vector_inv_0 hstt) as hf.
+        subst.
+        destruct (vector_inv_S xs) as (xsh & xst & hd).
+        destruct (vector_inv_S xst) as (xsth & xstt & he).
+        pose proof (vector_inv_0 xstt) as hf.
+        subst.
+        destruct (fin_inv_S _ i) as [i' | (i' & hd)]; 
+        subst.
+        ++
+          exists (Fin.F1), (Fin.FS (Fin.F1)); split.
+          intro he. congruence.
+          cbn in ha, hb, hc |- *.
+          inversion ha; inversion hb; 
+          inversion hc; subst;
+          try (repeat split; reflexivity).
+        ++
+          refine match i' with end.
+      +
+        (* inductive case *)
+        intros * ha hb hc.
+        destruct (vector_inv_S gs) as (gsh & gst & hd).
+        destruct (vector_inv_S hs) as (hsh & hst & he).
+        destruct (vector_inv_S xs) as (xsh & xst & hf).
+        subst. change (S (S n)) with (2 + n) in gst, hst, xst.
+        cbn in ha, hb, hc.
+        assert (hd : (2 + S n) * (1 + S n) = (2 + n) * 2 + (2 + n) * (1 + n)) 
+        by nia.
+        assert (he : ((2 + S n) * (1 + S n) / 2) = 
+          (2 + n) + ((2 + n) * (1 + n) / 2)).
+        rewrite hd; clear hd. 
+        rewrite <-Nat.div_add_l.
+        reflexivity. nia. clear hd.
+        rename he into hd.
+        revert i ha hb hc.
+        generalize (generate_pairs_of_vector_proof 
+          (S n) (S (S n))). 
+        intros * ha hb hc.
+        rewrite nth_rew in ha, hb.
+         rewrite nth_rew in hc.
+        assert (he : hd = eq_sym e).
+        eapply UIP_nat.
+        setoid_rewrite <-he in ha.
+        setoid_rewrite <-he in hb.
+        setoid_rewrite <-he in hc.
+        clear e he.
+        remember (rew [Fin.t] hd in i) as i'.
+        setoid_rewrite <-Heqi' in ha.
+        setoid_rewrite <-Heqi' in hb.
+        setoid_rewrite <-Heqi' in hc.
+        clear Heqi' i hd.
+        rename i' into i. 
+        destruct (fin_append_inv _ _ i) as [(j & hd) | (j & hd)].
+        ++
+          subst.
+          pose proof @nth_append_L _ _ _ (map (λ x : A, (gsh, x)) gst)
+          (generate_pairs_of_vector gst) j as hd.
+          cbn in ha, hd. rewrite hd in ha.
+          clear hd.
+          pose proof @nth_append_L _ _ _ (map (λ x : A, (hsh, x)) hst)
+          (generate_pairs_of_vector hst) j as hd.
+          cbn in hb, hd. rewrite hd in hb.
+          clear hd.
+          pose proof @nth_append_L _ _ _ (map (λ x : B, (xsh, x)) xst)
+          (generate_pairs_of_vector xst) j as hd.
+          cbn in hc, hd. rewrite hd in hc.
+          clear hd.
+          exists Fin.F1, (Fin.FS j).
+          split. intro hd. congruence.
+          cbn. rewrite map_fin in ha, hb.
+          rewrite map_fin in hc.
+          inversion ha; inversion hb; inversion hc; 
+          subst.
+          try (repeat split; reflexivity).
+        ++
+          subst.
+          cbn in ha, hb, hc. 
+          (* why rewrite is not working? *)
+          pose proof @nth_append_R _ _ _ (map (λ x : A, (gsh, x)) gst)
+          (generate_pairs_of_vector gst) j as hd.
+          cbn in hd. rewrite hd in ha.
+          clear hd.
+          pose proof @nth_append_R _ _ _ (map (λ x : A, (hsh, x)) hst)
+          (generate_pairs_of_vector hst) j as hd.
+          cbn in hd. rewrite hd in hb.
+          clear hd.
+          pose proof @nth_append_R _ _ _ (map (λ x : B, (xsh, x)) xst)
+          (generate_pairs_of_vector xst) j as hd.
+          cbn in hd. rewrite hd in hc.
+          clear hd.
+          destruct (ihn gst hst xst j g₁ g₂ h₁ h₂ x₁ x₂ 
+            ha hb hc) as (jj & kk & hd & he & hf & hg & hi & hj & hk).
+          exists (Fin.FS jj), (Fin.FS kk).
+          cbn. split. intro hl. eapply hd.
+          eapply fin_inv in hl. exact hl.
+          subst. try (repeat split; reflexivity).
+    Qed.
+   
+
+    Lemma invert_eq_rect {A : Type} {x y : A} 
+      (P : A -> Type) (hb : y = x) (ha : P x) (hc : P y) :
+      rew <-[P] hb in ha = hc → rew [P] hb in hc = ha.
+    Proof.
+      revert ha hc.
+      refine
+      (match hb in  _ = x' return 
+        ∀ (ha : P x') (hc : P y), rew <- [P] hb in ha = hc → rew [P] hb in hc = ha
+      with 
+      | eq_refl => fun ha hb hc => eq_sym hc
+      end).
+    Defined.
+End NeqUtil.
+
+
+From Stdlib Require Import PArith.PArith 
+  ZArith.ZArith Lia
+  ZArith.Znumtheory
+  Zpow_facts.
+
+Section Modutil.
+
+  Context 
+      {p : Z}
+      {Hp : prime p}.
+
+  
+  Fact Hp_2_p : 2 <= p.
+  Proof.
+    pose proof (prime_ge_2 p Hp) as Ht.
+    nia.
+  Qed.
+
+  Fact H_0_p : 0 < p.
+  Proof.
+    pose proof (prime_ge_2 p Hp).
+    nia.
+  Qed.
+  
+  Fact Hp_1_p : 1 < p.
+  Proof.
+    pose proof (prime_ge_2 p Hp).
+    nia.
+  Qed.
+
+  Lemma mod_eq_custom : 
+    forall (a b : Z), 
+    (0 < b)%Z -> 
+    Z.modulo a b = (a - b * (a / b))%Z.
+  Proof.
+    intros a b Hb.
+    rewrite Zmod_eq; nia.
+  Qed. 
+
+
+  Lemma mod_not_zero_one : 
+    forall w,
+    (0 < w < p)%Z -> Z.modulo w p = w.
+  Proof.
+    intros ? Hw.
+    rewrite mod_eq_custom.
+    assert (Hwp: (w/p = 0)%Z).
+    apply Zdiv_small; nia.
+    rewrite Hwp. nia. nia.
+  Qed.
+
+  Lemma mod_more_gen_bound : 
+    forall w,
+    (0 <= w < p)%Z <-> Z.modulo w p = w.
+  Proof.
+    intros ?. split; intro Hw.
+    +
+    rewrite mod_eq_custom.
+    assert (Hwp: (w/p = 0)%Z).
+    apply Zdiv_small; nia.
+    rewrite Hwp. nia. nia.
+    + rewrite <-Hw.
+      apply Z_mod_lt.
+      pose proof (Hp_2_p).
+      nia. 
+  Qed.
+
+
+  Lemma mod_not_eq_zero : 
+    forall m, 
+    m mod p <> 0 <-> 
+    exists k w, m = k * p + w /\ 1 <= w < p.
+  Proof.
+    intros ?; split; intros Hm.
+    exists (Z.div m p), (Z.modulo m p). 
+    split.
+    rewrite mod_eq_custom. nia.
+    apply H_0_p. 
+    remember (m mod p) as mp.
+    assert (Hpt : 0 <= mp < p)
+      by (rewrite Heqmp; 
+      apply Z.mod_pos_bound; apply H_0_p). 
+    nia.
+    destruct Hm as [k [w [Hk Hw]]].
+    rewrite Hk, Z.add_comm, Z.mod_add.
+    rewrite mod_eq_custom.
+    assert (Hwp: w / p = 0). 
+    apply Zdiv_small; nia.
+    intro. rewrite Hwp in H. nia.
+    apply H_0_p. pose Hp_2_p. nia.
+  Qed.
+
+
+  Lemma mod_exists: 
+    forall m,
+    exists k w, m = k * p + w /\ 0 <= w < p.
+  Proof.
+    intros ?.
+    exists (Z.div m p), (Z.modulo m p). 
+    split.
+    rewrite mod_eq_custom. nia.
+    apply H_0_p.
+    apply Z.mod_pos_bound.
+    apply H_0_p.
+  Qed.
+
+
+  Lemma mod_exists_pos : 
+    forall m,
+    0 <= m -> 
+    exists k w, m = k * p + w /\ 0 <= w < p 
+    /\ 0 <= k.
+  Proof.
+    intros ? Hm.
+    exists (Z.div m p), (Z.modulo m p). 
+    split.
+    rewrite mod_eq_custom. nia.
+    apply H_0_p.
+    split.
+    apply Z.mod_pos_bound.
+    apply H_0_p.
+    pose proof Hp_2_p as Hw.
+    apply Z.div_pos;
+    try nia.
+  Qed.
+ 
+  
+  Lemma mod_not_zero : 
+    forall w₁ w₂,  
+    1 <= w₁ < p ->  
+    1 <= w₂ < p -> 
+    (w₁ * w₂) mod p <> 0.
+  Proof.
+    intros ? ? Hw₁ Hw₂.
+    assert (Hwm: 1 <= w₁ * w₂ < p * p) by nia.
+    pose proof Hp_2_p.
+    pose proof (rel_prime_le_prime w₁ p Hp Hw₁) as Hwp1.
+    pose proof (rel_prime_le_prime w₂ p Hp Hw₂) as Hwp2.
+    apply rel_prime_sym in Hwp1; 
+    apply rel_prime_sym in Hwp2.
+    pose proof (rel_prime_mult _ _ _ Hwp1 Hwp2) as Hwpp.
+    apply rel_prime_sym in Hwpp.
+    apply Zrel_prime_neq_mod_0. 
+    nia. exact Hwpp.
+  Qed. 
+
+
+  Lemma mod_single_not_zero : 
+    forall w : Z,
+    1 <= w < p ->
+    w mod p <> 0.
+  Proof.
+    intros ? Hw.
+    pose proof (rel_prime_le_prime w p Hp Hw) as Hwp.
+    apply Zrel_prime_neq_mod_0.
+    nia.
+    exact Hwp.
+  Qed.
+      
+
+  Lemma mod_not_zero_general: 
+    forall vm vn, 
+    vm mod p <> 0 -> 
+    vn mod p <> 0 -> 
+    ((vm * vn) mod p) mod p <> 0.
+  Proof.
+    intros ? ? Hvm Hvn. 
+    apply mod_not_eq_zero in Hvm.
+    apply mod_not_eq_zero in Hvn.
+    apply mod_not_eq_zero.
+    destruct Hvm as [k1 [w1 [Hk1 Hw1]]].
+    destruct Hvn as [k2 [w2 [Hk2 Hw2]]].
+    assert (Hvmn : (vn * vm) mod p = (w1 * w2) mod p).
+    rewrite Hk1, Hk2. 
+    rewrite Zmult_mod, Z.add_comm, 
+    Z.mod_add, Z.add_comm, Z.mod_add.
+    rewrite <-Zmult_mod, Z.mul_comm; 
+    reflexivity.
+    pose proof Hp_2_p. abstract nia.
+    pose proof Hp_2_p. abstract nia.
+    exists 0, ((w1 * w2) mod p).
+    split. simpl. rewrite Z.mul_comm, Hvmn; 
+    reflexivity.
+    assert (Hwt: 0 <= (w1 * w2) mod p < p) by 
+      apply (Z.mod_pos_bound (w1 * w2) p H_0_p).
+    assert ((w1 * w2) mod p <> 0).
+    pose proof (mod_not_zero w1 w2 Hw1 Hw2).
+    exact H. abstract nia.
+  Qed.
+
+  (* moved the proof as a lemma to avoid blowing of proof terms *)
+  Lemma znot_zero_mul_proof: 
+    forall vx vy, 
+    1 <= vx < p -> 
+    1 <= vy < p -> 
+    1 <= (vx * vy) mod p < p.
+  Proof.
+    intros ? ? Hvx Hvy.
+    assert (Hwt: 0 <= (vx * vy) mod p < p) by 
+    apply (Z.mod_pos_bound (vx * vy) p H_0_p).
+    assert ((vx * vy) mod p <> 0).
+    pose proof (@mod_not_zero vx vy Hvx Hvy).
+    exact H.
+    nia.
+  Qed.
+
+  Lemma multiplication_bound : 
+    forall vx vy, 
+    0 < vx < p -> 
+    0 < vy < p -> 
+    0 < (vx * vy) mod p < p.
+  Proof.
+    intros ? ? Ha Hb.
+    assert (Hc : 1 <= vx < p) by
+    nia.
+    assert (Hd : 1 <= vy < p) by 
+    nia.
+    pose proof (znot_zero_mul_proof _ _ Hc Hd) as He.
+    nia. 
+  Qed.
+
+  Lemma rewrite_gop {G : Type} (gop : G -> G -> G) : 
+    forall a b c d : G, 
+    a = b -> c = d -> gop a c = gop b d.
+  Proof.
+    intros * Hab Hcd;
+    subst;
+    reflexivity.
+  Qed.
+
+End Modutil. 
+
+
+
+
