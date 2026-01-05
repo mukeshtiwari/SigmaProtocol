@@ -162,18 +162,71 @@ Section Util.
     Qed.
 
     
-    Lemma Fin_append_inv : ∀ (m n : nat) (i : Fin.t (m+n)),
+    Lemma fin_append_inv : ∀ (m n : nat) (i : Fin.t (m+n)),
       (∃ j : Fin.t m, i = Fin.L n j) ∨ (∃ j : Fin.t n, i = Fin.R m j).
     Proof.
-    Admitted.
+      induction m as [|m ihm].
+      +
+        intros *. 
+        cbn in i. 
+        right; exists i.
+        reflexivity.
+      +
+        intros *.
+        cbn in i.
+        destruct (fin_inv_S _ i) as [i' | (i' & ha)].
+        ++
+          subst. cbn. left.
+          unfold Fin.L.
+          exists Fin.F1.
+          reflexivity.
+        ++
+          destruct (ihm _ i') as [(j & hb) | (j & hb)].
+          -
+            subst. left.
+            exists (Fin.FS j).
+            reflexivity.
+          -
+            subst. right.
+            exists j.
+            reflexivity.
+    Qed.
 
 
+
+    Lemma nth_rew {A n m} (v : Vector.t A n) (ha : n = m) 
+      (i : Fin.t m) :
+      (rew [t A] ha in v)[@i] = v[@rew [Fin.t] (eq_sym ha) in i]. 
+    Proof.
+      revert v i.
+      refine(
+        match ha in _ = m' return 
+          ∀ (v : t A n) (i : Fin.t m'), (rew [t A] ha in v)[@i] = v[@rew [Fin.t] eq_sym ha in i]
+        with
+        | eq_refl => fun v i => eq_refl
+        end).
+    Defined.
+
+    Theorem fin_inv {n : nat} (a b : Fin.t n) 
+      (e : Fin.FS a = Fin.FS b) : a = b.
+    Proof.
+      refine 
+        match e in _ = y return 
+          (match y in Fin.t n' return Fin.t (pred n') -> Prop 
+          with 
+          | Fin.FS i => fun x => x = i 
+          | Fin.F1 => fun _ => False 
+          end a)
+        with 
+        | eq_refl => eq_refl
+        end.
+    Defined.
 
     Lemma generate_pairs_distinct {A : Type} : 
       ∀ (n : nat) (vs : Vector.t A (2+n)) 
-      (i : Fin.t ((2 + n) * (1 + n)/ 2)) (a b : A),
-      (generate_pairs_of_vector vs)[@i] = (a, b) ->
-      ∃ (j k : Fin.t (2 + n)), j ≠ k ∧ a = vs[@j] ∧ b = vs[@k].
+      (i : Fin.t ((2 + n) * (1 + n)/ 2)) (v₁ v₂ : A),
+      (generate_pairs_of_vector vs)[@i] = (v₁, v₂) ->
+      ∃ (j k : Fin.t (2 + n)), j ≠ k ∧ v₁ = vs[@j] ∧ v₂ = vs[@k].
     Proof.
       induction n as [|n ihn].
       +
@@ -192,16 +245,185 @@ Section Util.
         refine match i' with end.
       +
         intros * ha.
-    Admitted.
+        destruct (vector_inv_S vs) as (vsh & vst & hb).
+        subst. change (S (S n)) with (2 + n) in vst.
+        cbn in ha.
+        assert (hb : (2 + S n) * (1 + S n) = (2 + n) * 2 + (2 + n) * (1 + n)) 
+        by nia.
+        assert (hc : ((2 + S n) * (1 + S n) / 2) = 
+          (2 + n) + ((2 + n) * (1 + n) / 2)).
+        rewrite hb; clear hb. 
+        rewrite <-Nat.div_add_l.
+        reflexivity. nia. clear hb.
+        rename hc into hb.
+        revert i ha.
+        generalize (generate_pairs_of_vector_proof 
+          (S n) (S (S n))). 
+        intros * ha.
+        rewrite nth_rew in ha.
+        assert (hc : hb = eq_sym e).
+        eapply UIP_nat.
+        setoid_rewrite <-hc in ha.
+        clear e hc.
+        remember (rew [Fin.t] hb in i) as i'.
+        setoid_rewrite <-Heqi' in ha.
+        clear Heqi' i hb.
+        rename i' into i. cbn in ha.
+        destruct (fin_append_inv _ _ i) as [(j & hb) | (j & hb)].
+        ++
+          subst.
+          pose proof @nth_append_L _ _ _ (map (λ x : A, (vsh, x)) vst)
+          (generate_pairs_of_vector vst) j as hb.
+          cbn in ha, hb. rewrite hb in ha.
+          clear hb. 
+          exists Fin.F1, (Fin.FS j).
+          split. intro hb. congruence.
+          cbn. rewrite map_fin in ha.
+          inversion ha; subst.
+          split; reflexivity.
+        ++
+          subst.
+          cbn in ha. 
+          (* why rewrite is not working? *)
+          pose proof @nth_append_R _ _ _ (map (λ x : A, (vsh, x)) vst)
+          (generate_pairs_of_vector vst) j as hb.
+          cbn in hb. rewrite hb in ha.
+          clear hb.
+          destruct (ihn vst j v₁ v₂ ha) as (jj & kk & hb & hc & hd).
+          exists (Fin.FS jj), (Fin.FS kk).
+          cbn. split. intro he. eapply hb.
+          eapply fin_inv in he. exact he.
+          subst. split; reflexivity.
+    Qed.
 
+    Lemma generate_pairs_distinct_triple {A B : Type} : 
+      ∀ (n : nat) (gs hs : Vector.t A (2+n)) 
+      (xs :  Vector.t B (2+n)) (i : Fin.t ((2 + n) * (1 + n)/ 2)) 
+      (g₁ g₂ h₁ h₂ : A) (x₁ x₂ : B),
+      (generate_pairs_of_vector gs)[@i] = (g₁, g₂) ->
+      (generate_pairs_of_vector hs)[@i] = (h₁, h₂) ->
+      (generate_pairs_of_vector xs)[@i] = (x₁, x₂) ->
+      ∃ (j k : Fin.t (2 + n)), j ≠ k ∧ g₁ = gs[@j] ∧ g₂ = gs[@k] ∧
+      h₁ = hs[@j] ∧ h₂ = hs[@k] ∧ x₁ = xs[@j] ∧ x₂ = xs[@k].
+    Proof.
+      induction n as [|n ihn].
+      +
+        intros * ha hb hc.
+        destruct (vector_inv_S gs) as (gsh & gst & hd).
+        destruct (vector_inv_S gst) as (gsth & gstt & he).
+        pose proof (vector_inv_0 gstt) as hf.
+        subst.
+        destruct (vector_inv_S hs) as (hsh & hst & hd).
+        destruct (vector_inv_S hst) as (hsth & hstt & he).
+        pose proof (vector_inv_0 hstt) as hf.
+        subst.
+        destruct (vector_inv_S xs) as (xsh & xst & hd).
+        destruct (vector_inv_S xst) as (xsth & xstt & he).
+        pose proof (vector_inv_0 xstt) as hf.
+        subst.
+        destruct (fin_inv_S _ i) as [i' | (i' & hd)]; 
+        subst.
+        ++
+          exists (Fin.F1), (Fin.FS (Fin.F1)); split.
+          intro he. congruence.
+          cbn in ha, hb, hc |- *.
+          inversion ha; inversion hb; 
+          inversion hc; subst;
+          try (repeat split; reflexivity).
+        ++
+          refine match i' with end.
+      +
+        (* inductive case *)
+        intros * ha hb hc.
+        destruct (vector_inv_S gs) as (gsh & gst & hd).
+        destruct (vector_inv_S hs) as (hsh & hst & he).
+        destruct (vector_inv_S xs) as (xsh & xst & hf).
+        subst. change (S (S n)) with (2 + n) in gst, hst, xst.
+        cbn in ha, hb, hc.
+        assert (hd : (2 + S n) * (1 + S n) = (2 + n) * 2 + (2 + n) * (1 + n)) 
+        by nia.
+        assert (he : ((2 + S n) * (1 + S n) / 2) = 
+          (2 + n) + ((2 + n) * (1 + n) / 2)).
+        rewrite hd; clear hd. 
+        rewrite <-Nat.div_add_l.
+        reflexivity. nia. clear hd.
+        rename he into hd.
+        revert i ha hb hc.
+        generalize (generate_pairs_of_vector_proof 
+          (S n) (S (S n))). 
+        intros * ha hb hc.
+        rewrite nth_rew in ha, hb.
+         rewrite nth_rew in hc.
+        assert (he : hd = eq_sym e).
+        eapply UIP_nat.
+        setoid_rewrite <-he in ha.
+        setoid_rewrite <-he in hb.
+        setoid_rewrite <-he in hc.
+        clear e he.
+        remember (rew [Fin.t] hd in i) as i'.
+        setoid_rewrite <-Heqi' in ha.
+        setoid_rewrite <-Heqi' in hb.
+        setoid_rewrite <-Heqi' in hc.
+        clear Heqi' i hd.
+        rename i' into i. 
+        destruct (fin_append_inv _ _ i) as [(j & hd) | (j & hd)].
+        ++
+          subst.
+          pose proof @nth_append_L _ _ _ (map (λ x : A, (gsh, x)) gst)
+          (generate_pairs_of_vector gst) j as hd.
+          cbn in ha, hd. rewrite hd in ha.
+          clear hd.
+          pose proof @nth_append_L _ _ _ (map (λ x : A, (hsh, x)) hst)
+          (generate_pairs_of_vector hst) j as hd.
+          cbn in hb, hd. rewrite hd in hb.
+          clear hd.
+          pose proof @nth_append_L _ _ _ (map (λ x : B, (xsh, x)) xst)
+          (generate_pairs_of_vector xst) j as hd.
+          cbn in hc, hd. rewrite hd in hc.
+          clear hd.
+          exists Fin.F1, (Fin.FS j).
+          split. intro hd. congruence.
+          cbn. rewrite map_fin in ha, hb.
+          rewrite map_fin in hc.
+          inversion ha; inversion hb; inversion hc; 
+          subst.
+          try (repeat split; reflexivity).
+        ++
+          subst.
+          cbn in ha, hb, hc. 
+          (* why rewrite is not working? *)
+          pose proof @nth_append_R _ _ _ (map (λ x : A, (gsh, x)) gst)
+          (generate_pairs_of_vector gst) j as hd.
+          cbn in hd. rewrite hd in ha.
+          clear hd.
+          pose proof @nth_append_R _ _ _ (map (λ x : A, (hsh, x)) hst)
+          (generate_pairs_of_vector hst) j as hd.
+          cbn in hd. rewrite hd in hb.
+          clear hd.
+          pose proof @nth_append_R _ _ _ (map (λ x : B, (xsh, x)) xst)
+          (generate_pairs_of_vector xst) j as hd.
+          cbn in hd. rewrite hd in hc.
+          clear hd.
+          destruct (ihn gst hst xst j g₁ g₂ h₁ h₂ x₁ x₂ 
+            ha hb hc) as (jj & kk & hd & he & hf & hg & hi & hj & hk).
+          exists (Fin.FS jj), (Fin.FS kk).
+          cbn. split. intro hl. eapply hd.
+          eapply fin_inv in hl. exact hl.
+          subst. try (repeat split; reflexivity).
+    Qed.
    
 
     Lemma invert_eq_rect {A : Type} {x y : A} 
       (P : A -> Type) (hb : y = x) (ha : P x) (hc : P y) :
       rew <-[P] hb in ha = hc → rew [P] hb in hc = ha.
     Proof.
-      intros hd. subst.
-      cbn. reflexivity.
+      revert ha hc.
+      refine
+      (match hb in  _ = x' return 
+        ∀ (ha : P x') (hc : P y), rew <- [P] hb in ha = hc → rew [P] hb in hc = ha
+      with 
+      | eq_refl => fun ha hb hc => eq_sym hc
+      end).
     Defined.
         
 
@@ -475,18 +697,6 @@ Section DL.
         eapply VectorSpec.append_inj in ha.
         exact ha.
       Qed.
-
-      (* 
-      Theorem generalised_construct_neq_response_proof : 
-        ∀ (n : nat), (xs : Vector.t F (2 + n)) 
-        (usl : Vector.t F (2 + n))
-        (usrl usrr : Vector.t F (Nat.div ((2 + n) * (1 + n)) 2))
-        (c : F) (rl : Vector.t F (2 + n))
-        (rr : Vector.t F ((2 + n) * (1 + n)))
-        generalised_construct_neq_response xs (usl ++ @eq_rect _ _ (Vector.t F) 
-        (usrl ++ usrr) _ (nat_div_2 n)) c = rl ++ rr -> 
-        construct_and_conversations_schnorr_response xs usl c = true ∧
-      *)
       
 
       (* completeness *)
@@ -542,8 +752,60 @@ Section DL.
           g₂ ((pair_zip (rew <- [λ n0 : nat, t F n0] nat_div_2 n in usr))[@i]) as hg.
         unfold generalised_okamoto_real_protocol in hg.
         eapply hg; clear hg.
-        
-      Admitted.
+        cbn. 
+        destruct (@generate_pairs_distinct_triple G F _ 
+        gs hs xs i g₁ g₂ h₁ h₂ x₁ x₂ hc hd hf) as (j & k & hg & hi & 
+        hj & hk & hl & hm & hn).
+        clear hc hd hf.
+        pose proof (ha j) as hc.
+        rewrite <- hi, <-hk, <-hm in hc.
+        rewrite <-hc.
+        clear hc.
+        pose proof (ha k) as hc.
+        rewrite <- hj, <-hl, <-hn in hc.
+        rewrite <-hc.
+        rewrite right_identity, !smul_distributive_vadd,
+        <-!smul_associative_fmul.
+        rewrite gop_simp.
+        rewrite <-!smul_distributive_fadd.
+        assert (hd : (x₁ * inv (x₁ - x₂) + x₁ * inv (x₂ - x₁)) = zero). field.
+        (* 
+          x₂ - x₁ ≠ zero ∧ x₁ - x₂ ≠ zero
+        *)
+        pose proof (hb j k hg) as hd.
+        rewrite <-hm, <-hn in hd.
+        split. intro hw. 
+        eapply hd. 
+        eapply eq_sym, ring_sub_zero_iff.
+        exact hw.
+        intro hw. eapply hd.
+        eapply ring_sub_zero_iff.
+        exact hw.
+        rewrite !hd; clear hd.
+        rewrite field_zero, left_identity.
+        assert (hd : (x₁ * inv (x₁ - x₂) + x₂ * inv (x₂ - x₁)) = 
+          (x₂ - x₁) * inv (x₂ - x₁)). field.
+        pose proof (hb j k hg) as hd.
+        rewrite <-hm, <-hn in hd.
+        split. intro hw. 
+        eapply hd. 
+        eapply eq_sym, ring_sub_zero_iff.
+        exact hw.
+        intro hw. eapply hd.
+        eapply ring_sub_zero_iff.
+        exact hw.
+        rewrite !hd; clear hd.
+        assert (hd : ((x₂ - x₁) * inv (x₂ - x₁)) = one).
+        field.
+        pose proof (hb j k hg) as hd.
+        rewrite <-hm, <-hn in hd.
+        intro hw. 
+        eapply hd. 
+        eapply eq_sym, ring_sub_zero_iff.
+        exact hw.
+        rewrite hd, field_one.
+        reflexivity.
+      Qed.
 
 
       Theorem generalised_neq_simulator_transcript_accepting_conversations : 
@@ -651,7 +913,8 @@ Section DL.
         exists ys. split. exact (fun f => eq_sym (hi f)).
         rewrite vector_forallb_correct in ha, hb.
         clear hf hg.
-        
+      Admitted.
+      
 
 
        
