@@ -572,17 +572,89 @@ Section DL.
       Qed.
 
 
-      (* special soundness *)
+      (* Special soundness.
+
+        We do not assume a priori that discrete-logarithm relations between the
+        generators are unknown. Instead, we prove a dichotomy: either the extracted
+        witnesses are unique, or a non-trivial discrete-logarithm relation between
+        the generators can be derived.
+
+        In particular, to establish uniqueness of the exponents xs in the Okamoto
+        protocol, one may assume the independence hypothesis
+
+          H_independent :
+            ∀ i j, i ≠ j → ¬ (∃ α, gs[@j] = gs[@i] ^ α)
+
+        and prove the following theorem:
+
+          Theorem generalised_neq_accepting_conversations_soundness :
+            ∀ (n : nat) a c₁ c₂ rs₁ rs₂ gs hs,
+              [c₁] <> [c₂] →
+              generalised_neq_accepting_conversations gs hs (a; [c₁]; rs₁) = true →
+              generalised_neq_accepting_conversations gs hs (a; [c₂]; rs₂) = true →
+              ∃ (xs : Vector.t F (2 + n)),
+                (∀ i, hs[@i] = gs[@i] ^ xs[@i]) ∧
+                (∀ i j, i ≠ j → xs[@i] ≠ xs[@j]).
+
+        However, logically, an implication P → Q can be reformulated as Q ∨ ¬P.
+        While this equivalence relies on classical reasoning for arbitrary
+        propositions, it is constructively valid when the propositions involved
+        are decidable.
+
+        Since both generator independence and equality of extracted exponents
+        are decidable in our setting, we can internalise the independence assumption
+        into the conclusion. We therefore strengthen the result by proving the
+        following unconditional theorem, which captures special soundness without
+        assuming independence explicitly.
+      *)
+
+      Theorem dec_prop_equiv (ha : ∀ (A : Prop), A + ~A) : ∀ (P Q : Prop),
+        (P -> Q) <-> ~P ∨ Q.
+      Proof.
+        intros *; split.
+        +
+          intro f.
+          destruct (ha P) as [hb | hb];
+          [(right; eapply f; exact hb) |
+          (left; exact hb)].
+        +
+          intros hb p.
+          destruct hb as [hb | hb];
+          [congruence | exact hb].
+      Qed.
+          
+
 
       Theorem generalised_neq_accepting_conversations_soundenss :
-        ∀ (n : nat) a c₁ c₂ rs₁ rs₂ gs hs, 
+        ∀ (n : nat) a c₁ c₂ rs₁ rs₂ gs hs, [c₁] <> [c₂] ->
         generalised_neq_accepting_conversations gs hs (a; [c₁]; rs₁) = true ->
         generalised_neq_accepting_conversations gs hs (a; [c₂]; rs₂) = true ->
         ∃ (xs : Vector.t F (2 + n)), (∀ (i : Fin.t (2 + n)), hs[@i] = gs[@i] ^ xs[@i]) ∧
-        (∀ (i j : Fin.t (2 + n)), i ≠ j -> xs[@i] ≠ xs[@j]).
+        ((∀ (i j : Fin.t (2 + n)), i ≠ j -> xs[@i] ≠ xs[@j]) ∨
+        (∃ (i j : Fin.t (2 + n))(α : F) , i ≠ j ∧ gs[@j] = gs[@i] ^ α)).
       Proof.
-      Admitted.
+        intros * hn ha hb.
+        (* Unfold the accepting conversation definition *)
+        (* Split commitments and responses *)
+        unfold generalised_neq_accepting_conversations in ha, hb.
+        destruct (splitat (2 + n) a) as (al & ar) eqn:hc.
+        destruct (splitat (2 + n) rs₁) as (rl₁ & rr₁) eqn:hd.
+        destruct (splitat (2 + n) rs₂) as (rl₂ & rr₂) eqn:he.
+        eapply append_splitat in hc, hd, he.
+        destruct (generalised_and_accepting_conversations gs hs (al; [c₁]; rl₁)) 
+        eqn:hf; try congruence.
+        destruct (generalised_and_accepting_conversations gs hs (al; [c₂]; rl₂))
+        eqn:hg; try congruence.
+        destruct (@generalise_and_sigma_soundness F zero one add mul sub div 
+        opp inv Fdec G gid ginv gop gpow Gdec Hvec _ gs hs al [c₁] rl₁
+        [c₂] rl₂ hf hg hn) as (ys & hi).
+        exists ys. split. exact (fun f => eq_sym (hi f)).
+        rewrite vector_forallb_correct in ha, hb.
+        clear hf hg.
+        
 
+
+       
       (* zero-knowledge proof *)
 
       (* special honest-verifier zero-knowledge proof *)
@@ -595,7 +667,7 @@ Section DL.
         (gs hs : Vector.t G (2 + n)) 
         (trans : sigma_proto) (pr : prob) (c : F),
         (* relationship between gs, hs, and xs *)
-        (∀ (i : Fin.t (2 + n)), hs[@i] = gs[@i] ^ xs[@i]) ->
+        (∀ (i : Fin.t (2 + n)), gs[@i] ^ xs[@i] =  hs[@i]) ->
         (∀ (i j : Fin.t (2 + n)), i ≠ j -> xs[@i] ≠ xs[@j]) ->
         List.In (trans, pr) (Bind l (λ us : Vector.t F (2 + n + (2 + n) * (1 + n)), 
             Ret (generalised_construct_neq_conversations_real_transcript xs gs hs us c))) → 
@@ -667,7 +739,7 @@ Section DL.
         (xs : Vector.t F (2 + n)) (gs hs : Vector.t G (2 + n)) 
         (a : sigma_proto) (b : prob) (c : F),
         (* relationship between gs, hs, and xs *)
-        (∀ (i : Fin.t (2 + n)), hs[@i] = gs[@i] ^ xs[@i]) ->
+        (∀ (i : Fin.t (2 + n)), gs[@i] ^ xs[@i] = hs[@i]) ->
         (∀ (i j : Fin.t (2 + n)), i ≠ j -> xs[@i] ≠ xs[@j]) ->
         List.In (a, b) (generalised_neq_schnorr_distribution lf Hlf xs gs hs c) ->
         generalised_neq_accepting_conversations gs hs a = true ∧
@@ -778,7 +850,7 @@ Section DL.
       Lemma generalised_okamoto_special_honest_verifier_zkp {n : nat} : 
         forall (lf : list F) (Hlfn : lf <> List.nil) 
         (xs : Vector.t F (2 + n)) (gs hs : Vector.t G (2 + n)) (c : F),
-        (∀ (i : Fin.t (2 + n)), hs[@i] = gs[@i] ^ xs[@i]) ->
+        (∀ (i : Fin.t (2 + n)), gs[@i] ^ xs[@i] = hs[@i]) ->
         (∀ (i j : Fin.t (2 + n)), i ≠ j -> xs[@i] ≠ xs[@j]) ->
         List.map (fun '(a, p) => 
           (generalised_neq_accepting_conversations gs hs a, p))
