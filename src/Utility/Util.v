@@ -1573,6 +1573,227 @@ Section NeqUtil.
     Qed.
 
 
+    Lemma generate_pairs_contains {A : Type} : 
+      ∀ (n : nat) (vs : Vector.t A (2+n)) 
+      (i j : Fin.t (2+n)), i ≠ j ->
+      ∃ (k : Fin.t ((2+n)*(1+n)/2)),
+      (fst ((generate_pairs_of_vector vs)[@k]) = vs[@i] ∧ 
+      snd ((generate_pairs_of_vector vs)[@k]) = vs[@j]) ∨ 
+      (fst ((generate_pairs_of_vector vs)[@k]) = vs[@j] ∧ 
+      snd ((generate_pairs_of_vector vs)[@k]) = vs[@i]).
+    Proof.
+      induction n as [|n ihn].
+      +
+        intros * ha.
+        change (2 + 0) with 2 in i, j, vs |- *.
+        change (1 + 0) with 1. 
+        change (2 * 1/2) with 1. 
+        exists Fin.F1.
+        destruct (vector_inv_S vs) as (vsh & vst & hd).
+        destruct (vector_inv_S vst) as (vsth & vstt & he).
+        pose proof (vector_inv_0 vstt) as hf.
+        subst. 
+        refine 
+         (match i as i' in Fin.t n' return 
+            ∀ (pf : n' = 2), @eq_rect _ n' Fin.t i' 2 pf ≠ j -> 
+            (match n' return Fin.t n' -> Type 
+            with 
+            | 2 => fun w => 
+                  (fst ((generate_pairs_of_vector [vsh; vsth])[@F1]) = [vsh; vsth][@w] ∧ 
+                  snd ((generate_pairs_of_vector [vsh; vsth])[@F1]) = [vsh; vsth][@j]) ∨ 
+                  (fst ((generate_pairs_of_vector [vsh; vsth])[@F1]) = [vsh; vsth][@j] ∧ 
+                  snd ((generate_pairs_of_vector [vsh; vsth])[@F1]) = [vsh; vsth][@w])
+            | _ => fun _ => IDProp 
+            end i')
+          with 
+          | @Fin.F1 nw => fun (pfa : S nw = 2) he => _
+          | @Fin.FS nw i' => fun (pfa : S nw = 2) he => 
+            match i' as ir in Fin.t nv return 
+              nw = nv -> _ 
+             with 
+            | @Fin.F1 nt => fun ha => _ 
+            | @Fin.FS nt i'' => fun ha => _
+            end eq_refl
+          end eq_refl ha);
+          destruct (fin_inv_S _ j) as [j' | (j' & hc)].
+          ++
+            assert (hb : nw = 1) by nia.
+            subst. cbn. 
+            assert (hb : pfa = eq_refl) by (eapply UIP_nat).
+            subst; cbn in he.
+            congruence.
+          ++
+            assert (hb : nw = 1) by nia.
+            subst.
+            assert (hb : pfa = eq_refl) by (eapply UIP_nat).
+            subst; cbn in he.
+            destruct (fin_inv_S _ j') as [j'' | (j'' & hc)].
+            -
+              subst; cbn.
+              left; split; reflexivity.
+            -
+              refine match j'' with end.
+            ++
+              assert (hb : nt = 0) by nia.
+              subst; cbn. 
+              right; split; reflexivity.
+            ++
+              assert (hb : nt = 0) by nia.
+              subst; cbn. 
+              destruct (fin_inv_S _ j') as [j'' | (j'' & hc)]; subst.
+              -
+                assert (hb : pfa = eq_refl) by (eapply UIP_nat).
+                subst; cbn in he.
+                destruct (fin_inv_S _ i') as [i'' | (i'' & hc)]; subst; 
+                try congruence.
+                refine match i'' with end.
+              -
+                refine match j'' with end.
+            ++
+              assert (hb : nt = 0) by nia.
+              subst. refine match i'' with end.
+            ++
+              assert (hb : nt = 0) by nia.
+              subst. refine match i'' with end.
+      +
+        (* inductive case *)
+        intros * ha.
+        destruct (vector_inv_S vs) as (vsh & vst & hb).
+        subst.
+        destruct (fin_inv_S _ i) as [i' | (i' & hb)];
+        destruct (fin_inv_S _ j) as [j' | (j' & hc)]; 
+        try congruence.
+        ++
+          subst. 
+          assert (hb : (2 + S n) * (1 + S n) = 
+            (2 + n) * 2 + (2 + n) * (1 + n)) by nia.
+          assert (hc : ((2 + S n) * (1 + S n) / 2) = 
+            (2 + n) + ((2 + n) * (1 + n) / 2)).
+          rewrite hb; clear hb. 
+          rewrite <-Nat.div_add_l.
+          reflexivity. nia. clear hb.
+          set (kr := @Fin.L (2+n) ((2+n)*(1+n)/2) j').
+          exists (@eq_rect _ (2 + n + (2 + n) * (1 + n) / 2)
+            Fin.t kr ((2 + S n) * (1 + S n) / 2)
+            (eq_sym hc)).
+          cbn. rewrite nth_rew. 
+          generalize ((generate_pairs_of_vector_proof (S n) (S (S n)))) as e.
+          intro e.
+          assert (hb : hc = eq_sym e).
+          eapply UIP_nat.
+          rewrite hb, eq_sym_involutive. 
+          clear hb hc.
+          subst.
+          rewrite rew_compose, eq_trans_sym_inv_r.
+          cbn. clear e.
+          unfold kr.
+          pose proof @nth_append_L _ _ _ (map (λ x : A, (vsh, x)) vst)
+          (generate_pairs_of_vector vst) j' as hd.
+          cbn in hd |- *. (* If I don't do this, it won't work *)
+          rewrite hd; clear hd.
+          destruct ((map (λ x : A, (vsh, x)) vst)[@j']) as (a, b) eqn:hb.
+          rewrite map_fin in hb.
+          inversion hb; subst.
+          left; split; reflexivity.
+        ++
+          rename hb into hw.
+          assert (hb : (2 + S n) * (1 + S n) = 
+            (2 + n) * 2 + (2 + n) * (1 + n)) by nia.
+          assert (hc : ((2 + S n) * (1 + S n) / 2) = 
+            (2 + n) + ((2 + n) * (1 + n) / 2)).
+          rewrite hb; clear hb. 
+          rewrite <-Nat.div_add_l.
+          reflexivity. nia. clear hb.
+          set (kr := @Fin.L (2+n) ((2+n)*(1+n)/2) i').
+          exists (@eq_rect _ (2 + n + (2 + n) * (1 + n) / 2)
+            Fin.t kr ((2 + S n) * (1 + S n) / 2)
+            (eq_sym hc)).
+          cbn. rewrite nth_rew. 
+          generalize ((generate_pairs_of_vector_proof (S n) (S (S n)))) as e.
+          intro e.
+          assert (hb : hc = eq_sym e).
+          eapply UIP_nat.
+          rewrite hb, eq_sym_involutive.
+          clear hb hc.
+          subst.
+          rewrite rew_compose, eq_trans_sym_inv_r.
+          cbn. clear e.
+          unfold kr.
+          pose proof @nth_append_L _ _ _ (map (λ x : A, (vsh, x)) vst)
+          (generate_pairs_of_vector vst) i' as hd.
+          cbn in hd |- *. (* If I don't do this, it won't work *)
+          rewrite hd; clear hd.
+          destruct ((map (λ x : A, (vsh, x)) vst)[@i']) as (a, b) eqn:hb.
+          rewrite map_fin in hb.
+          inversion hb; subst.
+          right; split; reflexivity.
+        ++
+          subst.
+          assert (hb : i' ≠ j').
+          intro hb. eapply ha.
+          subst; reflexivity.
+          destruct (ihn vst i' j' hb) as (kr & hc).
+          assert (hd : (2 + S n) * (1 + S n) = 
+            (2 + n) * 2 + (2 + n) * (1 + n)) by nia.
+          assert (he : ((2 + S n) * (1 + S n) / 2) = 
+            (2 + n) + ((2 + n) * (1 + n) / 2)).
+          rewrite hd; clear hd. 
+          rewrite <-Nat.div_add_l.
+          reflexivity. nia. clear hd.
+          destruct ((generate_pairs_of_vector vst)[@kr]) as (a, b) eqn:hf.
+          destruct hc as [hcl | hcl].
+          -
+            rename hb into hw. 
+            set (kw := @Fin.R ((2+n)*(1+n)/2)  (2+n) kr).
+            exists (@eq_rect _ (2 + n + (2 + n) * (1 + n) / 2)
+              Fin.t kw ((2 + S n) * (1 + S n) / 2)
+              (eq_sym he)).
+            cbn. rewrite nth_rew.
+            generalize ((generate_pairs_of_vector_proof (S n) (S (S n)))) as e. intro e.
+            assert (hc : he = eq_sym e).
+            eapply UIP_nat.
+            rewrite hc, eq_sym_involutive. 
+            clear hc he.
+            subst.
+            rewrite rew_compose, eq_trans_sym_inv_r.
+            cbn. clear e.
+            change (FS (FS (R n kr))) with (R (2 + n) kr).
+            clear ihn.
+            pose proof @nth_append_R _ _ _ 
+            (map (λ x : A, (vsh, x)) vst)
+            (generate_pairs_of_vector vst) kr as hv.
+            simpl in hv |- *.
+            rewrite hv.
+            setoid_rewrite hf.
+            cbn in hcl |- *.
+            left. exact hcl.
+          -
+            rename hb into hw. 
+            set (kw := @Fin.R ((2+n)*(1+n)/2)  (2+n) kr).
+            exists (@eq_rect _ (2 + n + (2 + n) * (1 + n) / 2)
+              Fin.t kw ((2 + S n) * (1 + S n) / 2)
+              (eq_sym he)).
+            cbn. rewrite nth_rew.
+            generalize ((generate_pairs_of_vector_proof (S n) (S (S n)))) as e. intro e.
+            assert (hc : he = eq_sym e).
+            eapply UIP_nat.
+            rewrite hc, eq_sym_involutive. 
+            clear hc he.
+            subst.
+            rewrite rew_compose, eq_trans_sym_inv_r.
+            cbn. clear e.
+            change (FS (FS (R n kr))) with (R (2 + n) kr).
+            clear ihn.
+            pose proof @nth_append_R _ _ _ 
+            (map (λ x : A, (vsh, x)) vst)
+            (generate_pairs_of_vector vst) kr as hv.
+            simpl in hv |- *.
+            rewrite hv.
+            setoid_rewrite hf.
+            cbn in hcl |- *.
+            right; exact hcl.
+    Qed.
+
 End NeqUtil.
 
 

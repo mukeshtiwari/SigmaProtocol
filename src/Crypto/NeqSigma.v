@@ -505,7 +505,7 @@ Section DL.
           left. exact hj.
         ++
           right.
-          
+          pose proof @generate_pairs_contains _ _ gs ii jj hj.
           
       Admitted.
       
