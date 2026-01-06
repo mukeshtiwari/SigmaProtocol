@@ -499,6 +499,14 @@ Section DL.
         exists ys. split. exact (fun f => eq_sym (hi f)).
         rewrite vector_forallb_correct in ha, hb.
         clear hf hg.
+        destruct (@vector_unique_decidable _ Fdec _ ys) as [hj | 
+          (ii & jj & hj & hk)].
+        ++
+          left. exact hj.
+        ++
+          right.
+          
+          
       Admitted.
       
 

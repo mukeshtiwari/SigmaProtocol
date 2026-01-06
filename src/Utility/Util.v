@@ -534,9 +534,7 @@ Section Vect.
         cbn. eapply ihn.
         intro i. specialize (ha (Fin.FS i)).
         cbn in ha. exact ha.
-  Qed.  
-
-  
+  Qed.
     
   (* Write Ltac *)
 
@@ -1086,7 +1084,7 @@ Section NeqUtil.
     Qed.
 
     Lemma nth_zip_with : forall (A B C : Type) (f : A -> B -> C) (n : nat)
-      (i : Fin.t n) (vsa : Vector.t A n) (vsb  : Vector.t B n) ,
+      (i : Fin.t n) (vsa : Vector.t A n) (vsb  : Vector.t B n),
       (zip_with f vsa vsb)[@i] = f (vsa[@i]) (vsb[@i]).
     Proof.
       intros until f.
@@ -1390,6 +1388,191 @@ Section NeqUtil.
       | eq_refl => fun ha hb hc => eq_sym hc
       end).
     Defined.
+
+
+    Fixpoint vector_member {A : Type} {dec : ∀ (x y : A), {x = y} + {x ≠ y}}
+      {n : nat} (v : A) 
+      (vs : Vector.t A n) : bool :=
+      match vs with
+      | [] => false
+      | vsh :: vst => match dec v vsh with 
+        | left _ => true 
+        | right _ => @vector_member _ dec _ v vst 
+        end
+      end.
+
+
+    Fixpoint vector_unique {A : Type} {dec : ∀ (x y : A), {x = y} + {x ≠ y}} 
+      {n : nat} (vs : Vector.t A n) : bool :=
+      match vs with
+      | [] => true
+      | vsh :: vst  => negb (@vector_member _ dec _ vsh vst) && 
+        @vector_unique _ dec _ vst
+      end.
+
+
+    Theorem vector_member_true {A : Type} {dec : ∀ (x y : A), {x = y} + {x ≠ y}} : 
+      ∀ (n : nat) (v : A) (vs : Vector.t A (1 + n)),
+      @vector_member _ dec _ v vs = true -> ∃ (i : Fin.t (1 + n)), v = vs[@i].
+    Proof.
+      induction n as [|n ihn].
+      +
+        intros * ha.
+        destruct (vector_inv_S vs) as (vsh & vst & hb).
+        pose proof (vector_inv_0 vst) as hc.
+        subst. cbn in ha.
+        exists Fin.F1; cbn.
+        destruct (dec v vsh) as [hb | hb]; try congruence.
+      +
+        intros * ha.
+        destruct (vector_inv_S vs) as (vsh & vst & hb).
+        subst. cbn in ha.
+        destruct (dec v vsh) as [hb | hb].
+        ++ exists Fin.F1; cbn. exact hb.
+        ++ 
+          destruct (ihn v vst ha) as (j & hc).
+          exists (Fin.FS j); cbn.
+          exact hc.
+    Qed.
+
+
+    Theorem vector_member_false {A : Type} {dec : ∀ (x y : A), {x = y} + {x ≠ y}} : 
+      ∀ (n : nat) (v : A) (vs : Vector.t A (1 + n)),
+      @vector_member _ dec _ v vs = false -> ∀ (i : Fin.t (1 + n)), v ≠ vs[@i].
+    Proof.
+      induction n as [|n ihn].
+      +
+        intros * ha *.
+        destruct (vector_inv_S vs) as (vsh & vst & hb).
+        pose proof (vector_inv_0 vst) as hc.
+        destruct (fin_inv_S _ i) as [i' | (i' & hd)];
+        subst. cbn in ha |- *.
+        destruct (dec v vsh) as [hb | hb]; try congruence.
+        refine match i' with end.
+      +
+        intros * ha *.
+        destruct (vector_inv_S vs) as (vsh & vst & hb).
+        destruct (fin_inv_S _ i) as [i' | (i' & hc)];
+        subst; cbn in ha |- *.
+        destruct (dec v vsh) as [hb | hb]; try congruence.
+        destruct (dec v vsh) as [hb | hb]; try congruence.
+        eapply ihn; try assumption.
+    Qed.
+
+    
+    Theorem vector_unique_true {A : Type} {dec : ∀ (x y : A), {x = y} + {x ≠ y}} : 
+      ∀ (n : nat) (vs : Vector.t A (2 + n)), 
+      @vector_unique _ dec _ vs = true -> ∀ (i j : Fin.t (2 + n)), 
+        i ≠ j -> vs[@i] ≠ vs[@j].
+    Proof.
+      induction n as [|n ihn].
+      +
+        intros * ha * hb hc. 
+        destruct (vector_inv_S vs) as (vsh & vst & hd).
+        destruct (vector_inv_S vst) as (vsth & vstt & he).
+        pose proof (vector_inv_0 vstt) as hf.
+        subst. 
+        destruct (fin_inv_S _ i) as [i' | (i' & hd)];
+        destruct (fin_inv_S _ j) as [j' | (j' & he)];
+        subst; try congruence.
+        destruct (fin_inv_S _ j') as [j'' | (j'' & hd)];
+        subst; cbn in ha, hc.
+        rewrite <-hc in ha.
+        destruct (dec vsh vsh) as [hd | hd];
+        try congruence. cbn in ha.
+        congruence. refine match j'' with end.
+        destruct (fin_inv_S _ i') as [i'' | (i'' & hd)];
+        subst; cbn in ha, hc.
+        rewrite <-hc in ha.
+        destruct (dec vsth vsth) as [hd | hd];
+        try congruence. cbn in ha.
+        congruence. refine match i'' with end.
+        destruct (fin_inv_S _ i') as [i'' | (i'' & hd)];
+        destruct (fin_inv_S _ j') as [j'' | (j'' & he)];
+        subst; try congruence.
+        refine match j'' with end.
+        refine match i'' with end.
+        refine match i'' with end.
+      +
+        intros * ha * hb.
+        destruct (vector_inv_S vs) as (vsh & vst & hc).
+        subst. cbn in ha.
+        eapply andb_true_iff in ha.
+        destruct ha as (hal & har).
+        rewrite negb_true_iff in hal.
+        destruct (fin_inv_S _ i) as [i' | (i' & hd)];
+        destruct (fin_inv_S _ j) as [j' | (j' & he)]; 
+        subst; try congruence.
+        cbn. eapply vector_member_false. exact hal.  
+        cbn. eapply vector_member_false with (i := i') in hal. 
+        auto.
+        cbn. eapply ihn; try assumption.
+        intro hc. eapply hb.
+        subst. reflexivity.
+    Qed.
+
+
+    Theorem vector_unique_false {A : Type} {dec : ∀ (x y : A), {x = y} + {x ≠ y}} : 
+      ∀ (n : nat) (vs : Vector.t A (2 + n)), 
+      @vector_unique _ dec _ vs = false -> ∃ (i j : Fin.t (2 + n)), i ≠ j ∧ vs[@i] = vs[@j].
+    Proof.
+      induction n as [|n ihn].
+      +
+        intros * ha.
+        destruct (vector_inv_S vs) as (vsh & vst & hd).
+        destruct (vector_inv_S vst) as (vsth & vstt & he).
+        pose proof (vector_inv_0 vstt) as hf.
+        subst. cbn in ha.
+        eapply andb_false_iff in ha.
+        destruct ha as [ha | ha]; try congruence.
+        eapply negb_false_iff in ha.
+        destruct (dec vsh vsth) as [hb | hb]; try congruence.
+        exists Fin.F1, (Fin.FS Fin.F1).
+        cbn; split. intro hc. congruence.
+        assumption.
+      +
+        intros * ha.
+        destruct (vector_inv_S vs) as (vsh & vst & hb).
+        subst. cbn in ha.
+        eapply andb_false_iff in ha.
+        destruct ha as [ha | ha].
+        ++
+          rewrite negb_false_iff in ha.
+          eapply vector_member_true in ha.
+          destruct ha as (i & ha).
+          exists (Fin.F1), (Fin.FS i).
+          cbn. split. intro hb; try congruence.
+          exact ha.
+        ++
+          destruct (ihn vst ha) as (ii & jj & hb & hc).
+          exists (Fin.FS ii), (Fin.FS jj).
+          cbn. split. intro hd.
+          eapply hb. eapply fin_inv in hd.
+          exact hd.
+          exact hc. 
+    Qed.
+
+
+    Theorem vector_unique_decidable  {A : Type} {dec : ∀ (x y : A), {x = y} + {x ≠ y}} : 
+      ∀ (n : nat) (vs : Vector.t A (2 + n)),
+      {∀ (i j : Fin.t (2 + n)), i ≠ j -> vs[@i] ≠ vs[@j]} + 
+      {∃ (i j : Fin.t (2 + n)), i ≠ j ∧ vs[@i] = vs[@j]}.
+    Proof.
+      intros *.
+      destruct (@vector_unique _ dec _ vs) eqn:hb.
+      +
+        left.
+        intros * hc.
+        eapply vector_unique_true.
+        exact hb. exact hc.
+      +
+      
+      right.
+      eapply vector_unique_false.
+      exact hb.
+    Qed.
+
+
 End NeqUtil.
 
 
