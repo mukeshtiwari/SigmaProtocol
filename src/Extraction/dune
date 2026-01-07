@@ -181,3 +181,18 @@
    (name ChaumPedersenlib)
    (libraries zarith)
    (modules :standard)))
+
+(subdir NeqSigmalib
+ (coq.extraction
+  (prelude Extraction)
+  (extracted_modules NeqSigmaIns Okamoto
+   NeqSigma Datatypes Vector Nat Specif Sigma
+   VectorDef Zpstar BinInt PosDef Functions BinNat 
+   Util EqdepFacts AndSigmaGen PeanoNat
+   Zpow_facts)
+  (theories ExtLib Stdlib Utility Crypto Algebra 
+   Probability Examples Frontend Backend))
+ (library 
+   (name NeqSigmalib)
+   (libraries zarith)
+   (modules :standard)))
