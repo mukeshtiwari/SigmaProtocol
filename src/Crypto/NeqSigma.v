@@ -477,9 +477,11 @@ Section DL.
         ∀ (n : nat) a c₁ c₂ rs₁ rs₂ gs hs, [c₁] <> [c₂] ->
         generalised_neq_accepting_conversations gs hs (a; [c₁]; rs₁) = true ->
         generalised_neq_accepting_conversations gs hs (a; [c₂]; rs₂) = true ->
-        ∃ (xs : Vector.t F (2 + n)), (∀ (i : Fin.t (2 + n)), hs[@i] = gs[@i] ^ xs[@i]) ∧
+        ∃ (xs : Vector.t F (2 + n)), 
+        (∀ (i : Fin.t (2 + n)), hs[@i] = gs[@i] ^ xs[@i]) ∧
         ((∀ (i j : Fin.t (2 + n)), i ≠ j -> xs[@i] ≠ xs[@j]) ∨
-        (∃ (i j : Fin.t (2 + n))(α : F) , i ≠ j ∧ gs[@j] = gs[@i] ^ α)).
+        (∃ (i j : Fin.t (2 + n)), i ≠ j ∧ ((∃ (α : F), gs[@j] = gs[@i] ^ α) ∨
+        gs[@i] = gid ∨ gs[@j] = gid))).
       Proof.
         intros * hn ha hb.
         (* Unfold the accepting conversation definition *)
@@ -493,9 +495,9 @@ Section DL.
         eqn:hf; try congruence.
         destruct (generalised_and_accepting_conversations gs hs (al; [c₂]; rl₂))
         eqn:hg; try congruence.
-        destruct (@generalise_and_sigma_soundness F zero one add mul sub div 
+        destruct (@generalise_and_sigma_soundness_neq F zero one add mul sub div 
         opp inv Fdec G gid ginv gop gpow Gdec Hvec _ gs hs al [c₁] rl₁
-        [c₂] rl₂ hf hg hn) as (ys & hi).
+        [c₂] rl₂ hf hg hn) as (ys & hi & hir). cbn in hir.
         exists ys. split. exact (fun f => eq_sym (hi f)).
         rewrite vector_forallb_correct in ha, hb.
         clear hf hg.
@@ -505,7 +507,114 @@ Section DL.
           left. exact hj.
         ++
           right.
-          pose proof @generate_pairs_contains _ _ gs ii jj hj.
+          destruct (@generate_pairs_contains_triple _ _ _ gs hs ys 
+            ii jj hj) as (kk & hl).
+          specialize (ha kk).
+          specialize (hb kk).
+          rewrite !nth_zip_with in ha, hb.
+          destruct (generate_pairs_of_vector gs)[@kk] as (g₁, g₂).
+          destruct (generate_pairs_of_vector hs)[@kk] as (h₁, h₂).
+          destruct (generate_pairs_of_vector ys)[@kk] as (y₁, y₂).
+          cbn in hl.
+          assert (hw : c₁ ≠ c₂).
+          intro hw. eapply hn. 
+          subst. reflexivity.
+          destruct (@generalised_okamoto_real_special_soundenss F zero 
+          one add mul sub div opp inv G gid ginv gop gpow Gdec Hvec _ 
+          [gop g₁ g₂; gop h₁ h₂]  g₂ ar[@kk] c₁ c₂ 
+          (pair_zip (rew <- [λ n : nat, t F n] nat_div_2 n in rr₁))[@kk]
+          (pair_zip (rew <- [λ n : nat, t F n] nat_div_2 n in rr₂))[@kk]
+          hw ha hb) as (xs & hm & ho). clear hw.
+          destruct hl as [hl | hl].
+          -
+            destruct hl as (hl₁ & hl₂ & hl₃ & hl₄ & hl₅ & hl₆).
+            exists ii, jj. split. exact hj. 
+            remember (pair_zip (rew <- [λ n : nat, t F n] nat_div_2 n in rr₁))[@kk] 
+            as rrs₁; clear Heqrrs₁.
+            remember (pair_zip (rew <- [λ n : nat, t F n] nat_div_2 n in rr₂))[@kk] 
+            as rrs₂; clear Heqrrs₂.
+            setoid_rewrite <-hl₂. 
+            setoid_rewrite <-hl₁.
+            pose proof (hi ii) as hii.
+            pose proof (hi jj) as hjj.
+            setoid_rewrite <-hl₁ in hii.
+            setoid_rewrite <-hl₃ in hii.
+            setoid_rewrite <-hl₅ in hii.
+            setoid_rewrite <-hl₂ in hjj.
+            setoid_rewrite <-hl₄ in hjj.
+            setoid_rewrite <-hl₆ in hjj.
+            setoid_rewrite <-hl₅ in hk.
+            setoid_rewrite <-hl₆ in hk.
+            destruct (vector_inv_S xs) as (xsh & xst & hx).
+            destruct (vector_inv_S xst) as (xsth & xstt & hxx).
+            pose proof (vector_inv_0 xstt) as hxxx.
+            clear ho.
+            subst xs. subst xst.
+            subst xstt. cbn in hm.
+            rewrite <-hii, <-hjj, <-hk in hm.
+            rewrite !smul_distributive_vadd,
+            <-!smul_associative_fmul, 
+            gop_simp, right_identity,
+            associative in hm.
+            pose proof (@vector_space_smul_distributive_fadd F (@eq F) 
+            zero one add mul sub div 
+            opp inv G (@eq G) gid ginv gop gpow Hvec) as hp.
+            unfold  is_smul_distributive_fadd in hp.
+            rewrite <-hp, <-associative, 
+            <-hp in hm.
+            assert (ht : (y₁ * xsth + xsh) = xsh + y₁ * xsth).
+            field. rewrite ht in hm. clear ht.
+            remember ((xsh + y₁ * xsth)) as gamma.
+            (* case analysis on gamma *)
+            destruct (Fdec gamma zero) as [hf | hf].
+            *
+              (* gamma zero *)
+              rewrite hf, field_zero, left_identity,
+              field_zero in hm.
+              right. right. exact hm.
+            *
+              destruct (Fdec gamma one) as [hfo | hfo].
+              **
+                (* gamma = one *)
+                rewrite hfo, !field_one in hm.
+                eapply f_equal with (f := fun x => gop x (ginv g₂)) in hm.
+                rewrite right_inverse, <-associative, 
+                right_inverse, right_identity in hm.
+                right. left. now rewrite hm.
+              **
+                (* gamma <> 0 ∧ gamma <> one *)
+                eapply f_equal with (f := fun x => gop x (ginv (g₂ ^ gamma))) 
+                in hm.
+                rewrite !connection_between_vopp_and_fopp in hm.
+                assert (ht : gop g₂ (g₂ ^ opp gamma) = 
+                  gop (g₂ ^ one) (g₂ ^ opp gamma)).
+                f_equal. now rewrite field_one.
+                rewrite ht in hm. clear ht.
+                rewrite <-hp, <-associative in hm.
+                rewrite <-hp in hm.
+                assert (ht : (gamma + opp gamma) = zero).
+                field. rewrite ht in hm.
+                clear ht. rewrite field_zero, right_identity in hm.
+                eapply f_equal with (f := fun x => x ^ inv (one + opp gamma)) in hm.
+                rewrite <-!smul_associative_fmul in hm.
+                assert (ht : ((one + opp gamma) * inv (one + opp gamma)) = one).
+                field. intro hg. eapply hfo. 
+                eapply f_equal with (f := fun x => x + gamma) in hg.
+                rewrite <-associative in hg.
+                assert (hgg : opp gamma + gamma = zero). field.
+                rewrite hgg in hg. clear hgg.
+                rewrite right_identity, left_identity in hg.
+                now rewrite hg.
+                rewrite ht, field_one in hm.
+                left.
+                exists ((gamma * inv (one + opp gamma))).
+                exact hm.
+          -
+            
+           
+
+
+
           
       Admitted.
       

@@ -523,7 +523,9 @@ Section Okamoto.
           ([a]; [c₂]; rs₂) = true ->
         ∃ (xi : Vector.t F (2 + n)), h = 
         Vector.fold_right (fun '(g, x) acc => gop (g^x) acc) 
-        (zip_with pair gs xi) gid.
+        (zip_with pair gs xi) gid ∧
+        xi = (zip_with (λ x y : F, inv (c₁ + opp c₂) * (x + opp y)) 
+        rs₁ rs₂). (* needed for NEQ *)
       Proof.
         intros * ha hb hc. cbn in hb, hc; 
         rewrite dec_true in hb, hc.
@@ -564,7 +566,7 @@ Section Okamoto.
         rewrite hd in hb; clear hc hd.
         setoid_rewrite field_one in hb.
         exists (zip_with (λ x y : F, inv (c₁ + opp c₂) * (x + opp y)) 
-        rs₁ rs₂).
+        rs₁ rs₂); split; try reflexivity.
         rewrite <-hb.
         clear ha hb h a.
         revert n gs rs₁ rs₂.

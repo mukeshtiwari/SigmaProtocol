@@ -527,7 +527,7 @@ Section DL.
           c₁ <> c₂ ->
           (* we can extract a vector of witnesses such that 
             all the individual relations hold gi^xi = hi *)
-          (∃ ys : Vector.t F n, ∀ (f : Fin.t n), 
+          ∃ ys : Vector.t F n, (∀ (f : Fin.t n), 
             (nth gs f)^(nth ys f) = (nth hs f)).
         Proof using -(xs R).
           clear xs R. (* otherwise trival *)
@@ -618,6 +618,130 @@ Section DL.
               specialize (IHn hf).
               rewrite Hk, Hgg, Hl; cbn.
               exact IHn.
+        Qed.
+
+         (* special soundeness (proof of knowledge) *)
+        Lemma generalise_and_sigma_soundness_neq :
+          forall (a : Vector.t G n) (c₁ : Vector.t F 1) 
+          (r₁ : Vector.t F n) (c₂ : Vector.t F 1) (r₂ : Vector.t F n),
+          generalised_and_accepting_conversations gs hs (a; c₁; r₁) = true ->
+          generalised_and_accepting_conversations gs hs (a; c₂; r₂) = true ->
+          c₁ <> c₂ ->
+          (* we can extract a vector of witnesses such that 
+            all the individual relations hold gi^xi = hi *)
+          ∃ ys : Vector.t F n, (∀ (f : Fin.t n), 
+            (nth gs f)^(nth ys f) = (nth hs f)) ∧
+            ys = (zip_with (λ x y : F, inv (hd c₁ + opp (hd c₂)) * (x + opp y))
+            r₁ r₂).
+        Proof using -(xs R).
+          clear xs R. (* otherwise trival *)
+          induction n as [|n' IHn].
+          +
+            intros * Ha Hb Hc.
+            exists []; split.
+            ++
+              intros f; inversion f.
+            ++
+              pose proof (vector_inv_0 r₁) as hd.
+              pose proof (vector_inv_0 r₂) as he.
+              subst; reflexivity.
+          +
+            intros * Ha Hb Hc.
+            destruct (vector_inv_S a) as (ah & atl & Hd).
+            destruct (vector_inv_S c₁) as (ch₁ & ctl₁ & He).
+            destruct (vector_inv_S r₁) as (rh₁ & rtl₁ & Hf).
+            destruct (vector_inv_S c₂) as (ch₂ & ctl₂ & Hg).
+            destruct (vector_inv_S r₂) as (rh₂ & rtl₂ & Hi).
+            destruct (vector_inv_S gs) as (gsh & gstl & Hgg).
+            destruct (vector_inv_S hs) as (hsh & hstl & Hk).
+            specialize (IHn gstl hstl atl c₁ rtl₁ c₂ rtl₂).
+            rewrite Hd, Hf, He, Hk, Hgg in Ha; 
+            cbn in Ha.
+            rewrite Hd, Hg, Hi, Hk, Hgg in Hb; 
+            cbn in Hb.
+            eapply andb_true_iff in Ha, Hb.
+            destruct Ha as [Hal Har];
+            destruct Hb as [Hbl Hbr].
+            rewrite <-He in Har;
+            rewrite <-Hg in Hbr.
+            specialize (IHn Har Hbr Hc).
+            destruct IHn as (ys & IHn & Hy).
+            exists (((rh₁ - rh₂) * inv (ch₁ - ch₂)) :: ys).
+            split.
+            -  
+              intro f.
+              destruct (fin_inv_S _ f) as [hf | (hf & Hl)].
+              ++
+                subst; cbn.
+                rewrite dec_true in Hal, Hbl.
+                eapply f_equal with (f := ginv) in Hbl.
+                rewrite connection_between_vopp_and_fopp in Hbl.
+                rewrite group_inv_flip in Hbl.
+                rewrite commutative in Hbl.
+                pose proof (@rewrite_gop G gop _ _ _ _ Hal Hbl) as Hcom.
+                rewrite <-(@vector_space_smul_distributive_fadd 
+                  F (@eq F) zero one add mul sub div 
+                  opp inv G (@eq G) gid ginv gop gpow) in Hcom.
+                rewrite <-ring_sub_definition in Hcom.
+                assert (Hwt : gop ah (hsh ^ ch₁) = gop (hsh ^ ch₁) ah).
+                rewrite commutative; reflexivity.
+                rewrite Hwt in Hcom; clear Hwt.
+                setoid_rewrite <-(@monoid_is_associative G (@eq G) gop gid) 
+                in Hcom.
+                assert (Hwt : (gop ah (gop (ginv ah) (ginv (hsh ^ ch₂)))) = 
+                (ginv (hsh ^ ch₂))).
+                rewrite associative.
+                rewrite group_is_right_inverse,
+                monoid_is_left_idenity;
+                reflexivity.
+                rewrite Hwt in Hcom; clear Hwt.
+                rewrite connection_between_vopp_and_fopp in Hcom.
+                rewrite <-(@vector_space_smul_distributive_fadd 
+                  F (@eq F) zero one add mul sub div 
+                  opp inv G (@eq G) gid ginv gop gpow) in Hcom.
+                apply f_equal with (f := fun x => x^(inv (ch₁ + opp ch₂)))
+                in Hcom.
+                rewrite !smul_pow_up in Hcom.
+                assert (Hw : (ch₁ + opp ch₂) * inv (ch₁ + opp ch₂) = 
+                (inv (ch₁ + opp ch₂) * (ch₁ + opp ch₂))).
+                rewrite commutative; reflexivity.
+                rewrite Hw in Hcom; clear Hw.
+                rewrite field_is_left_multiplicative_inverse in Hcom.
+                pose proof vector_space_field_one as Hone.
+                unfold is_field_one in Hone.
+                specialize (Hone hsh).
+                rewrite Hone in Hcom.
+                rewrite <-ring_sub_definition in Hcom.
+                exact Hcom.
+                intros Hf.
+                assert (Ht : ch₁ <> ch₂).
+                intro Hg; eapply Hc;
+                subst. f_equal.
+                rewrite (vector_inv_0 ctl₁);
+                rewrite (vector_inv_0 ctl₂);
+                reflexivity.
+                pose proof ring_neq_sub_neq_zero ch₁ ch₂ Ht as Hw.
+                apply Hw.
+                rewrite ring_sub_definition.
+                exact Hf.
+                all:typeclasses eauto.
+              ++
+                specialize (IHn hf).
+                rewrite Hk, Hgg, Hl; cbn.
+                exact IHn.
+          -
+              subst. cbn. f_equal.
+              field.
+              pose proof (vector_inv_0 ctl₁) as hc.
+              pose proof (vector_inv_0 ctl₂) as hd.
+              subst. intro ha. 
+              eapply Hc. f_equal.
+              eapply f_equal with (f := fun x => x + ch₂) in ha.
+              assert (hw : opp ch₂ + ch₂ = zero). field.
+              rewrite <-associative in ha.
+              rewrite hw in ha. 
+              rewrite right_identity, left_identity in ha.
+              exact ha.
         Qed.
         (* what an awesome proof *)
 
