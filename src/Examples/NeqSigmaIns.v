@@ -76,9 +76,10 @@ Section Ins.
   Definition h₂ : @Schnorr_group p q.
   Proof.
     refine 
-    {| Schnorr.v := Zpow_facts.Zpow_mod (Schnorr.v g₂) (Zpfield.v x₁) p;
+    {| Schnorr.v := Zpow_facts.Zpow_mod (Schnorr.v g₂) (Zpfield.v x₂) p; (* replace this x₂ with x₁ 
+    or x₃ and it will fail. *)
     Ha := conj eq_refl eq_refl : 
-      (0 < Zpow_facts.Zpow_mod (Schnorr.v g₂) (Zpfield.v x₁) p < p)%Z;
+      (0 < Zpow_facts.Zpow_mod (Schnorr.v g₂) (Zpfield.v x₂) p < p)%Z;
     Hb := _ |}.
     vm_cast_no_check (eq_refl (Zpow_facts.Zpow_mod (Schnorr.v g₂) q p)).
   Defined.
@@ -124,7 +125,7 @@ Section Ins.
     @sigma_proto (@Zp q) (@Schnorr_group p q) 6 1 9.
   Proof.
     refine (@generalised_construct_neq_conversations_real_transcript 
-    (@Zp q) zp_add zp_mul zp_sub (@zp_opp q prime_q) 
+    (@Zp q) zp_add zp_mul zp_sub zp_inv  
     (@Schnorr_group p q) (@Schnorr.one p q prime_p prime_q)
     (@mul_schnorr_group p q prime_p prime_q)
     (@pow 2 p q safe_prime prime_p prime_q) _ 
