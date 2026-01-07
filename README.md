@@ -133,7 +133,7 @@ generate OCaml code from it [_CoqProject file](/_CoqProject). It takes a while (
    ......
    more lines 
    ```
-14. Run `dune exec _build/default/src/Executable/HeliosVerifiercode/main.exe < src/Executable/HeliosDatacode/IACR2024.txt` to verify the [IACR 2024](src/Executable/HeliosDatacode/IACR2024.txt) election. You will see an output like this:
+14. Run `dune exec _build/default/src/Executable/HeliosVerifiercode/main.exe < src/Executable/HeliosDatacode/IACR2024.txt` to verify the [IACR 2024](src/Executable/HeliosDatacode/IACR2024.txt) election. You will see an output like [this](src/Executable/HeliosDatacode/IACR2024Verified.txt):
    ```OCaml
    pt is the correct plaintext tally: true, all talliers' decryption factor and proofs are valid: true, talliers' pok is valid: true, public key h is equal to all public keys of talliers: true
    ```
