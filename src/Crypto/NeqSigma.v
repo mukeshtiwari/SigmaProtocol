@@ -610,13 +610,102 @@ Section DL.
                 exists ((gamma * inv (one + opp gamma))).
                 exact hm.
           -
-            
-           
-
-
-
-          
-      Admitted.
+            destruct hl as (hl₁ & hl₂ & hl₃ & hl₄ & hl₅ & hl₆).
+            exists ii, jj. split. exact hj. 
+            remember (pair_zip (rew <- [λ n : nat, t F n] nat_div_2 n in rr₁))[@kk] 
+            as rrs₁; clear Heqrrs₁.
+            remember (pair_zip (rew <- [λ n : nat, t F n] nat_div_2 n in rr₂))[@kk] 
+            as rrs₂; clear Heqrrs₂.
+            setoid_rewrite <-hl₂. 
+            setoid_rewrite <-hl₁.
+            pose proof (hi ii) as hii.
+            pose proof (hi jj) as hjj.
+            setoid_rewrite <-hl₂ in hii.
+            setoid_rewrite <-hl₄ in hii.
+            setoid_rewrite <-hl₆ in hii.
+            setoid_rewrite <-hl₁ in hjj.
+            setoid_rewrite <-hl₃ in hjj.
+            setoid_rewrite <-hl₅ in hjj.
+            setoid_rewrite <-hl₅ in hk.
+            setoid_rewrite <-hl₆ in hk.
+            destruct (vector_inv_S xs) as (xsh & xst & hx).
+            destruct (vector_inv_S xst) as (xsth & xstt & hxx).
+            pose proof (vector_inv_0 xstt) as hxxx.
+            clear ho.
+            subst xs. subst xst.
+            subst xstt. cbn in hm.
+            rewrite <-hii, <-hjj, <-hk in hm.
+            rewrite !smul_distributive_vadd,
+            <-!smul_associative_fmul, 
+            gop_simp, right_identity,
+            associative in hm.
+            pose proof (@vector_space_smul_distributive_fadd F (@eq F) 
+            zero one add mul sub div 
+            opp inv G (@eq G) gid ginv gop gpow Hvec) as hp.
+            unfold  is_smul_distributive_fadd in hp.
+            rewrite <-hp, <-associative, 
+            <-hp in hm.
+            assert (ht : (y₂ * xsth + xsh) = xsh + y₂ * xsth).
+            field. rewrite ht in hm. clear ht.
+            remember ((xsh + y₂ * xsth)) as gamma.
+            (* case analysis on gamma *)
+            destruct (Fdec gamma zero) as [hf | hf].
+            *
+              (* gamma zero *)
+              rewrite hf, field_zero, left_identity,
+              field_zero in hm.
+              right. left. exact hm.
+            *
+              destruct (Fdec gamma one) as [hfo | hfo].
+              **
+                (* gamma = one *)
+                rewrite hfo, !field_one in hm.
+                eapply f_equal with (f := fun x => gop x (ginv g₂)) in hm.
+                rewrite right_inverse, <-associative, 
+                right_inverse, right_identity in hm.
+                right. right. now rewrite hm.
+              **
+                (* gamma <> 0 ∧ gamma <> one *)
+                eapply f_equal with (f := fun x => gop x (ginv (g₂ ^ gamma))) 
+                in hm.
+                rewrite !connection_between_vopp_and_fopp in hm.
+                assert (ht : gop g₂ (g₂ ^ opp gamma) = 
+                  gop (g₂ ^ one) (g₂ ^ opp gamma)).
+                f_equal. now rewrite field_one.
+                rewrite ht in hm. clear ht.
+                rewrite <-hp, <-associative in hm.
+                rewrite <-hp in hm.
+                assert (ht : (gamma + opp gamma) = zero).
+                field. rewrite ht in hm.
+                clear ht. rewrite field_zero, right_identity in hm.
+                eapply f_equal with (f := fun x => x ^ inv (one + opp gamma)) in hm.
+                rewrite <-!smul_associative_fmul in hm.
+                assert (ht : ((one + opp gamma) * inv (one + opp gamma)) = one).
+                field. intro hg. eapply hfo. 
+                eapply f_equal with (f := fun x => x + gamma) in hg.
+                rewrite <-associative in hg.
+                assert (hgg : opp gamma + gamma = zero). field.
+                rewrite hgg in hg. clear hgg.
+                rewrite right_identity, left_identity in hg.
+                now rewrite hg.
+                rewrite ht, field_one in hm.
+                eapply f_equal with (f := fun x => 
+                  x ^ inv (gamma * inv (one + opp gamma))) in hm.
+                rewrite <-!smul_associative_fmul in hm.
+                assert (hgam : (gamma * inv (one + opp gamma) * inv (gamma * inv (one + opp gamma))) = one). field.
+                split; [| exact hf].
+                intro hg. eapply hfo.
+                eapply f_equal with (f := fun x => x + gamma) in hg.
+                assert (hgg : opp gamma + gamma = zero). field.
+                rewrite <-associative in hg.
+                rewrite hgg in hg. clear hgg.
+                rewrite right_identity, left_identity in hg.
+                now rewrite hg.
+                rewrite hgam, field_one in hm.
+                left.
+                exists (inv (gamma * inv (one + opp gamma))).
+                exact (eq_sym hm).
+      Qed.
       
 
 
