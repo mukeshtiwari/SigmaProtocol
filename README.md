@@ -137,3 +137,10 @@ generate OCaml code from it [_CoqProject file](/_CoqProject). It takes a while (
    ```OCaml
    pt is the correct plaintext tally: true, all talliers' decryption factor and proofs are valid: true, talliers' pok is valid: true, public key h is equal to all public keys of talliers: true
    ```
+15. Run `dune exec _build/default/src/Executable/NeqSigmacode/main.exe` to execute the [NeqSigma](src/Crypto/NeqSigma.v) code. You will see an output like this:
+   ```OCaml
+   (base) mukesh.tiwari@Mukeshs-MacBook-Pro-2 SigmaProtocol % dune exec _build/default/src/Executable/NeqSigmacode/main.exe
+   p = 5927, q = 2963, g1 = 4, g2 = 7, g3 = 13, h1 = 64, h2 = 4953, h3 = 3638
+   proof = { announcement = 4562, 339, 791, 3727, 1813, 39; challenge = 1497; response = 2927, 2953, 2467, 477, 994, 1362, 173, 702, 1367 }
+   true%
+   ```
