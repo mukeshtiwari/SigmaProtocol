@@ -1,3 +1,0 @@
-(executable
- (name main)
- (libraries  SigmaHelioslib cryptokit hacl-star))
