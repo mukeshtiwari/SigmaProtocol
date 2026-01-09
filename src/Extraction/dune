@@ -10,18 +10,6 @@
    (libraries zarith)
    (modules :standard)))
  
-
-(subdir SigmaHelioslib
- (coq.extraction
-  (prelude Extraction)
-  (extracted_modules SigmaInsHelios Sigma Datatypes Vector 
-   VectorDef Zpstar BinInt PosDef Functions BinNat)
-  (theories ExtLib Stdlib Utility Crypto Algebra 
-   Probability Examples Coqprime Bignums))
- (library 
-   (name SigmaHelioslib)
-   (libraries zarith)
-   (modules :standard)))
    
 (subdir HeliosTallylib
  (coq.extraction
