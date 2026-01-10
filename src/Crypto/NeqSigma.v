@@ -474,7 +474,9 @@ Section DL.
 
 
       Theorem generalised_neq_accepting_conversations_soundenss :
-        ∀ (n : nat) a c₁ c₂ rs₁ rs₂ gs hs, [c₁] <> [c₂] ->
+        ∀ (n : nat) (a : Vector.t G (2 + n + (2 + n) * (1 + n) / 2)) 
+        (c₁ c₂ : F) (rs₁ rs₂ : Vector.t F (2 + n + (2 + n) * (1 + n))) 
+        (gs hs : Vector.t G (2 + n)), [c₁] <> [c₂] ->
         generalised_neq_accepting_conversations gs hs (a; [c₁]; rs₁) = true ->
         generalised_neq_accepting_conversations gs hs (a; [c₂]; rs₂) = true ->
         ∃ (xs : Vector.t F (2 + n)), 
