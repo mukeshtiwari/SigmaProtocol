@@ -33,6 +33,8 @@ _build/default/src/Crypto/DistElgamal.v
 _build/default/src/Crypto/EncProof.v
 _build/default/src/Crypto/DecProof.v
 _build/default/src/Crypto/Okamoto.v
+_build/default/src/Crypto/NeqSigma.v
+_build/default/src/Crypto/PedLinearRel.v
 _build/default/src/Frontend/Approval.v
 _build/default/src/Backend/Tally.v
 _build/default/src/Backend/HeliosTally.v

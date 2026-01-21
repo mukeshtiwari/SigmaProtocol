@@ -904,7 +904,7 @@ Section DL.
 
 
       (* Two distributions are identical (information theoretic security)*)
-      Lemma generalised_okamoto_special_honest_verifier_zkp {n : nat} : 
+      Lemma generalised_neq_special_honest_verifier_zkp {n : nat} : 
         forall (lf : list F) (Hlfn : lf <> List.nil) 
         (xs : Vector.t F (2 + n)) (gs hs : Vector.t G (2 + n)) (c : F),
         (∀ (i : Fin.t (2 + n)), gs[@i] ^ xs[@i] = hs[@i]) ->
