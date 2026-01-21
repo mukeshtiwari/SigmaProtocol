@@ -53,6 +53,7 @@ _build/default/src/Examples/TallyIns.v
 _build/default/src/Examples/HeliosTallyIns.v
 _build/default/src/Examples/ChaumPedersenIns.v
 _build/default/src/Examples/NeqSigmaIns.v
+_build/default/src/Examples/PedLinearRelIns.v
 _build/default/src/Extraction/Sigmalib/Extraction.v
 _build/default/src/Extraction/ParaSigmalib/Extraction.v
 _build/default/src/Extraction/HeliosTallylib/Extraction.v
@@ -66,3 +67,4 @@ _build/default/src/Extraction/Approvallib/Extraction.v
 _build/default/src/Extraction/Tallylib/Extraction.v
 _build/default/src/Extraction/ChaumPedersenlib/Extraction.v
 _build/default/src/Extraction/NeqSigmalib/Extraction.v
+_build/default/src/Extraction/PedLinearRellib/Extraction.v
