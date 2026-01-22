@@ -149,6 +149,18 @@ Section Ins.
     vs rs usws c).
   Defined.
 
+  Definition verify_pedersen_linear_relation_generalised_proof_ins 
+    (cs : Vector.t (@Schnorr_group p q) 3) 
+    (pf : @sigma_proto (@Zp q) (@Schnorr_group p q) 4 1 6) : bool.
+  Proof.
+    refine(@verify_pedersen_linear_relation_generalised_proof (@Zp q) 
+    (@zero q prime_q) zp_add zp_mul (@Schnorr_group p q)
+    (@mul_schnorr_group p q prime_p prime_q)
+    (@pow 2 p q safe_prime prime_p prime_q)
+    Schnorr.dec_zpstar _ g h z αs cs pf).
+  Defined. 
+    
+
 End Ins.
   
 
