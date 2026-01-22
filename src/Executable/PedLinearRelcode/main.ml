@@ -66,6 +66,7 @@ let vector_of_list (xs : 'a list) : 'a PedLinearRellib.VectorDef.t  =
 
 
 let _ = 
+  (* 1 * 5 + (-1) * 2 + (-1) * 2 = 0 *)
   let vs = vector_of_list [Big_int_Z.big_int_of_int 5; Big_int_Z.big_int_of_int 2; Big_int_Z.big_int_of_int 3] in
   let rs = rnd_list PedLinearRellib.PedLinearRelIns.q 3 in
   let cs = PedLinearRellib.PedLinearRelIns.pedersen_commitment_vector_ins vs rs in
@@ -73,6 +74,7 @@ let _ =
   let proof = PedLinearRellib.PedLinearRelIns.nizk_construct_pedersen_linear_relation_generalised_real_proof_ins 
     (random_oracle "") vs rs usws in 
   let verify = PedLinearRellib.PedLinearRelIns.verify_pedersen_linear_relation_generalised_proof_ins cs proof in
+  print_endline ("commitment = " ^ vector_string cs);
   print_endline (proof_string proof);
   if verify then
     print_endline "Proof verified successfully."

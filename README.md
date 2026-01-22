@@ -121,3 +121,10 @@ generate OCaml code from it [_CoqProject file](/_CoqProject). It takes a while (
    proof = { announcement = 4562, 339, 791, 3727, 1813, 39; challenge = 1497; response = 2927, 2953, 2467, 477, 994, 1362, 173, 702, 1367 }
    true%
    ```
+15. Run  `dune exec _build/default/src/Executable/PedLinearRelcode/main.exe` to execute the [Pedersen-Linear-Relation](src/Crypto/PedLinearRel.v) code. You will see an output like this:
+    ```OCaml
+   (base) mukesh.tiwari@Mukeshs-MacBook-Pro-2 SigmaProtocol % dune exec _build/default/src/Executable/PedLinearRelcode/main.exe
+   commitment = 758, 2776, 5077
+   proof = { announcement = 3298, 108, 1153, 1286; challenge = 1770; response = 221, 2850, 2090, 2194, 2864, 1479 }
+   Proof verified successfully.
+   ```
