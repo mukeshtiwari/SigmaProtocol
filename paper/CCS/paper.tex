@@ -396,20 +396,13 @@ verifier is assumed to be honest and characterised by completeness, (special) so
   i.e., $V$ accepts. 
 
 \item \textbf{Special soundness:}
-there exists a polynomial-time extractor $E$ which given 
+there exists a probabilistic polynomial-time extractor $E$ which given 
 two accepting transcripts $(a, c, r)$ and $(a, c', r')$ for $x$, 
 it can extract a witness $w$ such that $(x, w) \in R$. In other words, 
 if $P$ does not know $w$ for $x$ then it cannot construct a proof 
 $(a, c, r)$ that will passes the verification check. 
-\item \textbf{Special honest-verifier zero-knowledge proof:}
-There exists a polynomial-time simulator $S$ that, for any 
-$v \in L_R$ where $L_R = \{x  \mid (x, w) \in R\}$,
-generates an accepting transcript $(a, c, r)$ 
-without using the witness $w$. 
-This transcript is indistinguishable from one produced by an 
-honest conversation between $P$ and $V$ using $w$, 
-satisfying $(v,w) \in R$.
-
+\item \textbf{Special honest-verifier zero-knowledge.}
+There exists a probabilistic polynomial-time simulator $S$ such that, for any $v \in L_R$ and any challenge $c \in C$, $S$ outputs a transcript $(a; c; r)$ that is distributed exactly as in a real conversation between an honest prover $P$ (using any witness $w$ with $(v,w) \in R$) and an honest verifier $V$ on common input $v$ and challenge $c$. Moreover, for any $v \notin L_R$, the simulator $S$ is just required to produce an arbitrary accepting conversations $(a; c; r)$ for the given challenge $c \in C$.
 \end{itemize}
 
 
@@ -588,10 +581,9 @@ to state that we are following this path of MetaCoq and extraction}.
 
 
 
-\subsection{Schnorr Protocol Coq Encoding}
+\section{Schnorr Protocol Rocq Encoding}
   We briefly explain the Schnorr protocol, an interactive protocol 
-  between a prover and a verifier, which follows the same structure as 
-  depicted in Figure \ref{fig:sig_picture}. 
+  between a prover and a verifier. 
   Given some public input $G = (g, q, h)$ where $G$
   is a cyclic group of prime order $q$, $g$ and $h$ are two 
   generators of the group $G$, the prover claims that they know a
@@ -640,31 +632,26 @@ zero-knowledge proof.
   \end{align*}
 
   \item \textbf{special honest-verifier zero-knowledge proof:}
-   the distribution for the conversations with an honest verifier --involving witness $w$--
-   and the conversation with a simulator --without witness $w$-- are the same, given a 
-   challenge $c$. We can 
-   see this algebraically that both distributions \ref{f} and \ref{snd} have the identical 
-   distribution, i.e., $1/q$. 
+   for a \emph{fixed} verifier challenge $c$, the distribution of transcripts from an honest
+   conversation --involving witness $w$-- and the distribution of transcripts output by a
+   simulator --without witness $w$-- are identical. We can see this algebraically: both
+   distributions \ref{f} and \ref{snd} are uniform over $Z_q$, i.e., each transcript occurs
+   with probability $1/q$.
    \begin{align}\label{f}
     \{(a, c, r) \mid u \in_{R} Z_q ; a := g^u; r := u + c * w \}
    \end{align}
    \begin{align}\label{snd}
-    \{(a, c, r) \mid u \in_{R} Z_q ; a := g^r * h^{-c}\}
+    \{(a, c, r) \mid r \in_{R} Z_q ; a := g^r * h^{-c}\}
    \end{align}
    
 \end{itemize}
 
 
-In the Schnorr protocol, the elements $g$, $h$, and $a$ are group elements from the underlying group, while $u$, $c$, and $r$
-are scalar values from the underlying prime field. In practice, both the group elements and the field elements are large 
+In the Schnorr protocol, the elements $g$, $h$, and $a$ are group elements from the underlying group, while $u$, $c$, and $r$ are scalar values from the underlying prime field. In practice, both the group elements and the field elements are large 
 numbers modulo some prime numbers, although the operations on them differ. 
-One possibility is to encode the Coq functions to work with concrete numbers from the underlying group and field, 
-but this leads to cumbersome proofs because we need to deal with the details of concrete numbers during the security proofs. 
-More importantly, it is not modular because it binds the formalisation to multiplicative groups; therefore, 
-it can no longer be used over elliptic curve groups. For most programming languages, this distinction 
-may not be significant, but it can be a potential source of bugs \cite{10.1007/978-3-662-63958-0_24} undermining 
-the security of underlying cryptographic primitives. 
-However, when encoding it in Coq, we need to thoroughly detail these distinctions because 
+One possibility is to encode the Rocq functions to work with concrete numbers from the underlying group and field, but this leads to cumbersome proofs because we need to deal with the details of concrete numbers during the security proofs. More importantly, it is not modular because it binds the formalisation to multiplicative groups; therefore, it can no longer be used over elliptic curve groups. For most programming languages, this distinction 
+may not be significant, but it can be a potential source of bugs \cite{10.1007/978-3-662-63958-0_24} undermining the security of underlying cryptographic primitives. 
+However, when encoding it in Rocq, we need to thoroughly detail these distinctions because 
 the same large number can belong to a group or field and that dictates what operations are available for them. 
 Therefore, to avoid this unpleasant situation,  
 we abstract the underlying group as an abstract type $G$, endowed with 
@@ -680,7 +667,7 @@ efficient algorithm for the Schnorr (mulitplicative) group but our formalisation
 later be also instantiated with elliptic curve group. However, 
 one of the major benefit of this abstraction is easiness of proofs 
 which can be easily automated. Therefore, we model the Schnorr 
-protocol, the simulator, and the verification equation in Coq as follows: 
+protocol, the simulator, and the verification equation in Rocq as follows: 
  
 \begin{lstlisting}[frame=single, language=Coq, caption={Schnorr protocol},
   label={ind_nat},captionpos=t, basicstyle=\ttfamily\footnotesize,
@@ -713,7 +700,7 @@ Definition accepting_conversation (g h : G)
  $+ : F \rightarrow F \rightarrow F$ is the field addition,
  $* : F \rightarrow F \rightarrow F$ is the field multiplication, 
  $gop : G \rightarrow G \rightarrow G$ is the group operation, and
- $\mbox{\textasciicircum}: G \rightarrow F \rightarrow G$ is the scalar multiplication of vector space.  
+ $\mbox{\textasciicircum}: G \rightarrow F \rightarrow G$ is the scalar multiplication of the underlying vector space.  
  Recall that a vector space consists of a set of 
  vectors, denoted by \(V\), a field \(F\) (elements of F are called scalars), and 
  two operations: vector addition and scalar multiplication.
@@ -738,9 +725,8 @@ when instantiated concretely, exponentiation function but it is purely for notat
 We prove the completeness and special soundness property of the Schnorr protocol, 
 as shown in Listing \ref{comp_sound}. However, to prove the special honest-verifier 
 zero-knowledge property we need a model to reason about uniform probability 
-distribution in Coq. We discuss the encoding of uniform probability distribution 
-in the next section and subsequently explain the special honest-verifier zero-knowledge
-proof. 
+distribution in Rocq. The next section introduces this uniform  probability 
+distribution model and its role in the special honest-verifier zero-knowledge proof. 
 
 \begin{lstlisting}[frame=single, language=Coq, caption={Completeness and Soundness},
   label={comp_sound},captionpos=t, basicstyle=\ttfamily\footnotesize,
@@ -779,10 +765,10 @@ of each other. This encoding is flexible and allows us
 to encode any kind of distribution. We prove that the dist is a 
 monad \cite{erwig2006functional} by 
 giving it a suitable definitions of \textit{ret} and 
-\textit{bind}. Making it an instance of monad makes our life easier because 
-we can compose a distribution $d$ $n$ times to 
-returns a distribution on a vector of $n$ elements, 
-which is needed in proving the special honest-verifier 
+\textit{bind}. Making it an instance of monad allows us 
+to compose a distribution $d$ $n$ times to 
+obtain a distribution on a vector of $n$ elements, 
+needed in proving the special honest-verifier 
 zero-knowledge proof of $n$ composed $\Sigma$-protocol.
 However, we need uniform 
 distribution, rather than an arbitrary distribution, to reason about 
@@ -821,41 +807,13 @@ Defined.
 \end{lstlisting}
 
   
-Now we have all the ingredients to prove special honest-verifier 
-zero-knowledge proof of the Schnorr protocol. We define the 
+We now have all ingredients for the special honest-verifier zero-knowledge proof of the Schnorr protocol. We define the 
 Schnorr distribution $schnorr\_distribution$
 that involves the secret $x$ and 
 the simulator distribution $simulator\_distribution$
 that does not involve the secret $x$, shown in Listing \ref{def_zero}. 
-In the Schnorr distibution we draw 
-a random field element $u$ from the uniform 
-distribution $uniform\_with\_replacement \text{ }lf \text{ } Hlfn$,
-where $lf$ is list of elements from which $u$
-is drawn and $Hlf$ is a proposition that 
-$lf$ is non-empty, and use it to construct 
-a distribution on sigma protocol. Similarly, 
-for the simulator distribution 
-we draw a random field element $u$ from 
-$uniform\_with\_replacement \text{ }lf \text{ } Hlfn$
-and use it construct a distribution on sigma protocol. 
-Using these two definitions, we prove that these two 
-distributions are identical $special\_honest\_verifier\_zkp$. However, 
-contrary to the reasoning in cryptographic papers, 
-these two distributions are two different transcripts but 
-an accepting one\textcolor{red}{Fix: make it nicer}. For both distributions, 
-the first component is a transcript $(a, c, r)$ and 
-the second component is a rational number, which represents probability of 
-the transcript $(a, c, r)$. The triples in both distrubtions 
-are an accepting transcript (semantic) but they 
-are not identical and differ syntactically; 
-therefore we first apply the 
-$accepting\_conversation$ to the first pair of 
-both distributions which turn them into 
-a boolean value (true). After this  
-application both distributions are identical 
-that we prove. 
-
-
+Both distributions sample a random field element $u$ from $uniform\_with\_replacement \text{ }lf \text{ } Hlfn$, where $lf$ lists the elements from which $u$ is drawn and $Hlfn$ asserts that $lf$ is non-empty, to construct their respective distributions on the sigma protocol. 
+Using these definitions, we prove $special\_honest\_verifier\_zkp$: the two distributions coincide. Unlike the usual informal presentation, the distributions are over transcript--probability pairs $(a, c, r)$; they are accepting but not syntactically identical. We therefore apply $\mathit{accepting\_conversation}$ to the transcript component of each pair, which yields a boolean (true) in both cases. After this mapping, the distributions are identical, as required.
 
 
 \begin{lstlisting}[frame=single, language=Coq, caption={Special Honest-Verifier Zero-Knowledge Proof},
@@ -888,28 +846,11 @@ Lemma special_honest_verifier_zkp :
 Proof. (* proof terms omitted *) Qed. 
 \end{lstlisting}
 
-In the previous section, we explained the Schnorr proof, 
-but we have also formalised a way to combine $n$ And, Or, Eq, 
-and Parallel Schnorr statements and proving their special 
-honest-verifier zero-knowledge proof is more challenging 
-than a single Schnorr statement. One of the major challenge 
-is to draw $n$ random element for an uniform distribution 
-and therefore we have written the function $repeat\_dist\_ntimes\_vector$ --shown in Listing \ref{dist_comp}--
-that takes a distribution $d$ and a number $n$ and a returns 
-distribution of vectors of length $n$,  encoded as 
-$dist \text{ } (Vector.t \text{ } A \text{ } n)$. The 
-reader may notice that it is a generic function 
-where distribution can be instantiated with 
-any kind of distribution. However, in cryptography 
-we are mostly concerned with uniform distribution and  
-therefore in $uniform\_probability\_multidraw\_prob$ theorem
-we instantiate the distribution with 
-the uniform distribution $(uniform\_with\_replacement\text{ }lf\text{ }Hlf)$ and 
-prove that the probability of this distribution 
-is $1/|lf|^n$. We use it in Parallel composition where we combine $n$ statments and  
-we need to draw a vector of $n$ random field elements to 
-prove the zero-knowledge property, as shown in $parallel\_schnorr\_distribution$.
-  
+\textcolor{red}{Berry: does the text below make sense?}
+
+We have also formalised methods for combining $n$ \textit{And}, \textit{Or}, \textit{Eq}, \textit{Parallel}, and \textit{Neq} Schnorr statements, where proving the special honest-verifier zero-knowledge property is more challenging than for a single Schnorr statement. One major challenge is drawing $n$ random elements from a uniform distribution. To address this, we define the function $\mathtt{repeat\_dist\_ntimes\_vector}$---shown in Listing~\ref{dist_comp}---which takes a distribution $d$ and a number $n$ and returns a distribution over vectors of length $n$, encoded as $\mathsf{dist}\,(\mathsf{Vector.t}\,A\,n)$. Note that this is a generic function that can be instantiated with any distribution. In cryptography, however, we are primarily concerned with the uniform distribution; in the theorem $\mathtt{uniform\_probability\_multidraw\_prob}$, we instantiate the distribution with the uniform distribution $(\mathtt{uniform\_with\_replacement}\;lf\;Hlf)$ and prove that its probability is $1/|lf|^n$. We use this in the Parallel composition, where we combine $n$ statements and require a vector of $n$ random field elements to prove the zero-knowledge property, as demonstrated in $\mathtt{parallel\_schnorr\_distribution}$.
+
+
 \begin{lstlisting}[frame=single, language=Coq, caption={Composition of a Distribution},
 label={dist_comp},captionpos=t, basicstyle=\ttfamily\footnotesize,
 abovecaptionskip=-\medskipamount]
@@ -929,6 +870,7 @@ Lemma uniform_probability_multidraw_prob
 In (a, b) (repeat_dist_ntimes_vector 
   (uniform_with_replacement lf Hlf) n) ->
 b = mk_prob 1 (Nat.pow (List.length lf) n).
+Proof. (* terms omitted *) Qed.
 
 Definition parallel_schnorr_distribution  
   {n : nat} (lf : list F) (Hlfn : lf <> List.nil) 
@@ -941,10 +883,10 @@ Definition parallel_schnorr_distribution
 \end{lstlisting}
 
 
-\subsection{OR Composition of n Schnorr Protocol}
+\subsection{OR Composition}
 The Or-$\Sigma$ protocol allows a prover to demonstrate knowledge of one witness among $n$ possible discrete logarithm statements 
 without revealing which specific statement they know. Formally, given public group elements $(g_1, h_1), (g_2, h_2), \ldots, (g_n, h_n)$, 
-the prover convinces the verifier that they know at least one witness $x_k$ such that $h_k = g_k^{x_k}$ for some $k \in \{1, \ldots, n\}$, 
+the prover convinces the verifier that they know a witness $x_k$ such that $h_k = g_k^{x_k}$ for some $k \in \{1, \ldots, n\}$, 
 without revealing the index $k$ or the witness $x_k$. This construction is essential for privacy-preserving applications 
 where a prover needs to demonstrate membership in a set while preserving anonymity.
 
@@ -958,64 +900,38 @@ random challenges $c_i$ and responses $s_i$ in advance, then computing the corre
 $t_i = g_i^{s_i} \cdot h_i^{-c_i}$. The prover sets $c_k = c - \sum_{i \neq k} c_i$ to satisfy the constraint, 
 ensuring that the verifier's check passes while maintaining zero-knowledge.
 
-Our formalization implements this protocol generically for $n \geq 2$ statements. The prover, knowing the witness 
-for the $k$-th relation (where $k$ is specified as a finite index \texttt{rindex : Fin.t (2+n)}), 
-proceeds as follows:
-\begin{enumerate}
-\item \textbf{Commitment phase}: The prover chooses random values: (i) $u_k$ for the real commitment, 
-and (ii) $u_i, c_i$ for each simulated statement $i \neq k$. The prover computes:
-\begin{itemize}
-\item Real commitment (for statement $k$): $t_k = g_k^{u_k}$
-\item Simulated commitments (for $i \neq k$): $t_i = g_i^{u_i} \cdot h_i^{-c_i}$
-\end{itemize}
-The vector of commitments $(t_1, \ldots, t_n)$ is sent to the verifier.
+Our formalisation implements this protocol generically for $n \geq 2$ statements. The prover, knowing the witness for the $k$-th relation (where $k$ is specified as a finite index of sort $\mathtt{Fin.t \text{ }(2+n)}$), first enters the commitment phase by choosing random values: $u_k$ for the real commitment, and for each simulated statement $i \neq k$, random values $u_i$ and $c_i$. The prover then computes the real commitment $t_k = g_k^{u_k}$ for statement $k$ and simulated commitments $t_i = g_i^{u_i} \cdot h_i^{-c_i}$ for $i \neq k$, sending the vector of commitments $(t_1, \ldots, t_n)$ to the verifier. In the challenge phase, the verifier responds with a random challenge $c$. Finally, during the response phase, the prover computes $c_k = c - \sum_{i \neq k} c_i$ to satisfy the linear constraint, along with $s_k = u_k + c_k \cdot x_k$ as the honest response for the real statement, while for $i \neq k$, the responses $s_i$ are set to the previously chosen $u_i$. The prover then sends both response vectors $(s_1, \ldots, s_n)$ and $(c_1, \ldots, c_n)$. The verifier accepts if: (i) $c = \sum_{i=1}^{n} c_i$, and (ii) for each $i$, $g_i^{s_i} = t_i \cdot h_i^{c_i}$.
 
-\item \textbf{Challenge}: The verifier sends a random challenge $c$.
+Our Rocq formalisation of the Or-$\Sigma$ protocol, implemented in \texttt{OrSigmaGen.v}, supports $n \geq 2$ statements with arbitrary generators for each statement, enabling proofs of knowledge for relations $g_i^{x_i} = h_i$. The formalisation proves three security properties: completeness (honest execution always verifies), special soundness (shown in \texttt{generalised\_or\_sigma\_soundness\_main}, which recovers a witness from two accepting transcripts with the same commitments but different challenges), and special honest-verifier zero-knowledge (the distribution of real transcripts involving the witness is identical to the simulator distribution without the witness).
 
-\item \textbf{Response}: The prover computes:
-\begin{itemize}
-\item $c_k = c - \sum_{i \neq k} c_i$ (to satisfy the linear constraint)
-\item $s_k = u_k + c_k \cdot x_k$ (honest response for the real statement)
-\item For $i \neq k$, responses $s_i$ were already chosen during commitment
-\end{itemize}
-The prover sends $(s_1, \ldots, s_n)$ and $(c_1, \ldots, c_n)$.
-\end{enumerate}
-
-The verifier accepts if: (i) $c = \sum_{i=1}^{n} c_i$, and (ii) for each $i$, $g_i^{s_i} = t_i \cdot h_i^{c_i}$.
-
-In our Rocq formalization, we implement two versions: \texttt{OrSigma.v} restricts all statements to share 
-a common generator $g$ (i.e., relations of the form $g^{x_i} = h_i$), 
-while \texttt{OrSigmaGen.v} generalizes to allow different generators for each statement 
-(relations $g_i^{x_i} = h_i$). Both versions prove completeness, special soundness (with an extractor 
-that recovers a witness given $n$ accepting transcripts with the same commitments but different challenge 
-distributions), and special honest-verifier zero-knowledge by showing that the distribution 
-of real transcripts (involving the witness) is identical to the simulator distribution (without the witness).
-
+\begin{lstlisting}[frame=single, language=Coq, caption={Special Soundness},
+label={dist_comp},captionpos=t, basicstyle=\ttfamily\footnotesize,
+abovecaptionskip=-\medskipamount]
+Lemma generalised_or_sigma_soundness_main
+  {n : nat} (gs hs : Vector.t G (2 + n)): forall (a : Vector.t G (2 + n)) 
+  (c1 c2 : F) (cs1 cs2 r1 r2 : Vector.t F (2 + n)),
+  generalised_or_accepting_conversations 
+    gs hs (a; c1 :: cs1; r1) = true ->
+  generalised_or_accepting_conversations 
+    gs hs (a; c2 :: cs2; r2) = true ->
+  c1 <> c2 -> 
+  (* There is an index where relation R is true and can 
+    extract a witness out of it *)
+  exists (f : Fin.t (2 + n)) (y : F),
+  (nth gs f)^y = (nth hs f).
+Proof. (* proof terms omitted *) Qed.
+\end{lstlisting}
 
 \subsection{Okamoto Protocol}
 
-The Okamoto protocol~\cite{okamoto1992provably} generalizes the Schnorr protocol to support multiple generators, 
-enabling proofs of knowledge for linear relations over discrete logarithms. While the Schnorr protocol proves 
+The Okamoto protocol~\cite{okamoto1992provably} generalises the Schnorr protocol to support multiple generators, thereby enabling proofs of knowledge for linear relations over discrete logarithms. While the Schnorr protocol proves 
 knowledge of a single discrete logarithm $x$ such that $h = g^x$, the Okamoto protocol proves knowledge of 
 multiple exponents $x_1, x_2, \ldots, x_n$ satisfying a relation $h = g_1^{x_1} \cdot g_2^{x_2} \cdots g_n^{x_n}$, 
 where $g_1, g_2, \ldots, g_n$ are public generators and $h$ is a public group element. This construction is 
 fundamental for building more complex protocols, particularly serving as a crucial sub-protocol in our 
 inequality (Neq) composition where we need to prove distinctness of discrete logarithms.
 
-The protocol follows the standard three-move $\Sigma$-protocol structure. Given public generators 
-$\mathbf{g} = (g_1, g_2, \ldots, g_n)$, public value $h$, and secret witnesses 
-$\mathbf{x} = (x_1, x_2, \ldots, x_n)$ satisfying $h = \prod_{i=1}^{n} g_i^{x_i}$, the prover and verifier 
-interact as follows:
-
-\begin{enumerate}
-\item \textbf{Commitment}: The prover chooses random values $\mathbf{u} = (u_1, u_2, \ldots, u_n)$ from the 
-underlying field and computes the commitment $t = \prod_{i=1}^{n} g_i^{u_i}$, which is sent to the verifier.
-
-\item \textbf{Challenge}: The verifier sends a random challenge $c$ from the field.
-
-\item \textbf{Response}: The prover computes responses $r_i = u_i + c \cdot x_i$ for each $i \in \{1, \ldots, n\}$ 
-and sends $\mathbf{r} = (r_1, r_2, \ldots, r_n)$ to the verifier.
-\end{enumerate}
+The Okamoto protocol follows the standard three-move $\Sigma$-protocol structure. Given public generators $\mathbf{g} = (g_1, g_2, \ldots, g_n)$, a public value $h$, and secret witnesses $\mathbf{x} = (x_1, x_2, \ldots, x_n)$ satisfying $h = \prod_{i=1}^{n} g_i^{x_i}$, the prover begins by selecting random values $\mathbf{u} = (u_1, u_2, \ldots, u_n)$ from the underlying field and computing the commitment $t = \prod_{i=1}^{n} g_i^{u_i}$, which is sent to the verifier. Next, the verifier responds with a random challenge $c$ from the field. Finally, the prover computes responses $r_i = u_i + c \cdot x_i$ for each $i \in {1, \ldots, n}$ and sends the vector $\mathbf{r} = (r_1, r_2, \ldots, r_n)$ to the verifier for verification.
 
 The verifier accepts the transcript $(t, c, \mathbf{r})$ if and only if 
 $\prod_{i=1}^{n} g_i^{r_i} = t \cdot h^c$. Verification correctness follows from the fact that:
@@ -1024,24 +940,23 @@ $\prod_{i=1}^{n} g_i^{r_i} = t \cdot h^c$. Verification correctness follows from
 \left(\prod_{i=1}^{n} g_i^{u_i}\right) \cdot \left(\prod_{i=1}^{n} g_i^{x_i}\right)^c = t \cdot h^c
 \]
 
-Our Rocq formalization implements the generalized Okamoto protocol for $n \geq 2$ generators in 
-[Okamoto.v](src/Crypto/Okamoto.v). The key functions include: 
+Our Rocq formalisation implements the generalised Okamoto protocol for $n \geq 2$ generators in 
+Okamoto.v. The key functions include: 
 \texttt{generalised\_okamoto\_commitment} (computes $\prod_{i=1}^{n} g_i^{u_i}$ by folding 
 scalar multiplication over the generator-randomness pairs), 
 \texttt{generalised\_okamoto\_response} (computes the vector of responses $r_i = u_i + c \cdot x_i$ 
 using component-wise operations), and 
 \texttt{generalised\_okamoto\_accepting\_conversation} (verifies the product equality condition). 
-We also provide specialized instances: \texttt{okamoto\_commitment} and \texttt{okamoto\_response} 
-for the base case of exactly two generators ($n=2$), which is heavily used in the Neq composition.
+We also provide specialised instances for the base case of exactly two generators ($n=2$), which is heavily used in the Neq composition.
 
-The formalization proves all three security properties:
+The formalisation proves all three security properties:
 \begin{itemize}
-\item \textbf{Completeness} (\texttt{generalised\_okamoto\_real\_accepting\_conversation}): 
+\item \textbf{Completeness}: 
 When both prover and verifier follow the protocol honestly with $h = \prod_{i=1}^{n} g_i^{x_i}$, 
 the verification check always succeeds. The proof proceeds by induction on $n$, leveraging the 
 vector space properties of scalar multiplication distributivity over field addition.
 
-\item \textbf{Special soundness} (\texttt{generalised\_okamoto\_real\_special\_soundenss}): 
+\item \textbf{Special soundness}: 
 Given two accepting transcripts $(t, c_1, \mathbf{r}_1)$ and $(t, c_2, \mathbf{r}_2)$ with 
 the same commitment $t$ but different challenges $c_1 \neq c_2$, an extractor can compute 
 witnesses $\mathbf{x} = (x_1, \ldots, x_n)$ where 
@@ -1049,8 +964,7 @@ $x_i = (r_{1,i} - r_{2,i}) \cdot (c_1 - c_2)^{-1}$ for each $i$. The proof estab
 these extracted values satisfy $h = \prod_{i=1}^{n} g_i^{x_i}$, which is critical for the 
 soundness of the Neq protocol that uses Okamoto as a building block.
 
-\item \textbf{Special honest-verifier zero-knowledge} 
-(\texttt{generalised\_okamoto\_special\_honest\_verifier\_zkp}): 
+\item \textbf{Special honest-verifier zero-knowledge}: 
 The real transcript distribution (involving secrets $\mathbf{x}$) is identical to the simulator 
 distribution (without secrets). The simulator chooses random $\mathbf{u}$ and $c$, then computes 
 the commitment as $t = \left(\prod_{i=1}^{n} g_i^{u_i}\right) \cdot h^{-c}$ with responses 
@@ -1059,18 +973,46 @@ $1/|\mathbb{F}|^n$ where $\mathbb{F}$ is the underlying field, proven using our 
 distribution framework.
 \end{itemize}
 
-Beyond the standard $\Sigma$-protocol properties, our formalization includes witness indistinguishability 
+Beyond the standard $\Sigma$-protocol properties, our formalisation includes witness indistinguishability 
 results critical for the Neq composition. We prove that transcripts generated with different witness 
 vectors $\mathbf{x}_1$ and $\mathbf{x}_2$ satisfying the same relation $h = \prod_{i=1}^{n} g_i^{x_1,i} = 
 \prod_{i=1}^{n} g_i^{x_2,i}$ are computationally indistinguishable. This is established through the 
 bijective transformation functions \texttt{transform\_us} and \texttt{inverse\_transform} that map 
-randomness between the two witness spaces, along with the homomorphic property 
-\texttt{generalised\_okamoto\_commitment\_homomorphic} showing that 
+randomness between the two witness spaces, along with the homomorphic property showing that 
 $\prod_{i=1}^{n} g_i^{u_i - v_i} = \left(\prod_{i=1}^{n} g_i^{u_i}\right) \cdot 
 \left(\prod_{i=1}^{n} g_i^{-v_i}\right)$.
 
+\begin{lstlisting}[frame=single, language=Coq, caption={Witness Indistinguishability},
+label={dist_comp},captionpos=t, basicstyle=\ttfamily\footnotesize,
+abovecaptionskip=-\medskipamount]
+(* WI *)
+Definition transform_us {n : nat} (xs1 xs2 : Vector.t F (2 + n)) 
+  (c : F) (us : Vector.t F (2 + n)) : Vector.t F (2 + n) :=
+  zip_with (fun u '(x1, x2) => u + c * (x1 - x2)) us 
+  (zip_with pair xs1 xs2).
 
-\subsection{Neq Composition of n Schnorr Protocol}
+
+Definition inverse_transform {n : nat} (xs1 xs2 : Vector.t F (2 + n)) 
+  (c : F) (us : Vector.t F (2 + n)) : Vector.t F (2 + n) :=
+  zip_with (fun u '(x1, x2) => u + c * (x2 - x1)) us 
+  (zip_with pair xs1 xs2).
+
+Theorem generalised_okamoto_witness_indistinguishable {n : nat} :
+  forall (gs : Vector.t G (2 + n)) (h : G) (xs1 xs1 : Vector.t F (2 + n)),
+  (* Both witnesses produce the same public key h *)
+  h = generalised_okamoto_commitment gs xs1 ->
+  h = generalised_okamoto_commitment gs xs2 ->
+  (* For every conversation (a, c, rs) from xs, there exists unique us' 
+    such that the same conversation is produced by xs' *)
+  forall (us rs : Vector.t F (2 + n)) (a : G) (c : F),
+  ([a]; [c]; rs) = generalised_okamoto_real_protocol xs1 gs h us c ->
+  (* Then there exists unique us' producing the same transcript for xs' *)
+  exists! us' : Vector.t F (2 + n),
+    ([a]; [c]; rs) = generalised_okamoto_real_protocol xs2 gs h us' c.
+Proof. (* proof terms omitted *) Qed.
+\end{lstlisting}
+
+\subsection{Neq Composition}
 
 The Neq (inequality) $\Sigma$-protocol enables a prover to demonstrate that they know distinct discrete 
 logarithms for multiple public keys with respect to a common generator. Formally, given a generator $g$ 
@@ -1090,31 +1032,8 @@ discrete logarithms, and multiple Okamoto protocols that enforce the pairwise in
 The protocol structure for $n \geq 2$ statements is inherently quadratic in complexity due to 
 the pairwise nature of inequality constraints. For each pair of indices $(i, j)$ with $i < j$, 
 the prover must demonstrate that $x_i \neq x_j$ without revealing the values. Our implementation 
-in [NeqSigma.v](src/Crypto/NeqSigma.v) works as follows:
+in NeqSigma.v works as follows: the protocol begins with the commitment phase, in which the prover generates randomness for two components. For the And component, the prover uses $n$ random values to create commitments $t_i = g^{u_i}$ for each $i \in {1, \ldots, n}$, proving knowledge of all discrete logarithms. For the Okamoto component, the prover generates an Okamoto commitment for each pair $(i, j)$ with $i < j$ using generators $(g \cdot h_i, h_j)$ and specially constructed witnesses $\left(x_i \cdot (x_i - x_j)^{-1}, (x_j - x_i)^{-1}\right)$ that encode the inequality constraint, resulting in $\binom{n}{2} = n(n-1)/2$ such commitments. The combined commitment vector, of dimension $n + \binom{n}{2}$, is then sent to the verifier. In the challenge phase, the verifier responds with a random challenge $c$ from the underlying field. Finally, in the response phase, the prover computes two sets of responses: the And responses $r_i = u_i + c \cdot x_i$ for each $i$ (as in the standard And composition), and the Okamoto responses—a two-dimensional response for each pair $(i, j)$ using the transformed witnesses and randomness, yielding $n(n-1)$ field elements in total. This results in a response vector of dimension $n + n(n-1) = n^2$, which is sent to the verifier.
 
-\begin{enumerate}
-\item \textbf{Commitment phase}: The prover generates randomness for two components:
-\begin{itemize}
-\item \textbf{And component}: Uses $n$ random values to create commitments 
-$t_i = g^{u_i}$ for each $i \in \{1, \ldots, n\}$, proving knowledge of all discrete logarithms.
-\item \textbf{Okamoto component}: For each pair $(i, j)$ with $i < j$, the prover generates 
-an Okamoto commitment using generators $(g \cdot h_i, h_j)$ with specially constructed witnesses 
-$\left(x_i \cdot (x_i - x_j)^{-1}, (x_j - x_i)^{-1}\right)$ that encode the inequality constraint. 
-This yields $\binom{n}{2} = n(n-1)/2$ Okamoto commitments.
-\end{itemize}
-The total commitment vector has dimension $n + \binom{n}{2}$ and is sent to the verifier.
-
-\item \textbf{Challenge}: The verifier sends a random challenge $c$ from the underlying field.
-
-\item \textbf{Response}: The prover computes:
-\begin{itemize}
-\item \textbf{And responses}: For each $i$, compute $r_i = u_i + c \cdot x_i$ as in the standard 
-And composition.
-\item \textbf{Okamoto responses}: For each pair $(i, j)$, compute the two-dimensional Okamoto response 
-using the transformed witnesses and randomness, yielding $n(n-1)$ field elements in total.
-\end{itemize}
-The response vector has dimension $n + n(n-1) = n^2$ and is sent to the verifier.
-\end{enumerate}
 
 The verifier accepts if both sub-protocol verifications succeed: (i) the And verifier confirms that 
 each $g^{r_i} = t_i \cdot h_i^c$, and (ii) for each pair $(i, j)$, the Okamoto verifier confirms that 
@@ -1125,50 +1044,48 @@ Okamoto commitment.
 The correctness of the Okamoto component for inequality relies on the algebraic identity: if $x_i = x_j$, 
 then $(x_i - x_j)^{-1}$ would be undefined (division by zero), making it impossible for the prover to 
 construct valid witnesses. Conversely, when $x_i \neq x_j$, the witnesses 
-$\left(x_i \cdot (x_i - x_j)^{-1}, (x_j - x_i)^{-1}\right)$ satisfy:
-\[
-(g \cdot h_i)^{x_i \cdot (x_i - x_j)^{-1}} \cdot h_j^{(x_j - x_i)^{-1}} = 
-g^{x_i \cdot (x_i - x_j)^{-1}} \cdot h_i^{x_i \cdot (x_i - x_j)^{-1}} \cdot h_j^{(x_j - x_i)^{-1}} = g
-\]
-after algebraic simplification using $h_i = g^{x_i}$ and $h_j = g^{x_j}$.
+$\left(x_i \cdot (x_i - x_j)^{-1}, (x_j - x_i)^{-1}\right)$ satisfy $(g \cdot h_i)^{x_i \cdot (x_i - x_j)^{-1}} \cdot h_j^{(x_j - x_i)^{-1}}$ = $g^{x_i \cdot (x_i - x_j)^{-1}} \cdot h_i^{x_i \cdot (x_i - x_j)^{-1}} \cdot h_j^{(x_j - x_i)^{-1}}$ = $g$ after algebraic simplification using $h_i = g^{x_i}$ and $h_j = g^{x_j}$.
 
-Our Rocq formalization proves the three standard $\Sigma$-protocol properties:
+Our Rocq formalisation proves the three standard $\Sigma$-protocol properties:
 
 \begin{itemize}
-\item \textbf{Completeness} (\texttt{generalised\_neq\_real\_transcript\_accepting\_conversations}): 
+\item \textbf{Completeness}: 
 When the prover knows distinct witnesses $x_1, \ldots, x_n$ satisfying $g^{x_i} = h_i$ and $x_i \neq x_j$ 
-for all $i \neq j$, the verification always succeeds. The proof combines completeness results from both 
-the And composition (via \texttt{construct\_and\_conversations\_schnorr\_completeness}) and the Okamoto 
-protocol (via \texttt{generalised\_okamoto\_real\_accepting\_conversation}) for each pair.
+for all $i \neq j$, the verification always succeeds. The proof combines completeness results from both the And composition completenes and the Okamoto protocol completeness for each pair.
 
-\item \textbf{Special soundness} (\texttt{generalised\_neq\_accepting\_conversations\_soundenss}): 
+\item \textbf{Special soundness}: 
 From two accepting transcripts with the same commitments but different challenges $c_1 \neq c_2$, 
 an extractor can recover witnesses $x_1, \ldots, x_n$ satisfying the discrete logarithm relations. 
-However, proving that the extracted witnesses are necessarily distinct requires an additional assumption 
-about generator independence. Our formalization proves an unconditional dichotomy: either the extracted 
-witnesses are pairwise distinct, \emph{or} there exists a non-trivial discrete logarithm relation between 
-generators (e.g., $g_j = g_i^\alpha$ for some $\alpha$, or one generator is the identity). This captures 
-special soundness without assuming independence explicitly, leveraging decidability of the relevant 
-propositions to convert the implication into a constructive disjunction.
+However, proving that the extracted witnesses are necessarily distinct requires an additional assumption about generator independence. Our formalisation proves an unconditional dichotomy: either the extracted witnesses are pairwise distinct, \emph{or} there exists a non-trivial discrete logarithm relation between generators (e.g., $g_j = g_i^\alpha$ for some $\alpha$, or one generator is the identity). This captures special soundness without assuming independence explicitly, leveraging decidability of the relevant propositions to convert the implication into a constructive disjunction.
 
-\item \textbf{Special honest-verifier zero-knowledge} 
-(\texttt{generalised\_neq\_special\_honest\_verifier\_zkp}): 
+\item \textbf{Special honest-verifier zero-knowledge}: 
 The real transcript distribution (generated with witnesses $x_1, \ldots, x_n$) is identical to the 
 simulator distribution (without witnesses). The simulator splits randomness between And and Okamoto 
 components: for And, it uses the standard simulator producing commitments $t_i = g^{u_i} \cdot h_i^{-c}$; 
 for each Okamoto pair, it generates simulated commitments independently. Both distributions produce 
 accepting transcripts with probability $1/|\mathbb{F}|^{n + n(n-1)} = 1/|\mathbb{F}|^{n^2}$, proven 
-using our uniform probability distribution framework (\texttt{uniform\_probability\_multidraw\_prob}).
+using our uniform probability distribution framework.
 \end{itemize}
 
-The implementation requires randomness of dimension $n + n(n-1) = n^2$ and produces proof transcripts 
-of size $O(n^2)$, reflecting the quadratic nature of pairwise inequality constraints. The key functions 
-include: \texttt{generalised\_construct\_neq\_commitment} (constructs combined And and Okamoto commitments), 
-\texttt{generalised\_construct\_neq\_response} (computes responses by splitting into And and Okamoto parts), 
-and \texttt{generalised\_neq\_accepting\_conversations} (verifies both sub-protocol checks using 
-\texttt{generalised\_and\_accepting\_conversations} and \texttt{okamoto\_accepting\_conversation} 
-for each pair).
+The implementation requires randomness of dimension $n + n(n-1) = n^2$ and produces proof transcripts of size $O(n^2)$, reflecting the quadratic nature of pairwise inequality constraints.
 
+
+\begin{lstlisting}[frame=single, language=Coq, caption={Witness Indistinguishability},
+label={dist_comp},captionpos=t, basicstyle=\ttfamily\footnotesize,
+abovecaptionskip=-\medskipamount]
+Theorem generalised_neq_accepting_conversations_soundenss :
+  forall (n : nat) (a : Vector.t G (2 + n + (2 + n) * (1 + n) / 2)) 
+  (c1 c2 : F) (rs1 rs2 : Vector.t F (2 + n + (2 + n) * (1 + n))) 
+  (gs hs : Vector.t G (2 + n)), [c1] <> [c2] ->
+  generalised_neq_accepting_conversations gs hs (a; [c1]; rs1) = true ->
+  generalised_neq_accepting_conversations gs hs (a; [c2]; rs2) = true ->
+  exists (xs : Vector.t F (2 + n)), 
+  (forall (i : Fin.t (2 + n)), hs[@i] = gs[@i] ^ xs[@i]) /\
+  ((forall (i j : Fin.t (2 + n)), i <> j -> xs[@i] <> xs[@j]) \/
+  (exists (i j : Fin.t (2 + n)), i <> j /\ 
+  ((exists (alpha : F), gs[@j] = gs[@i] ^ alpha) \/ 
+  gs[@i] = gid \/ gs[@j] = gid)))
+\end{lstlisting}
 
 \subsection{Linear Relation over Pedersen Commitment}
 
@@ -1229,7 +1146,7 @@ g^{\sum_i \alpha_i \cdot s_{1,i}} &= g^{\sum_i \alpha_i \cdot (u_i + c \cdot v_i
 g^{\sum_i \alpha_i \cdot u_i} \cdot g^{c \cdot \sum_i \alpha_i \cdot v_i} = t_{n+1} \cdot g^{c \cdot z}
 \end{align*}
 
-Our Rocq formalization in [PedLinearRel.v](src/Crypto/PedLinearRel.v) implements this protocol 
+Our Rocq formalisation in [PedLinearRel.v](src/Crypto/PedLinearRel.v) implements this protocol 
 with generic support for arbitrary $n \geq 2$ commitments and linear constraints. The key functions are:
 \begin{itemize}
 \item \texttt{pedersen\_commitment\_vector}: Constructs the vector of Pedersen commitments 
@@ -1242,7 +1159,7 @@ given honest witnesses
 equations (\texttt{$ret_1$} and \texttt{$ret_2$})
 \end{itemize}
 
-The formalization proves all three security properties:
+The formalisation proves all three security properties:
 
 \begin{itemize}
 \item \textbf{Completeness} (\texttt{pedersen\_linear\_relation\_completeness}): 
@@ -1265,7 +1182,7 @@ This ensures the verification equations are satisfied without any knowledge of t
 From two accepting transcripts with the same commitments but different challenges $c_1 \neq c_2$, 
 an extractor recovers the witness values: $v_i = (s_{1,i}^{(1)} - s_{1,i}^{(2)}) \cdot (c_1 - c_2)^{-1}$ 
 and similarly for $r_i$. The extraction is guaranteed to produce valid commitments $C_i = g^{v_i} \cdot h^{r_i}$. 
-For the linear constraint, the formalization proves a dichotomy: either $z = \sum_i \alpha_i \cdot v_i$ holds, 
+For the linear constraint, the formalisation proves a dichotomy: either $z = \sum_i \alpha_i \cdot v_i$ holds, 
 or the group element $g$ is the identity (which is a degenerate case). This unconditional result avoids 
 assumptions on the problem structure.
 
@@ -1494,7 +1411,7 @@ Proof. (* proof terms omitted *) Qed.
 
 Approval voting is a voting method where each voter can approve any subset of candidates independently. 
 Unlike plurality voting where each voter selects exactly one candidate, approval voting allows voters to express 
-support for multiple candidates, resulting in fairer representation of voter preferences. Our formalization 
+support for multiple candidates, resulting in fairer representation of voter preferences. Our formalisation 
 implements approval voting using ElGamal encryption paired with \emph{Or-$\Sigma$} proofs to guarantee that 
 each vote is either 0 (not approved) or 1 (approved). This prevents voters from casting invalid votes such 
 as fractional approvals or voting multiple times for the same candidate.
@@ -1554,16 +1471,16 @@ the number of voters.
 \textbf{Formal Verification}: The Or-$\Sigma$ proofs guarantee that every encrypted vote encrypts exactly 
 0 or 1. Combined with homomorphic encryption, this ensures that the final tally ciphertext decrypts to 
 $\sum_j m_j \in [0, n]$ where $n$ is the number of voters, preventing vote inflation, under-counting, 
-and phantom ballots. Our formalization proves completeness of Or-$\Sigma$ proofs and the correctness 
+and phantom ballots. Our formalisation proves completeness of Or-$\Sigma$ proofs and the correctness 
 of homomorphic aggregation, confirming that the approval voting system is sound and complete.
 
 \subsection{Helios Verifier}
 
-To demonstrate the practical applicability of our formalization, we have developed a certified verifier for 
+To demonstrate the practical applicability of our formalisation, we have developed a certified verifier for 
 the Helios voting system that processes real-world election data from the IACR elections. Helios is a 
 widely-deployed open-source internet voting system that implements end-to-end verifiable elections using 
 cryptographic proofs. Our verifier validates the complete election tally including ballot verification, 
-ciphertext aggregation, and decryption verification using the formal proofs embedded in our Rocq formalization.
+ciphertext aggregation, and decryption verification using the formal proofs embedded in our Rocq formalisation.
 
 \textbf{Architecture and Workflow}: The Helios verifier is implemented in OCaml and extracted from our 
 Rocq specifications. It operates in two stages:
@@ -1587,7 +1504,7 @@ the \texttt{count} inductive type in HeliosTally.v:
 (ciphertext $(g^0 h^0, g^0 h^0) = (1, 1)$ in each position), representing zero votes before tallying begins.
 
 \item \textbf{Valid ballot (cvalid)}: For each ballot, the verifier checks the encryption proof using the 
-Or-Σ composition with two disjunctions (proving encryption of 0 or 1 for approval voting). If the proof 
+Or-$\Sigma$ composition with two disjunctions (proving encryption of 0 or 1 for approval voting). If the proof 
 succeeds, the ballot's ciphertext is homomorphically aggregated into the running encrypted tally using 
 the ElGamal multiplication operation. The ballot is marked as valid.
 
@@ -1645,7 +1562,7 @@ and public key product verification
 \textbf{Verification Integrity}: The extracted OCaml code inherits the security guarantees from Rocq 
 specifications. Each verification step is backed by formal proofs:
 \begin{itemize}
-\item Ballot processing follows the rules of And-Σ composition (verifying multiple disjunctions)
+\item Ballot processing follows the rules of And-$\Sigma$ composition (verifying multiple disjunctions)
 \item Ciphertext aggregation preserves correctness through ElGamal homomorphism
 \item Decryption factor validation uses Chaum-Pedersen discrete log equality proofs
 \item Plaintext verification reduces to discrete log checking
