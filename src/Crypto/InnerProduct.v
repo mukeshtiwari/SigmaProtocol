@@ -18,7 +18,7 @@ Import MonadNotation
 
 #[local] Open Scope monad_scope.
 
-(* Discrete Logarithm Zero Knowlege Proof *) 
+
 Section DL. 
   (* Underlying Field of Vector Space *)
   Context 
@@ -71,7 +71,8 @@ Section DL.
       Definition pedersen_commitment {n : nat} (r : F) (xs : Vector.t F n)
         (h : G) (gs : Vector.t G n) : G.
       Proof.
-        exact (fold_right (fun gx acc => gop gx acc) (zip_with (fun g x => g ^ x) gs xs) (h ^ r)).
+        exact (fold_right (fun gx acc => gop gx acc) 
+          (zip_with (fun g x => g ^ x) gs xs) (h ^ r)).
       Defined.
 
 
@@ -207,9 +208,8 @@ Section DL.
 
         - Recursive case (n = S n'):
           1) read current round values L, R, x from transcript heads
-          2) reject immediately if x = 0 (inverse undefined)
-          3) derive folded instance (g', h', P') as in Protocol 2
-          4) recurse on tails of ls, rs, and challenge
+          2) derive folded instance (g', h', P') as in Protocol 2
+          3) recurse on tails of ls, rs, and challenge
 
         Returns [true] iff all recursive checks reduce to a valid
         base-case equation.
@@ -254,11 +254,86 @@ Section DL.
           exact (improved_inner_product_verify n' gs' hs' u P' pf').
       Defined.
 
-
-
-
     End Def.
     Section Proofs.
+
+      (*
+        Non-trivial discrete-log relation among a generator vector [gs].
+
+        This property states that there exists a coefficient vector [xs]
+        such that:
+          1) multi_exp gs xs = gid, i.e., ∏ᵢ gs[i]^(xs[i]) is the group identity,
+          2) xs is not the all-zero vector.
+
+        Intuition: the generators are linearly dependent in the exponent,
+        and the dependence is non-trivial (not the obvious zero relation).
+      *)
+      Definition has_non_trivial_dlog_relation {m : nat} 
+        (gs : Vector.t G m) : Prop :=
+        ∃ (xs : Vector.t F m), multi_exp gs xs = gid ∧ 
+          (xs ≠ Vector.const zero m).
+
+      Context
+          {Hvec: @vector_space F (@eq F) zero one add mul sub 
+            div opp inv G (@eq G) gid ginv gop gpow}.
+
+        (* add field *)
+      Add Field field : (@field_theory_for_stdlib_tactic F
+      
+      eq zero one opp add mul sub inv div vector_space_field).
+      Theorem improved_inner_product_completeness : ∀ (n : nat) 
+        (gs hs : Vector.t G (Nat.pow 2 n)) (u P : G) 
+        (av bv : Vector.t F (Nat.pow 2 n)) (cs : Vector.t F n),
+        (* Assume the prover has a valid witness *)
+        P = gop (multi_exp gs av) (gop (multi_exp hs bv) 
+          (u ^ (inner_product av bv))) ->
+        improved_inner_product_verify n gs hs u P 
+          (improved_inner_product_proof n gs hs u P av bv cs) = true.
+      Proof.
+        induction n as [|n' ihn].
+        + 
+          intros gs hs u P av bv cs hp.
+          admit.
+        + 
+          intros gs hs u P av bv cs hp.
+      Admitted.
+
+
+      
+      (*
+        Soundness statement for the improved inner-product verifier.
+
+        If a proof transcript [pf] is accepted for public input (gs, hs, u, P),
+        then one of the following must hold:
+
+        1) Degenerate-generator case:
+           The combined generator family [gs ++ hs ++ [u]] has a non-trivial
+           discrete-log relation (i.e., a non-zero exponent vector mapping to
+           the group identity). In this case, binding/extractability can fail.
+
+        2) Honest-relation case:
+           There exist witness vectors [av], [bv] such that P encodes a valid
+           inner-product commitment relation:
+             P = ∏ g_i^{av_i} · ∏ h_i^{bv_i} · u^{<av,bv>}.
+
+        Intuition:
+        Acceptance implies either a structural weakness in generators or a
+        genuine witness for the claimed statement (special-soundness flavor).
+      *)
+      Theorem improved_inner_product_soundness : ∀ (n : nat) 
+        (gs hs : Vector.t G (Nat.pow 2 n)) (u : G) (P : G) 
+        (pf : inner_product_proof n),
+        improved_inner_product_verify n gs hs u P pf = true ->
+        has_non_trivial_dlog_relation (gs ++ hs ++ [u]) ∨
+        (∃ (av bv : Vector.t F (Nat.pow 2 n)),
+          P = gop (multi_exp gs av) (gop (multi_exp hs bv)  
+          (u ^ (inner_product av bv)))).
+      Proof.
+      Admitted.
+
+      
+      
+
     End Proofs.
   End InnerProduct.
 End DL.
