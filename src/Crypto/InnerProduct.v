@@ -156,14 +156,18 @@ Section DL.
           (* inductive case *)
           intros gs hs u P av bv cs.
           cbn in gs, hs, av, bv.
-          set (gs_lo := take (Nat.pow 2 n') gs).
-          set (gs_hi := vcast (add_0_r (Nat.pow 2 n')) (drop (Nat.pow 2 n') gs)).
-          set (hs_lo := take (Nat.pow 2 n') hs).
-          set (hs_hi := vcast (add_0_r (Nat.pow 2 n')) (drop (Nat.pow 2 n') hs)).
-          set (av_lo := take (Nat.pow 2 n') av).
-          set (av_hi := vcast (add_0_r (Nat.pow 2 n')) (drop (Nat.pow 2 n') av)).
-          set (bv_lo := take (Nat.pow 2 n') bv).
-          set (bv_hi := vcast (add_0_r (Nat.pow 2 n')) (drop (Nat.pow 2 n') bv)).
+          set (gs_lo_hi := splitat (Nat.pow 2 n') gs).
+          set (gs_lo := fst gs_lo_hi).
+          set (gs_hi := vcast (add_0_r (Nat.pow 2 n')) (snd gs_lo_hi)).
+          set (hs_lo_hi := splitat (Nat.pow 2 n') hs).
+          set (hs_lo := fst hs_lo_hi).
+          set (hs_hi := vcast (add_0_r (Nat.pow 2 n')) (snd hs_lo_hi)).
+          set (av_lo_hi := splitat (Nat.pow 2 n') av).
+          set (av_lo := fst av_lo_hi).
+          set (av_hi := vcast (add_0_r (Nat.pow 2 n')) (snd av_lo_hi)).
+          set (bv_lo_hi := splitat (Nat.pow 2 n') bv).
+          set (bv_lo := fst bv_lo_hi).
+          set (bv_hi := vcast (add_0_r (Nat.pow 2 n')) (snd bv_lo_hi)).
           set (c_L := inner_product av_lo bv_hi).
           set (c_R := inner_product av_hi bv_lo).
           set (L := gop (gop (multi_exp gs_hi av_lo) (multi_exp hs_lo bv_hi)) (u ^ c_L)).
@@ -237,10 +241,12 @@ Section DL.
           intros gs hs u P pf.
           set (L := Vector.hd (ls _ pf)).
           set (R := Vector.hd (rs _ pf)).
-          set (gs_lo := take (Nat.pow 2 n') gs).
-          set (gs_hi := vcast (add_0_r (Nat.pow 2 n')) (drop (Nat.pow 2 n') gs)).
-          set (hs_lo := take (Nat.pow 2 n') hs).
-          set (hs_hi := vcast (add_0_r (Nat.pow 2 n')) (drop (Nat.pow 2 n') hs)).
+          set (gs_lo_hi := splitat (Nat.pow 2 n') gs).
+          set (gs_lo := fst gs_lo_hi).
+          set (gs_hi := vcast (add_0_r (Nat.pow 2 n')) (snd gs_lo_hi)).
+          set (hs_lo_hi := splitat (Nat.pow 2 n') hs).
+          set (hs_lo := fst hs_lo_hi).
+          set (hs_hi := vcast (add_0_r (Nat.pow 2 n')) (snd hs_lo_hi)).
           set (x := Vector.hd (challenge _ pf)).
           set (x_inv := inv x).
           set (gs' := zip_with gop (Vector.map (fun gi => gi ^ x_inv) gs_lo)
@@ -279,8 +285,9 @@ Section DL.
 
         (* add field *)
       Add Field field : (@field_theory_for_stdlib_tactic F
-      
       eq zero one opp add mul sub inv div vector_space_field).
+
+
       Theorem improved_inner_product_completeness : ∀ (n : nat) 
         (gs hs : Vector.t G (Nat.pow 2 n)) (u P : G) 
         (av bv : Vector.t F (Nat.pow 2 n)) (cs : Vector.t F n),
@@ -293,9 +300,26 @@ Section DL.
         induction n as [|n' ihn].
         + 
           intros gs hs u P av bv cs hp.
-          admit.
+          cbn in gs, hs, av, bv, cs.
+          pose proof (vector_inv_0 cs) as ha.
+          destruct (vector_inv_S av) as (avh & avt & hb).
+          destruct (vector_inv_S bv) as (bvh & bvt & hc).
+          destruct (vector_inv_S gs) as (gsh & gst & hd).
+          destruct (vector_inv_S hs) as (hsh & hst & he).
+          pose proof (vector_inv_0 avt) as hf.
+          pose proof (vector_inv_0 bvt) as hg.
+          pose proof (vector_inv_0 gst) as hi.
+          pose proof (vector_inv_0 hst) as hj.
+          subst; cbn.  eapply dec_true.
+          rewrite !right_identity, associative.
+          reflexivity.
         + 
           intros gs hs u P av bv cs hp.
+          cbn in gs, hs, av, bv, cs.
+          destruct (vector_inv_S cs) as (csh & cst & ha).
+          destruct (splitat _ av) as (avl & avh) eqn:hb.
+          eapply append_splitat in hb.
+          
       Admitted.
 
 
