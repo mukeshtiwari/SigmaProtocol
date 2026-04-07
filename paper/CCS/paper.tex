@@ -1004,13 +1004,13 @@ we worked with an (abstract) vector space. However, to execute the code of
 our formalisation, we need to instantiate the vector space with a concrete entity. 
 Therefore, we have encoded a prime field --shown in Listing \ref{field_def}-- 
 and the Schnorr group \cite{schnorr1991efficient} (mulitplicative 
-group of integers modulo a large prime p) --shown in Listing \ref{group_def}-- in the Coq theorem prover. 
+group of integers modulo a large prime p) --shown in Listing \ref{group_def}-- in the Rocq theorem prover. 
 To encode the Schnorr group, we postulate three integer $k, p, \text{ and } q$. 
 Moreover, we assume $p \text{ and } q$ are primes where $p = k * q + 1$ (when 
 $k = 2$, these primes are called Sophie Germain primes). Finally, 
 we encode the neutral element ($one$), the group multiplication ($mul\_schnorr\_group$), 
 and the group inverse $inv\_schnorr\_group$ and we prove that our encoding 
-of the Schnorr group in Coq is commutative group by making it 
+of the Schnorr group in Rocq is a commutative group by making it 
 an instance of the typeclass $schnorr\_comm$, which is an abstract typeclass that bundles the axioms 
 of commutative group. 
 
@@ -1018,7 +1018,7 @@ of commutative group.
 
 
 
- \begin{lstlisting}[frame=single, language=Coq, caption={Coq Encoding of the Schnorr Group},
+ \begin{lstlisting}[frame=single, language=Coq, caption={Rocq Encoding of the Schnorr Group},
   label={group_def},captionpos=t, basicstyle=\ttfamily\footnotesize,
   abovecaptionskip=-\medskipamount]
 Section SchnorrGroup. 
@@ -1058,7 +1058,7 @@ we define all the operation of $Zp$ and prove that
 it is an instance of the typeclass $zp\_field$, which is 
 a typeclass that encodes the axioms of a field. 
 
-\begin{lstlisting}[frame=single, language=Coq, caption={Coq Encoding of Prime Field},
+\begin{lstlisting}[frame=single, language=Coq, caption={Rocq Encoding of Prime Field},
   label={field_def},captionpos=t, basicstyle=\ttfamily\footnotesize,
   abovecaptionskip=-\medskipamount]
 (* Prime Field *)
@@ -1185,42 +1185,54 @@ Approval voting is a voting method where each voter can approve any subset of ca
 Unlike plurality voting where each voter selects exactly one candidate, approval voting allows voters to express 
 support for multiple candidates, resulting in fairer representation of voter preferences. Our formalisation 
 implements approval voting using ElGamal encryption paired with \emph{Or-$\Sigma$} proofs to guarantee that 
-each vote is either 0 (not approved) or 1 (approved). This prevents voters from casting invalid votes such 
-as fractional approvals or voting multiple times for the same candidate.
+each vote is either 0 (not approved) or 1 (approved).  The frontend functions, shown in Listing ..., realise the ballot-construction pipeline for approval voting as ``encrypt then prove validity.'' The function \texttt{encrypt\_vote} computes the ElGamal ciphertext \((g^r,\; g^m \cdot h^r)\) from generator \(g\), public key \(h\), vote value \(m\), and randomness \(r\). The function \texttt{generate\_enc\_proof} then constructs a two-branch \(\Sigma\)-proof that the ciphertext encrypts either \(0\) or \(1\): it performs a case split with \texttt{Fdec m zero}, places the real witness in the corresponding branch index (\texttt{Fin.F1} when \(m=0\), otherwise \texttt{Fin.FS Fin.F1}), and simulates the other branch. Finally, \texttt{encrypt\_vote\_and\_generate\_enc\_proof} composes both steps and returns the ciphertext together with its proof as a single object for verification. Importantly, this wrapper is total: if \(m \notin \{0,1\}\), it still returns a proof term syntactically, but verification rejects it, matching the later theorems \texttt{vote\_proof\_invalid\_reject} and \texttt{vote\_proof\_invalid\_accept}. More precisely, \texttt{vote\_proof\_invalid\_reject} shows that for invalid votes \(m \neq 0,1\), verification returns false under the usual non-degenerate assumptions (in particular, non-trivial generator and mismatched challenge share). The companion theorem \texttt{vote\_proof\_invalid\_accept} captures the exceptional case: if the prover can predict the verifier challenge (\(c_1 = c\)), an invalid transcript can still be accepted. Together, these results characterise the standard \(\Sigma\)-protocol soundness boundary and explain why unpredictable challenges are essential.
 
-\textbf{Vote Encryption and Proof Generation}: The voting phase is implemented in [Frontend/Approval.v](src/Frontend/Approval.v). 
-For each candidate $i$ in an election with $n$ candidates, the voter generates a vote $m_i \in \{0, 1\}$ 
-indicating approval ($m_i = 1$) or non-approval ($m_i = 0$). This vote is encrypted using ElGamal encryption 
-as $C_i = (g^{r_i}, g^{m_i} \cdot h^{r_i})$ where $r_i$ is random randomness, $h = g^x$ is the election's 
-public key, and $g$ is the Schnorr group generator.
 
-To prove that each ciphertext correctly encrypts a 0 or 1 vote, the verifier generates a proof using the 
-generalized Or-$\Sigma$ composition (\texttt{generalised\_construct\_encryption\_proof\_elgamal\_real}). 
-The proof has two branches corresponding to the two possible vote values:
-\begin{itemize}
-\item \textbf{Branch 1}: Proves that the ciphertext encrypts 0 by demonstrating knowledge of the discrete 
-logarithm relation between $g$ and $1$ using generators $[g^0, g^1] = [1, g]$.
-\item \textbf{Branch 2}: Proves that the ciphertext encrypts a non-zero value by demonstrating knowledge 
-of the discrete logarithm relation between $g$ and $g^{m_i}$ using generators $[g^0, g^{m_i}]$.
-\end{itemize}
-The verifier selects one branch as the ``real'' branch based on the actual vote value: if $m_i = 0$, 
-the proof is constructed in Branch 1 using randomness $r_i$; if $m_i \neq 0$, the proof is constructed 
-in Branch 2. The other branch is simulated using random challenges and responses, and the two branches 
-are combined into a single challenge $c = c_1 \oplus c_2$ where the opening demonstrates knowledge 
-corresponding to the real branch.
+\begin{lstlisting}[frame=single, language=Coq, caption={Frontend Functions},
+  label={extractor_complex},captionpos=t, basicstyle=\ttfamily\footnotesize,
+  abovecaptionskip=-\medskipamount]
+(* encrypt vote *)
+Definition encrypt_vote (g h : G) (r : F) (m : F) : G * G :=
+  @enc F G gop gpow g h m r.
 
-\textbf{Ballot Generation and Verification}: The function \texttt{encrypt\_ballot\_and\_generate\_enc\_proof} 
-extends vote encryption to the entire ballot by vectorizing across all $n$ candidates. Each candidate 
-produces a tuple $(C_i, \pi_i)$ where $C_i$ is the encrypted vote and $\pi_i$ is the corresponding Or-$\Sigma$ 
-proof. A complete ballot is thus a vector of $n$ such tuples, which voters submit along with a commitment 
-to their randomness (used for auditability).
+(* create a proof *)
+Definition generate_enc_proof 
+  (g h : G) (r : F)  (m : F) (uscs : Vector.t F 3) (cp : G * G) (c : F) : 
+  @Sigma.sigma_proto F (G * G) 2 3 2 :=
+    match Fdec m zero with 
+    | left _ => 
+      @generalised_construct_encryption_proof_elgamal_real F zero 
+        add mul sub opp G ginv gop gpow 0 Fin.F1 r uscs 
+        [g^m; g^one] g h cp c (* real one goes to 
+        the first place Fin.F1 *)
+    | right _ =>  
+      @generalised_construct_encryption_proof_elgamal_real F zero 
+        add mul sub opp G ginv gop gpow 0 (Fin.FS Fin.F1) r uscs 
+        [g^zero; g^m] g h cp c (* real one 
+        goes to the second place (Fin.FS Fin.F1) *)
+    end.
 
-The verification function \texttt{verify\_encryption\_ballot\_proof} checks all Or-$\Sigma$ proofs in the 
-ballot using \texttt{generalised\_accepting\_encryption\_proof\_elgamal}, rejecting any ballot with a 
-false proof. This ensures that election authorities cannot process invalid ballots.
+
+(* wrap both of them *)
+(* In this function, when you pass a value of m that not 0 and 1, the 
+function still creates a proof but it won't pass the check 
+of verify_encryption_vote_proof, which checks if cp is encryption of 
+zero or one. See the proofs vote_proof_valid and vote_proof_invalid *)
+Definition encrypt_vote_and_generate_enc_proof 
+  (g h : G) (r : F)  (m : F) (uscs : Vector.t F 3) (c : F) : 
+  G * G * @Sigma.sigma_proto F (G * G) 2 3 2 := 
+  let cp := @enc F G gop gpow g h m r in
+  let sig_proof := generate_enc_proof g h r m uscs cp c
+  in (cp, sig_proof).
+\end{lstlisting}
+
+
+
+
+
 
 \textbf{Homomorphic Tallying}: After verifying all ballots, election authorities tally the results 
-using homomorphic aggregation, implemented in [Backend/Tally.v](src/Backend/Tally.v). The tallying 
+using homomorphic aggregation, implemented in (src/Backend/Tally.v). The tallying 
 process is formalized as a state machine with two phases:
 
 \begin{itemize}
