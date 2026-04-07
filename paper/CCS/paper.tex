@@ -1185,7 +1185,7 @@ Approval voting is a voting method where each voter can approve any subset of ca
 Unlike plurality voting where each voter selects exactly one candidate, approval voting allows voters to express 
 support for multiple candidates, resulting in fairer representation of voter preferences. Our formalisation 
 implements approval voting using ElGamal encryption paired with \emph{Or-$\Sigma$} proofs to guarantee that 
-each vote is either 0 (not approved) or 1 (approved).  The frontend functions, shown in Listing ..., realise the ballot-construction pipeline for approval voting as ``encrypt then prove validity.'' The function \texttt{encrypt\_vote} computes the ElGamal ciphertext \((g^r,\; g^m \cdot h^r)\) from generator \(g\), public key \(h\), vote value \(m\), and randomness \(r\). The function \texttt{generate\_enc\_proof} then constructs a two-branch \(\Sigma\)-proof that the ciphertext encrypts either \(0\) or \(1\): it performs a case split with \texttt{Fdec m zero}, places the real witness in the corresponding branch index (\texttt{Fin.F1} when \(m=0\), otherwise \texttt{Fin.FS Fin.F1}), and simulates the other branch. Finally, \texttt{encrypt\_vote\_and\_generate\_enc\_proof} composes both steps and returns the ciphertext together with its proof as a single object for verification. Importantly, this wrapper is total: if \(m \notin \{0,1\}\), it still returns a proof term syntactically, but verification rejects it, matching the later theorems \texttt{vote\_proof\_invalid\_reject} and \texttt{vote\_proof\_invalid\_accept}. More precisely, \texttt{vote\_proof\_invalid\_reject} shows that for invalid votes \(m \neq 0,1\), verification returns false under the usual non-degenerate assumptions (in particular, non-trivial generator and mismatched challenge share). The companion theorem \texttt{vote\_proof\_invalid\_accept} captures the exceptional case: if the prover can predict the verifier challenge (\(c_1 = c\)), an invalid transcript can still be accepted. Together, these results characterise the standard \(\Sigma\)-protocol soundness boundary and explain why unpredictable challenges are essential.
+each vote is either 0 (not approved) or 1 (approved).  The frontend functions, shown in Listing ..., realise the ballot-construction pipeline for approval voting as ``encrypt then prove validity.'' The function \texttt{encrypt\_vote} computes the ElGamal ciphertext \((g^r,\; g^m \cdot h^r)\) from generator \(g\), public key \(h\), vote value \(m\), and randomness \(r\). The function \texttt{generate\_enc\_proof} then constructs a two-branch \(\Sigma\)-proof that the ciphertext encrypts either \(0\) or \(1\): it performs a case split with \texttt{Fdec m zero}, places the real witness in the corresponding branch index (\texttt{Fin.F1} when \(m=0\), otherwise \texttt{Fin.FS Fin.F1}), and simulates the other branch. Finally, \texttt{encrypt\_vote\_and\_generate\_enc\_proof} composes both steps and returns the ciphertext together with its proof as a single object for verification. Importantly, this wrapper is total: if \(m \notin \{0,1\}\), it still returns a proof term syntactically, but verification rejects it, matching the later theorems \texttt{vote\_proof\_invalid\_reject} and \texttt{vote\_proof\_invalid\_accept}. More precisely, \texttt{vote\_proof\_invalid\_reject} shows that for invalid votes \(m \neq 0,1\), verification returns false under the usual non-degenerate assumptions. The companion theorem \texttt{vote\_proof\_invalid\_accept} captures the exceptional case: if the prover can predict the verifier challenge (\(c_1 = c\)), an invalid transcript can still be accepted. Together, these results characterise the standard \(\Sigma\)-protocol soundness boundary and explain why unpredictable challenges are essential.
 
 
 \begin{lstlisting}[frame=single, language=Coq, caption={Frontend Functions},
@@ -1226,37 +1226,20 @@ Definition encrypt_vote_and_generate_enc_proof
   in (cp, sig_proof).
 \end{lstlisting}
 
+Finally, the function \texttt{encrypt\_ballot\_and\_generate\_enc\_proof} extends vote encryption to the entire ballot by vectorizing across all $n$ candidates. Each candidate 
+produces a tuple $(C_i, \pi_i)$ where $C_i$ is the encrypted vote and $\pi_i$ is the corresponding Or-$\Sigma$ 
+proof. A complete ballot is thus a vector of $n$ such tuples.
 
 
 
 
 
-\textbf{Homomorphic Tallying}: After verifying all ballots, election authorities tally the results 
-using homomorphic aggregation, implemented in (src/Backend/Tally.v). The tallying 
-process is formalized as a state machine with two phases:
 
-\begin{itemize}
-\item \textbf{Partial State}: Election authorities process incoming ballots sequentially. For each valid 
-ballot with verified Or-$\Sigma$ proofs, the encrypted votes are aggregated using the homomorphic property 
-of ElGamal encryption: $\prod_j C_{i,j} = (g^{\sum_j r_{i,j}}, g^{\sum_j m_{i,j}} \cdot h^{\sum_j r_{i,j}})$. 
-This is computed incrementally by the function \texttt{mul\_encrypted\_ballots}, which multiplies ciphertexts 
-component-wise. Invalid ballots (with false Or-$\Sigma$ proofs) are rejected and excluded from the tally. 
-The system maintains an invariant that the set of processed ballots equals the concatenation of valid ballots 
-plus rejected invalid ballots: $\text{Permutation}(\mathit{bs}, \mathit{vbs} \append \mathit{inbs})$.
+\textbf{Homomorphic Tallying}: Once an election finishes, election election authorities tally the results 
+using homomorphic aggregation, implemented in \texttt{src/Backend/Tally.v}. The central backend function is \texttt{compute\_final\_count}, which takes the secret key \(x\), randomness vectors for decryption proofs, a proof of key consistency \(g^x = h\), and the list of ballots, and returns dependent data \((vbs, inbs, pt)\) together with a proof term of type \texttt{count (finished ...)}. Internally, it first calls \texttt{compute\_final\_tally}, which processes ballots with the inductive state machine \texttt{count}: rule \texttt{ax} initializes the tally to identity ciphertexts, \texttt{cvalid} accepts and aggregates ballots whose encryption proofs verify, and \texttt{cinvalid} rejects malformed ballots while preserving the tally. From the final encrypted tally \(ms\), the backend computes decrypted group elements \texttt{ds} via \texttt{decrypted\_ballot}, then maps \texttt{discrete\_logarithm\_search} to obtain plaintext tallies \texttt{pt}; lemma \texttt{compute\_final\_count\_aux} (using axiom \texttt{hdiscrete}) proves \(g^{pt_i}=ds_i\) component-wise. In parallel, \texttt{construct\_decryption\_proof\_elgamal\_real\_vector} builds trustee decryption proofs \texttt{pf}, and \texttt{compute\_final\_tally\_aux2} supplies the algebraic relation required to show these proofs are accepting. Finally, rule \texttt{cfinish} combines ballot-partition correctness, plaintext consistency, and decryption-proof validity into a certified finished election state.
 
-\item \textbf{Finished State}: Once all ballots are processed, the final tally ciphertext for each candidate 
-is $(g^{\sum_j r_j}, g^{\sum_j m_j} \cdot h^{\sum_j r_j})$. The election authorities decrypt this to recover 
-$\sum_j m_j$, the total number of approvals for that candidate, by computing the discrete logarithm 
-$\text{dlog}_g(g^{\sum_j m_j})$ using discrete logarithm search. Since vote values are restricted to 
-$\{0, 1\}$ by Or-$\Sigma$ proofs, the discrete logarithm search is efficient: the result is bounded by 
-the number of voters.
-\end{itemize}
 
-\textbf{Formal Verification}: The Or-$\Sigma$ proofs guarantee that every encrypted vote encrypts exactly 
-0 or 1. Combined with homomorphic encryption, this ensures that the final tally ciphertext decrypts to 
-$\sum_j m_j \in [0, n]$ where $n$ is the number of voters, preventing vote inflation, under-counting, 
-and phantom ballots. Our formalisation proves completeness of Or-$\Sigma$ proofs and the correctness 
-of homomorphic aggregation, confirming that the approval voting system is sound and complete.
+
 
 \subsection{Helios Verifier}
 
@@ -1266,19 +1249,9 @@ widely-deployed open-source internet voting system that implements end-to-end ve
 cryptographic proofs. Our verifier validates the complete election tally including ballot verification, 
 ciphertext aggregation, and decryption verification using the formal proofs embedded in our Rocq formalisation.
 
-\textbf{Architecture and Workflow}: The Helios verifier is implemented in OCaml and extracted from our 
-Rocq specifications. It operates in two stages:
-
-\begin{enumerate}
-\item \textbf{Input Parsing}: The verifier reads election data in JSON format from stdin, parsing ballots, 
-tallier decryption factors, and proofs using a custom parser (\texttt{Executable/HeliosVerifiercode/parsing/parser.mly}) 
-and lexer (\texttt{parsing/lexer.mll}). The AST module translates JSON into OCaml data structures corresponding 
-to Rocq ballot and tallier records.
-
-\item \textbf{Verification Engine}: The core verification logic is defined in [Backend/HeliosTally.v](src/Backend/HeliosTally.v) 
-and instantiated with concrete parameters in [Examples/HeliosTallyIns.v](src/Examples/HeliosTallyIns.v). 
-The verifier implements a state machine with inductive rules corresponding to election phases.
-\end{enumerate}
+The Helios verifier is implemented in OCaml and extracted from our 
+Rocq specifications. It operates in two stages: (i) The verifier reads election data in JSON format from stdin, parsing ballots, 
+tallier decryption factors, and proofs using a custom parser and lexer. The AST module translates JSON into OCaml data structures corresponding to Rocq ballot and tallier records. The core verification logic is defined in (src/Backend/HeliosTally.v) and instantiated with concrete parameters in (src/Examples/HeliosTallyIns.v). The verifier implements a state machine with inductive rules corresponding to election phases.
 
 \textbf{Verification Rules}: The election verification process follows an operational semantics defined by 
 the \texttt{count} inductive type in HeliosTally.v:
@@ -1314,7 +1287,7 @@ the election's public key $h = \prod_i y_i$, ensuring no key material was substi
 \end{itemize}
 
 \textbf{Concrete Parameters}: The verifier is instantiated with cryptographic parameters from actual IACR 
-elections stored in [Examples/HeliosTallyIns.v](src/Examples/HeliosTallyIns.v):
+elections stored in (src/Examples/HeliosTallyIns.v):
 
 \begin{itemize}
 \item \textbf{Prime Fields}: 2048-bit prime $p$ and 256-bit prime $q$ (with $p = kq + 1$ for safe prime 
@@ -1326,7 +1299,7 @@ election-specific parameters. Alternative instantiations for 2023 and 2022 elect
 commented in the code due to extraction constraints.
 \end{itemize}
 
-\textbf{Implementation Details}: The [Executable/HeliosVerifiercode/main.ml](src/Executable/HeliosVerifiercode/main.ml) 
+\textbf{Implementation Details}: The (src/Executable/HeliosVerifiercode/main.ml) 
 file implements the OCaml interface:
 
 \begin{itemize}
