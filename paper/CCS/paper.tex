@@ -823,59 +823,50 @@ Proof. (* proof terms omitted *) Qed.
 \end{lstlisting}
 
 \subsection{Neq Composition}
-
-The Neq (inequality) $\Sigma$-protocol enables a prover to demonstrate that they know distinct discrete 
-logarithms for multiple public keys with respect to a common generator. Formally, given a generator $g$ 
-and public values $h_1, h_2, \ldots, h_n$, the prover proves knowledge of secrets 
-$x_1, x_2, \ldots, x_n$ such that (i) $g^{x_i} = h_i$ for all $i \in \{1, \ldots, n\}$, and 
-(ii) $x_i \neq x_j$ for all distinct pairs $i \neq j$. This protocol is essential in voting systems 
-for proving ballot validity constraints beyond simple well-formedness, though it is less commonly 
+The Neq composition formalises the statement that a prover knows witnesses
+$x_1, \ldots, x_{2+n}$ for public instances $(g_i, h_i)$ such that $h_i = g_i^{x_i}$ for every
+$i$, and moreover these witnesses are pairwise distinct, i.e., $x_i \neq x_j$ for all distinct pairs $i \neq j$. 
+In contrast to Or and And compositions, which combine existing statements by logical connectives, the Neq protocol has to encode a family of inequality constraints between witnesses.  In our development this is done by combining an And proof of
+all discrete-logarithm relations with one Okamoto proof for every unordered pair of witnesses. This protocol is essential in voting systems  for proving ballot validity constraints beyond simple well-formedness, though it is less commonly 
 deployed than Or and And compositions in current systems like Helios and Belenios.
-
-Unlike the Or and And compositions which prove logical connectives over basic Schnorr statements, 
-the Neq composition addresses a fundamentally different problem: proving pairwise inequality 
-constraints among witnesses. The challenge lies in ensuring that the prover cannot reuse the same 
-discrete logarithm for multiple public keys while maintaining zero-knowledge. Our construction 
-achieves this by combining two sub-protocols: an And composition that establishes knowledge of all 
-discrete logarithms, and multiple Okamoto protocols that enforce the pairwise inequality constraints.
 
 The protocol structure for $n \geq 2$ statements is inherently quadratic in complexity due to 
 the pairwise nature of inequality constraints. For each pair of indices $(i, j)$ with $i < j$, 
 the prover must demonstrate that $x_i \neq x_j$ without revealing the values. Our implementation 
-in NeqSigma.v works as follows: the protocol begins with the commitment phase, in which the prover generates randomness for two components. For the And component, the prover uses $n$ random values to create commitments $t_i = g^{u_i}$ for each $i \in {1, \ldots, n}$, proving knowledge of all discrete logarithms. For the Okamoto component, the prover generates an Okamoto commitment for each pair $(i, j)$ with $i < j$ using generators $(g \cdot h_i, h_j)$ and specially constructed witnesses $\left(x_i \cdot (x_i - x_j)^{-1}, (x_j - x_i)^{-1}\right)$ that encode the inequality constraint, resulting in $\binom{n}{2} = n(n-1)/2$ such commitments. The combined commitment vector, of dimension $n + \binom{n}{2}$, is then sent to the verifier. In the challenge phase, the verifier responds with a random challenge $c$ from the underlying field. Finally, in the response phase, the prover computes two sets of responses: the And responses $r_i = u_i + c \cdot x_i$ for each $i$ (as in the standard And composition), and the Okamoto responses—a two-dimensional response for each pair $(i, j)$ using the transformed witnesses and randomness, yielding $n(n-1)$ field elements in total. This results in a response vector of dimension $n + n(n-1) = n^2$, which is sent to the verifier.
+in src/Crypto/NeqSigma.v works as follows: the protocol begins with the commitment phase, in which the prover generates randomness for two components. For the And component, the prover uses $2+n$ random values to create commitments $t_i = g_i^{u_i}$ for each $i \in \{1, \ldots, 2+n\}$, proving knowledge of all discrete logarithms. For the Okamoto component, the prover generates an Okamoto commitment for each pair $(i, j)$ with $i < j$ using generators $(g_i \cdot g_j, h_i \cdot h_j)$ and specially constructed witnesses $\left(x_i \cdot (x_i - x_j)^{-1}, (x_j - x_i)^{-1}\right)$ that encode the inequality constraint, resulting in $\binom{2+n}{2} = (2+n)(1+n)/2$ such commitments. The combined commitment vector, of dimension $(2+n) + \binom{2+n}{2}$, is then sent to the verifier. In the challenge phase, the verifier responds with a random challenge $c$ from the underlying field. Finally, in the response phase, the prover computes two sets of responses: the And responses $r_i = u_i + c \cdot x_i$ for each $i$ (as in the standard And composition), and the Okamoto responses—a two-dimensional response for each pair $(i, j)$ using the transformed witnesses and randomness, yielding $(2+n)(1+n)$ field elements in total. This results in a response vector of dimension $(2+n) + (2+n)(1+n) = (2+n)^2$, which is sent to the verifier.
 
 
 The verifier accepts if both sub-protocol verifications succeed: (i) the And verifier confirms that 
-each $g^{r_i} = t_i \cdot h_i^c$, and (ii) for each pair $(i, j)$, the Okamoto verifier confirms that 
-the relation $(g \cdot h_i)^{r_{i,1}} \cdot h_j^{r_{i,2}} = t_{i,j} \cdot (g \cdot h_i)^c$ holds, 
+each $g_i^{r_i} = t_i \cdot h_i^c$, and (ii) for each pair $(i, j)$, the Okamoto verifier confirms that 
+the relation $(g_i \cdot g_j)^{r_{i,1}} \cdot (h_i \cdot h_j)^{r_{i,2}} = t_{i,j} \cdot g_j^c$ holds, 
 where $r_{i,1}, r_{i,2}$ are the two responses for pair $(i,j)$ and $t_{i,j}$ is the corresponding 
 Okamoto commitment. The correctness of the Okamoto component for inequality relies on the algebraic identity: if $x_i = x_j$, 
 then $(x_i - x_j)^{-1}$ would be undefined (division by zero), making it impossible for the prover to 
 construct valid witnesses. Conversely, when $x_i \neq x_j$, the witnesses 
-$\left(x_i \cdot (x_i - x_j)^{-1}, (x_j - x_i)^{-1}\right)$ satisfy $(g \cdot h_i)^{x_i \cdot (x_i - x_j)^{-1}} \cdot h_j^{(x_j - x_i)^{-1}}$ = $g^{x_i \cdot (x_i - x_j)^{-1}} \cdot h_i^{x_i \cdot (x_i - x_j)^{-1}} \cdot h_j^{(x_j - x_i)^{-1}}$ = $g$ after algebraic simplification using $h_i = g^{x_i}$ and $h_j = g^{x_j}$.
+$\left(x_i \cdot (x_i - x_j)^{-1}, (x_j - x_i)^{-1}\right)$ satisfy $(g_i \cdot g_j)^{x_i \cdot (x_i - x_j)^{-1}} \cdot (h_i \cdot h_j)^{(x_j - x_i)^{-1}}$ = $g_i^{x_i \cdot (x_i - x_j)^{-1}} \cdot g_j^{x_i \cdot (x_i - x_j)^{-1}} \cdot h_i^{(x_j - x_i)^{-1}} \cdot h_j^{(x_j - x_i)^{-1}}$ = $g_j$ after algebraic simplification using $h_i = g_i^{x_i}$ and $h_j = g_j^{x_j}$.
 
 Our Rocq formalisation proves the three standard $\Sigma$-protocol properties:
 
 \begin{itemize}
 \item \textbf{Completeness}: 
-When the prover knows distinct witnesses $x_1, \ldots, x_n$ satisfying $g^{x_i} = h_i$ and $x_i \neq x_j$ 
+When the prover knows distinct witnesses $x_1, \ldots, x_{2+n}$ satisfying $g_i^{x_i} = h_i$ and $x_i \neq x_j$ 
 for all $i \neq j$, the verification always succeeds. The proof combines completeness results from both the And composition completenes and the Okamoto protocol completeness for each pair.
 
 \item \textbf{Special soundness}: 
 From two accepting transcripts with the same commitments but different challenges $c_1 \neq c_2$, 
-an extractor can recover witnesses $x_1, \ldots, x_n$ satisfying the discrete logarithm relations. 
+an extractor can recover witnesses $x_1, \ldots, x_{2+n}$ satisfying the discrete logarithm relations. 
 However, proving that the extracted witnesses are necessarily distinct requires an additional assumption about generator independence. Our formalisation proves an unconditional dichotomy: either the extracted witnesses are pairwise distinct, \emph{or} there exists a non-trivial discrete logarithm relation between generators (e.g., $g_j = g_i^\alpha$ for some $\alpha$, or one generator is the identity). This captures special soundness without assuming independence explicitly, leveraging decidability of the relevant propositions to convert the implication into a constructive disjunction.
 
 \item \textbf{Special honest-verifier zero-knowledge}: 
-The real transcript distribution (generated with witnesses $x_1, \ldots, x_n$) is identical to the 
+The real transcript distribution (generated with witnesses $x_1, \ldots, x_{2+n}$) is identical to the 
 simulator distribution (without witnesses). The simulator splits randomness between And and Okamoto 
 components: for And, it uses the standard simulator producing commitments $t_i = g^{u_i} \cdot h_i^{-c}$; 
 for each Okamoto pair, it generates simulated commitments independently. Both distributions produce 
-accepting transcripts with probability $1/|\mathbb{F}|^{n + n(n-1)} = 1/|\mathbb{F}|^{n^2}$, proven 
+accepting transcripts with probability $1/|\mathbb{F}|^{(2+n) + (2+n)(1+n)} = 1/|\mathbb{F}|^{(2+n)^2}$, proven 
 using our uniform probability distribution framework.
 \end{itemize}
 
-The implementation requires randomness of dimension $n + n(n-1) = n^2$ and produces proof transcripts of size $O(n^2)$, which reflects the quadratic nature of pairwise inequality constraints.
+The implementation requires randomness of dimension $(2+n) + (2+n)(1+n) = (2+n)^2$ and produces proof transcripts of size $O(n^2)$, which reflects the quadratic nature of pairwise inequality constraints.
 
 
 \begin{lstlisting}[frame=single, language=Coq, caption={Witness Indistinguishability},
