@@ -173,17 +173,13 @@
   They remain a popular choice in electronic voting to maintain privacy 
   and verifiability of elections and are still used in prominent electronic voting systems such as 
   Helios, Belenois, and SwissPost. However, existing implementations of $\Sigma$-protocols have two 
-  critical shortcomings: (i) the same code must be written multiple times, once for the front-end (JavaScript/TypeScript)
-  and once for the back-end (Python/OCaml/Java), which is error-prone because the front-end and back-end codes are often written by different developers, leading to inconsistencies and bugs,
-  and (ii) none of these implementations provide formal security guarantees. 
+  critical shortcomings: (i) the same code is written twice: once for the front-end (JavaScript/TypeScript)
+  and once for the back-end (Python/OCaml/Java), which is error-prone because the front-end and back-end codes are often written by different developers, leading to inconsistencies and bugs, and (ii) none of these implementations provide formal security guarantees. 
   
   In this paper, we present a certified formalisation of a comprehensive library of $\Sigma$-protocols 
   in the Rocq theorem prover, and we formally prove (special) soundness, completeness, and 
-  (special honest-verifier) zero-knowledge properties. Our generic formalisation over abstract vector spaces enables us to uniformly express and compose a wide class of discrete-logarithm-based $\Sigma$-protocols, while remaining independent of any concrete group or cryptographic instantiation. Moreover, the constructive nature of our formalisation allow us to
-  extract and compile to executable implementations in OCaml, Rust, and WebAssembly and thereby
-  eliminating code duplication. We demonstrate the practical applicability of our 
-  framework by implementing a voting server and client for the Approval voting and 
-  IACR tallysheet verifier.  Our certified cryptographic library provides a foundation for 
+  (special honest-verifier) zero-knowledge properties. Our generic formalisation over abstract vector spaces enables us to uniformly express and compose a wide class of discrete-logarithm-based $\Sigma$-protocols, while remaining independent of any concrete group or cryptographic instantiation. Moreover, the constructive nature of our formalisation allow us to extract and compile to executable implementations in OCaml, Rust, and WebAssembly and thereby
+  eliminating code duplication. We demonstrate the practical applicability of our framework by implementing a voting client and server for Approval Voting, as well as an International Association for Cryptologic Research (IACR) election verifier. Our certified library provides a foundation for 
   building formally verified privacy-preserving applicatons. 
 
 
@@ -221,12 +217,6 @@
 
 
 \section{Introduction}
-$\Sigma$-protocols are a fundamental class of zero-knowledge proof systems that enable a prover to convince a verifier of the correctness of a statement without revealing any additional information beyond its validity. Owing to their simplicity and security guarantees, $\Sigma$-protocols have become a core building block in a wide range of privacy-preserving applications such as anonymous credentials \cite{10.1145/2660267.2660328}, 
-password-authenticated key exchange \cite{10.5555/2022815.2022838}, 
-signature \cite{10.1007/0-387-34805-0_22}, threshold signature \cite{10.1007/978-3-030-81652-0_2}, etc. In the context of electronic voting, $\Sigma$-protocols play a particularly central role: they are used to prove that ballots are well-formed, that encryptions encode valid votes, that mix-nets correctly shuffle encrypted ballots, and that tallies are computed honestly, all without compromising voter privacy. These proofs underpin end-to-end verifiability by allowing voters and independent observers to publicly verify the integrity of each stage of the election while preserving ballot secrecy. As a result, the correctness and trustworthiness of $\Sigma$-protocol implementations directly impact the security of modern electronic voting systems which makes them a natural target for rigorous formal verification.
-
-\textcolor{red}{Is this flow good between the previous and the next paragraph?}
-
 Electronic voting offers convenience and efficiency in electoral processes, potentially improving 
 accessibility for disabled voters, increasing participation among overseas voters, and lowering 
 the costs associated with conducting elections. Moreover,
@@ -300,7 +290,11 @@ adopted in real-world software applications \cite{10.1145/1111037.1111042},
 including cryptography \cite{8835346,10.1145/3133956.3134043,190894,10.1145/2701415,
 10.1145/2660267.2660370,10.1145/3319535.3363211}.
 
-In this paper, we present a certified implementation of $\Sigma$-protocols and their compositions in 
+\textcolor{red}{How to make this flow natural between the previous and the next paragraph?}
+
+$\Sigma$-protocols are a fundamental class of zero-knowledge proof systems that enable a prover to convince a verifier of the correctness of a statement without revealing any additional information beyond its validity. Owing to their simplicity and security guarantees, $\Sigma$-protocols have become a core building block in a wide range of privacy-preserving applications such as anonymous credentials \cite{10.1145/2660267.2660328}, 
+password-authenticated key exchange \cite{10.5555/2022815.2022838}, 
+signature \cite{10.1007/0-387-34805-0_22}, threshold signature \cite{10.1007/978-3-030-81652-0_2}, etc. In the context of electronic voting, $\Sigma$-protocols play a particularly central role: they are used to prove that ballots are well-formed, that encryptions encode valid votes, that mix-nets correctly shuffle encrypted ballots, and that tallies are computed honestly, all without compromising voter privacy. These proofs underpin end-to-end verifiability by allowing voters and independent observers to publicly verify the integrity of each stage of the election while preserving ballot secrecy. As a result, the correctness and trustworthiness of $\Sigma$-protocol implementations directly impact the security of modern electronic voting systems which makes them a natural target for rigorous formal verification. In this paper, we present a certified implementation of $\Sigma$-protocols and their compositions in 
 the formal language of the Rocq proof assistant. Our formalisation encompasses the basic Schnorr protocol, 
 Chaum-Pedersen, Okamoto, Pedersen linear relation, encryption proofs, and compositional constructions including Parallel-$\Sigma$, 
 And-$\Sigma$, Or-$\Sigma$, Eq-$\Sigma$, and Neq-$\Sigma$ protocols. For each protocol, we formally prove 
@@ -351,7 +345,7 @@ are possible for all problems in $NP$ \cite{10.1145/116825.116852}. Recall that 
 problems that have efficient verifiers; that is, for a given problem in the $NP$ class, there is 
 a polynomial-time algorithm that can verify whether a given solution, or witness, to the problem is correct or not.
 More formally, for a given binary $NP$-relation $R$ and a statement $x$, zero-knowledge proof allows a prover 
-$P$ to convince a verifier $V$ that they posses a witness $w$ --polynomial in length of $x$-- such 
+$P$ to convince a verifier $V$ that they posses a witness $w$--polynomial in the length of $x$--such 
 that ($x$, $w$) $\in$ $R$. To achieve this, $P$ and $V$ engage in a 
 interactive protocol and  at the end of the protocol $V$ either accepts or rejects the proofs.
 $\Sigma$-protocol  is an efficient three move zero-knowledge proof where the 
@@ -371,7 +365,7 @@ it can extract a witness $w$ such that $(x, w) \in R$. In other words,
 if $P$ does not know $w$ for $x$ then it cannot construct a proof 
 $(a, c, r)$ that will passes the verification check. 
 \item \textbf{Special honest-verifier zero-knowledge.}
-There exists a probabilistic polynomial-time simulator $S$ such that, for any $v \in L_R$ and any challenge $c \in C$, $S$ outputs a transcript $(a; c; r)$ that is distributed exactly as in a real conversation between an honest prover $P$ (using any witness $w$ with $(v,w) \in R$) and an honest verifier $V$ on common input $v$ and challenge $c$. Moreover, for any $v \notin L_R$, the simulator $S$ is just required to produce an arbitrary accepting conversations $(a; c; r)$ for the given challenge $c \in C$.
+There exists a probabilistic polynomial-time simulator \(S\) such that, for every \(x \in L_R\) and every challenge \(c \in C\), \(S\) outputs a transcript \((a,c,r)\) whose distribution is identical to that of a real interaction between an honest prover \(P\) (holding a witness \(w\) with \((x,w)\in R\)) and an honest verifier \(V\). Furthermore, for any \(x \notin L_R\), the simulator \(S\) is only required to output an arbitrary accepting transcript \((a,c,r)\) for the given challenge \(c \in C\).
 \end{itemize}
 
 
@@ -389,9 +383,7 @@ Moreover, we formalise the \(n\)-ary composition of Schnorr \(\Sigma\)-protocols
 Ideally, given the abstraction of our formlisation (\textit{vector space}), we could have 
 abstracted the sigma protocol and their composition in a generic way \cite{10.1007/978-3-642-02384-2_17},
 but we decided to focus on the Schnorr protocol and its composition to ensure familiar APIs 
-for electronic voting in WebAssembly and Rust. However, we have not seen 
-much use of Neq in the privacy-preserving voting systems, at least in the existing voting systems 
-such as Helios, Belenois, and SwissPost.  
+for electronic voting in WebAssembly and Rust.
 
 
 
@@ -485,8 +477,8 @@ zero-knowledge proof.
 
   \item \textbf{special honest-verifier zero-knowledge proof:}
    for a \emph{fixed} verifier challenge $c$, the distribution of transcripts from an honest
-   conversation --involving witness $w$-- and the distribution of transcripts output by a
-   simulator --without witness $w$-- are identical. We can see this algebraically: both
+   conversation--involving the witness $w$--and the distribution of transcripts output by a
+   simulator--without the witness $w$--are identical. We can see this algebraically: both
    distributions \ref{f} and \ref{snd} are uniform over $Z_q$, i.e., each transcript occurs
    with probability $1/q$.
    \begin{align}\label{f}
@@ -516,7 +508,7 @@ makes our formalisation generic that can be instantiated with
 any kind of group and field as long as it follows the axioms of 
 vector space. For example, in our formalisation we have developed 
 efficient algorithm for the Schnorr (mulitplicative) group but our formalisation can 
-later be also instantiated with elliptic curve group. However, 
+later be also instantiated with elliptic curve group. In addition, 
 one of the major benefit of this abstraction is easiness of proofs 
 which can be easily automated. Therefore, we model the Schnorr 
 protocol, the simulator, and the verification equation in Rocq as follows: 
@@ -577,8 +569,7 @@ when instantiated concretely, exponentiation function but it is purely for notat
 We prove the completeness and special soundness property of the Schnorr protocol, 
 as shown in Listing \ref{comp_sound}. However, to prove the special honest-verifier 
 zero-knowledge property we need a model to reason about uniform probability 
-distribution in Rocq. The next section introduces this uniform  probability 
-distribution model and its role in the special honest-verifier zero-knowledge proof. 
+distribution in Rocq that we introduce in the next section.
 
 \begin{lstlisting}[frame=single, language=Coq, caption={Completeness and Soundness},
   label={comp_sound},captionpos=t, basicstyle=\ttfamily\footnotesize,
@@ -609,8 +600,8 @@ To reason about special honest-verifier zero-knowledge proof
 intuitively, we need a model of uniform distribution. 
 We follow \cite{erwig2006functional}  and 
 encode the distribution a list of tuples where the 
-second element of a tuple is probability --represented as 
-a rational number-- of the first element 
+second element of a tuple is probability--represented as 
+a rational number--of the first element 
 of the tuple. Moreover, we define equality on distribution by 
 stating that two distributions are equal if they are permutation 
 of each other. This encoding is flexible and allows us 
@@ -624,7 +615,7 @@ needed in proving the special honest-verifier
 zero-knowledge proof of $n$ composed $\Sigma$-protocol.
 However, we need uniform 
 distribution, rather than an arbitrary distribution, to reason about 
-zero-knowledge of $\Sigma$-protocol, and therefore we define a function, $uniform\_with\_replacement$, 
+zero-knowledge of $\Sigma$-protocol, and therefore we define a function $uniform\_with\_replacement$ 
 to generate uniform distributions, shown in Listing \ref{prob_def}.
 
 \begin{lstlisting}[frame=single, language=Coq, caption={Definition of Uniform Probability Distribution},
@@ -665,7 +656,7 @@ that involves the secret $x$ and
 the simulator distribution $simulator\_distribution$
 that does not involve the secret $x$, shown in Listing \ref{def_zero}. 
 Both distributions sample a random field element $u$ from $uniform\_with\_replacement \text{ }lf \text{ } Hlfn$, where $lf$ lists the elements from which $u$ is drawn and $Hlfn$ asserts that $lf$ is non-empty, to construct their respective distributions on the sigma protocol. 
-Using these definitions, we prove $special\_honest\_verifier\_zkp$: the two distributions coincide. Unlike the usual informal presentation, the distributions are over transcript--probability pairs $(a, c, r)$; they are accepting but not syntactically identical. We therefore apply $\mathit{accepting\_conversation}$ to the transcript component of each pair, which yields a boolean (true) in both cases. After this mapping, the distributions are identical, as required.
+Using these definitions, we prove that the two distributions coincide in the $special\_honest\_verifier\_zkp$ theorem. Unlike the standard informal presentation pervasive throughout the cryptography literature, these distributions are not syntactically identical but they coincide modulo $accepting\_conversation$. We therefore apply $accepting\_conversation$to the first (transcript) component of each pair in both distributions, obtaining the boolean value $true$ in all cases. After this transformation, the resulting distributions are identical.
 
 
 \begin{lstlisting}[frame=single, language=Coq, caption={Special Honest-Verifier Zero-Knowledge Proof},
@@ -698,8 +689,7 @@ Lemma special_honest_verifier_zkp :
 Proof. (* proof terms omitted *) Qed. 
 \end{lstlisting}
 
-We have also formalised methods for combining $n$ \textit{And}, \textit{Or}, \textit{Eq}, \textit{Parallel}, and \textit{Neq} Schnorr statements, where proving the special honest-verifier zero-knowledge property is more challenging than for a single Schnorr statement. One major challenge is drawing $n$ random elements from a uniform distribution. To address this, we define the function $\mathtt{repeat\_dist\_ntimes\_vector}$---shown in Listing~\ref{dist_comp}---which takes a distribution $d$ and a number $n$ and returns a distribution over vectors of length $n$, encoded as $\mathsf{dist}\,(\mathsf{Vector.t}\,A\,n)$. Note that this is a generic function that can be instantiated with any distribution. In cryptography, however, we are primarily concerned with the uniform distribution; in the theorem $\mathtt{uniform\_probability\_multidraw\_prob}$, we instantiate the distribution with the uniform distribution $(\mathtt{uniform\_with\_replacement}\;lf\;Hlf)$ and prove that its probability is $1/|lf|^n$. We use this in the Parallel composition, where we combine $n$ statements and require a vector of $n$ random field elements to prove the zero-knowledge property, as demonstrated in $\mathtt{parallel\_schnorr\_distribution}$.
-
+As we stated previously that we have also formalised methods for combining $n$ \textit{And}, \textit{Or}, \textit{Eq}, \textit{Parallel}, and \textit{Neq} Schnorr statements, where proving the special honest-verifier zero-knowledge property is more challenging than for a single Schnorr statement. One major challenge is drawing $n$ random elements from a uniform distribution. We therfore define the function $repeat\_dist\_ntimes\_vector$---shown in Listing~\ref{dist_comp}---which takes a distribution $d$ and a number $n$ and returns a distribution over vectors of length $n$, encoded as $dist\,({Vector.t}\,A\,n)$. Note that this is a generic function that can be instantiated with any distribution. In cryptography, however, we are primarily concerned with the uniform distribution; in the theorem $uniform\_probability\_multidraw\_prob$, we instantiate the distribution with $uniform\_with\_replacement\;lf\;Hlf$ and prove that its probability is $1/|lf|^n$. We use this function consistently throughout the formalisation. As an example, we illustrate a case of the parallel composition in which \(n\) statements are combined, requiring a vector of \(n\) random field elements to establish the zero-knowledge property, as shown in $parallel\_schnorr\_distribution$.
 
 \begin{lstlisting}[frame=single, language=Coq, caption={Composition of a Distribution},
 label={dist_comp},captionpos=t, basicstyle=\ttfamily\footnotesize,
@@ -737,22 +727,10 @@ Definition parallel_schnorr_distribution
 The Or-$\Sigma$ protocol allows a prover to demonstrate knowledge of one witness among $n$ possible discrete logarithm statements 
 without revealing which specific statement they know. Formally, given public group elements $(g_1, h_1), (g_2, h_2), \ldots, (g_n, h_n)$, 
 the prover convinces the verifier that they know a witness $x_k$ such that $h_k = g_k^{x_k}$ for some $k \in \{1, \ldots, n\}$, 
-without revealing the index $k$ or the witness $x_k$. This construction is essential for privacy-preserving applications 
-where a prover needs to demonstrate membership in a set while preserving anonymity.
+without revealing the index $k$ or the witness $x_k$. The key insight behind the Or composition, introduced by Cramer, Damg\aa rd, and Schoenmakers~\cite{cramer1994proofs}, 
+is to allow the prover a controlled degree of freedom to ``cheat'' on statements for which they do not know witnesses.  We implement this protocol generically for $n \geq 2$ statements. The prover, knowing the witness for the $k$-th relation (where $k$ is specified as a finite index of sort $Fin.t \text{ }(2+n)$), first enters the commitment phase by choosing random values: $u_k$ for the real commitment, and for each simulated statement $i \neq k$, random values $u_i$ and $c_i$. The prover then computes the real commitment $t_k = g_k^{u_k}$ for statement $k$ and simulated commitments $t_i = g_i^{u_i} \cdot h_i^{-c_i}$ for $i \neq k$, sending the vector of commitments $(t_1, \ldots, t_n)$ to the verifier. In the challenge phase, the verifier responds with a random challenge $c$. Finally, during the response phase, the prover computes $c_k = c - \sum_{i \neq k} c_i$, along with $s_k = u_k + c_k \cdot x_k$ as the honest response for the real statement, while for $i \neq k$, the responses $s_i$ are set to the previously chosen $u_i$. The prover then sends both response vectors $(s_1, \ldots, s_n)$ and $(c_1, \ldots, c_n)$. The verifier accepts if: (i) $c = \sum_{i=1}^{n} c_i$, and (ii) for each $i$, $g_i^{s_i} = t_i \cdot h_i^{c_i}$.
 
-The key insight behind the Or composition, introduced by Cramer, Damg\aa rd, and Schoenmakers~\cite{cramer1994proofs}, 
-is to allow the prover a controlled degree of freedom to ``cheat'' on statements for which they do not know witnesses. 
-The verifier provides a single challenge $c$, which the prover can split into $n$ sub-challenges 
-$c_1, c_2, \ldots, c_n$ satisfying the linear constraint $c = \sum_{i=1}^{n} c_i$. 
-For the statement where the prover knows the witness (say, statement $k$), they perform an honest Schnorr protocol. 
-For all other statements $i \neq k$, the prover uses the simulator to generate fake transcripts by choosing 
-random challenges $c_i$ and responses $s_i$ in advance, then computing the corresponding commitments as 
-$t_i = g_i^{s_i} \cdot h_i^{-c_i}$. The prover sets $c_k = c - \sum_{i \neq k} c_i$ to satisfy the constraint, 
-ensuring that the verifier's check passes while maintaining zero-knowledge.
-
-Our formalisation implements this protocol generically for $n \geq 2$ statements. The prover, knowing the witness for the $k$-th relation (where $k$ is specified as a finite index of sort $\mathtt{Fin.t \text{ }(2+n)}$), first enters the commitment phase by choosing random values: $u_k$ for the real commitment, and for each simulated statement $i \neq k$, random values $u_i$ and $c_i$. The prover then computes the real commitment $t_k = g_k^{u_k}$ for statement $k$ and simulated commitments $t_i = g_i^{u_i} \cdot h_i^{-c_i}$ for $i \neq k$, sending the vector of commitments $(t_1, \ldots, t_n)$ to the verifier. In the challenge phase, the verifier responds with a random challenge $c$. Finally, during the response phase, the prover computes $c_k = c - \sum_{i \neq k} c_i$ to satisfy the linear constraint, along with $s_k = u_k + c_k \cdot x_k$ as the honest response for the real statement, while for $i \neq k$, the responses $s_i$ are set to the previously chosen $u_i$. The prover then sends both response vectors $(s_1, \ldots, s_n)$ and $(c_1, \ldots, c_n)$. The verifier accepts if: (i) $c = \sum_{i=1}^{n} c_i$, and (ii) for each $i$, $g_i^{s_i} = t_i \cdot h_i^{c_i}$.
-
-Our Rocq formalisation of the Or-$\Sigma$ protocol, implemented in \texttt{OrSigmaGen.v}, supports $n \geq 2$ statements with arbitrary generators for each statement, enabling proofs of knowledge for relations $g_i^{x_i} = h_i$. The formalisation proves three security properties: completeness (honest execution always verifies), special soundness (shown in \texttt{generalised\_or\_sigma\_soundness\_main}, which recovers a witness from two accepting transcripts with the same commitments but different challenges), and special honest-verifier zero-knowledge (the distribution of real transcripts involving the witness is identical to the simulator distribution without the witness).
+Our Rocq formalisation of the Or-$\Sigma$ protocol, implemented in \texttt{src/Crypto/OrSigmaGen.v}, supports $n \geq 2$ statements with arbitrary generators for each statement, enabling proofs of knowledge for relations $g_i^{x_i} = h_i$. The formalisation proves three security properties: completeness (honest execution always verifies), special soundness (shown in $generalised\_or\_sigma\_soundness\_main$, which recovers a witness from two accepting transcripts with the same commitments but different challenges), and special honest-verifier zero-knowledge (the distribution of real transcripts involving the witness is identical to the simulator distribution without the witness).
 
 \begin{lstlisting}[frame=single, language=Coq, caption={Special Soundness},
 label={dist_comp},captionpos=t, basicstyle=\ttfamily\footnotesize,
@@ -781,9 +759,7 @@ where $g_1, g_2, \ldots, g_n$ are public generators and $h$ is a public group el
 fundamental for building more complex protocols, particularly serving as a crucial sub-protocol in our 
 inequality (Neq) composition where we need to prove distinctness of discrete logarithms.
 
-The Okamoto protocol follows the standard three-move $\Sigma$-protocol structure. Given public generators $\mathbf{g} = (g_1, g_2, \ldots, g_n)$, a public value $h$, and secret witnesses $\mathbf{x} = (x_1, x_2, \ldots, x_n)$ satisfying $h = \prod_{i=1}^{n} g_i^{x_i}$, the prover begins by selecting random values $\mathbf{u} = (u_1, u_2, \ldots, u_n)$ from the underlying field and computing the commitment $t = \prod_{i=1}^{n} g_i^{u_i}$, which is sent to the verifier. Next, the verifier responds with a random challenge $c$ from the field. Finally, the prover computes responses $r_i = u_i + c \cdot x_i$ for each $i \in {1, \ldots, n}$ and sends the vector $\mathbf{r} = (r_1, r_2, \ldots, r_n)$ to the verifier for verification.
-
-The verifier accepts the transcript $(t, c, \mathbf{r})$ if and only if 
+The Okamoto protocol follows the standard three-move $\Sigma$-protocol structure. Given public generators $\mathbf{g} = (g_1, g_2, \ldots, g_n)$, a public value $h$, and secret witnesses $\mathbf{x} = (x_1, x_2, \ldots, x_n)$ satisfying $h = \prod_{i=1}^{n} g_i^{x_i}$, the prover begins by selecting random values from the underlying field $\mathbf{u} = (u_1, u_2, \ldots, u_n)$ and computing the commitment $t = \prod_{i=1}^{n} g_i^{u_i}$, which is sent to the verifier. Next, the verifier responds with a random challenge $c$ from the field. Finally, the prover computes responses $r_i = u_i + c \cdot x_i$ for each $i \in {1, \ldots, n}$ and sends the vector $\mathbf{r} = (r_1, r_2, \ldots, r_n)$ to the verifier for verification. The verifier accepts the transcript $(t, c, \mathbf{r})$ if and only if 
 $\prod_{i=1}^{n} g_i^{r_i} = t \cdot h^c$. Verification correctness follows from the fact that:
 \[
 \prod_{i=1}^{n} g_i^{r_i} = \prod_{i=1}^{n} g_i^{u_i + c \cdot x_i} = 
@@ -791,15 +767,10 @@ $\prod_{i=1}^{n} g_i^{r_i} = t \cdot h^c$. Verification correctness follows from
 \]
 
 Our Rocq formalisation implements the generalised Okamoto protocol for $n \geq 2$ generators in 
-Okamoto.v. The key functions include: 
-\texttt{generalised\_okamoto\_commitment} (computes $\prod_{i=1}^{n} g_i^{u_i}$ by folding 
-scalar multiplication over the generator-randomness pairs), 
-\texttt{generalised\_okamoto\_response} (computes the vector of responses $r_i = u_i + c \cdot x_i$ 
-using component-wise operations), and 
-\texttt{generalised\_okamoto\_accepting\_conversation} (verifies the product equality condition). 
-We also provide specialised instances for the base case of exactly two generators ($n=2$), which is heavily used in the Neq composition.
-
-The formalisation proves all three security properties:
+src/Crypto/Okamoto.v. The key functions include: $generalised\_okamoto\_commitment$ (computes $\prod_{i=1}^{n} g_i^{u_i}$), 
+$generalised\_okamoto\_response$ (computes responses $r_i = u_i + c \cdot x_i$), and 
+$generalised\_okamoto\_accepting\_conversation$ (verifies the product equality condition). 
+We also provide specialised instances for the base case of exactly two generators ($n=2$), which is heavily used in the Neq composition. The formalisation proves all three security properties:
 \begin{itemize}
 \item \textbf{Completeness}: 
 When both prover and verifier follow the protocol honestly with $h = \prod_{i=1}^{n} g_i^{x_i}$, 
@@ -825,28 +796,17 @@ distribution framework.
 
 Beyond the standard $\Sigma$-protocol properties, our formalisation includes witness indistinguishability 
 results critical for the Neq composition. We prove that transcripts generated with different witness 
-vectors $\mathbf{x}_1$ and $\mathbf{x}_2$ satisfying the same relation $h = \prod_{i=1}^{n} g_i^{x_1,i} = 
-\prod_{i=1}^{n} g_i^{x_2,i}$ are computationally indistinguishable. This is established through the 
-bijective transformation functions \texttt{transform\_us} and \texttt{inverse\_transform} that map 
+vectors $\mathbf{x}_1$ and $\mathbf{x}_2$ satisfying the same relation $h = \prod_{i=1}^{n} g_i^{x_{1,i}} = 
+\prod_{i=1}^{n} g_i^{x_{2,i}}$ are computationally indistinguishable. The proof, shown in Listing \ref{wit_ind}, 
+$generalised\_okamoto\_witness\_indistinguishable$ relies on two 
+bijective transformation functions that map 
 randomness between the two witness spaces, along with the homomorphic property showing that 
 $\prod_{i=1}^{n} g_i^{u_i - v_i} = \left(\prod_{i=1}^{n} g_i^{u_i}\right) \cdot 
 \left(\prod_{i=1}^{n} g_i^{-v_i}\right)$.
 
 \begin{lstlisting}[frame=single, language=Coq, caption={Witness Indistinguishability},
-label={dist_comp},captionpos=t, basicstyle=\ttfamily\footnotesize,
+label={wit_ind},captionpos=t, basicstyle=\ttfamily\footnotesize,
 abovecaptionskip=-\medskipamount]
-(* WI *)
-Definition transform_us {n : nat} (xs1 xs2 : Vector.t F (2 + n)) 
-  (c : F) (us : Vector.t F (2 + n)) : Vector.t F (2 + n) :=
-  zip_with (fun u '(x1, x2) => u + c * (x1 - x2)) us 
-  (zip_with pair xs1 xs2).
-
-
-Definition inverse_transform {n : nat} (xs1 xs2 : Vector.t F (2 + n)) 
-  (c : F) (us : Vector.t F (2 + n)) : Vector.t F (2 + n) :=
-  zip_with (fun u '(x1, x2) => u + c * (x2 - x1)) us 
-  (zip_with pair xs1 xs2).
-
 Theorem generalised_okamoto_witness_indistinguishable {n : nat} :
   forall (gs : Vector.t G (2 + n)) (h : G) (xs1 xs1 : Vector.t F (2 + n)),
   (* Both witnesses produce the same public key h *)
@@ -1185,11 +1145,11 @@ Approval voting is a voting method where each voter can approve any subset of ca
 Unlike plurality voting where each voter selects exactly one candidate, approval voting allows voters to express 
 support for multiple candidates, resulting in fairer representation of voter preferences. Our formalisation 
 implements approval voting using ElGamal encryption paired with \emph{Or-$\Sigma$} proofs to guarantee that 
-each vote is either 0 (not approved) or 1 (approved).  The frontend functions, shown in Listing ..., realise the ballot-construction pipeline for approval voting as ``encrypt then prove validity.'' The function \texttt{encrypt\_vote} computes the ElGamal ciphertext \((g^r,\; g^m \cdot h^r)\) from generator \(g\), public key \(h\), vote value \(m\), and randomness \(r\). The function \texttt{generate\_enc\_proof} then constructs a two-branch \(\Sigma\)-proof that the ciphertext encrypts either \(0\) or \(1\): it performs a case split with \texttt{Fdec m zero}, places the real witness in the corresponding branch index (\texttt{Fin.F1} when \(m=0\), otherwise \texttt{Fin.FS Fin.F1}), and simulates the other branch. Finally, \texttt{encrypt\_vote\_and\_generate\_enc\_proof} composes both steps and returns the ciphertext together with its proof as a single object for verification. Importantly, this wrapper is total: if \(m \notin \{0,1\}\), it still returns a proof term syntactically, but verification rejects it, matching the later theorems \texttt{vote\_proof\_invalid\_reject} and \texttt{vote\_proof\_invalid\_accept}. More precisely, \texttt{vote\_proof\_invalid\_reject} shows that for invalid votes \(m \neq 0,1\), verification returns false under the usual non-degenerate assumptions. The companion theorem \texttt{vote\_proof\_invalid\_accept} captures the exceptional case: if the prover can predict the verifier challenge (\(c_1 = c\)), an invalid transcript can still be accepted. Together, these results characterise the standard \(\Sigma\)-protocol soundness boundary and explain why unpredictable challenges are essential.
-
+each vote is either 0 (not approved) or 1 (approved).  The frontend functions, shown in Listing \ref{frontend_fun}, realise the ballot-construction pipeline for approval voting. The function \texttt{encrypt\_vote} computes the ElGamal ciphertext \((g^r,\; g^m \cdot h^r)\) from generator \(g\), public key \(h\), vote value \(m\), and randomness \(r\). The function \texttt{generate\_enc\_proof} then constructs a two-branch \(\Sigma\)-proof that the ciphertext encrypts either zero (\(0\)) or 
+a non-zero value: it performs a case split with \texttt{Fdec m zero}, places the real witness in the corresponding branch index (\texttt{Fin.F1} when \(m=0\), otherwise \texttt{Fin.FS Fin.F1}), and simulates the other branch. Finally, \texttt{encrypt\_vote\_and\_generate\_enc\_proof} composes both steps and returns the ciphertext together with its proof as a single object for verification. Ideally, for the non-zero case the voter should encrypt \(1\) but it runs on the voter's computer so the voter can encrypt any value and produce a zero-knowledge proof but the verification function running at the backend will reject the proof, except for some negligible probability.  More precisely, \texttt{vote\_proof\_invalid\_reject} shows that for invalid votes \(m \neq 0,1\), verification returns false under the usual non-degenerate assumptions. The companion theorem \texttt{vote\_proof\_invalid\_accept} captures the exceptional case: if the prover can predict the verifier challenge (\(c_1 = c\)), an invalid transcript can still be accepted. Together, these results characterise the standard \(\Sigma\)-protocol soundness boundary and explain why unpredictable challenges are essential \cite{10.1007/978-3-642-34961-4_38,dao2023weak}
 
 \begin{lstlisting}[frame=single, language=Coq, caption={Frontend Functions},
-  label={extractor_complex},captionpos=t, basicstyle=\ttfamily\footnotesize,
+  label={frontend_fun},captionpos=t, basicstyle=\ttfamily\footnotesize,
   abovecaptionskip=-\medskipamount]
 (* encrypt vote *)
 Definition encrypt_vote (g h : G) (r : F) (m : F) : G * G :=
@@ -1235,8 +1195,23 @@ proof. A complete ballot is thus a vector of $n$ such tuples.
 
 
 
-\textbf{Homomorphic Tallying}: Once an election finishes, election election authorities tally the results 
-using homomorphic aggregation, implemented in \texttt{src/Backend/Tally.v}. The central backend function is \texttt{compute\_final\_count}, which takes the secret key \(x\), randomness vectors for decryption proofs, a proof of key consistency \(g^x = h\), and the list of ballots, and returns dependent data \((vbs, inbs, pt)\) together with a proof term of type \texttt{count (finished ...)}. Internally, it first calls \texttt{compute\_final\_tally}, which processes ballots with the inductive state machine \texttt{count}: rule \texttt{ax} initializes the tally to identity ciphertexts, \texttt{cvalid} accepts and aggregates ballots whose encryption proofs verify, and \texttt{cinvalid} rejects malformed ballots while preserving the tally. From the final encrypted tally \(ms\), the backend computes decrypted group elements \texttt{ds} via \texttt{decrypted\_ballot}, then maps \texttt{discrete\_logarithm\_search} to obtain plaintext tallies \texttt{pt}; lemma \texttt{compute\_final\_count\_aux} (using axiom \texttt{hdiscrete}) proves \(g^{pt_i}=ds_i\) component-wise. In parallel, \texttt{construct\_decryption\_proof\_elgamal\_real\_vector} builds trustee decryption proofs \texttt{pf}, and \texttt{compute\_final\_tally\_aux2} supplies the algebraic relation required to show these proofs are accepting. Finally, rule \texttt{cfinish} combines ballot-partition correctness, plaintext consistency, and decryption-proof validity into a certified finished election state.
+\textbf{Homomorphic Tallying}: Once voting ends, counting is specified as an inductive state machine $count$, parameterised 
+over another inductive datatype $state$, defined in 
+\texttt{src/Backend/Tally.v}. The $state$ datatype has two constructors, $partial$ and $finished$, that signifies that the counting of ballots are still going or 
+finished. More precisely, \texttt{partial us vbs inbs ms}: the computation is in progress, with
+all seen ballots \texttt{us}, valid ballots \texttt{vbs}, invalid ballots \texttt{inbs}, and running encrypted tally
+\texttt{ms}, and \texttt{finished us vbs inbs pt}: the computation is finalised and returns plaintext tally vector \texttt{pt}.
+
+The judgment \texttt{count : state -> Type} defines legal counting traces through four rules: (i) \textbf{\texttt{ax}} (initialization): starts from empty ballot lists and an identity tally vector \texttt{ms = \(1_G,1_G\),\ldots,\(1_G,1_G\)}. This means no vote has contributed yet; (ii) \textbf{\texttt{cvalid}} (accept valid ballot): if a new ballot \texttt{u} satisfies \texttt{verify\_encryption\_ballot\_proof ... u = true}, then \texttt{u} is moved into \texttt{vbs}, and the encrypted tally is
+updated homomorphically:  \texttt{nms = mul\_encrypted\_ballots ms (map fst u)}. Intuitively, ciphertext components are multiplied coordinate-wise, so exponents (hence votes) add.; (iii) \textbf{\texttt{cinvalid}} (reject invalid ballot): if \texttt{verify\_encryption\_ballot\_proof ... u = false}, then \texttt{u} is appended to \texttt{inbs}, while \texttt{ms} remains unchanged; and (iv) \textbf{\texttt{cfinish}} (finalisation): after all ballots are processed, decryption outputs \texttt{ds}
+and decryption proofs \texttt{pf} are checked. The rule requires  pointwise relation \(g^{pt_i}=ds_i\), i.e., plaintext counts are discrete logs of decrypted group elements and acceptance of the vector decryption proof \texttt{decryption\_proof\_accepting\_conversations\_vector ... ms ds pf = true}. Only then the system transitions to \texttt{finished}.
+
+
+The executable function \texttt{compute\_final\_tally} implements the first phase (classification and encrypted
+aggregation) by recursion on the ballot list. For each ballot, it branches on
+\texttt{verify\_encryption\_ballot\_proof}: the true branch applies \texttt{cvalid}, the false branch applies
+\texttt{cinvalid}. It returns \((vbs,inbs,ms)\) together with the invariant
+\texttt{Permutation bs (vbs ++ inbs)}, ensuring that every input ballot is accounted for exactly once. Finally, he function \texttt{compute\_final\_count} then derives the final plaintext tally by decrypting aggregate ciphertexts with secret key $x$ to obtain \texttt{ds}, computing \texttt{pt} by pointwise discrete-log search relative to generator $g$, and conclude \texttt{count (finished bs vbs inbs pt)} via \texttt{cfinish}. Hence, the formal counting pipeline is: \emph{verify each ballot} $\to$ \emph{homomorphically aggregate valid ciphertexts} $\to$ \emph{verify decryption} $\to$ \emph{extract plaintext counts}, with explicit proof obligations at each step.
 
 
 
@@ -1253,77 +1228,30 @@ The Helios verifier is implemented in OCaml and extracted from our
 Rocq specifications. It operates in two stages: (i) The verifier reads election data in JSON format from stdin, parsing ballots, 
 tallier decryption factors, and proofs using a custom parser and lexer. The AST module translates JSON into OCaml data structures corresponding to Rocq ballot and tallier records. The core verification logic is defined in (src/Backend/HeliosTally.v) and instantiated with concrete parameters in (src/Examples/HeliosTallyIns.v). The verifier implements a state machine with inductive rules corresponding to election phases.
 
-\textbf{Verification Rules}: The election verification process follows an operational semantics defined by 
-the \texttt{count} inductive type in HeliosTally.v:
-
-\begin{itemize}
-\item \textbf{Initial state (ax)}: Begins with an empty ballot list and an identity-encrypted tally 
-(ciphertext $(g^0 h^0, g^0 h^0) = (1, 1)$ in each position), representing zero votes before tallying begins.
-
-\item \textbf{Valid ballot (cvalid)}: For each ballot, the verifier checks the encryption proof using the 
-Or-$\Sigma$ composition with two disjunctions (proving encryption of 0 or 1 for approval voting). If the proof 
-succeeds, the ballot's ciphertext is homomorphically aggregated into the running encrypted tally using 
-the ElGamal multiplication operation. The ballot is marked as valid.
-
-\item \textbf{Invalid ballot (cinvalid)}: If the encryption proof fails, the ballot is rejected and marked 
-as invalid. The encrypted tally remains unchanged, preserving the invariant that only verified ballots 
-contribute to the final count.
-
-\item \textbf{Finalization (finish)}: After all ballots are processed, the verifier performs end-to-end 
-verification checks:
-\begin{enumerate}
-\item Decryption verification: Each of the $m$ talliers has published a decryption factor $d_i = \alpha^{s_i}$ 
+\textbf{Verification Rules}: The election verification process follows a very similar approach described in the 
+previous section. We have an inductive datatype \texttt{count}, index by \texttt{state}, defined in (src/Backend/HelioTally.v). 
+The \texttt{count} and \texttt{state} are similar to previously defined, except the fourth constructor \texttt{finish} is 
+slightly different. The constructor \textbf{finish}: after all ballots are processed, the verifier performs end-to-end 
+verification checks: (i) Decryption verification: Each of the $m$ talliers has published a decryption factor $d_i = \alpha^{s_i}$ 
 (where $\alpha$ is the first component of the final ciphertext and $s_i$ is their secret key). The verifier 
 checks the decryption factor's validity using Chaum-Pedersen proofs that prove the discrete log relation 
-$\log_g(y_i) = \log_\alpha(d_i)$ (same exponent used for both).
-\item Plaintext verification: The plaintext tally is computed from decryption factors and checked for 
+$\log_g(y_i) = \log_\alpha(d_i)$ (same exponent used for both); (ii) Plaintext verification: The plaintext tally is computed from decryption factors and checked for 
 consistency: for each candidate position, the prover must verify that $g^{\text{plaintext}} = \text{decrypted value}$, 
-which is the final discrete log equality check.
-\item Proof of knowledge (POK) checks: Each tallier has published a Schnorr proof of knowledge of their 
-secret key, which is verified to ensure key ownership.
-\item Public key consistency: The verifier confirms that the product of all talliers' public keys equals 
+which is the final discrete log equality check; (iii) Proof of knowledge (POK) checks: Each tallier has published a Schnorr proof of knowledge of their 
+secret key, which is verified to ensure key ownership; and (iv) Public key consistency: The verifier confirms that the product of all talliers' public keys equals 
 the election's public key $h = \prod_i y_i$, ensuring no key material was substituted.
-\end{enumerate}
-\end{itemize}
+
 
 \textbf{Concrete Parameters}: The verifier is instantiated with cryptographic parameters from actual IACR 
 elections stored in (src/Examples/HeliosTallyIns.v):
 
 \begin{itemize}
 \item \textbf{Prime Fields}: 2048-bit prime $p$ and 256-bit prime $q$ (with $p = kq + 1$ for safe prime 
-structure), formally verified using the \texttt{primeP} and \texttt{primeQ} modules that establish Znumtheory primality.
+structure). We have formally verified that these prime numbers are indeed prime using Coqprime \cite{thery2007primality}.
 \item \textbf{Generators}: The generator $g$ is a Schnorr group element (of order $q$ modulo $p$), 
 verified to satisfy $g^q \equiv 1 \pmod{p}$.
 \item \textbf{Election Keys}: For the 2024 IACR election (7 candidates), the public key $h_{2024}$ encodes 
-election-specific parameters. Alternative instantiations for 2023 and 2022 elections are available but 
-commented in the code due to extraction constraints.
-\end{itemize}
-
-\textbf{Implementation Details}: The (src/Executable/HeliosVerifiercode/main.ml) 
-file implements the OCaml interface:
-
-\begin{itemize}
-\item Reads JSON ballot data, tallier decryption factors, and proofs from stdin
-\item Calls \texttt{compute\_final\_count\_ins}, which executes the formal verification state machine
-\item Returns the \texttt{count} proof term (inductive derivation tree) showing all ballots processed correctly
-\item Outputs human-readable verification results including:
-\begin{itemize}
-\item Classification of each ballot as valid/invalid with proof details
-\item Intermediate encrypted tallies after each ballot aggregation
-\item Final tally statistics (total ballots, valid count, invalid count)
-\item Detailed checks on decryption factor validity, plaintext-ciphertext consistency, tallier POKs, 
-and public key product verification
-\end{itemize}
-\end{itemize}
-
-\textbf{Verification Integrity}: The extracted OCaml code inherits the security guarantees from Rocq 
-specifications. Each verification step is backed by formal proofs:
-\begin{itemize}
-\item Ballot processing follows the rules of And-$\Sigma$ composition (verifying multiple disjunctions)
-\item Ciphertext aggregation preserves correctness through ElGamal homomorphism
-\item Decryption factor validation uses Chaum-Pedersen discrete log equality proofs
-\item Plaintext verification reduces to discrete log checking
-\item POK verification uses Schnorr protocol soundness
+election-specific parameters. 
 \end{itemize}
 
 The verifier has successfully validated real IACR 2024 election data, demonstrating practical deployment 

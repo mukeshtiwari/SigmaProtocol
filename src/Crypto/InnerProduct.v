@@ -318,7 +318,12 @@ Section DL.
           cbn in gs, hs, av, bv, cs.
           destruct (vector_inv_S cs) as (csh & cst & ha).
           destruct (splitat _ av) as (avl & avh) eqn:hb.
-          eapply append_splitat in hb.
+          destruct (splitat _ bv) as (bvl & bvh) eqn:hc.
+          destruct (splitat _ gs) as (gsl & gsh) eqn:hd.
+          destruct (splitat _ hs) as (hsl & hsh) eqn:he.
+          eapply append_splitat in hb, hc, hd, he.
+          
+          
           
       Admitted.
 
