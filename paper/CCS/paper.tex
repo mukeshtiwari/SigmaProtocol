@@ -843,7 +843,15 @@ where $r_{i,1}, r_{i,2}$ are the two responses for pair $(i,j)$ and $t_{i,j}$ is
 Okamoto commitment. The correctness of the Okamoto component for inequality relies on the algebraic identity: if $x_i = x_j$, 
 then $(x_i - x_j)^{-1}$ would be undefined (division by zero), making it impossible for the prover to 
 construct valid witnesses. Conversely, when $x_i \neq x_j$, the witnesses 
-$\left(x_i \cdot (x_i - x_j)^{-1}, (x_j - x_i)^{-1}\right)$ satisfy $(g_i \cdot g_j)^{x_i \cdot (x_i - x_j)^{-1}} \cdot (h_i \cdot h_j)^{(x_j - x_i)^{-1}}$ = $g_i^{x_i \cdot (x_i - x_j)^{-1}} \cdot g_j^{x_i \cdot (x_i - x_j)^{-1}} \cdot h_i^{(x_j - x_i)^{-1}} \cdot h_j^{(x_j - x_i)^{-1}}$ = $g_j$ after algebraic simplification using $h_i = g_i^{x_i}$ and $h_j = g_j^{x_j}$.
+$\left(x_i \cdot (x_i - x_j)^{-1}, (x_j - x_i)^{-1}\right)$ satisfy
+\begin{align*}
+&(g_i \cdot g_j)^{x_i \cdot (x_i - x_j)^{-1}} \cdot (h_i \cdot h_j)^{(x_j - x_i)^{-1}} \\
+= {}& g_i^{x_i \cdot (x_i - x_j)^{-1}} \cdot g_j^{x_i \cdot (x_i - x_j)^{-1}} \cdot h_i^{(x_j - x_i)^{-1}} \cdot h_j^{(x_j - x_i)^{-1}} \\
+= {}& g_i^{x_i \cdot (x_i - x_j)^{-1}} \cdot g_j^{x_i \cdot (x_i - x_j)^{-1}} \cdot g_i^{x_i \cdot (x_j - x_i)^{-1}} \cdot g_j^{x_j \cdot (x_j - x_i)^{-1}} \\
+= {}& g_i^{x_i \cdot (x_i - x_j)^{-1} + x_i \cdot (x_j - x_i)^{-1}} \cdot g_j^{x_i \cdot (x_i - x_j)^{-1} + x_j \cdot (x_j - x_i)^{-1}} \\
+= {}& g_i^0 \cdot g_j^1 = g_j,
+\end{align*}
+where we use $h_i = g_i^{x_i}$, $h_j = g_j^{x_j}$, and $(x_j - x_i)^{-1} = -(x_i - x_j)^{-1}$.
 
 Our Rocq formalisation proves the three standard $\Sigma$-protocol properties:
 
