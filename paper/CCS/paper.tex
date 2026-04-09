@@ -457,31 +457,18 @@ zero-knowledge proof.
     \begin{align*}
       g^r = g^{u + c * w} = g^u * (g^w)^c = a * h^c
     \end{align*}
-  \item \textbf{special soundness:} from two accepting 
-  conversations $(a, c, r)$ and $(a, c', r')$ where $c \neq c'$,
-  a polynomial-time extractor can extract a witness $w$, 
-  which is equal to $(r - r') * (c - c')^{-1}$, 
-  such that $g^w = h$. By means of algebraic simplification, 
-  we can see that it is the case.  
-  \begin{align}
-    g^r = a * h^c = g^u * (g^w)^c = g^{u + w * c}  \\
-    g^{r'} = a * h^{c'} = g^u * (g^w)^{c'} = g^{u + w * c'}
-  \end{align}
-  Diving the expression (1) with (2), we get
-  \begin{align*}
-    g^{(r-r')} = g^{w * (c - c')}
-  \end{align*}
-  and multiplying both sides by $(c - c')^{-1}$ we 
-  get 
-  \begin{align*}
-    g^{(r-r') * (c - c')^{-1}} = g^{w}
-  \end{align*}
+  \item \textbf{special soundness:} given two accepting 
+  conversations $(a, c, r)$ and $(a, c', r')$ with $c \neq c'$,
+  we have 
+  \[ g^r = a * h^c, \quad g^{r'} = a * h^{c'}. \]
+  It follows that $h = g^{(r-r')/(c-c')}$, hence we obtain
+  the witness $w$ satisfying $h=g^w$ as $w = (r - r')/(c - c')$.
 
   \item \textbf{special honest-verifier zero-knowledge proof:}
-   for a \emph{fixed} verifier challenge $c$, the distribution of transcripts from an honest
-   conversation--involving the witness $w$--and the distribution of transcripts output by a
-   simulator--without the witness $w$--are identical. We can see this algebraically: both
-   distributions \ref{f} and \ref{snd} are uniform over $Z_q$, i.e., each transcript occurs
+   given challenge $c$, the distribution of conversations between a prover using
+   witness $w$ and an honest verifier and the distribution of conversations output by a
+   simulator as defined below--without access to witness $w$--are identical. Both
+   distributions (\ref{f}) and (\ref{snd}) are uniform with each conversation occurring 
    with probability $1/q$.
    \begin{align}\label{f}
     \{(a, c, r) \mid u \in_{R} Z_q ; a := g^u; r := u + c * w \}
