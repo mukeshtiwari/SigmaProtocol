@@ -85,6 +85,8 @@
 \usepackage{cryptocode}
 \usepackage{lstcoq}
 \usepackage[utf8]{inputenc}
+\usepackage{amsmath}
+\usepackage{seqsplit}
 %% End of get rid of this for the final version
 
 
@@ -250,7 +252,7 @@ These unfortunate situations can largely be attributed to two factors:
 discovered by researchers who inspected the code after they were made public, and 
 (ii) software testing which is inadequate to rule out all the bugs 
 from a software. Therefore, to avoid the situations like this, 
-an electronic voting system must adhere to \textit{software independence}\cite{rivest2008notion}:
+an electronic voting system must adhere to \textit{software independence} \cite{rivest2008notion}:
 \begin{quote}
   A voting system is software-independent if an
   (undetected) change or error in its software cannot
@@ -599,26 +601,26 @@ Proof using -(x R). (* proof terms omitted *) Qed.
 To reason about special honest-verifier zero-knowledge proof 
 intuitively, we need a model of uniform distribution. 
 We follow \cite{erwig2006functional}  and 
-encode the distribution a list of tuples where the 
+encode the distribution, shown in Listing \ref{prob_def}, as a list of tuples where the 
 second element of a tuple is probability--represented as 
 a rational number--of the first element 
 of the tuple. Moreover, we define equality on distribution by 
 stating that two distributions are equal if they are permutation 
 of each other. This encoding is flexible and allows us 
-to encode any kind of distribution. We prove that the dist is a 
+to encode any kind of distribution. We prove that the \texttt{dist} is a 
 monad \cite{erwig2006functional} by 
-giving it a suitable definitions of \textit{ret} and 
-\textit{bind}. Making it an instance of monad allows us 
+giving it a suitable definitions of \texttt{Ret} and 
+\texttt{Bind}. Making it an instance of monad allows us 
 to compose a distribution $d$ $n$ times to 
 obtain a distribution on a vector of $n$ elements, 
 needed in proving the special honest-verifier 
 zero-knowledge proof of $n$ composed $\Sigma$-protocol.
 However, we need uniform 
 distribution, rather than an arbitrary distribution, to reason about 
-zero-knowledge of $\Sigma$-protocol, and therefore we define a function $uniform\_with\_replacement$ 
-to generate uniform distributions, shown in Listing \ref{prob_def}.
+zero-knowledge of $\Sigma$-protocol, and therefore we define a function 
+\texttt{\seqsplit{uniform\_with\_replacement}} to generate uniform distributions, shown in Listing \ref{prob_def}.
 
-\begin{lstlisting}[frame=single, language=Coq, caption={Definition of Uniform Probability Distribution},
+\begin{lstlisting}[frame=single, language=Coq, caption={Uniform Probability Distribution},
     label={prob_def},captionpos=t, basicstyle=\ttfamily\footnotesize,
     abovecaptionskip=-\medskipamount]
 (* Probability Distribution on a type A *)
@@ -651,12 +653,23 @@ Defined.
 
   
 We now have all ingredients for the special honest-verifier zero-knowledge proof of the Schnorr protocol. We define the 
-Schnorr distribution $schnorr\_distribution$
+Schnorr distribution \texttt{\seqsplit{schnorr\_distribution}}
 that involves the secret $x$ and 
-the simulator distribution $simulator\_distribution$
+the simulator distribution \texttt{\seqsplit{simulator\_distribution}}
 that does not involve the secret $x$, shown in Listing \ref{def_zero}. 
-Both distributions sample a random field element $u$ from $uniform\_with\_replacement \text{ }lf \text{ } Hlfn$, where $lf$ lists the elements from which $u$ is drawn and $Hlfn$ asserts that $lf$ is non-empty, to construct their respective distributions on the sigma protocol. 
-Using these definitions, we prove that the two distributions coincide in the $special\_honest\_verifier\_zkp$ theorem. Unlike the standard informal presentation pervasive throughout the cryptography literature, these distributions are not syntactically identical but they coincide modulo $accepting\_conversation$. We therefore apply $accepting\_conversation$to the first (transcript) component of each pair in both distributions, obtaining the boolean value $true$ in all cases. After this transformation, the resulting distributions are identical.
+Both distributions sample a random field element $u$ from 
+\texttt{\seqsplit{uniform\_with\_replacement}} \texttt{lf} \ \texttt{Hlfn}, 
+where \texttt{lf} lists the elements from which $u$ is drawn and 
+\texttt{Hlfn} asserts that \texttt{lf} is non-empty, 
+to construct their respective distributions on the sigma protocol.
+Using these definitions, we prove that the two distributions coincide in the 
+\texttt{\seqsplit{special\_honest\_verifier\_zkp}} theorem. Unlike the standard informal 
+presentation pervasive throughout the cryptography literature, these distributions 
+are not syntactically identical but they coincide modulo 
+\texttt{\seqsplit{accepting\_conversation}}. We therefore apply \texttt{\seqsplit{accepting\_conversation}} 
+to the first component (transcript) of each pair in both distributions, obtaining 
+the boolean value \texttt{true} in all cases. After this transformation, the 
+resulting distributions are identical.
 
 
 \begin{lstlisting}[frame=single, language=Coq, caption={Special Honest-Verifier Zero-Knowledge Proof},
@@ -689,7 +702,8 @@ Lemma special_honest_verifier_zkp :
 Proof. (* proof terms omitted *) Qed. 
 \end{lstlisting}
 
-As we stated previously that we have also formalised methods for combining $n$ \textit{And}, \textit{Or}, \textit{Eq}, \textit{Parallel}, and \textit{Neq} Schnorr statements, where proving the special honest-verifier zero-knowledge property is more challenging than for a single Schnorr statement. One major challenge is drawing $n$ random elements from a uniform distribution. We therfore define the function $repeat\_dist\_ntimes\_vector$---shown in Listing~\ref{dist_comp}---which takes a distribution $d$ and a number $n$ and returns a distribution over vectors of length $n$, encoded as $dist\,({Vector.t}\,A\,n)$. Note that this is a generic function that can be instantiated with any distribution. In cryptography, however, we are primarily concerned with the uniform distribution; in the theorem $uniform\_probability\_multidraw\_prob$, we instantiate the distribution with $uniform\_with\_replacement\;lf\;Hlf$ and prove that its probability is $1/|lf|^n$. We use this function consistently throughout the formalisation. As an example, we illustrate a case of the parallel composition in which \(n\) statements are combined, requiring a vector of \(n\) random field elements to establish the zero-knowledge property, as shown in $parallel\_schnorr\_distribution$.
+As we stated previously, we have formalised methods for combining $n$ And, Or, Eq, Parallel, and Neq Schnorr statements, where proving the special honest-verifier zero-knowledge property is more challenging than for a single Schnorr statement. One major challenge is drawing $n$ random elements from a uniform distribution. We therefore define the function \texttt{\seqsplit{repeat\_dist\_ntimes\_vector}}---shown in Listing~\ref{dist_comp}---which takes a distribution $d$ and a number $n$ and returns a distribution over vectors of length $n$, encoded as \texttt{dist}\,(\texttt{Vector.t}\,A\,n). Note that this is a generic function that can be instantiated with any distribution. In cryptography, however, we are primarily concerned with the uniform distribution; in the theorem \texttt{\seqsplit{uniform\_probability\_multidraw\_prob}}, we instantiate the distribution with \texttt{uniform\_with\_replacement} \texttt{lf} \texttt{Hlf} and prove that its probability is $1/|lf|^n$. We use this function consistently throughout the formalisation. As an example, we illustrate a case of the parallel composition in which $n$ statements are combined, requiring a vector of $n$ random field elements to establish the zero-knowledge property, as shown in \texttt{\seqsplit{parallel\_schnorr\_distribution}}.
+
 
 \begin{lstlisting}[frame=single, language=Coq, caption={Composition of a Distribution},
 label={dist_comp},captionpos=t, basicstyle=\ttfamily\footnotesize,
@@ -728,9 +742,9 @@ The Or-$\Sigma$ protocol allows a prover to demonstrate knowledge of one witness
 without revealing which specific statement they know. Formally, given public group elements $(g_1, h_1), (g_2, h_2), \ldots, (g_n, h_n)$, 
 the prover convinces the verifier that they know a witness $x_k$ such that $h_k = g_k^{x_k}$ for some $k \in \{1, \ldots, n\}$, 
 without revealing the index $k$ or the witness $x_k$. The key insight behind the Or composition, introduced by Cramer, Damg\aa rd, and Schoenmakers~\cite{cramer1994proofs}, 
-is to allow the prover a controlled degree of freedom to ``cheat'' on statements for which they do not know witnesses.  We implement this protocol generically for $n \geq 2$ statements. The prover, knowing the witness for the $k$-th relation (where $k$ is specified as a finite index of sort $Fin.t \text{ }(2+n)$), first enters the commitment phase by choosing random values: $u_k$ for the real commitment, and for each simulated statement $i \neq k$, random values $u_i$ and $c_i$. The prover then computes the real commitment $t_k = g_k^{u_k}$ for statement $k$ and simulated commitments $t_i = g_i^{u_i} \cdot h_i^{-c_i}$ for $i \neq k$, sending the vector of commitments $(t_1, \ldots, t_n)$ to the verifier. In the challenge phase, the verifier responds with a random challenge $c$. Finally, during the response phase, the prover computes $c_k = c - \sum_{i \neq k} c_i$, along with $s_k = u_k + c_k \cdot x_k$ as the honest response for the real statement, while for $i \neq k$, the responses $s_i$ are set to the previously chosen $u_i$. The prover then sends both response vectors $(s_1, \ldots, s_n)$ and $(c_1, \ldots, c_n)$. The verifier accepts if: (i) $c = \sum_{i=1}^{n} c_i$, and (ii) for each $i$, $g_i^{s_i} = t_i \cdot h_i^{c_i}$.
+is to allow the prover a controlled degree of freedom to \emph{cheat} on statements for which they do not know witnesses.  We implement this protocol generically for $n \geq 2$ statements. The prover, knowing the witness for the $k$-th relation (where $k$ is specified as a finite index of sort \texttt{Fin.t (2+n)}), first enters the commitment phase by choosing random values: $u_k$ for the real commitment, and for each simulated statement $i \neq k$, random values $u_i$ and $c_i$. The prover then computes the real commitment $t_k = g_k^{u_k}$ for statement $k$ and simulated commitments $t_i = g_i^{u_i} \cdot h_i^{-c_i}$ for $i \neq k$, sending the vector of commitments $(t_1, \ldots, t_n)$ to the verifier. In the challenge phase, the verifier responds with a random challenge $c$. Finally, during the response phase, the prover computes $c_k = c - \sum_{i \neq k} c_i$, along with $s_k = u_k + c_k \cdot x_k$ as the honest response for the real statement, while for $i \neq k$, the responses $s_i$ are set to the previously chosen $u_i$. The prover then sends both response vectors $(s_1, \ldots, s_n)$ and $(c_1, \ldots, c_n)$. The verifier accepts if: (i) $c = \sum_{i=1}^{n} c_i$, and (ii) for each $i$, $g_i^{s_i} = t_i \cdot h_i^{c_i}$.
 
-Our Rocq formalisation of the Or-$\Sigma$ protocol, implemented in \texttt{src/Crypto/OrSigmaGen.v}, supports $n \geq 2$ statements with arbitrary generators for each statement, enabling proofs of knowledge for relations $g_i^{x_i} = h_i$. The formalisation proves three security properties: completeness (honest execution always verifies), special soundness (shown in $generalised\_or\_sigma\_soundness\_main$, which recovers a witness from two accepting transcripts with the same commitments but different challenges), and special honest-verifier zero-knowledge (the distribution of real transcripts involving the witness is identical to the simulator distribution without the witness).
+Our Rocq formalisation of the Or-$\Sigma$ protocol supports $n \geq 2$ statements with arbitrary generators for each statement, enabling proofs of knowledge for relations $g_i^{x_i} = h_i$. The formalisation proves three security properties: completeness (honest execution always verifies), special soundness (shown in \texttt{\seqsplit{generalised\_or\_sigma\_soundness\_main}}, which recovers a witness from two accepting transcripts with the same commitments but different challenges), and special honest-verifier zero-knowledge (the distribution of real transcripts involving the witness is identical to the simulator distribution without the witness).
 
 \begin{lstlisting}[frame=single, language=Coq, caption={Special Soundness},
 label={dist_comp},captionpos=t, basicstyle=\ttfamily\footnotesize,
@@ -766,11 +780,9 @@ $\prod_{i=1}^{n} g_i^{r_i} = t \cdot h^c$. Verification correctness follows from
 \left(\prod_{i=1}^{n} g_i^{u_i}\right) \cdot \left(\prod_{i=1}^{n} g_i^{x_i}\right)^c = t \cdot h^c
 \]
 
-Our Rocq formalisation implements the generalised Okamoto protocol for $n \geq 2$ generators in 
-src/Crypto/Okamoto.v. The key functions include: $generalised\_okamoto\_commitment$ (computes $\prod_{i=1}^{n} g_i^{u_i}$), 
-$generalised\_okamoto\_response$ (computes responses $r_i = u_i + c \cdot x_i$), and 
-$generalised\_okamoto\_accepting\_conversation$ (verifies the product equality condition). 
-We also provide specialised instances for the base case of exactly two generators ($n=2$), which is heavily used in the Neq composition. The formalisation proves all three security properties:
+Our Rocq formalisation implements the generalised Okamoto protocol for $n \geq 2$ generators. The key functions include: \texttt{\seqsplit{generalised\_okamoto\_commitment}} (computes $\prod_{i=1}^{n} g_i^{u_i}$), 
+\texttt{\seqsplit{generalised\_okamoto\_response}} (computes responses $r_i = u_i + c \cdot x_i$), and 
+\texttt{\seqsplit{generalised\_okamoto\_accepting\_conversation}} (verifies the product equality condition). We also provide specialised instances for the base case of exactly two generators ($n=2$), which is heavily used in the Neq composition. The formalisation proves all three security properties:
 \begin{itemize}
 \item \textbf{Completeness}: 
 When both prover and verifier follow the protocol honestly with $h = \prod_{i=1}^{n} g_i^{x_i}$, 
@@ -797,8 +809,7 @@ distribution framework.
 Beyond the standard $\Sigma$-protocol properties, our formalisation includes witness indistinguishability 
 results critical for the Neq composition. We prove that transcripts generated with different witness 
 vectors $\mathbf{x}_1$ and $\mathbf{x}_2$ satisfying the same relation $h = \prod_{i=1}^{n} g_i^{x_{1,i}} = 
-\prod_{i=1}^{n} g_i^{x_{2,i}}$ are computationally indistinguishable. The proof, shown in Listing \ref{wit_ind}, 
-$generalised\_okamoto\_witness\_indistinguishable$ relies on two 
+\prod_{i=1}^{n} g_i^{x_{2,i}}$ are computationally indistinguishable. The proof \texttt{\seqsplit{generalised\_okamoto\_witness\_indistinguishable}}, shown in Listing \ref{wit_ind}, relies on two 
 bijective transformation functions that map 
 randomness between the two witness spaces, along with the homomorphic property showing that 
 $\prod_{i=1}^{n} g_i^{u_i - v_i} = \left(\prod_{i=1}^{n} g_i^{u_i}\right) \cdot 
@@ -818,7 +829,7 @@ Theorem generalised_okamoto_witness_indistinguishable {n : nat} :
   ([a]; [c]; rs) = generalised_okamoto_real_protocol xs1 gs h us c ->
   (* Then there exists unique us' producing the same transcript for xs' *)
   exists! us' : Vector.t F (2 + n),
-    ([a]; [c]; rs) = generalised_okamoto_real_protocol xs2 gs h us' c.
+  ([a]; [c]; rs) = generalised_okamoto_real_protocol xs2 gs h us' c.
 Proof. (* proof terms omitted *) Qed.
 \end{lstlisting}
 
@@ -832,8 +843,7 @@ deployed than Or and And compositions in current systems like Helios and Belenio
 
 The protocol structure for $n \geq 2$ statements is inherently quadratic in complexity due to 
 the pairwise nature of inequality constraints. For each pair of indices $(i, j)$ with $i < j$, 
-the prover must demonstrate that $x_i \neq x_j$ without revealing the values. Our implementation 
-in src/Crypto/NeqSigma.v works as follows: the protocol begins with the commitment phase, in which the prover generates randomness for two components. For the And component, the prover uses $2+n$ random values to create commitments $t_i = g_i^{u_i}$ for each $i \in \{1, \ldots, 2+n\}$, proving knowledge of all discrete logarithms. For the Okamoto component, the prover generates an Okamoto commitment for each pair $(i, j)$ with $i < j$ using generators $(g_i \cdot g_j, h_i \cdot h_j)$ and specially constructed witnesses $\left(x_i \cdot (x_i - x_j)^{-1}, (x_j - x_i)^{-1}\right)$ that encode the inequality constraint, resulting in $\binom{2+n}{2} = (2+n)(1+n)/2$ such commitments. The combined commitment vector, of dimension $(2+n) + \binom{2+n}{2}$, is then sent to the verifier. In the challenge phase, the verifier responds with a random challenge $c$ from the underlying field. Finally, in the response phase, the prover computes two sets of responses: the And responses $r_i = u_i + c \cdot x_i$ for each $i$ (as in the standard And composition), and the Okamoto responses—a two-dimensional response for each pair $(i, j)$ using the transformed witnesses and randomness, yielding $(2+n)(1+n)$ field elements in total. This results in a response vector of dimension $(2+n) + (2+n)(1+n) = (2+n)^2$, which is sent to the verifier.
+the prover must demonstrate that $x_i \neq x_j$ without revealing the values. Our implementation works as follows: the protocol begins with the commitment phase, in which the prover generates randomness for two components. For the And component, the prover uses $2+n$ random values to create commitments $t_i = g_i^{u_i}$ for each $i \in \{1, \ldots, 2+n\}$, proving knowledge of all discrete logarithms. For the Okamoto component, the prover generates an Okamoto commitment for each pair $(i, j)$ with $i < j$ using generators $(g_i \cdot g_j, h_i \cdot h_j)$ and specially constructed witnesses $\left(x_i \cdot (x_i - x_j)^{-1}, (x_j - x_i)^{-1}\right)$ that encode the inequality constraint, resulting in $\binom{2+n}{2} = (2+n)(1+n)/2$ such commitments. The combined commitment vector, of dimension $(2+n) + \binom{2+n}{2}$, is then sent to the verifier. In the challenge phase, the verifier responds with a random challenge $c$ from the underlying field. Finally, in the response phase, the prover computes two sets of responses: the And responses $r_i = u_i + c \cdot x_i$ for each $i$ (as in the standard And composition), and the Okamoto responses—a two-dimensional response for each pair $(i, j)$ using the transformed witnesses and randomness, yielding $(2+n)(1+n)$ field elements in total. This results in a response vector of dimension $(2+n) + (2+n)(1+n) = (2+n)^2$, which is sent to the verifier.
 
 
 The verifier accepts if both sub-protocol verifications succeed: (i) the And verifier confirms that 
@@ -860,11 +870,6 @@ Our Rocq formalisation proves the three standard $\Sigma$-protocol properties:
 When the prover knows distinct witnesses $x_1, \ldots, x_{2+n}$ satisfying $g_i^{x_i} = h_i$ and $x_i \neq x_j$ 
 for all $i \neq j$, the verification always succeeds. The proof combines completeness results from both the And composition completenes and the Okamoto protocol completeness for each pair.
 
-\item \textbf{Special soundness}: 
-From two accepting transcripts with the same commitments but different challenges $c_1 \neq c_2$, 
-an extractor can recover witnesses $x_1, \ldots, x_{2+n}$ satisfying the discrete logarithm relations. 
-However, proving that the extracted witnesses are necessarily distinct requires an additional assumption about generator independence. Our formalisation proves an unconditional dichotomy: either the extracted witnesses are pairwise distinct, \emph{or} there exists a non-trivial discrete logarithm relation between generators (e.g., $g_j = g_i^\alpha$ for some $\alpha$, or one generator is the identity). This captures special soundness without assuming independence explicitly, leveraging decidability of the relevant propositions to convert the implication into a constructive disjunction.
-
 \item \textbf{Special honest-verifier zero-knowledge}: 
 The real transcript distribution (generated with witnesses $x_1, \ldots, x_{2+n}$) is identical to the 
 simulator distribution (without witnesses). The simulator splits randomness between And and Okamoto 
@@ -872,20 +877,26 @@ components: for And, it uses the standard simulator producing commitments $t_i =
 for each Okamoto pair, it generates simulated commitments independently. Both distributions produce 
 accepting transcripts with probability $1/|\mathbb{F}|^{(2+n) + (2+n)(1+n)} = 1/|\mathbb{F}|^{(2+n)^2}$, proven 
 using our uniform probability distribution framework.
+
+\item \textbf{Special soundness}: 
+From two accepting transcripts with the same commitments but different challenges $c_1 \neq c_2$, 
+an extractor can recover witnesses $x_1, \ldots, x_{2+n}$ satisfying the discrete logarithm relations. 
+However, proving that the extracted witnesses are necessarily distinct requires an additional assumption about generator independence. Our formalisation, shown in Listing \ref{neq_special_sound}, proves an unconditional dichotomy: either the extracted witnesses are pairwise distinct, \emph{or} there exists a non-trivial discrete logarithm relation between generators (e.g., $g_j = g_i^\alpha$ for some $\alpha$, or one generator is the identity). This captures special soundness without assuming independence explicitly, leveraging decidability of the relevant propositions to convert the implication into a constructive disjunction.
 \end{itemize}
+
 
 The implementation requires randomness of dimension $(2+n) + (2+n)(1+n) = (2+n)^2$ and produces proof transcripts of size $O(n^2)$, which reflects the quadratic nature of pairwise inequality constraints.
 
 
-\begin{lstlisting}[frame=single, language=Coq, caption={Witness Indistinguishability},
-label={dist_comp},captionpos=t, basicstyle=\ttfamily\footnotesize,
+\begin{lstlisting}[frame=single, language=Coq, caption={Neq Special Soundness},
+label={neq_special_sound},captionpos=t, basicstyle=\ttfamily\footnotesize,
 abovecaptionskip=-\medskipamount]
 Theorem generalised_neq_accepting_conversations_soundenss :
   forall (n : nat) (a : Vector.t G (2 + n + (2 + n) * (1 + n) / 2)) 
   (c1 c2 : F) (rs1 rs2 : Vector.t F (2 + n + (2 + n) * (1 + n))) 
   (gs hs : Vector.t G (2 + n)), [c1] <> [c2] ->
-  generalised_neq_accepting_conversations gs hs (a; [c1]; rs1) = true ->
-  generalised_neq_accepting_conversations gs hs (a; [c2]; rs2) = true ->
+  neq_accepting_conversations gs hs (a; [c1]; rs1) = true ->
+  neq_accepting_conversations gs hs (a; [c2]; rs2) = true ->
   exists (xs : Vector.t F (2 + n)), 
   (forall (i : Fin.t (2 + n)), hs[@i] = gs[@i] ^ xs[@i]) /\
   ((forall (i j : Fin.t (2 + n)), i <> j -> xs[@i] <> xs[@j]) \/
@@ -927,7 +938,7 @@ g^{\sum_i \alpha_i \cdot s_{1,i}} &= g^{\sum_i \alpha_i \cdot (u_i + c \cdot v_i
 g^{\sum_i \alpha_i \cdot u_i} \cdot g^{c \cdot \sum_i \alpha_i \cdot v_i} = t_{n+1} \cdot g^{c \cdot z}
 \end{align*}
 
-Our Rocq formalisation in PedLinearRel.v implements this protocol 
+Our Rocq formalisation implements this protocol 
 with generic support for arbitrary $n \geq 2$ commitments and linear constraints. The formalisation proves all three security properties:
 
 \begin{itemize}
@@ -966,15 +977,11 @@ and the Schnorr group \cite{schnorr1991efficient} (mulitplicative
 group of integers modulo a large prime p) --shown in Listing \ref{group_def}-- in the Rocq theorem prover. 
 To encode the Schnorr group, we postulate three integer $k, p, \text{ and } q$. 
 Moreover, we assume $p \text{ and } q$ are primes where $p = k * q + 1$ (when 
-$k = 2$, these primes are called Sophie Germain primes). Finally, 
-we encode the neutral element ($one$), the group multiplication ($mul\_schnorr\_group$), 
-and the group inverse $inv\_schnorr\_group$ and we prove that our encoding 
+$k = 2$, these primes are called Sophie Germain primes). Finally, we encode the neutral element (\texttt{one}), the group multiplication (\texttt{\seqsplit{mul\_schnorr\_group}}), 
+and the group inverse (\texttt{\seqsplit{inv\_schnorr\_group}}) and we prove that our encoding 
 of the Schnorr group in Rocq is a commutative group by making it 
-an instance of the typeclass $schnorr\_comm$, which is an abstract typeclass that bundles the axioms 
-of commutative group. 
-
-
-
+an instance of the typeclass \texttt{\seqsplit{schnorr\_comm}}, which is an abstract typeclass that bundles the axioms 
+of a commutative group.
 
 
  \begin{lstlisting}[frame=single, language=Coq, caption={Rocq Encoding of the Schnorr Group},
@@ -1009,13 +1016,13 @@ End SchnorrGroup.
 \end{lstlisting}
 
 
-In order to encode prime field, we postulate an integer $p$ and 
+In order to encode a prime field, we postulate an integer $p$ and 
 axiom that $p$ is prime. We encode the prime field as 
-a record $Zp$ that contains an integer $v$ with an axiom 
-that it is in the range of $[0 \ldots p)$. Moreover, 
-we define all the operation of $Zp$ and prove that 
-it is an instance of the typeclass $zp\_field$, which is 
-a typeclass that encodes the axioms of a field. 
+a record \texttt{Zp} that contains an integer $v$ with an axiom 
+that it is in the range $[0 \ldots p)$. Moreover, 
+we define all the operations of \texttt{Zp} and prove that 
+it is an instance of the typeclass \texttt{zp\_field}, which is 
+a typeclass that encodes the axioms of a field.
 
 \begin{lstlisting}[frame=single, language=Coq, caption={Rocq Encoding of Prime Field},
   label={field_def},captionpos=t, basicstyle=\ttfamily\footnotesize,
@@ -1040,7 +1047,7 @@ shown in Listing \ref{vec_space}.
 However, in order to establish that it is an 
 instance of vector space we need the definition 
 of scalar mulitiplication. We encode the  
-the scalar mulitplication $pow$ of 
+the scalar mulitplication \texttt{pow} of 
 vector space that takes an element from 
 a Schnorr group and an element from 
 the prime field and returns an element in the 
@@ -1082,36 +1089,7 @@ prime \cite{10.1007/978-3-662-63958-0_24}.
 \end{lstlisting}
 
 \subsection{Efficient Extractor.}
-In this section we explain the ideas behind the formalisation of 
-efficient extractor and simulator. Recall that in $\Sigma$-protocol, 
-the extractor is efficient, i.e., it runs in polynomial time in its input length.
-However, the functions from the vector space does not captures the 
-infomation about complexity of operations, i.e., they do not 
-capture the number of steps they take to compute for a given input. 
-In our formalisation, we found that we could have followed the 
-monadic approach \cite{10.1145/3473585,10.1145/3158124} by adding an extra 
-return value for the number of steps it takes during the 
-execution for a given input for all the functions in vector space. 
-Moreover, monadic approach composes well, i.e., we can take 
-two monadic functions and by composing them together we 
-can compute the complexity of composed function. However, 
-during the code extraction into Rust and WebAssembly, it would 
-have stuck with all the function and destroyed our APIs. 
-Therefore, we decided to take another approach. 
-In practice, an extractor in multiplicative group is 
-a function that can compute the inverse efficiently and 
-in our concrete model we compute inverse using 
-the binary exponentiation function $repeat\_op\_ntimes\_rec$. 
-Therefore, we decided to encode an inductive data type $complexity\_repeat\_op\_ntimes\_rec$ --shown in \ref{extractor_complex}--
-that captures the number of steps of a binary exponentiation 
-fuction. Finally, we proved in theorem $correct\_complexity\_repeat\_op\_ntimes\_rec$ that 
-(concrete) function $repeat\_op\_ntimes\_rec$ runs in logarithmic in its input, or 
-polynomial (linear) in the nubmer of bits of its input. With this method, 
-we do not need to change anything in our API but the downside is that 
-it does not compose well like monadic approach. Nonetheless, it is 
-sufficient for our approach because our main goal is to extract 
-Rust and WebAssembly from our formalisation whose API are closely 
-aligned with a real-world library. 
+In this section, we explain the key ideas underlying the formalisation of an efficient extractor and simulator. Recall that in a $\Sigma$-protocol, the extractor is required to be efficient, i.e., it runs in time polynomial in the size of its input. However, functions defined over vector spaces do not capture computational complexity; in particular, they provide no information about the number of computational steps required to evaluate them on a given input. One possible approach in our formalisation would have been to adopt a monadic style~\cite{10.1145/3473585,10.1145/3158124}, where each function additionally returns the number of steps taken during its execution. This approach has the advantage of compositionality: given two monadic functions, their composition naturally yields the complexity of the combined computation. However, during code extraction, this additional bookkeeping would propagate through all functions, significantly complicating and effectively degrading the intended API. Instead, we adopt a more targeted approach. In practice, an extractor over a multiplicative group relies on the ability to efficiently compute inverses. In our concrete model, inverse is implemented via binary exponentiation using the function \texttt{\seqsplit{repeat\_op\_ntimes\_rec}}. We therefore introduce an inductive data type \texttt{\seqsplit{complexity\_repeat\_op\_ntimes\_rec}}, shown in Listing~\ref{extractor_complex}, that captures the number of steps performed by this binary exponentiation procedure. Finally, we prove in theorem \texttt{\seqsplit{correct\_complexity\_repeat\_op\_ntimes\_rec}} that the function \texttt{\seqsplit{repeat\_op\_ntimes\_rec}} runs in logarithmic time in the value of its input, equivalently linear in the bit-length of the input. This approach allows us to preserve a clean API without introducing monadic overhead. While it lacks the compositional advantages of the monadic approach, it is sufficient for our purposes, as our primary objective is to extract executable (Rust, OCaml, and WebAssembly) code whose APIs closely match those of real-world cryptographic libraries.
 
 
 \begin{lstlisting}[frame=single, language=Coq, caption={Extractor Complexity},
@@ -1136,16 +1114,14 @@ Lemma correct_complexity_repeat_op_ntimes_rec :
 Proof. (* proof terms omitted *) Qed.
 \end{lstlisting}
 
-\section{Case Studies/Experiment}\label{case_studies}
+\section{Case Studies}\label{case_studies}
 
 \subsection{Approval Voting}
-
 Approval voting is a voting method where each voter can approve any subset of candidates independently. 
 Unlike plurality voting where each voter selects exactly one candidate, approval voting allows voters to express 
 support for multiple candidates, resulting in fairer representation of voter preferences. Our formalisation 
 implements approval voting using ElGamal encryption paired with \emph{Or-$\Sigma$} proofs to guarantee that 
-each vote is either 0 (not approved) or 1 (approved).  The frontend functions, shown in Listing \ref{frontend_fun}, realise the ballot-construction pipeline for approval voting. The function \texttt{encrypt\_vote} computes the ElGamal ciphertext \((g^r,\; g^m \cdot h^r)\) from generator \(g\), public key \(h\), vote value \(m\), and randomness \(r\). The function \texttt{generate\_enc\_proof} then constructs a two-branch \(\Sigma\)-proof that the ciphertext encrypts either zero (\(0\)) or 
-a non-zero value: it performs a case split with \texttt{Fdec m zero}, places the real witness in the corresponding branch index (\texttt{Fin.F1} when \(m=0\), otherwise \texttt{Fin.FS Fin.F1}), and simulates the other branch. Finally, \texttt{encrypt\_vote\_and\_generate\_enc\_proof} composes both steps and returns the ciphertext together with its proof as a single object for verification. Ideally, for the non-zero case the voter should encrypt \(1\) but it runs on the voter's computer so the voter can encrypt any value and produce a zero-knowledge proof but the verification function running at the backend will reject the proof, except for some negligible probability.  More precisely, \texttt{vote\_proof\_invalid\_reject} shows that for invalid votes \(m \neq 0,1\), verification returns false under the usual non-degenerate assumptions. The companion theorem \texttt{vote\_proof\_invalid\_accept} captures the exceptional case: if the prover can predict the verifier challenge (\(c_1 = c\)), an invalid transcript can still be accepted. Together, these results characterise the standard \(\Sigma\)-protocol soundness boundary and explain why unpredictable challenges are essential \cite{10.1007/978-3-642-34961-4_38,dao2023weak}
+each vote is either 0 (not approved) or 1 (approved).  The frontend functions, shown in Listing \ref{frontend_fun}, realise the ballot-construction pipeline for approval voting. The function \texttt{\seqsplit{encrypt\_vote}} computes the ElGamal ciphertext $(g^r,\; g^m \cdot h^r)$ from generator $g$, public key $h$, vote value $m$, and randomness $r$. The function \texttt{\seqsplit{generate\_enc\_proof}} then constructs a two-branch $\Sigma$-proof that the ciphertext encrypts either zero ($0$) or a non-zero value: it performs a case split with \texttt{Fdec} $m$ \texttt{zero}, places the real witness in the corresponding branch index (\texttt{Fin.F1} when $m=0$, otherwise \texttt{Fin.FS} \texttt{Fin.F1}), and simulates the other branch. Finally, \texttt{\seqsplit{encrypt\_vote\_and\_generate\_enc\_proof}} composes both steps and returns the ciphertext together with its proof as a single object for verification. Ideally, for the non-zero case a voter should encrypt $1$ but it runs on the voter's computer so the voter can encrypt any value and produce a zero-knowledge proof but the verification function running at the backend (server) will reject the proof, except for some negligible probability. More precisely, theorem \texttt{\seqsplit{vote\_proof\_invalid\_reject}} shows that for invalid votes $m \neq 0,1$, verification returns false under the usual non-degenerate assumptions. The companion theorem \texttt{\seqsplit{vote\_proof\_invalid\_accept}} captures the exceptional case: if the prover can predict the verifier challenge ($c_1 = c$), an invalid transcript can still be accepted. Together, these results characterise the standard \(\Sigma\)-protocol soundness boundary and explain why unpredictable challenges are essential \cite{10.1007/978-3-642-34961-4_38,dao2023weak}. 
 
 \begin{lstlisting}[frame=single, language=Coq, caption={Frontend Functions},
   label={frontend_fun},captionpos=t, basicstyle=\ttfamily\footnotesize,
@@ -1156,8 +1132,8 @@ Definition encrypt_vote (g h : G) (r : F) (m : F) : G * G :=
 
 (* create a proof *)
 Definition generate_enc_proof 
-  (g h : G) (r : F)  (m : F) (uscs : Vector.t F 3) (cp : G * G) (c : F) : 
-  @Sigma.sigma_proto F (G * G) 2 3 2 :=
+  (g h : G) (r : F)  (m : F) (uscs : Vector.t F 3) (cp : G * G) 
+  (c : F) : @Sigma.sigma_proto F (G * G) 2 3 2 :=
     match Fdec m zero with 
     | left _ => 
       @generalised_construct_encryption_proof_elgamal_real F zero 
@@ -1171,47 +1147,43 @@ Definition generate_enc_proof
         goes to the second place (Fin.FS Fin.F1) *)
     end.
 
-
-(* wrap both of them *)
-(* In this function, when you pass a value of m that not 0 and 1, the 
-function still creates a proof but it won't pass the check 
-of verify_encryption_vote_proof, which checks if cp is encryption of 
-zero or one. See the proofs vote_proof_valid and vote_proof_invalid *)
 Definition encrypt_vote_and_generate_enc_proof 
   (g h : G) (r : F)  (m : F) (uscs : Vector.t F 3) (c : F) : 
   G * G * @Sigma.sigma_proto F (G * G) 2 3 2 := 
   let cp := @enc F G gop gpow g h m r in
   let sig_proof := generate_enc_proof g h r m uscs cp c
   in (cp, sig_proof).
+
+Theorem vote_proof_invalid_reject : 
+ forall (r : F) (g h : G) (m : F)  (u1 u2 c1 : F) (c : F),
+ g <> gid -> (m <> zero /\ m <> one) -> c1 <> c ->
+ verify_encryption_vote_proof g h 
+ (encrypt_vote_and_generate_enc_proof g h r m [u1; u1; c1] c) = false.
+Proof. (* proof terms omitted. *) Qed. 
+
+Theorem vote_proof_invalid_accept :
+ forall (r : F) (g h : G) (m : F)  (u1 u2 c1 : F) (c : F),
+ (m <> zero /\ m <> one) → c1 = c ->
+ verify_encryption_vote_proof g h 
+ (encrypt_vote_and_generate_enc_proof g h r m [u1; u2; c1] c) = true.
+Proof. (* proof terms omitted. *) Qed.
 \end{lstlisting}
 
-Finally, the function \texttt{encrypt\_ballot\_and\_generate\_enc\_proof} extends vote encryption to the entire ballot by vectorizing across all $n$ candidates. Each candidate 
+Finally, the function \texttt{\seqsplit{encrypt\_ballot\_and\_generate\_enc\_proof}} extends vote encryption to the entire ballot by vectorizing across all $n$ candidates. Each candidate 
 produces a tuple $(C_i, \pi_i)$ where $C_i$ is the encrypted vote and $\pi_i$ is the corresponding Or-$\Sigma$ 
-proof. A complete ballot is thus a vector of $n$ such tuples.
+proof. A complete ballot is thus a vector of $n$ such tuples. We extract all frontend functions into WebAssembly. 
 
 
+\textbf{Homomorphic Tallying}: Once voting ends, counting is specified as an inductive state machine \texttt{count}, parameterised 
+over another inductive datatype \texttt{state}, similar to \cite{10.1007/978-3-319-66107-0_26}. The \texttt{state} datatype has two constructors, \texttt{partial} and \texttt{finished}, that signifies that the counting of ballots is still ongoing or finished. More precisely, \texttt{partial} \texttt{us} \texttt{vbs} \texttt{inbs} \texttt{ms}: the counting is in progress, with all seen ballots \texttt{us}, valid ballots \texttt{vbs}, invalid ballots \texttt{inbs}, and running encrypted tally \texttt{ms}; and \texttt{finished} \texttt{us} \texttt{vbs} \texttt{inbs} \texttt{pt}: the computation is finalised and returns plaintext tally vector \texttt{pt}.
 
+The judgment \texttt{count : state -> Type} defines legal counting traces through four rules: 
+(i) \textbf{\texttt{ax}} (initialisation): starts from empty ballot lists and an identity tally vector \texttt{ms} $= (1_G,1_G),\ldots,(1_G,1_G)$. This means no vote has contributed yet; 
+(ii) \textbf{\texttt{cvalid}} (accept valid ballot): if a new ballot \texttt{u} satisfies \texttt{\seqsplit{verify\_encryption\_ballot\_proof}} \texttt{u = true}, then \texttt{u} is moved into \texttt{vbs} (set of valid ballots), and the encrypted tally is updated homomorphically: \texttt{nms = \seqsplit{mul\_encrypted\_ballots}} \texttt{ms} (\texttt{map fst u}). Intuitively, ciphertext components are multiplied coordinate-wise, so exponents (hence votes) add; 
+(iii) \textbf{\texttt{cinvalid}} (reject invalid ballot): if \texttt{\seqsplit{verify\_encryption\_ballot\_proof}} \texttt{u = false}, then \texttt{u} is appended to \texttt{inbs} (set of invalid ballots), while the running (encrypted) tally \texttt{ms} remains unchanged; and 
+(iv) \textbf{\texttt{cfinish}} (finalisation): after all ballots are processed, decryption outputs \texttt{ds} and decryption proofs \texttt{pf} are checked. The rule requires pointwise relation $g^{pt_i}=ds_i$, i.e., plaintext counts are discrete logs of decrypted group elements and acceptance of the vector decryption proof \texttt{\seqsplit{decryption\_proof\_accepting\_conversations\_vector}} \texttt{ms} \texttt{ds} \texttt{pf = true}. Only then the system transitions to \texttt{finished}.
 
-
-
-\textbf{Homomorphic Tallying}: Once voting ends, counting is specified as an inductive state machine $count$, parameterised 
-over another inductive datatype $state$, defined in 
-\texttt{src/Backend/Tally.v}. The $state$ datatype has two constructors, $partial$ and $finished$, that signifies that the counting of ballots are still going or 
-finished. More precisely, \texttt{partial us vbs inbs ms}: the computation is in progress, with
-all seen ballots \texttt{us}, valid ballots \texttt{vbs}, invalid ballots \texttt{inbs}, and running encrypted tally
-\texttt{ms}, and \texttt{finished us vbs inbs pt}: the computation is finalised and returns plaintext tally vector \texttt{pt}.
-
-The judgment \texttt{count : state -> Type} defines legal counting traces through four rules: (i) \textbf{\texttt{ax}} (initialization): starts from empty ballot lists and an identity tally vector \texttt{ms = \(1_G,1_G\),\ldots,\(1_G,1_G\)}. This means no vote has contributed yet; (ii) \textbf{\texttt{cvalid}} (accept valid ballot): if a new ballot \texttt{u} satisfies \texttt{verify\_encryption\_ballot\_proof ... u = true}, then \texttt{u} is moved into \texttt{vbs}, and the encrypted tally is
-updated homomorphically:  \texttt{nms = mul\_encrypted\_ballots ms (map fst u)}. Intuitively, ciphertext components are multiplied coordinate-wise, so exponents (hence votes) add.; (iii) \textbf{\texttt{cinvalid}} (reject invalid ballot): if \texttt{verify\_encryption\_ballot\_proof ... u = false}, then \texttt{u} is appended to \texttt{inbs}, while \texttt{ms} remains unchanged; and (iv) \textbf{\texttt{cfinish}} (finalisation): after all ballots are processed, decryption outputs \texttt{ds}
-and decryption proofs \texttt{pf} are checked. The rule requires  pointwise relation \(g^{pt_i}=ds_i\), i.e., plaintext counts are discrete logs of decrypted group elements and acceptance of the vector decryption proof \texttt{decryption\_proof\_accepting\_conversations\_vector ... ms ds pf = true}. Only then the system transitions to \texttt{finished}.
-
-
-The executable function \texttt{compute\_final\_tally} implements the first phase (classification and encrypted
-aggregation) by recursion on the ballot list. For each ballot, it branches on
-\texttt{verify\_encryption\_ballot\_proof}: the true branch applies \texttt{cvalid}, the false branch applies
-\texttt{cinvalid}. It returns \((vbs,inbs,ms)\) together with the invariant
-\texttt{Permutation bs (vbs ++ inbs)}, ensuring that every input ballot is accounted for exactly once. Finally, he function \texttt{compute\_final\_count} then derives the final plaintext tally by decrypting aggregate ciphertexts with secret key $x$ to obtain \texttt{ds}, computing \texttt{pt} by pointwise discrete-log search relative to generator $g$, and conclude \texttt{count (finished bs vbs inbs pt)} via \texttt{cfinish}. Hence, the formal counting pipeline is: \emph{verify each ballot} $\to$ \emph{homomorphically aggregate valid ciphertexts} $\to$ \emph{verify decryption} $\to$ \emph{extract plaintext counts}, with explicit proof obligations at each step.
-
+The executable function \texttt{\seqsplit{compute\_final\_tally}} implements the first phase (classification and encrypted aggregation) by recursion on the ballot list. For each ballot, it branches on \texttt{\seqsplit{verify\_encryption\_ballot\_proof}}: the true branch applies \texttt{cvalid}, the false branch applies \texttt{cinvalid}. It returns \texttt{(vbs,inbs,ms)} together with the invariant \texttt{Permutation bs (vbs ++ inbs)}, ensuring that every input ballot is accounted for exactly once. Finally, the function \texttt{\seqsplit{compute\_final\_count}} then derives the final plaintext tally by decrypting aggregate ciphertexts with secret key $x$ to obtain \texttt{ds}, computing \texttt{pt} by pointwise discrete-log search relative to generator $g$, and concludes \texttt{count (finished bs vbs inbs pt)} via \texttt{cfinish}. Hence, the formal counting pipeline is: \emph{verify each ballot} $\to$ \emph{homomorphically aggregate valid ciphertexts} $\to$ \emph{verify decryption} $\to$ \emph{extract plaintext counts}, with explicit proof obligations at each step.
 
 
 
@@ -1293,19 +1265,17 @@ changed, the verifier will detect the corruption.
 
   
   \subsection{Limitation and Future Work}
-   \textcolor{red}{Bas: Some text on extraction to Rust and WebAssembly is not verified?}
-
-   Our formalisation currently lacks mix-network, a crucial cryptographic primitive used 
-   in electronic voting. A mix-network is used to break the link between the order of 
-   voters and the order of ballots appearing on the election bulletin board. 
-   Specifically, a mix-network takes a list of encrypted ballots as input and 
-   outputs another list of encrypted ballots in a random order.
-   However, since the output is also encrypted, a dishonest mix-network could 
-   potentially drop all the original ballots and manifacture artificial ones to favor a 
-   particular candidate. To prevent such tampering, the mix-network must also 
-   produce a zero-knowledge proof to ensure the correctness of the shuffle \cite{10.1007/978-3-642-02620-1_28,10.1007/978-3-030-51280-4_3}.
-   Given our current infrastructure, it would be fairly straightforward to 
-   encode these algorithms and prove their security properties. 
+  Our formalisation currently lacks mix-network, a crucial cryptographic primitive used 
+in electronic voting. A mix-network is used to break the link between the order of 
+voters and the order of ballots appearing on the election bulletin board. 
+Specifically, a mix-network takes a list of encrypted ballots as input and 
+outputs another list of encrypted ballots in a random order.
+However, since the output is also encrypted, a dishonest mix-network could 
+potentially drop all the original ballots and manufacture artificial ones to favour a 
+particular candidate. To prevent such tampering, the mix-network must also 
+produce a zero-knowledge proof to ensure the correctness of the shuffle \cite{10.1007/978-3-642-02620-1_28,10.1007/978-3-030-51280-4_3}.
+Another possibility is to formalise Bulletproofs \cite{bunz2018bulletproofs}. These would allow us to provide compact range proofs for ballot validity (e.g., proving that a vote is $0$ or $1$), and could also be adapted to construct verifiable shuffles with logarithmic proof size (we have encoded the inner-product protocol but have not yet proved any security properties about our encoding). Given our current infrastructure, it would be fairly straightforward to 
+encode these algorithms and prove their security properties.
    
 
    Another limitation of our work is 
@@ -1316,11 +1286,11 @@ changed, the verifier will detect the corruption.
    to formalise the security of sigma protocol in random oracle 
    model, the closest we can get. This means that under the assumption 
    that the hash function behaves as a random oracle, the non-interactive 
-   proof derived from the Fiat-Shamir transform is secure. 
+   proof derived from the Fiat-Shamir transform \cite{10.5555/36664.36676} is secure. 
    The random oracle model provides a framework where we can 
    reason about the security properties  of 
    the transform. There is an existing 
-   work about formalising random oracle in the Coq theorem 
+   work about formalising random oracle in the Rocq theorem 
    prover \cite{10.1007/11617990_3} and we would like to 
    connect it our implementation; however, it 
    will require some non-trivial work. 
@@ -1339,16 +1309,7 @@ changed, the verifier will detect the corruption.
 
  
 
-  In this paper, we present a certified implementation 
-  that can be readily used by voting community and 
-  we demonstrated the usefulness by encoding Helios, 
-  Belenois, and SwissPost using our primitives. 
-  Moreover, our formalisation extracts to WebAssembly and 
-  Rust without duplicate efforts. 
-
-
-
-
+  In this paper, we present a certified implementation that the voting community can readily adopt to encode their protocol with all security guarantees. We demonstrate its usefulness by encoding a Helios verifier and a client–server system for Approval voting. Moreover, our formalisation extracts to OCaml, WebAssembly, and Rust without redundant effort.
 
 %%
 %% The next two lines define the bibliography style to be used, and
