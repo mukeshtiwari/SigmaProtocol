@@ -310,17 +310,11 @@ ensure our library is practically usable. \textcolor{blue}{Finally, we extract O
 Rocq implementation using Peregrine\footnote{https://peregrine-project.github.io/}. We demonstrate the applicability of our framework by implementing a voting client, extracted to WebAssembly from Rocq proofs, and a server, extracted to Rust from Rcoq proofs, for Approval Voting and a complete Helios election verifier that validates IACR elections (2023, 2024), verifying ballot proofs, tallying, and trustee decryption proofs}. To the best of our knowledge,  this is the first formal verification of $\Sigma$-protocols that can be extracted to WebAssembly, Rust, and OCaml from Rocq proofs. Our proofs can be accessed from this \href{https://anonymous.4open.science/r/SigmaProtocol-EBA5/README.md}{\textcolor{green}{anonymous repo}}, which contains 30,000 lines of Rocq proofs.
 
 \subsection{Outline}
-\textcolor{red}{rewrite this once the paper is finished.}
-The rest of the paper is organised as follows: in section \ref{sigma_protocol}
-we explain the idea of zero-knowledge proof and sigma protocol. 
-Section \ref{coq_theorem} contains a brief introduction to 
-the Coq theorem prover, MetaCoq, Coq encoding of the Schnorr protocol, 
-uniform probability distribution model, modular arithmetic, Fiat-Shamir transform,
-and reasoning about the complexity of extractor and simulator. 
-In section \ref{case_studies} we show how our library can be used 
-for encoding $\Sigma$-protocol used in Helios, Belenois, and SwissPost. 
-Finally, section \ref{rel_work} concludes the related work, limitation of 
-our work, and future direction. 
+The remainder of the paper is organised as follows. 
+Section \ref{sigma_protocol} introduces zero-knowledge proofs and $\Sigma$-protocols, with emphasis on their role in electronic voting. 
+Section \ref{coq_theorem} briefly presents the Rocq theorem prover and the MetaRocq infrastructure used for extraction to targets such as WebAssembly and Rust. 
+Section \ref{schn_proof} develops our formal encoding of the Schnorr protocol, our model of uniform distributions, the main $\Sigma$-protocol compositions, concrete modular arithmetic instantiations, and our approach to extractor/simulator complexity. 
+Section \ref{case_studies} demonstrates the practical use of the library through an Approval Voting client-server workflow and a certified Helios election verifier for IACR data. Finally, Section \ref{rel_work} discusses related work, current limitations, and directions for future research.
 
 
 
@@ -415,7 +409,7 @@ a C compiler used by many companies\footnote{https://www.absint.com/partners.htm
 Fiat-Crypto \cite{8835346} 
 used in BoringSSL --a cryptographic library used in Chrome, Android, 
 and CloudFlare--, ConCert \cite{10.1145/3372885.3373829}, 
-a smart contract certification framework, etc. \textcolor{red}{FIXME: More examples}
+a smart contract certification framework, etc.
 
 
 \subsection{Web Assembly and Rust from the Roq Formalisation}
@@ -426,7 +420,7 @@ a smart contract certification framework, etc. \textcolor{red}{FIXME: More examp
 
 
 
-\section{Schnorr Protocol Rocq Encoding}
+\section{Schnorr Protocol Rocq Encoding}\label{schn_proof}
   We briefly explain the Schnorr protocol, an interactive protocol 
   between a prover and a verifier. 
   Given some public input $G = (g, q, h)$ where $G$
@@ -499,10 +493,12 @@ efficient algorithm for the Schnorr (mulitplicative) group but our formalisation
 later be also instantiated with elliptic curve group. In addition, 
 one of the major benefit of this abstraction is easiness of proofs 
 which can be easily automated. Therefore, we model the Schnorr 
-protocol, the simulator, and the verification equation in Rocq as follows: 
+protocol, the simulator, and the verification equation in Rocq as showing in 
+Listing \ref{schn_nat}. The source code for this section can be accessed from the
+\href{https://anonymous.4open.science/r/SigmaProtocol-EBA5/src/Crypto/Sigma.v}{\textcolor{green}{Sigma.v}} file from our anonymous repo.
  
 \begin{lstlisting}[frame=single, language=Coq, caption={Schnorr protocol},
-  label={ind_nat},captionpos=t, basicstyle=\ttfamily\footnotesize,
+  label={schn_nat},captionpos=t, basicstyle=\ttfamily\footnotesize,
   abovecaptionskip=-\medskipamount]
 (*Real transcript (involves secret x)*)
 Definition schnorr_protocol (x : F) (g : G) 
@@ -534,22 +530,21 @@ Definition accepting_conversation (g h : G)
  $gop : G \rightarrow G \rightarrow G$ is the group operation, and
  $\mbox{\textasciicircum}: G \rightarrow F \rightarrow G$ is the scalar multiplication of the underlying vector space.  
  Recall that a vector space consists of a set of 
- vectors, denoted by \(V\), a field \(F\) (elements of F are called scalars), and 
+ vectors, denoted by \(V\), a field \(F\) (elements of \(F\) are called scalars), and 
  two operations: vector addition and scalar multiplication.
 \begin{itemize}
-    \item \textit{Vector addition}: for any vectors \(\mathbf{v}, \mathbf{w} \in V\), their sum, denoted by \(\mathbf{v} + \mathbf{w}\), is also in \(V\).
-    \item \textit{Scalar multiplication}: for any vector \(\mathbf{v} \in V\) and any scalar \(c \in F\), their product, denoted by \(c\mathbf{v}\), is also in \(V\).
+    \item Vector addition: for any vectors \(\mathbf{v}, \mathbf{w} \in V\), their sum, denoted by \(\mathbf{v} + \mathbf{w}\), is also in \(V\).
+    \item Scalar multiplication: for any vector \(\mathbf{v} \in V\) and any scalar \(c \in F\), their product, denoted by \(c\mathbf{v}\), is also in \(V\).
 \end{itemize}
 
 These operations must satisfy the following properties for all vectors \(\mathbf{u}, \mathbf{v}, \mathbf{w} \in V\) and all scalars \(c, d \in F\):
-(i) \textbf{closure under addition:} \(\mathbf{u} + \mathbf{v} \in V\), (ii) \textbf{commutativity of addition:} \(\mathbf{u} + \mathbf{v} = \mathbf{v} + \mathbf{u}\), 
-(iii)  \textbf{associativity of addition:} \((\mathbf{u} + \mathbf{v}) + \mathbf{w} = \mathbf{u} + (\mathbf{v} + \mathbf{w})\), 
-(iv) \textbf{existence of zero vector:} there exists a vector \(\mathbf{0} \in V\) such that \(\mathbf{v} + \mathbf{0} = \mathbf{v}\) for all \(\mathbf{v} \in V\), 
-(v) \textbf{existence of additive inverse:} for each vector \(\mathbf{v} \in V\), there exists a vector \(-\mathbf{v} \in V\) such that \(\mathbf{v} + (-\mathbf{v}) = \mathbf{0}\),
-(vi) \textbf{closure under scalar multiplication:} \(c\mathbf{v} \in V\), 
-(vii) \textbf{cistributive properties:} \(c(\mathbf{u} + \mathbf{v}) = c\mathbf{u} + c\mathbf{v}\) and \((c + d)\mathbf{v} = c\mathbf{v} + d\mathbf{v}\), 
-and (viii) \textbf{compatibility with field multiplication:} \(c(d\mathbf{v}) = (cd)\mathbf{v}\) and \(1\mathbf{v} = \mathbf{v}\), where \(1\) denotes the multiplicative identity in \(F\).
-In our setting we instantiate the set of vectors with $G$ and field with $F$. 
+(i) closure under addition: \(\mathbf{u} + \mathbf{v} \in V\), (ii) commutativity of addition: \(\mathbf{u} + \mathbf{v} = \mathbf{v} + \mathbf{u}\), 
+(iii)  associativity of addition: \((\mathbf{u} + \mathbf{v}) + \mathbf{w} = \mathbf{u} + (\mathbf{v} + \mathbf{w})\), 
+(iv) existence of zero vector: there exists a vector \(\mathbf{0} \in V\) such that \(\mathbf{v} + \mathbf{0} = \mathbf{v}\) for all \(\mathbf{v} \in V\), 
+(v) existence of additive inverse: for each vector \(\mathbf{v} \in V\), there exists a vector \(-\mathbf{v} \in V\) such that \(\mathbf{v} + (-\mathbf{v}) = \mathbf{0}\),
+(vi) closure under scalar multiplication: \(c\mathbf{v} \in V\), 
+(vii) distributive properties: \(c(\mathbf{u} + \mathbf{v}) = c\mathbf{u} + c\mathbf{v}\) and \((c + d)\mathbf{v} = c\mathbf{v} + d\mathbf{v}\), 
+and (viii) compatibility with field multiplication: \(c(d\mathbf{v}) = (cd)\mathbf{v}\) and \(1\mathbf{v} = \mathbf{v}\), where \(1\) denotes the multiplicative identity in \(F\). In our setting we instantiate the set of vectors with $G$ and field with $F$. 
 Moreover, our notation for scalar multiplication is $\mbox{\textasciicircum}$ because it represents, 
 when instantiated concretely, exponentiation function but it is purely for notational convenience. 
 
@@ -605,6 +600,7 @@ However, we need uniform
 distribution, rather than an arbitrary distribution, to reason about 
 zero-knowledge of $\Sigma$-protocol, and therefore we define a function 
 \texttt{\seqsplit{uniform\_with\_replacement}} to generate uniform distributions, shown in Listing \ref{prob_def}.
+The relevant source code can be accessed from \href{https://anonymous.4open.science/r/SigmaProtocol-EBA5/src/Probability/Prob.v}{\textcolor{green}{Prob.v}} and \href{https://anonymous.4open.science/r/SigmaProtocol-EBA5/src/Probability/Distr.v}{\textcolor{green}{Distr.v}}.
 
 \begin{lstlisting}[frame=single, language=Coq, caption={Uniform Probability Distribution},
     label={prob_def},captionpos=t, basicstyle=\ttfamily\footnotesize,
@@ -730,19 +726,28 @@ the prover convinces the verifier that they know a witness $x_k$ such that $h_k 
 without revealing the index $k$ or the witness $x_k$. The key insight behind the Or composition, introduced by Cramer, Damg\aa rd, and Schoenmakers~\cite{cramer1994proofs}, 
 is to allow the prover a controlled degree of freedom to \emph{cheat} on statements for which they do not know witnesses.  We implement this protocol generically for $n \geq 2$ statements. The prover, knowing the witness for the $k$-th relation (where $k$ is specified as a finite index of sort \texttt{Fin.t (2+n)}), first enters the commitment phase by choosing random values: $u_k$ for the real commitment, and for each simulated statement $i \neq k$, random values $u_i$ and $c_i$. The prover then computes the real commitment $t_k = g_k^{u_k}$ for statement $k$ and simulated commitments $t_i = g_i^{u_i} \cdot h_i^{-c_i}$ for $i \neq k$, sending the vector of commitments $(t_1, \ldots, t_n)$ to the verifier. In the challenge phase, the verifier responds with a random challenge $c$. Finally, during the response phase, the prover computes $c_k = c - \sum_{i \neq k} c_i$, along with $s_k = u_k + c_k \cdot x_k$ as the honest response for the real statement, while for $i \neq k$, the responses $s_i$ are set to the previously chosen $u_i$. The prover then sends both response vectors $(s_1, \ldots, s_n)$ and $(c_1, \ldots, c_n)$. The verifier accepts if: (i) $c = \sum_{i=1}^{n} c_i$, and (ii) for each $i$, $g_i^{s_i} = t_i \cdot h_i^{c_i}$.
 
-Our Rocq formalisation of the Or-$\Sigma$ protocol supports $n \geq 2$ statements with arbitrary generators for each statement, enabling proofs of knowledge for relations $g_i^{x_i} = h_i$. The formalisation proves three security properties: completeness (honest execution always verifies), special soundness (shown in \texttt{\seqsplit{generalised\_or\_sigma\_soundness\_main}}, which recovers a witness from two accepting transcripts with the same commitments but different challenges), and special honest-verifier zero-knowledge (the distribution of real transcripts involving the witness is identical to the simulator distribution without the witness).
+
+Our Rocq formalisation of the Or-$\Sigma$ protocol supports $n \geq 2$ statements with arbitrary generators for each statement, enabling proofs of knowledge for relations $g_i^{x_i} = h_i$. The function \texttt{\seqsplit{generalised\_construct\_or\_conversations\_schnorr}} constructs a proof for the relation
+$\{ (x_1, x_2, \ldots, x_n) \mid h_1 = g_1^{x_1} \lor h_2 = g_2^{x_2} \lor \cdots \lor h_n = g_n^{x_n} \}$, 
+where the prover knows the witness for the relation indicated by the index \texttt{rindex}. One advantage of this generic formalisation is that we can instantiate \( n \) with any finite number of statements at compile time, thereby uniformly capturing arbitrary-length disjunctions without modifying the underlying protocol definition. Ideally, one would like to further generalise the relation to $\{ (x_1, x_2, \ldots, x_n) \mid h_1 = f_1(g_1,\;x_1) \lor h_2 = f_2(g_2,\;x_2) \lor \cdots \lor h_n = f_n(g_n,\;x_n) \}$,
+for arbitrary one-way functions \(f_1, f_2, \ldots, f_n\), thereby extending the applicability of the construction beyond discrete-logarithm-based relations to a broader class of cryptographic assumptions. Nonetheless, since our primary goal is to model electronic voting systems, we restrict our attention to discrete-logarithm-based relations. The formalisation proves three security properties: completeness (honest execution always verifies), special soundness (shown in \texttt{\seqsplit{generalised\_or\_sigma\_soundness\_main}}, which recovers a witness from two accepting transcripts with the same commitments but different challenges), and special honest-verifier zero-knowledge (the distribution of real transcripts involving the witness is identical to the simulator distribution without the witness). The source code for this section can be accessed in the \href{https://anonymous.4open.science/r/SigmaProtocol-EBA5/src/Crypto/OrSigmaGen.v}{\textcolor{green}{OrSigmaGen.v}} file.
 
 \begin{lstlisting}[frame=single, language=Coq, caption={Special Soundness},
-label={dist_comp},captionpos=t, basicstyle=\ttfamily\footnotesize,
+label={or_proof},captionpos=t, basicstyle=\ttfamily\footnotesize,
 abovecaptionskip=-\medskipamount]
+Definition generalised_construct_or_conversations_schnorr {n : nat} 
+ (rindex : Fin.t (2 + n)) (x : F) (gs hs : Vector.t G (2 + n))
+ (uscs : Vector.t F ((2 + n) + (1 + n))) (c : F) : 
+ @sigma_proto F G (2 + n) (1 + (2 + n)) (2 + n).
+Proof. (* proof terms omitted. *) Defined.
+
 Lemma generalised_or_sigma_soundness_main
   {n : nat} (gs hs : Vector.t G (2 + n)): forall (a : Vector.t G (2 + n)) 
   (c1 c2 : F) (cs1 cs2 r1 r2 : Vector.t F (2 + n)),
   generalised_or_accepting_conversations 
     gs hs (a; c1 :: cs1; r1) = true ->
   generalised_or_accepting_conversations 
-    gs hs (a; c2 :: cs2; r2) = true ->
-  c1 <> c2 -> 
+    gs hs (a; c2 :: cs2; r2) = true -> c1 <> c2 -> 
   (* There is an index where relation R is true and can 
     extract a witness out of it *)
   exists (f : Fin.t (2 + n)) (y : F),
