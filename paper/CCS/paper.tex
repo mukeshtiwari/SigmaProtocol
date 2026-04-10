@@ -87,6 +87,7 @@
 \usepackage[utf8]{inputenc}
 \usepackage{amsmath}
 \usepackage{seqsplit}
+\usepackage{hyperref}
 %% End of get rid of this for the final version
 
 
@@ -175,8 +176,8 @@
   They remain a popular choice in electronic voting to maintain privacy 
   and verifiability of elections and are still used in prominent electronic voting systems such as 
   Helios, Belenois, and SwissPost. However, existing implementations of $\Sigma$-protocols have two 
-  critical shortcomings: (i) the same code is written twice: once for the front-end (JavaScript/TypeScript)
-  and once for the back-end (Python/OCaml/Java), which is error-prone because the front-end and back-end codes are often written by different developers, leading to inconsistencies and bugs, and (ii) none of these implementations provide formal security guarantees. 
+  critical shortcomings: (i) the same code is written twice: once for the frontend (JavaScript/TypeScript)
+  and once for the backend (Python/OCaml/Java), which is error-prone and may lead to inconsistencies and bugs, and (ii) none of these implementations provide formal security guarantees.
   
   In this paper, we present a certified formalisation of a comprehensive library of $\Sigma$-protocols 
   in the Rocq theorem prover, and we formally prove (special) soundness, completeness, and 
@@ -290,9 +291,9 @@ In fact, formal verification has emerged as a promising solution
 to eliminate potential bugs from software, and in recent years it has been increasingly 
 adopted in real-world software applications \cite{10.1145/1111037.1111042}, 
 including cryptography \cite{8835346,10.1145/3133956.3134043,190894,10.1145/2701415,
-10.1145/2660267.2660370,10.1145/3319535.3363211}.
-
-\textcolor{red}{How to make this flow natural between the previous and the next paragraph?}
+10.1145/2660267.2660370,10.1145/3319535.3363211}. Given the critical reliance of end-to-end verifiability on cryptographic proofs, the software components responsible for generating and checking these proofs constitute a particularly high-value target for formal verification. Among these components, $\Sigma$-protocols stand out as the workhorse of privacy-preserving election infrastructure. 
+They are used not only to prove that individual ballots are well-formed but also to underpin the zero-knowledge assurances required in mix-nets and distributed decryption. 
+Consequently, a certified, bug-free implementation of $\Sigma$-protocols directly addresses the software-independence requirement by ensuring that the verifiable evidence presented to scrutineers is generated correctly by construction.  Motivated by this need, we present a formally verified library for $\Sigma$-protocols and their compositions within the Rocq proof assistant.
 
 $\Sigma$-protocols are a fundamental class of zero-knowledge proof systems that enable a prover to convince a verifier of the correctness of a statement without revealing any additional information beyond its validity. Owing to their simplicity and security guarantees, $\Sigma$-protocols have become a core building block in a wide range of privacy-preserving applications such as anonymous credentials \cite{10.1145/2660267.2660328}, 
 password-authenticated key exchange \cite{10.5555/2022815.2022838}, 
@@ -305,10 +306,8 @@ Our formalisation is developed
 generically over abstract vector spaces, enabling uniform expression and composition of discrete-logarithm-based 
 $\Sigma$-protocols while remaining independent of any concrete group or cryptographic instantiation. Additionally, we have implemented efficient arithmetic procedures for prime fields and Schnorr groups (including the Helios parameters, 
 with formally verified primality proofs for the 2048-bit prime $p$ and 256-bit prime $q$) to 
-ensure our library is practically usable. \textcolor{blue}{Finally, we extract executable OCaml,, Rust, and WebAssembly code from our certified 
-Rocq implementation and demonstrate its practical applicability through a complete Helios election verifier that 
-validates real-world IACR elections (2023, 2024), verifying ballot proofs, tallying, and trustee decryption proofs}. To the best of our knowledge,  this is the first formal verification of $\Sigma$-protocols that can be extracted to 
-WebAssembly, Rust, and OCaml from Rocq proofs. Our proofs can be accessed from \url{https://anonymous.4open.science/r/SigmaProtocol-EBA5/README.md}, which contains 30,000 lines of Rocq proofs.
+ensure our library is practically usable. \textcolor{blue}{Finally, we extract OCaml,, Rust, and WebAssembly code from our certified 
+Rocq implementation using Peregrine\footnote{https://peregrine-project.github.io/}. We demonstrate the applicability of our framework by implementing a voting client, extracted to WebAssembly from Rocq proofs, and a server, extracted to Rust from Rcoq proofs, for Approval Voting and a complete Helios election verifier that validates IACR elections (2023, 2024), verifying ballot proofs, tallying, and trustee decryption proofs}. To the best of our knowledge,  this is the first formal verification of $\Sigma$-protocols that can be extracted to WebAssembly, Rust, and OCaml from Rocq proofs. Our proofs can be accessed from this \href{https://anonymous.4open.science/r/SigmaProtocol-EBA5/README.md}{\textcolor{green}{anonymous repo}}, which contains 30,000 lines of Rocq proofs.
 
 \subsection{Outline}
 \textcolor{red}{rewrite this once the paper is finished.}
