@@ -2,32 +2,32 @@
 Formalisation of Schnorr Protocol and other proofs (https://www.win.tue.nl/~berry/2WC13/LectureNotes.pdf). The end goal is verify all the crypto primitives of [SwissPost](https://gitlab.com/swisspost-evoting/crypto-primitives/crypto-primitives/) in [Rocq](https://rocq-prover.org/).
 
 Run `dune build` (ignore the warinings) in this directory to compile the project. It will compile the Rocq code and 
-generate OCaml code from it [_CoqProject file](/_CoqProject). It takes a while (3 hours) because it verifies the primality and generator order in Rocq [HeliosTallyIns.v](/src/Examples/HeliosTallyIns.v) used in [Helios](https://github.com/benadida/js-voting-crypto/blob/master/test/elgamal-test.js#L14). `dune build  6554.20s user 15.53s system 57% cpu 3:08:53.70 total`. If you want to compile it quickly, admit --`Proof. Admitted.`--[prime_q](https://github.com/mukeshtiwari/SigmaProtocol/blob/master/src/Examples/HeliosTallyIns.v#L25) and [prime_p](https://github.com/mukeshtiwari/SigmaProtocol/blob/master/src/Examples/HeliosTallyIns.v#L33), and comment out [import](https://github.com/mukeshtiwari/SigmaProtocol/blob/master/src/Examples/HeliosTallyIns.v#L6) in [HeliosTallyIns.v](/src/Examples/HeliosTallyIns.v),  [primeP.v](/src/Examples/primeP.v), and [primeQ.v](/src/Examples/primeQ.v). 
+generate OCaml code from it [_CoqProject file](/_CoqProject). It takes a while (3 hours) because it verifies the primality and generator order in Rocq [HeliosTallyIns.v](/src/Examples/HeliosTallyIns.v) used in [Helios](https://github.com/benadida/js-voting-crypto/blob/master/test/elgamal-test.js#L14). `dune build  6554.20s user 15.53s system 57% cpu 3:08:53.70 total`. If you want to compile it quickly, admit --`Proof. Admitted.`--[prime_q](src/Examples/HeliosTallyIns.v#L33) and [prime_p](src/Examples/HeliosTallyIns.v#L33), and comment out [import](src/Examples/HeliosTallyIns.v#L6) in [HeliosTallyIns.v](/src/Examples/HeliosTallyIns.v),  [primeP.v](/src/Examples/primeP.v), and [primeQ.v](/src/Examples/primeQ.v). 
 
 1. Run `dune exec _build/default/src/Executable/Sigmacode/main.exe` to run the sigma protocol. You will see an output like this:
    ```OCaml
-   (base) mukesh.tiwari@Mukeshs-MacBook-Pro-2 SigmaProtocol % dune exec _build/default/src/Executable/Sigmacode/main.exe
+   (base) anonymous@anonymous-MacBook-Pro-2 SigmaProtocol % dune exec _build/default/src/Executable/Sigmacode/main.exe
     p = 5927, q = 2963, g = 4, h = 64
     proof = {annoucement = 1644,  challenge = 1987,  response = 2269, }
     true%
     ```
 2. Run `dune exec _build/default/src/Executable/AndSigmacode/main.exe` to run the AndSigma protocol. You will see an output like this:
    ```OCaml
-   (base) mukesh.tiwari@Mukeshs-MacBook-Pro-2 SigmaProtocol % dune exec _build/default/src/Executable/AndSigmacode/main.exe
+   (base) anonymous@anonymous-MacBook-Pro-2 SigmaProtocol % dune exec _build/default/src/Executable/AndSigmacode/main.exe
     p = 5927, q = 2963, g = 4, h1 = 64, h2 = 1024, h3 = 339
     proof = {annoucement = 2036, 2070, 3797,  challenge = 461,  response = 1709, 1298, 722, }
     true%
    ```
 3. Run `dune exec _build/default/src/Executable/ParaSigmacode/main.exe` to run the Parallel Sigma protocol. You will see an output like this:
    ```OCaml
-   (base) mukesh.tiwari@Mukeshs-MacBook-Pro-2 SigmaProtocol % dune exec _build/default/src/Executable/ParaSigmacode/main.exe
+   (base) anonymous@anonymous-MacBook-Pro-2 SigmaProtocol % dune exec _build/default/src/Executable/ParaSigmacode/main.exe
     p = 5927, q = 2963, g = 4, h = 64
     proof = {annoucement = 4823, 4334,  challenge = 2303, 2717,  response = 2634, 1787, }
     true%
    ```
 4. Run `dune exec _build/default/src/Executable/Elgamalcode/main.exe` to run the Elgamal encryption functions. You will see an output like this: 
    ```OCaml
-   (base) mukesh.tiwari@Mukeshs-MacBook-Pro-2 SigmaProtocol % dune exec _build/default/src/Executable/Elgamalcode/main.exe
+   (base) anonymous@anonymous-MacBook-Pro-2 SigmaProtocol % dune exec _build/default/src/Executable/Elgamalcode/main.exe
    message ms1 = 964, 671, 491, 2074, 2463, 2805, 2937, 1892, 1466, 275
    encryption cs1 = (3805, 111), (2760, 2509), (3922, 3482), (2089, 5014), (1741, 3154), (5590, 5523), (467, 3231), (1014, 2342), (811, 4961), (1846, 4579)
    decryption ds1 = 964, 671, 491, 2074, 2463, 2805, 2937, 1892, 1466, 275
@@ -38,21 +38,21 @@ generate OCaml code from it [_CoqProject file](/_CoqProject). It takes a while (
    ```
 5. Run `dune exec _build/default/src/Executable/OrSigmacode/main.exe` to run the OR Sigma protocol. You will see an output like this:
    ```OCaml 
-   (base) mukesh.tiwari@Mukeshs-MacBook-Pro-2 SigmaProtocol % dune exec _build/default/src/Executable/OrSigmacode/main.exe
+   (base) anonymous@anonymous-MacBook-Pro-2 SigmaProtocol % dune exec _build/default/src/Executable/OrSigmacode/main.exe
    p = 5927, q = 2963, g = 4, h_UU2081_  = 12, h_UU2082_  = 64, h_UU2083_  = 25, com = 3173, 1573, 1351,
    proof = {annoucement = 3173, 1573, 1351,  challenge = 1723, 1429, 2530, 727,  response = 455, 2825, 1712, }
    true%
    ```
 6. Run `dune exec _build/default/src/Executable/EncProofcode/main.exe` to run the Encryption Proof Sigma protocol. You will see an output like this: 
    ```OCaml
-   (base) mukesh.tiwari@Mukeshs-MacBook-Pro-2 SigmaProtocol % dune exec _build/default/src/Executable/EncProofcode/main.exe
+   (base) anonymous@anonymous-MacBook-Pro-2 SigmaProtocol % dune exec _build/default/src/Executable/EncProofcode/main.exe
    p = 5927, q = 2963, g = 12, h  = 25, m_UU2080_  = 28, m_UU2081_  = 134, m_UU2082_ = 38, cp = (3108, 450), com = (83, 5583), (4551, 5153), (72, 586)
    proof = {annoucement = (83, 5583), (3021, 5294), (3534, 677) challenge = 2026, 2515, 1078, 1396 response = 1448, 228, 2263}
    true%
    ```
 7. Run `dune exec _build/default/src/Executable/EqSigmacode/main.exe` to run the EQ Sigma protocol. You will see an output like this: 
    ```OCaml
-   (base) mukesh.tiwari@Mukeshs-MacBook-Pro-2 SigmaProtocol % dune exec _build/default/src/Executable/EqSigmacode/main.exe
+   (base) anonymous@anonymous-MacBook-Pro-2 SigmaProtocol % dune exec _build/default/src/Executable/EqSigmacode/main.exe
    p = 5927, q = 2963, g_UU2081_ = 12, g_UU2082_ = 16, g_UU2083_ = 18, h_UU2081_ = 1728, h_UU2082_ = 4096, h_UU2083_ = 18, com = 4026, 2686, 5005
    proof = {annoucement = 4026, 2686, 5005 challenge = 2010 response = 596}
    true%
@@ -116,14 +116,14 @@ generate OCaml code from it [_CoqProject file](/_CoqProject). It takes a while (
    ```
 14. Run `dune exec _build/default/src/Executable/NeqSigmacode/main.exe` to execute the [NeqSigma](src/Crypto/NeqSigma.v) code. You will see an output like this:
    ```OCaml
-   (base) mukesh.tiwari@Mukeshs-MacBook-Pro-2 SigmaProtocol % dune exec _build/default/src/Executable/NeqSigmacode/main.exe
+   (base) anonymous@anonymous-MacBook-Pro-2 SigmaProtocol % dune exec _build/default/src/Executable/NeqSigmacode/main.exe
    p = 5927, q = 2963, g1 = 4, g2 = 7, g3 = 13, h1 = 64, h2 = 4953, h3 = 3638
    proof = { announcement = 4562, 339, 791, 3727, 1813, 39; challenge = 1497; response = 2927, 2953, 2467, 477, 994, 1362, 173, 702, 1367 }
    true%
    ```
 15. Run  `dune exec _build/default/src/Executable/PedLinearRelcode/main.exe` to execute the [Pedersen-Linear-Relation](src/Crypto/PedLinearRel.v) code. You will see an output like this:
    ```OCaml
-   (base) mukesh.tiwari@Mukeshs-MacBook-Pro-2 SigmaProtocol % dune exec _build/default/src/Executable/PedLinearRelcode/main.exe
+   (base) anonymous@anonymous-MacBook-Pro-2 SigmaProtocol % dune exec _build/default/src/Executable/PedLinearRelcode/main.exe
    commitment = 758, 2776, 5077
    proof = { announcement = 3298, 108, 1153, 1286; challenge = 1770; response = 221, 2850, 2090, 2194, 2864, 1479 }
    Proof verified successfully.
