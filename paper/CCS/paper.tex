@@ -1243,8 +1243,8 @@ changed, the verifier will detect the corruption.
   and not extract an executable code. 
 
   
-  \subsection{Limitation and Future Work}
-  Our formalisation currently lacks mix-network, a crucial cryptographic primitive used 
+\subsection{Limitation and Future Work}
+Our formalisation currently lacks mix-network, a crucial cryptographic primitive used 
 in electronic voting. A mix-network is used to break the link between the order of 
 voters and the order of ballots appearing on the election bulletin board. 
 Specifically, a mix-network takes a list of encrypted ballots as input and 
@@ -1252,9 +1252,7 @@ outputs another list of encrypted ballots in a random order.
 However, since the output is also encrypted, a dishonest mix-network could 
 potentially drop all the original ballots and manufacture artificial ones to favour a 
 particular candidate. To prevent such tampering, the mix-network must also 
-produce a zero-knowledge proof to ensure the correctness of the shuffle \cite{10.1007/978-3-642-02620-1_28,10.1007/978-3-030-51280-4_3}.
-Another possibility is to formalise Bulletproofs \cite{bunz2018bulletproofs}. These would allow us to provide compact range proofs for ballot validity (e.g., proving that a vote is $0$ or $1$), and could also be adapted to construct verifiable shuffles with logarithmic proof size (we have encoded the inner-product protocol but have not yet proved any security properties about our encoding). Given our current infrastructure, it would be fairly straightforward to 
-encode these algorithms and prove their security properties.
+produce a zero-knowledge proof to ensure the correctness of the shuffle \cite{10.1007/978-3-642-02620-1_28,10.1007/978-3-030-51280-4_3}. Another possibility is to formalise Bulletproofs \cite{bunz2018bulletproofs}. These would allow us to provide compact range proofs for ballot validity (e.g., proving that a vote is $0$ or $1$), and could also be adapted to construct verifiable shuffles with logarithmic proof size (we have encoded the inner-product protocol but have not yet proved any security properties about our encoding). Another promising direction is a domain-specific language (DSL) for sigma protocols embedded in Rocq. The \texttt{\seqsplit{sigma-compiler}}~\cite{sigma-compiler} macro for Rust allows a protocol designer to write a high-level, declarative specification—lists of public parameters, secret witnesses, and logical statements—and automatically synthesises the corresponding prover and verifier functions. While this eliminates many manual implementation errors, the generated code itself is not formally verified. By embedding a similar DSL within Rocq, one could obtain a correct-by-construction pipeline: the same specification that is used to generate executable OCaml or Rust code could also serve as the input to a formalisation that proves, inside Rocq, that the resulting non-interactive proof satisfies completeness, special soundness, and honest-verifier zero-knowledge (in the random oracle model). Given our current infrastructure, it would be fairly straightforward to  encode these algorithms and prove their security properties. 
    
 
    Another limitation of our work is 
