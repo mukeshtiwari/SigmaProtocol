@@ -66,7 +66,8 @@ let vector_of_list (xs : 'a list) : 'a PedLinearRellib.VectorDef.t  =
 
 
 let _ = 
-  (* 1 * 5 + (-1) * 2 + (-1) * 2 = 0 *)
+  (* 1 * 5 + (-1) * 2 + (-1) * 3 = 0 *)
+  (* this would not pass the verification: 1 * 5 + (-1) * 2 + (-1) * 2 <> 0 *)
   let vs = vector_of_list [Big_int_Z.big_int_of_int 5; Big_int_Z.big_int_of_int 2; Big_int_Z.big_int_of_int 3] in
   let rs = rnd_list PedLinearRellib.PedLinearRelIns.q 3 in
   let cs = PedLinearRellib.PedLinearRelIns.pedersen_commitment_vector_ins vs rs in
