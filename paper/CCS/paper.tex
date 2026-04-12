@@ -403,7 +403,7 @@ one of reasons for its popularity is
 dependent types that makes it possible to encode
 any mathematical statement in its logic.
 It has been used to verify many real world software projects and mathematical 
-artefacts. For example, Coq has been used to 
+artefacts. For example, Rocq has been used to 
 formally verify CompCert \cite{10.1145/1111037.1111042}, 
 a C compiler used by many companies\footnote{https://www.absint.com/partners.htm}, 
 Fiat-Crypto \cite{8835346} 
@@ -1212,34 +1212,7 @@ changed, the verifier will detect the corruption.
 
 
 \section{Related Work, Limitations, and Future Work}\label{rel_work}
-  Given the popularity of sigma protocol in voting 
-  and other domains, it is not surprising that it has 
-  been formalised in the past \cite{5552642,9519460,
-  butler2021formalising,10.1145/3319535.3354247,287095,almeida2010certifying,10221929,
-  10.1145/3594735}. Barthe et al. \cite{5552642}  produced the 
-  first first formalisation of sigma protocol and its composition in 
-  CertiCrypt, a library developed using the Coq theorem prover. 
-  Moreover, their proofs were constructive; however, they 
-  did not extract OCaml code to produce an exectuable. 
-  Butler et al. \cite{ butler2021formalising} has also 
-  formalised sigma protocol in CryptoHOL \cite{10.1007/978-3-662-49498-1_20}, a library 
-  build at the top of Isabelle/HOL. Again, similar to  \cite{5552642}, 
-  their goal is to machine check sigma protcol and commitment schemes 
-  and not extract any executable code. Moreover, Isabellel/HOL admits 
-  law of excluded middle and if it is used in formalisation, 
-  then no executable code can be extractracted. Haines et al. 
-  \cite{287095,10.1145/3319535.3354247} have formalised 
-  sigma protocol in the Coq theorem prover and extracted OCaml code 
-  to verify the 2020 IACR election and SwissPost mix-network. This is 
-  closest to our work; however, their goal is to just verify the 
-  election meanwhile our goal is contruct primitive using 
-  correct-by-construction principal to conduct election. Moreover, 
-  their work lack an intuitive way (probabilistic reasoning) 
-  to reason about zero-knowledge. Firsov et al. \cite{10221929}
-  have formalised sigma protocol in EasyCrypt, successory 
-  of CertiCrypt, but it goal is just machine check 
-  the properties of sigma protocol in EascyCrypt 
-  and not extract an executable code. 
+Given the widespread use of $\Sigma$-protocols in electronic voting and related domains, their extensive formalisation in prior work is unsurprising~\cite{5552642,9519460,butler2021formalising,10.1145/3319535.3354247,287095,almeida2010certifying,10221929,10.1145/3594735}.  Barthe et al.~\cite{5552642} present the first formalisation of $\Sigma$-protocols and their composition in CertiCrypt, a library developed in the Rocq theorem prover. While their proofs are constructive, they do not support extraction of executable OCaml code. Butler et al.~\cite{butler2021formalising} formalise $\Sigma$-protocols in CryptoHOL~\cite{10.1007/978-3-662-49498-1_20}, built on Isabelle/HOL. As in~\cite{5552642}, the focus is on machine-checked correctness rather than code extraction. Moreover, the use of classical reasoning, e.g., the law of excluded middle in Isabelle/HOL precludes extraction of executable code. Haines et al.~\cite{287095,10.1145/3319535.3354247} formalise $\Sigma$-protocols in Rocq and extract OCaml code to verify the 2020 IACR election and the SwissPost mix-network. This is closest to our work; however, their focus is on verification of specific systems, whereas we aim to construct primitives following a correct-by-construction paradigm for electronic voting and other privacy-preserving applications. Their framework also lacks a natural probabilistic reasoning approach to zero-knowledge. Firsov et al.~\cite{10221929} formalise $\Sigma$-protocols in EasyCrypt (the successor to CertiCrypt), focusing on machine-checked proofs rather than executable extraction. 
 
   
 \subsection{Limitation and Future Work}
@@ -1251,7 +1224,7 @@ outputs another list of encrypted ballots in a random order.
 However, since the output is also encrypted, a dishonest mix-network could 
 potentially drop all the original ballots and manufacture artificial ones to favour a 
 particular candidate. To prevent such tampering, the mix-network must also 
-produce a zero-knowledge proof to ensure the correctness of the shuffle \cite{10.1007/978-3-642-02620-1_28,10.1007/978-3-030-51280-4_3}. Another possibility is to formalise Bulletproofs \cite{bunz2018bulletproofs}. These would allow us to provide compact range proofs for ballot validity (e.g., proving that a vote is $0$ or $1$), and could also be adapted to construct verifiable shuffles with logarithmic proof size (we have encoded the inner-product protocol but have not yet proved any security properties about our encoding). Another promising direction is a domain-specific language (DSL) for sigma protocols embedded in Rocq. The \texttt{\seqsplit{sigma-compiler}}~\cite{sigma-compiler} macro for Rust allows a protocol designer to write a high-level, declarative specification—lists of public parameters, secret witnesses, and logical statements—and automatically synthesises the corresponding prover and verifier functions. While this eliminates many manual implementation errors, the generated code itself is not formally verified. By embedding a similar DSL within Rocq, one could obtain a correct-by-construction pipeline: the same specification that is used to generate executable OCaml or Rust code could also serve as the input to a formalisation that proves, inside Rocq, that the resulting non-interactive proof satisfies completeness, special soundness, and honest-verifier zero-knowledge (in the random oracle model). Given our current infrastructure, it would be fairly straightforward to  encode these algorithms and prove their security properties. 
+produce a zero-knowledge proof to ensure the correctness of the shuffle \cite{10.1007/978-3-642-02620-1_28,10.1007/978-3-030-51280-4_3}. Another possibility is to formalise Bulletproofs \cite{bunz2018bulletproofs}; this would allow us to provide compact range proofs for ballot validity (e.g., proving that a vote is $0$ or $1$), and could also be adapted to construct verifiable shuffles with logarithmic proof size (we have encoded the inner-product protocol but have not yet proved any security properties about our encoding). Another promising direction is a domain-specific language (DSL) for sigma protocols embedded in Rocq. The \texttt{\seqsplit{sigma-compiler}}~\cite{sigma-compiler} macro for Rust allows a protocol designer to write a high-level, declarative specification—lists of public parameters, secret witnesses, and logical statements—and automatically synthesises the corresponding prover and verifier functions. While this eliminates many manual implementation errors, the generated code itself is not formally verified. By embedding a similar DSL within Rocq, one could obtain a correct-by-construction pipeline: the same specification that is used to generate executable OCaml or Rust code could also serve as the input to a formalisation that proves, inside Rocq, that the resulting proof satisfies completeness, special soundness, and honest-verifier zero-knowledge. Given our current infrastructure, it would be fairly straightforward to  encode these algorithms and prove their security properties. 
    
 
    Another limitation of our work is 

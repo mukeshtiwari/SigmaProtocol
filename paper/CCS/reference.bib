@@ -2564,3 +2564,19 @@ isbn="978-3-030-17653-2"
   note         = {Version 0.1.0, \url{https://crates.io/crates/sigma-compiler}},
   institution  = {University of Waterloo}
 }
+
+@inproceedings{10.1007/978-3-031-07085-3_16,
+author = {Goel, Aarushi and Green, Matthew and Hall-Andersen, Mathias and Kaptchuk, Gabriel},
+title = {Stacking Sigmas: A Framework to Compose Σ-Protocols for Disjunctions},
+year = {2022},
+isbn = {978-3-031-07084-6},
+publisher = {Springer-Verlag},
+address = {Berlin, Heidelberg},
+url = {https://doi.org/10.1007/978-3-031-07085-3_16},
+doi = {10.1007/978-3-031-07085-3_16},
+abstract = {Zero-Knowledge (ZK) Proofs for disjunctive statements have been a focus of a long line of research. Classical results such as Cramer et al. [CRYPTO’94] and Abe et al. [AC’02] design generic compilers that transform certain classes of ZK proofs into ZK proofs for disjunctive statements. However, communication complexity of the resulting protocols in these results ends up being proportional to the complexity of proving all clauses in the disjunction. More recently, Heath et al. [EC’20] exploited special properties of garbled circuits to construct efficient ZK proofs for disjunctions, where the proof size is only proportional to the length of the largest clause in the disjunction. However, these techniques do not appear to generalize beyond garbled circuits.In this work, we focus on achieving the best of both worlds. We design a general framework that compiles a large class of unmodified Σ-protocols, each for an individual statement, into a new Σ-protocol that proves a disjunction of these statements. Our framework can be used both when each clause is proved with the same Σ-protocol and when different Σ-protocols are used for different clauses. The resulting Σ-protocol is concretely efficient and has communication complexity proportional to the communication required by the largest clause, with additive terms that are only logarithmic in the number of clauses.We show that our compiler can be applied to many well-known Σ-protocols, including classical protocols (e.g. Schnorr [JC’91] and Guillou-Quisquater [CRYPTO’88]) and modern MPC-in-the-head protocols such as the recent work of Katz, Kolesnikov and Wang [CCS’18] and the Ligero protocol of Ames et al. [CCS’17]. Finally, since all of the protocols in our class can be made non-interactive in the random oracle model using the Fiat-Shamir transform, our result yields the first generic non-interactive zero-knowledge protocol for disjunctions where the communication only depends on the size of the largest clause.},
+booktitle = {Advances in Cryptology – EUROCRYPT 2022: 41st Annual International Conference on the Theory and Applications of Cryptographic Techniques, Trondheim, Norway, May 30 – June 3, 2022, Proceedings, Part II},
+pages = {458–487},
+numpages = {30},
+location = {Trondheim, Norway}
+}
