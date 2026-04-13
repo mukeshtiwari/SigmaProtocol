@@ -1174,7 +1174,8 @@ cryptographic proofs. Our verifier validates the complete election tally includi
 ciphertext aggregation, and decryption verification using the formal proofs embedded in our Rocq formalisation.
 
 \textbf{Verification Rules}: The election verification process follows a very similar approach described in the 
-previous section. We have an inductive datatype \texttt{count}, index by \texttt{state}, defined in \href{https://anonymous.4open.science/r/SigmaProtocol-EBA5/src/Backend/HeliosTally.v}{\textcolor{green}{HeliosTally.v}}. The \texttt{count} and \texttt{state} are similar to previously defined, except the fourth constructor \texttt{finish} is 
+previous section. We have an inductive datatype \texttt{count}, index by \texttt{state}. 
+The \texttt{count} and \texttt{state} are similar to previously defined, except the fourth constructor \texttt{finish} is 
 slightly different. The constructor \textbf{finish}: after all ballots are processed, the verifier performs end-to-end 
 verification checks: (i) Decryption verification: Each of the $m$ talliers has published a decryption factor $d_i = \alpha^{s_i}$ 
 (where $\alpha$ is the first component of the final ciphertext and $s_i$ is their secret key). The verifier 
@@ -1183,39 +1184,20 @@ $\log_g(y_i) = \log_\alpha(d_i)$ (same exponent used for both); (ii) Plaintext v
 consistency: for each candidate position, the prover must verify that $g^{\text{plaintext}} = \text{decrypted value}$, 
 which is the final discrete log equality check; (iii) Proof of knowledge (POK) checks: Each tallier has published a Schnorr proof of knowledge of their 
 secret key, which is verified to ensure key ownership; and (iv) Public key consistency: The verifier confirms that the product of all talliers' public keys equals 
-the election's public key $h = \prod_i y_i$, ensuring no key material was substituted. 
-
-The function \texttt{compute\_final\_count} is the top-level certified
+the election's public key $h = \prod_i y_i$, ensuring no key material was substituted.  The function \texttt{compute\_final\_count} is the top-level certified
 verifier. Its type states that for \emph{any} list of ballots $\mathit{bs}$,
-any vector of $m{+}1$ talliers $\mathit{ts}$, and any published plaintext
+any list of talliers $\mathit{ts}$, and any published plaintext
 tally $\mathit{pt}$, one can always compute a Boolean $\mathit{bfinal}$ together
 with a partition of $\mathit{bs}$ into valid ballots $\mathit{vbs}$ and invalid
 ballots $\mathit{inbs}$, and---crucially---a term of type
 $\texttt{count}~(\texttt{finished}~\mathit{bs}~\mathit{vbs}~\mathit{inbs}~\mathit{ts}~\mathit{pt}~\mathit{bfinal})$.
 Because \texttt{count} is an inductive datatype whose constructors encode all
 verification rules, inhabiting this type is itself a machine-checked
-certificate of the entire end-to-end verification.
-%
-Concretely, \texttt{compute\_final\_count} first calls
-\texttt{compute\_final\_tally} to process each ballot, accepting those
-whose ElGamal encryption proofs verify and rejecting the rest, while
-homomorphically aggregating valid ciphertexts into the encrypted tally
-$\mathit{ms}$. It then applies the \texttt{finish} rule, which simultaneously
-(i) checks that the supplied decryption factors $d_i = \alpha^{s_i}$ are
-correctly attested by Chaum-Pedersen proofs, (ii) checks the plaintext tally
-by verifying $g^{\mathit{pt}_j} = \mathit{ds}_j$ for every candidate $j$,
-(iii) verifies each tallier's Schnorr proof of knowledge of their secret
-key, and (iv) confirms that the product of all tallier public keys equals the
-election public key $h$. The conjunction of these four Boolean outcomes
-is $\mathit{bfinal}$. Because the entire computation is carried out inside
-Rocq's kernel, $\mathit{bfinal} = \texttt{true}$ is a \emph{proof} rather
-than merely a runtime claim.
+certificate of the entire end-to-end verification. The related Rcoq proof can be accessed in the \href{https://anonymous.4open.science/r/SigmaProtocol-EBA5/src/Backend/HeliosTally.v}{\textcolor{green}{HeliosTally.v}} file.
 
-
-\textbf{Concrete Instantiation via \texttt{compute\_final\_count\_ins}}:
 The generic function \texttt{compute\_final\_count} is parameterised over an
 arbitrary field $F$, group $G$, and all associated operations.
-The function \texttt{compute\_final\_count\_ins}, defined in \href{https://anonymous.4open.science/r/SigmaProtocol-EBA5/src/Examples/HeliosTallyIns.v}{\textcolor{green}{HeliosTallyIns.v}}, fixes every one of these
+The function \texttt{compute\_final\_count\_ins} fixes every one of these
 parameters to the concrete Helios cryptographic setting: the field $F$ is
 instantiated to $\mathbb{Z}_q$ (via the \texttt{Zpfield} module), the group
 $G$ is the Schnorr group $\mathbb{Z}^*_p$ of order $q$ (via the
@@ -1231,39 +1213,12 @@ The body of \texttt{\seqsplit{compute\_final\_count\_ins}} is a single call to
 \texttt{\seqsplit{compute\_final\_count}} with all arguments filled in; the result is a
 term of the fully instantiated type
 $\texttt{count}~(\texttt{finished}~\mathit{bs}~\mathit{vbs}~\mathit{inbs}~\mathit{ts}~\mathit{pt}~\mathit{bfinal})$,
-which is a machine-checked certificate that the election tally is correct.
+which is a machine-checked certificate that the election tally is correct. The related Rocq code can be accessed from  the 
+\href{https://anonymous.4open.science/r/SigmaProtocol-EBA5/src/Examples/HeliosTallyIns.v}{\textcolor{green}{HeliosTallyIns.v}} file.
 
-\textbf{Primality of $p$ and $q$}:
-The two large primes used in the Helios parameters are the 256-bit prime~$q$
-and the 2048-bit safe prime~$p = kq + 1$.
-Their primality is established inside Rocq using the
-\textsc{Coqprime}~\cite{thery2007primality} library, which implements a
-\emph{reflected} Pocklington–Lucas primality test: a structured primality
-certificate is supplied as a Rocq term and then verified by a single
-\texttt{vm\_cast\_no\_check} kernel call, keeping the trusted computing base
-small while avoiding expensive computation in the proof engine.
 
-For $q$, the proof in \texttt{primeQ.v} uses a standard
-\texttt{Pock\_certif} certificate.  The Pocklington criterion requires
-that $q - 1$ can be factored with each prime factor itself certified;
-here $q - 1$ is expressed as a product of small primes
-$(2^2 \cdot 3^3 \cdot 7 \cdot 23 \cdot 97 \cdot 4{,}223{,}919{,}769 \cdot 6{,}350{,}820{,}103)$,
-and each factor that is not immediately known prime is recursively handled by
-a nested \texttt{Pock\_certif}.
-
-For $p$, the proof in \texttt{primeP.v} uses an \texttt{Ell\_certif}
-(elliptic-curve primality certificate) because the size of $p$ (2048 bits)
-makes a purely Pocklington-style factorisation of $p - 1$ impractical.
-The elliptic-curve certificate encodes the witness for the Goldwasser-Kilian
-criterion, and the factorisation chain is built up recursively via a
-sequence of \texttt{Pock\_certif} and \texttt{Proof\_certif} leaves.
-In both cases, the certificate is checked by \texttt{vm\_cast\_no\_check},
-which delegates the boolean equality to Rocq's efficient virtual-machine
-evaluator rather than to the tactic engine.
-
-\textbf{Execution in \texttt{main.ml}}:
-The extracted OCaml executable in \texttt{main.ml} ties together the parser
-and the certified verifier into a single end-to-end pipeline.
+Finally, the \texttt{main.ml} file ties together the parser
+and the certified verifier (extracted from Rocq proofs) into a single end-to-end pipeline.
 The program reads election data from standard input, which is structured
 in three sections separated by semicolons: the list of voter ballots
 (\texttt{bs}), the vector of trustees (\texttt{us}), and the published
@@ -1278,9 +1233,7 @@ the Chaum-Pedersen decryption proof vector, the Schnorr proof of knowledge,
 and the trustee's public key $(g, p, q, y_i)$.
 The challenge for each Or-sigma proof is reconstructed as the triple
 $(c_0 + c_1 \bmod q,\; c_0,\; c_1)$, matching the commitment structure
-expected by the Rocq formalisation.
-
-Once parsing is complete, \texttt{compute\_final\_count\_ins} is invoked
+expected by the Rocq formalisation. Once parsing is complete, \texttt{compute\_final\_count\_ins} is invoked
 with the concrete Helios parameters:
 the number of candidates $n = 7$, the number of additional talliers
 $m = 2$ (so that the total number of talliers is $1 + m = 3$), the
@@ -1298,11 +1251,20 @@ node, reporting the four individual Boolean checks---decryption proof
 validity, plaintext consistency, proof-of-knowledge validity, and public-key
 product consistency---together with the conjunction \texttt{bfinal}.
 
-
 The verifier has successfully validated real IACR 2024 election data, demonstrating practical deployment 
 of formal verification in privacy-preserving voting systems. The end-to-end verification provides strong 
 cryptographic assurance: if any ballot is modified, any decryption factor is forged, or any tally is 
 changed, the verifier will detect the corruption.
+
+
+\textbf{Primality of $p$ and $q$}:
+The two large primes used in the Helios parameters are the 256-bit prime~$q$
+and the 2048-bit safe prime~$p = kq + 1$.
+Their primality is established inside Rocq using the
+\textsc{Coqprime}~\cite{thery2007primality} library.  For $q$, the proof can be accessed from the \href{https://anonymous.4open.science/r/SigmaProtocol-EBA5/src/Examples/primeQ.v}{\textcolor{green}{primeQ.v}} file and 
+for $p$, the proof can be accessed from \href{https://anonymous.4open.science/r/SigmaProtocol-EBA5/src/Examples/primeP.v}{\textcolor{green}{primeP.v}} file.  
+
+
 
   
 
