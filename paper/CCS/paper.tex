@@ -320,15 +320,15 @@ Section \ref{case_studies} demonstrates the practical use of the library through
 
 \section{Sigma Protocol}\label{sigma_protocol}
 Despite the recent growth and popularity of zero-knowledge succinct 
-argument of knowledge (ZkSNARK), $\Sigma$-protocol remains a
+argument of knowledge (zk-SNARK), $\Sigma$-protocol remains a
 leading cryptographic proof system in privacy-preserving voting systems. 
-$\Sigma$-protocol is used in Helios --a widely popular voting system-- \cite{adida2008helios}, 
-Belenios --used in French elections for overseas 
+$\Sigma$-protocol is used in Helios (a widely popular voting system) \cite{adida2008helios}, 
+Belenios (used in French elections for overseas 
 voters\footnote{VVFE, used in French elections, is a derivative of (part of) Belenios and 
-inherited all the zero-knowledge proofs from Belenios. \url{https://gitlab.inria.fr/vvfe/vvfe}}-- \cite{cortier2023french}, and 
-SwissPost --used in Swiss elections for overseas voters-- voting 
+inherited all the zero-knowledge proofs from Belenios. \url{https://gitlab.inria.fr/vvfe/vvfe}}), \cite{cortier2023french}, and 
+SwissPost (used in Swiss elections for overseas voters) voting 
 systems \cite{10.1007/978-3-031-15911-4_4}. 
-Moreover, recently zero-knowledge proof community started a movement to standardise
+Moreover, recently the zero-knowledge proof community started a movement to standardise
 the sigma protocol \cite{ZKProof}.
 One of the main reasons for its popularity in privacy-preserving voting systems is its
 efficiency and well-understood security.
@@ -345,28 +345,17 @@ that ($x$, $w$) $\in$ $R$. To achieve this, $P$ and $V$ engage in a
 interactive protocol and  at the end of the protocol $V$ either accepts or rejects the proofs.
 $\Sigma$-protocol  is an efficient three move zero-knowledge proof where the 
 verifier is assumed to be honest and characterised by completeness, (special) soundness, and 
-(special honest-verifier) zero-knowledge. More formally: 
-\begin{itemize}
-  \item \textbf{Completeness:}
+(special honest-verifier) zero-knowledge. More formally: (i) \textbf{completeness:}
   when $P$ and $V$ follow the protocol, $V$ always accepts. 
   In other words, if $P$ knows $w$ for $x$ such that ($x$, $w$) $\in$ $R$,  
   then $P$ can successfully construct a proof $(a, c, r)$ that always passes the verification equation, 
-  i.e., $V$ accepts. 
-
-\item \textbf{Special soundness:}
+  i.e., $V$ accepts; (ii) \textbf{special soundness:}
 there exists a probabilistic polynomial-time extractor $E$ which given 
 two accepting transcripts $(a, c, r)$ and $(a, c', r')$ for $x$, 
 it can extract a witness $w$ such that $(x, w) \in R$. In other words, 
 if $P$ does not know $w$ for $x$ then it cannot construct a proof 
-$(a, c, r)$ that will passes the verification check. 
-\item \textbf{Special honest-verifier zero-knowledge.}
+$(a, c, r)$ that will passes the verification check; and (iii) \textbf{special honest-verifier zero-knowledge:}
 There exists a probabilistic polynomial-time simulator \(S\) such that, for every \(x \in L_R\) and every challenge \(c \in C\), \(S\) outputs a transcript \((a,c,r)\) whose distribution is identical to that of a real interaction between an honest prover \(P\) (holding a witness \(w\) with \((x,w)\in R\)) and an honest verifier \(V\). Furthermore, for any \(x \notin L_R\), the simulator \(S\) is only required to output an arbitrary accepting transcript \((a,c,r)\) for the given challenge \(c \in C\).
-\end{itemize}
-
-
-
-
-
 
 
 
