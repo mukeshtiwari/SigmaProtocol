@@ -175,7 +175,7 @@
   one particular application where they have found a widespread adoption is electronic voting.
   They remain a popular choice in electronic voting to maintain privacy 
   and verifiability of elections and are still used in prominent electronic voting systems such as 
-  Helios, Belenois, and SwissPost. However, existing implementations of $\Sigma$-protocols have two 
+  Helios, Belenios, and SwissPost. However, existing implementations of $\Sigma$-protocols have two 
   critical shortcomings: (i) the same code is written twice: once for the frontend (JavaScript/TypeScript)
   and once for the backend (Python/OCaml/Java), which is error-prone and may lead to inconsistencies and bugs, and (ii) none of these implementations provide formal security guarantees.
   
@@ -261,7 +261,7 @@ an electronic voting system must adhere to \textit{software independence} \cite{
   election outcome. 
 \end{quote}
 \noindent
-Therefore, many electronic voting systems follow the principals 
+Therefore, many electronic voting systems follow the principles 
 of \textit{end-to-end verifiability}. End-to-end verifiability is 
 defined as: 
 \begin{itemize}
@@ -306,8 +306,8 @@ Our formalisation is developed
 generically over abstract vector spaces, enabling uniform expression and composition of discrete-logarithm-based 
 $\Sigma$-protocols while remaining independent of any concrete group or cryptographic instantiation. Additionally, we have implemented efficient arithmetic procedures for prime fields and Schnorr groups (including the Helios parameters, 
 with formally verified primality proofs for the 2048-bit prime $p$ and 256-bit prime $q$) to 
-ensure our library is practically usable. \textcolor{blue}{Finally, we extract OCaml,, Rust, and WebAssembly code from our certified 
-Rocq implementation using Peregrine\footnote{https://peregrine-project.github.io/}. We demonstrate the applicability of our framework by implementing a voting client, extracted to WebAssembly from Rocq proofs, and a server, extracted to Rust from Rcoq proofs, for Approval Voting and a complete Helios election verifier that validates IACR elections (2023, 2024), verifying ballot proofs, tallying, and trustee decryption proofs}. To the best of our knowledge,  this is the first formal verification of $\Sigma$-protocols that can be extracted to WebAssembly, Rust, and OCaml from Rocq proofs. Our proofs can be accessed from this \href{https://anonymous.4open.science/r/SigmaProtocol-EBA5/README.md}{\textcolor{green}{anonymous repo}}, which contains 30,000 lines of Rocq proofs.
+ensure our library is practically usable. \textcolor{blue}{Finally, we extract OCaml, Rust, and WebAssembly code from our certified 
+Rocq implementation using Peregrine\footnote{https://peregrine-project.github.io/}. We demonstrate the applicability of our framework by implementing a voting client, extracted to WebAssembly from Rocq proofs, and a server, extracted to Rust from Rocq proofs, for Approval Voting and a complete Helios election verifier that validates IACR elections (2023, 2024), verifying ballot proofs, tallying, and trustee decryption proofs}. To the best of our knowledge,  this is the first formal verification of $\Sigma$-protocols that can be extracted to WebAssembly, Rust, and OCaml from Rocq proofs. Our proofs can be accessed from this \href{https://anonymous.4open.science/r/SigmaProtocol-EBA5/README.md}{\textcolor{green}{anonymous repo}}, which contains 30,000 lines of Rocq proofs.
 
 \subsection{Outline}
 The remainder of the paper is organised as follows. 
@@ -323,9 +323,9 @@ Despite the recent growth and popularity of zero-knowledge succinct
 argument of knowledge (ZkSNARK), $\Sigma$-protocol remains a
 leading cryptographic proof system in privacy-preserving voting systems. 
 $\Sigma$-protocol is used in Helios --a widely popular voting system-- \cite{adida2008helios}, 
-Belenois --used in French elections for overseas 
+Belenios --used in French elections for overseas 
 voters\footnote{VVFE, used in French elections, is a derivative of (part of) Belenios and 
-inherited all the zero-knowledge proofs from Belenois. \url{https://gitlab.inria.fr/vvfe/vvfe}}-- \cite{cortier2023french}, and 
+inherited all the zero-knowledge proofs from Belenios. \url{https://gitlab.inria.fr/vvfe/vvfe}}-- \cite{cortier2023french}, and 
 SwissPost --used in Swiss elections for overseas voters-- voting 
 systems \cite{10.1007/978-3-031-15911-4_4}. 
 Moreover, recently zero-knowledge proof community started a movement to standardise
@@ -372,7 +372,7 @@ There exists a probabilistic polynomial-time simulator \(S\) such that, for ever
 
 Sigma protocol was first defined by Ronald Cramer \cite{cramer1996modular} 
 and the first efficient sigma protocol was introduced by Schnorr in \cite{schnorr1991efficient}. 
-Even though there exists many sigma protocols, the Schnorr protocol is used extensively in privacy-preserving voting systems, e.g, Helios, Belenois, SwissPost, etc. Therefore, 
+Even though there exists many sigma protocols, the Schnorr protocol is used extensively in privacy-preserving voting systems, e.g, Helios, Belenios, SwissPost, etc. Therefore, 
 our formalisation is geared towards the Schnorr protocol. 
 Moreover, we formalise the \(n\)-ary composition of Schnorr \(\Sigma\)-protocols, instantiating Parallel, And, Or, Eq, and Neq constructions for arbitrary \(n\). In addition, we also formalise the Chaum-Pedersen protocol for proving equality of discrete logarithms, the Okamoto protocol for linear relations over multiple generators, encryption proofs (demonstrating that ElGamal ciphertexts encrypt specific values), decryption proofs (verifying correct decryption by election trustees), and the Pedersen Linear Relation protocol for proving knowledge of committed values satisfying linear constraints.
 Ideally, given the abstraction of our formlisation (\textit{vector space}), we could have 
@@ -558,13 +558,13 @@ distribution in Rocq that we introduce in the next section.
   label={comp_sound},captionpos=t, basicstyle=\ttfamily\footnotesize,
   abovecaptionskip=-\medskipamount]
 Lemma schnorr_completeness : 
-forall (r c : F) (a : t G 1) (c r : t F 1),
+forall (a : t G 1) (c r : t F 1),
 (a; c; r) = (schnorr_protocol x g r c) ->
 accepting_conversation g h (a; c; r) = true.
 Proof. (* proof terms omitted *) Qed.
   
 Lemma simulator_completeness : 
-forall (r c : F) (a : t G 1) (c r : t F 1),
+forall (a : t G 1) (c r : t F 1),
 (a; c; r) = (schnorr_simulator g h r c) ->
 accepting_conversation g h (a; c; r) = true.
 Proof using -(x R). (* terms omitted *) Qed. 
@@ -1087,7 +1087,7 @@ Inductive complexity_repeat_op_ntimes_rec
     (N.modulo (e * (ret * ret)) t) (N.succ w).
 
 Lemma correct_complexity_repeat_op_ntimes_rec : 
-  forall n e w, complexity_repeat_op_ntimes_rec 
+  forall n e w, complexity_repeat_op_ntimes_rec e w n 
     (repeat_op_ntimes_rec e n w)  (N.log2 n).
 Proof. (* proof terms omitted *) Qed.
 \end{lstlisting}
@@ -1193,7 +1193,7 @@ ballots $\mathit{inbs}$, and---crucially---a term of type
 $\texttt{count}~(\texttt{finished}~\mathit{bs}~\mathit{vbs}~\mathit{inbs}~\mathit{ts}~\mathit{pt}~\mathit{bfinal})$.
 Because \texttt{count} is an inductive datatype whose constructors encode all
 verification rules, inhabiting this type is itself a machine-checked
-certificate of the entire end-to-end verification. The related Rcoq proof can be accessed in the \href{https://anonymous.4open.science/r/SigmaProtocol-EBA5/src/Backend/HeliosTally.v}{\textcolor{green}{HeliosTally.v}} file.
+certificate of the entire end-to-end verification. The related Rocq proof can be accessed in the \href{https://anonymous.4open.science/r/SigmaProtocol-EBA5/src/Backend/HeliosTally.v}{\textcolor{green}{HeliosTally.v}} file.
 
 The generic function \texttt{compute\_final\_count} is parameterised over an
 arbitrary field $F$, group $G$, and all associated operations.
