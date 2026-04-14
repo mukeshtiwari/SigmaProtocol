@@ -1173,7 +1173,7 @@ widely-deployed open-source internet voting system that implements end-to-end ve
 cryptographic proofs. Our verifier validates the complete election tally including ballot verification, 
 ciphertext aggregation, and decryption verification using the formal proofs embedded in our Rocq formalisation.
 
-\textbf{Verification Rules}: The election verification process follows a very similar approach described in the 
+The election verification process follows a very similar approach described in the 
 previous section. We have an inductive datatype \texttt{count}, index by \texttt{state}. 
 The \texttt{count} and \texttt{state} are similar to previously defined, except the fourth constructor \texttt{finish} is 
 slightly different. The constructor \textbf{finish}: after all ballots are processed, the verifier performs end-to-end 
@@ -1217,23 +1217,19 @@ which is a machine-checked certificate that the election tally is correct. The r
 \href{https://anonymous.4open.science/r/SigmaProtocol-EBA5/src/Examples/HeliosTallyIns.v}{\textcolor{green}{HeliosTallyIns.v}} file.
 
 
-Finally, the \texttt{main.ml} file ties together the parser
+Finally, the toplevel \texttt{main.ml} file ties together the parser
 and the certified verifier (extracted from Rocq proofs) into a single end-to-end pipeline.
 The program reads election data from standard input, which is structured
 in three sections separated by semicolons: the list of voter ballots
 (\texttt{bs}), the vector of trustees (\texttt{us}), and the published
 plaintext tally (\texttt{rs}).
-The parser, generated from the Menhir grammar in \texttt{parser.mly},
-reconstructs each ballot as a tuple containing the cast timestamp,
+The parser reconstructs each ballot as a tuple containing the cast timestamp,
 a vector of ElGamal ciphertexts $(\alpha_i, \beta_i)$, a vector of Or-sigma
 proofs (one per candidate, certifying that the plaintext is $0$ or $1$),
 and metadata strings (election hash, voter hash, etc.).
 Each trustee is parsed into a tuple containing the decryption factor vector,
 the Chaum-Pedersen decryption proof vector, the Schnorr proof of knowledge,
-and the trustee's public key $(g, p, q, y_i)$.
-The challenge for each Or-sigma proof is reconstructed as the triple
-$(c_0 + c_1 \bmod q,\; c_0,\; c_1)$, matching the commitment structure
-expected by the Rocq formalisation. Once parsing is complete, \texttt{compute\_final\_count\_ins} is invoked
+and the trustee's public key $(g, p, q, y_i)$. Once parsing is complete, \texttt{compute\_final\_count\_ins} is invoked
 with the concrete Helios parameters:
 the number of candidates $n = 7$, the number of additional talliers
 $m = 2$ (so that the total number of talliers is $1 + m = 3$), the
@@ -1246,15 +1242,16 @@ Boolean verdict \texttt{bfinal}, the lists of valid and invalid ballots
 that is a machine-checked certificate of the entire verification.
 The program then prints the full certificate trace via \texttt{print\_count},
 which recursively deconstructs the \texttt{count} inductive, displaying for
-each ballot whether it was accepted or rejected and, at the \texttt{finish}
+each ballot whether it was valid or invalid and, at the \texttt{finish}
 node, reporting the four individual Boolean checks---decryption proof
 validity, plaintext consistency, proof-of-knowledge validity, and public-key
 product consistency---together with the conjunction \texttt{bfinal}.
 
-The verifier has successfully validated real IACR 2024 election data, demonstrating practical deployment 
+The verifier has successfully validated real IACR 2024 and IACR 2023 election data, demonstrating practical deployment 
 of formal verification in privacy-preserving voting systems. The end-to-end verification provides strong 
 cryptographic assurance: if any ballot is modified, any decryption factor is forged, or any tally is 
-changed, the verifier will detect the corruption.
+changed, the verifier will detect the corruption. The source code can accessed 
+from the \href{https://anonymous.4open.science/r/SigmaProtocol-EBA5/src/Executable/HeliosVerifiercode/main.ml}{\textcolor{green}{main.ml}} file.
 
 
 \textbf{Primality of $p$ and $q$}:
