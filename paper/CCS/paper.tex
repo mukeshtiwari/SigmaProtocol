@@ -1267,7 +1267,7 @@ for $p$, the proof can be accessed from \href{https://anonymous.4open.science/r/
 
 
 \section{Related Work, Limitations, and Future Work}\label{rel_work}
-Given the widespread use of $\Sigma$-protocols in electronic voting and related domains, their extensive formalisation in prior work is unsurprising~\cite{5552642,9519460,butler2021formalising,10.1145/3319535.3354247,287095,almeida2010certifying,10221929,10.1145/3594735}.  Barthe et al.~\cite{5552642} present the first formalisation of $\Sigma$-protocols and their composition in CertiCrypt, a library developed in the Rocq theorem prover. While their proofs are constructive, they do not support extraction of executable OCaml code. Butler et al.~\cite{butler2021formalising} formalise $\Sigma$-protocols in CryptoHOL~\cite{10.1007/978-3-662-49498-1_20}, built on Isabelle/HOL. As in~\cite{5552642}, the focus is on machine-checked correctness rather than code extraction. Moreover, the use of classical reasoning, e.g., the law of excluded middle in Isabelle/HOL may preclude extraction of executable code. Haines et al.~\cite{287095,10.1145/3319535.3354247} formalise $\Sigma$-protocols in Rocq and extract OCaml code to verify the 2020 IACR election and the SwissPost mix-network. This is closest to our work; however, their focus is on verification of specific systems, whereas we aim to construct primitives following a correct-by-construction paradigm for electronic voting and other privacy-preserving applications. Their framework also lacks a natural probabilistic reasoning approach to zero-knowledge. Firsov et al.~\cite{10221929} formalise $\Sigma$-protocols in EasyCrypt (the successor to CertiCrypt), focusing on machine-checked proofs rather than executable extraction. 
+Given the widespread use of $\Sigma$-protocols in electronic voting and related domains, their extensive formalisation in prior work is unsurprising~\cite{5552642,9519460,butler2021formalising,10.1145/3319535.3354247,287095,almeida2010certifying,10221929,10.1145/3594735}.  Barthe et al.~\cite{5552642} present the first formalisation of $\Sigma$-protocols and their composition in CertiCrypt, a library developed in the Rocq theorem prover. While their proofs are constructive, they do not support extraction of executable OCaml code. Butler et al.~\cite{butler2021formalising} formalise $\Sigma$-protocols in CryptoHOL~\cite{10.1007/978-3-662-49498-1_20}, built on Isabelle/HOL. As in~\cite{5552642}, the focus is on machine-checked correctness rather than code extraction. Moreover, the use of classical reasoning, e.g., the law of excluded middle in Isabelle/HOL may preclude extraction of executable code. Haines et al.~\cite{287095} formalise $\Sigma$-protocols in Rocq and extract OCaml code to verify the 2020 IACR election. This work is the closest to ours; however, it focuses solely on the verification of IACR elections, whereas our approach targets the correct-by-construction development of primitives for electronic voting and other privacy-preserving applications based on $\Sigma$-protocols. Their framework also lacks a natural probabilistic reasoning approach to zero-knowledge. Firsov et al.~\cite{10221929} formalise $\Sigma$-protocols in EasyCrypt (the successor to CertiCrypt), focusing on machine-checked proofs rather than executable extraction. 
 
   
 \subsection{Limitation and Future Work}
@@ -1297,20 +1297,7 @@ produce a zero-knowledge proof to ensure the correctness of the shuffle \cite{10
    work about formalising random oracle in the Rocq theorem 
    prover \cite{10.1007/11617990_3} and we would like to 
    connect it our implementation; however, it 
-   will require some non-trivial work. 
-   
-   
-  In general, voting is a well-defined protocol formalised in terms 
-  message exchanges between a client machine (voter) and a server machine (voting server), 
-  and the cryptographic primitives we developed in this project typically operate on 
-  a client machine (voter) and a server machine (voting server). 
-  However, the correctness of the cryptographic primitives does not imply the 
-  correctness of the whole voting system (protocol). Therefore, we aim to develop 
-  a high-level API for client-server communication, making their interactions explicit 
-  using session types \cite{10.1145/3453483.3454041}. 
-  This approach would provide an end-to-end guarantee for the interaction 
-  between clients and server in the voting system. 
-
+   will require some non-trivial work.
  
 
   In this paper, we present a certified implementation that the voting community can readily adopt to encode their protocol with all security guarantees. We demonstrate its usefulness by encoding a Helios verifier and a client–server system for Approval voting. Moreover, our formalisation extracts to OCaml, WebAssembly, and Rust without redundant effort.
