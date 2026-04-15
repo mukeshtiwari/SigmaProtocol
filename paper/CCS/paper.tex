@@ -306,8 +306,8 @@ Our formalisation is developed
 generically over abstract vector spaces, enabling uniform expression and composition of discrete-logarithm-based 
 $\Sigma$-protocols while remaining independent of any concrete group or cryptographic instantiation. Additionally, we have implemented efficient arithmetic procedures for prime fields and Schnorr groups (including the Helios parameters, 
 with formally verified primality proofs for the 2048-bit prime $p$ and 256-bit prime $q$) to 
-ensure our library is practically usable. \textcolor{blue}{Finally, we extract OCaml, Rust, and WebAssembly code from our certified 
-Rocq implementation using Peregrine\footnote{https://peregrine-project.github.io/}. We demonstrate the applicability of our framework by implementing a voting client, extracted to WebAssembly from Rocq proofs, and a server, extracted to Rust from Rocq proofs, for Approval Voting and a complete Helios election verifier that validates IACR elections (2023, 2024), verifying ballot proofs, tallying, and trustee decryption proofs}. To the best of our knowledge,  this is the first formal verification of $\Sigma$-protocols that can be extracted to WebAssembly, Rust, and OCaml from Rocq proofs. Our proofs can be accessed from this \href{https://anonymous.4open.science/r/SigmaProtocol-EBA5/README.md}{\textcolor{green}{anonymous repo}}, which contains 30,000 lines of Rocq proofs.
+ensure our library is practically usable. Finally, we extract OCaml, Rust, and WebAssembly code from our certified 
+Rocq implementation using Peregrine\footnote{https://peregrine-project.github.io/}. We demonstrate the applicability of our framework by implementing a voting client, extracted to WebAssembly from Rocq proofs, and a server, extracted to Rust from Rocq proofs, for Approval Voting and a complete Helios election verifier that validates IACR elections (2023, 2024), verifying ballot proofs, tallying, and trustee decryption proofs. To the best of our knowledge,  this is the first formal verification of $\Sigma$-protocols that can be extracted to WebAssembly, Rust, and OCaml from Rocq proofs. Our proofs can be accessed from this \href{https://anonymous.4open.science/r/SigmaProtocol-EBA5/README.md}{\textcolor{blue}{anonymous repo}}, which contains 30,000 lines of Rocq proofs.
 
 \subsection{Outline}
 The remainder of the paper is organised as follows. 
@@ -484,7 +484,7 @@ one of the major benefit of this abstraction is easiness of proofs
 which can be easily automated. Therefore, we model the Schnorr 
 protocol, the simulator, and the verification equation in Rocq as showing in 
 Listing \ref{schn_nat}. The source code for this section can be accessed from the
-\href{https://anonymous.4open.science/r/SigmaProtocol-EBA5/src/Crypto/Sigma.v}{\textcolor{green}{Sigma.v}} file from our anonymous repo.
+\href{https://anonymous.4open.science/r/SigmaProtocol-EBA5/src/Crypto/Sigma.v}{\textcolor{blue}{Sigma.v}} file from our anonymous repo.
  
 \begin{lstlisting}[frame=single, language=Coq, caption={Schnorr protocol},
   label={schn_nat},captionpos=t, basicstyle=\ttfamily\footnotesize,
@@ -589,7 +589,7 @@ However, we need uniform
 distribution, rather than an arbitrary distribution, to reason about 
 zero-knowledge of $\Sigma$-protocol, and therefore we define a function 
 \texttt{\seqsplit{uniform\_with\_replacement}} to generate uniform distributions, shown in Listing \ref{prob_def}.
-The relevant source code can be accessed from \href{https://anonymous.4open.science/r/SigmaProtocol-EBA5/src/Probability/Prob.v}{\textcolor{green}{Prob.v}} and \href{https://anonymous.4open.science/r/SigmaProtocol-EBA5/src/Probability/Distr.v}{\textcolor{green}{Distr.v}}.
+The relevant source code can be accessed from \href{https://anonymous.4open.science/r/SigmaProtocol-EBA5/src/Probability/Prob.v}{\textcolor{blue}{Prob.v}} and \href{https://anonymous.4open.science/r/SigmaProtocol-EBA5/src/Probability/Distr.v}{\textcolor{blue}{Distr.v}}.
 
 \begin{lstlisting}[frame=single, language=Coq, caption={Uniform Probability Distribution},
     label={prob_def},captionpos=t, basicstyle=\ttfamily\footnotesize,
@@ -718,7 +718,7 @@ is to allow the prover a controlled degree of freedom to \emph{cheat} on stateme
 
 Our Rocq formalisation of the Or-$\Sigma$ protocol supports $n \geq 2$ statements with arbitrary generators for each statement, enabling proofs of knowledge for relations $g_i^{x_i} = h_i$. The function \texttt{\seqsplit{generalised\_construct\_or\_conversations\_schnorr}} constructs a proof for the relation
 $\{ (x_1, x_2, \ldots, x_n) \mid h_1 = g_1^{x_1} \lor h_2 = g_2^{x_2} \lor \cdots \lor h_n = g_n^{x_n} \}$, 
-where the prover knows the witness for the relation indicated by the index \texttt{rindex}. One advantage of this generic formalisation is that we can instantiate \( n \) with any finite number of statements at compile time, thereby uniformly capturing arbitrary-length disjunctions without modifying the underlying protocol definition.  Similarly, we define the simulator \texttt{\seqsplit{generalised\_construct\_or\_conversations\_simulator}}, which generates accepting transcripts for the disjunctive relation without access to any witness. Building on this, we construct two distributions: \texttt{\seqsplit{generalised\_or\_schnorr\_distribution}}, which depends on the secret witness \(x\), and \texttt{\seqsplit{generalised\_or\_simulator\_distribution}}, which is independent of any witness. These distributions are then used to establish the zero-knowledge property captured by \texttt{\seqsplit{generalised\_or\_special\_honest\_verifier\_zkp}}. The two distributions are identical and therefore the protocol is information-theoretically zero-knowledge. The formalisation proves three security properties: completeness (honest execution always verifies), special soundness (which recovers a witness from two accepting transcripts with the same commitments but different challenges), and special honest-verifier zero-knowledge (the distribution of real transcripts involving the witness is identical to the simulator distribution without the witness). The source code for this section can be accessed in the \href{https://anonymous.4open.science/r/SigmaProtocol-EBA5/src/Crypto/OrSigmaGen.v}{\textcolor{green}{OrSigmaGen.v}} file.
+where the prover knows the witness for the relation indicated by the index \texttt{rindex}. One advantage of this generic formalisation is that we can instantiate \( n \) with any finite number of statements at compile time, thereby uniformly capturing arbitrary-length disjunctions without modifying the underlying protocol definition.  Similarly, we define the simulator \texttt{\seqsplit{generalised\_construct\_or\_conversations\_simulator}}, which generates accepting transcripts for the disjunctive relation without access to any witness. Building on this, we construct two distributions: \texttt{\seqsplit{generalised\_or\_schnorr\_distribution}}, which depends on the secret witness \(x\), and \texttt{\seqsplit{generalised\_or\_simulator\_distribution}}, which is independent of any witness. These distributions are then used to establish the zero-knowledge property captured by \texttt{\seqsplit{generalised\_or\_special\_honest\_verifier\_zkp}}. The two distributions are identical and therefore the protocol is information-theoretically zero-knowledge. The formalisation proves three security properties: completeness (honest execution always verifies), special soundness (which recovers a witness from two accepting transcripts with the same commitments but different challenges), and special honest-verifier zero-knowledge (the distribution of real transcripts involving the witness is identical to the simulator distribution without the witness). The source code for this section can be accessed in the \href{https://anonymous.4open.science/r/SigmaProtocol-EBA5/src/Crypto/OrSigmaGen.v}{\textcolor{blue}{OrSigmaGen.v}} file.
 
 \begin{lstlisting}[frame=single, language=Coq, caption={Or-$\Sigma$ Protocol},
 label={or_proof},captionpos=t, basicstyle=\ttfamily\footnotesize,
@@ -788,7 +788,7 @@ $\prod_{i=1}^{n} g_i^{r_i} = t \cdot h^c$. Verification correctness follows from
 \left(\prod_{i=1}^{n} g_i^{u_i}\right) \cdot \left(\prod_{i=1}^{n} g_i^{x_i}\right)^c = t \cdot h^c
 \]
 
-Our Rocq formalisation implements the generalised Okamoto protocol for $n \geq 2$ generators and can be accessed in the file \href{https://anonymous.4open.science/r/SigmaProtocol-EBA5/src/Crypto/Okamoto.v}{\textcolor{green}{Okamoto.v}}. The key functions include: \texttt{\seqsplit{generalised\_okamoto\_commitment}} (computes $\prod_{i=1}^{n} g_i^{u_i}$), \texttt{\seqsplit{generalised\_okamoto\_response}} (computes responses $r_i = u_i + c \cdot x_i$), and 
+Our Rocq formalisation implements the generalised Okamoto protocol for $n \geq 2$ generators and can be accessed in the file \href{https://anonymous.4open.science/r/SigmaProtocol-EBA5/src/Crypto/Okamoto.v}{\textcolor{blue}{Okamoto.v}}. The key functions include: \texttt{\seqsplit{generalised\_okamoto\_commitment}} (computes $\prod_{i=1}^{n} g_i^{u_i}$), \texttt{\seqsplit{generalised\_okamoto\_response}} (computes responses $r_i = u_i + c \cdot x_i$), and 
 \texttt{\seqsplit{generalised\_okamoto\_accepting\_conversation}} (verifies the product equality condition). We also provide specialised instances for the base case of exactly two generators ($n=2$), which is heavily used in the Neq composition. The formalisation proves all three security properties: (i) \textbf{completeness}: 
 When both prover and verifier follow the protocol honestly with $h = \prod_{i=1}^{n} g_i^{x_i}$, 
 the verification check always succeeds. The proof proceeds by induction on $n$, leveraging the 
@@ -855,7 +855,7 @@ then $(x_i - x_j)^{-1}$ would be undefined (division by zero), making it impossi
 construct valid witnesses. Conversely, when $x_i \neq x_j$, the witnesses 
 $\left(x_i \cdot (x_i - x_j)^{-1}, (x_j - x_i)^{-1}\right)$ satisfy $(g_i \cdot g_j)^{x_i \cdot (x_i - x_j)^{-1}} \cdot (h_i \cdot h_j)^{(x_j - x_i)^{-1}} = g_j$ where we use $h_i = g_i^{x_i}$, $h_j = g_j^{x_j}$, and $(x_j - x_i)^{-1} = -(x_i - x_j)^{-1}$.
 
-Our Rocq formalisation, can be accessed in the file \href{https://anonymous.4open.science/r/SigmaProtocol-EBA5/src/Crypto/NeqSigma.v}{\textcolor{green}{NeqSigma.v}}, proves the three standard $\Sigma$-protocol properties: (i) \textbf{completeness}: 
+Our Rocq formalisation, can be accessed in the file \href{https://anonymous.4open.science/r/SigmaProtocol-EBA5/src/Crypto/NeqSigma.v}{\textcolor{blue}{NeqSigma.v}}, proves the three standard $\Sigma$-protocol properties: (i) \textbf{completeness}: 
 When the prover knows distinct witnesses $x_1, \ldots, x_{2+n}$ satisfying $g_i^{x_i} = h_i$ and $x_i \neq x_j$ 
 for all $i \neq j$, the verification always succeeds. The proof combines completeness results from both the And composition completenes and the Okamoto protocol completeness for each pair; (ii) \textbf{special honest-verifier zero-knowledge}: 
 The real transcript distribution (generated with witnesses $x_1, \ldots, x_{2+n}$) is identical to the 
@@ -919,7 +919,7 @@ g^{\sum_i \alpha_i \cdot s_{1,i}} &= g^{\sum_i \alpha_i \cdot (u_i + c \cdot v_i
 g^{\sum_i \alpha_i \cdot u_i} \cdot g^{c \cdot \sum_i \alpha_i \cdot v_i} = t_{n+1} \cdot g^{c \cdot z}
 \end{align*}
 
-Our Rocq formalisation, available at \href{https://anonymous.4open.science/r/SigmaProtocol-EBA5/src/Crypto/PedLinearRel.v}{\textcolor{green}{PedLinearRel.v}}, implements this protocol with generic support for arbitrary $n \geq 2$ commitments and linear constraints. The formalisation proves all three security properties: (i) \textbf{completeness}: When the prover knows values $(v_1, r_1), \ldots, (v_n, r_n)$ satisfying both $C_i = g^{v_i} \cdot h^{r_i}$ and $z = \sum_i \alpha_i \cdot v_i$, the protocol always verifies successfully; (ii) \textbf{special soundness}: From two accepting transcripts with the same commitments but different challenges $c_1 \neq c_2$, 
+Our Rocq formalisation, available at \href{https://anonymous.4open.science/r/SigmaProtocol-EBA5/src/Crypto/PedLinearRel.v}{\textcolor{blue}{PedLinearRel.v}}, implements this protocol with generic support for arbitrary $n \geq 2$ commitments and linear constraints. The formalisation proves all three security properties: (i) \textbf{completeness}: When the prover knows values $(v_1, r_1), \ldots, (v_n, r_n)$ satisfying both $C_i = g^{v_i} \cdot h^{r_i}$ and $z = \sum_i \alpha_i \cdot v_i$, the protocol always verifies successfully; (ii) \textbf{special soundness}: From two accepting transcripts with the same commitments but different challenges $c_1 \neq c_2$, 
 an extractor recovers the witness values: $v_i = (s_{1,i}^{(1)} - s_{1,i}^{(2)}) \cdot (c_1 - c_2)^{-1}$ 
 and similarly for $r_i$. The extraction is guaranteed to produce valid commitments $C_i = g^{v_i} \cdot h^{r_i}$. 
 For the linear constraint, the formalisation proves a dichotomy: either $z = \sum_i \alpha_i \cdot v_i$ holds, 
@@ -931,7 +931,7 @@ $1/|\mathbb{F}|^{2n}$, proven using our uniform distribution framework. The iden
 guarantee information-theoretic security: the verifier learns nothing beyond the validity of the 
 statements, even with unlimited computational power.
 
-The Pedersen Linear Relation protocol is particularly powerful in blockchain privacy applications, such as confidential transactions~\cite{10.1007/978-3-030-17653-2_22}. In systems like Bitcoin, transaction amounts are publicly visible, which compromises user privacy. To address this, a sender (e.g., Alice) can commit to the input amount $v_1$, the output amount $v_2$, and her new balance $v_3$ using Pedersen commitments of the form $C_i = g^{v_i} h^{r_i}$. She then proves that the committed values satisfy the linear relation $v_1 - v_2 - v_3 = 0$ (i.e., money is conserved) without revealing any individual amount. Using coefficients $\alpha = (1, -1, -1)$ and public value $z = 0$, the proof establishes that the input balance equals the sum of the transferred amount and the resulting balance. This guarantees that no money is created or destroyed, while all transaction values remain hidden. We formalise this idea in the \href{https://anonymous.4open.science/r/SigmaProtocol-EBA5/src/Examples/PedLinearRelIns.v}{\textcolor{green}{PedLinearRelIns.v}} file. The same technique is employed in real-world cryptocurrencies such as Mimblewimble (e.g., Grin, Beam) and Monero (in combination with ring signatures). The protocol supports arbitrary linear constraints through the algebraic structures provided by the field and group abstractions, making it widely applicable to systems requiring commit-and-prove mechanisms over structured secrets.
+The Pedersen Linear Relation protocol is particularly powerful in blockchain privacy applications, such as confidential transactions~\cite{10.1007/978-3-030-17653-2_22}. In systems like Bitcoin, transaction amounts are publicly visible, which compromises user privacy. To address this, a sender (e.g., Alice) can commit to the input amount $v_1$, the output amount $v_2$, and her new balance $v_3$ using Pedersen commitments of the form $C_i = g^{v_i} h^{r_i}$. She then proves that the committed values satisfy the linear relation $v_1 - v_2 - v_3 = 0$ (i.e., money is conserved) without revealing any individual amount. Using coefficients $\alpha = (1, -1, -1)$ and public value $z = 0$, the proof establishes that the input balance equals the sum of the transferred amount and the resulting balance. This guarantees that no money is created or destroyed, while all transaction values remain hidden. We formalise this idea in the \href{https://anonymous.4open.science/r/SigmaProtocol-EBA5/src/Examples/PedLinearRelIns.v}{\textcolor{blue}{PedLinearRelIns.v}} file. The same technique is employed in real-world cryptocurrencies such as Mimblewimble (e.g., Grin, Beam) and Monero (in combination with ring signatures). The protocol supports arbitrary linear constraints through the algebraic structures provided by the field and group abstractions, making it widely applicable to systems requiring commit-and-prove mechanisms over structured secrets.
 
 
 
@@ -940,9 +940,8 @@ The Pedersen Linear Relation protocol is particularly powerful in blockchain pri
 As stated earlier, to ensure the ease of proving and modularity, 
 we worked with an (abstract) vector space. However, to execute the code of 
 our formalisation, we need to instantiate the vector space with a concrete entity. 
-Therefore, we have encoded a prime field, shown in Listing \ref{field_def}, 
-and the Schnorr group \cite{schnorr1991efficient} (mulitplicative 
-group of integers modulo a large prime p), shown in Listing \ref{group_def}, in the Rocq theorem prover. 
+Therefore, we have encoded the Schnorr group \cite{schnorr1991efficient} (mulitplicative 
+group of integers modulo a large prime p), shown in Listing \ref{group_def}, and a prime field, shown in Listing \ref{field_def}, in the Rocq theorem prover. 
 To encode the Schnorr group, we postulate three integer $k, p, \text{ and } q$. 
 Moreover, we assume $p \text{ and } q$ are primes where $p = k * q + 1$ (when 
 $k = 2$, these primes are called Sophie Germain primes). Finally, we encode the neutral element (\texttt{one}), the group multiplication (\texttt{\seqsplit{mul\_schnorr\_group}}), 
@@ -1021,7 +1020,7 @@ the prime field and returns an element in the
 Schnorr group.  The reader can see that our encoding eliminates all 
 possibilities of mixing group and field, both represented 
 as an integer modulo some large prime \cite{10.1007/978-3-662-63958-0_24}.
-The source code for this section can be accessed in the file \href{https://anonymous.4open.science/r/SigmaProtocol-EBA5/src/Utility/Zpstar.v}{\textcolor{green}{Zpstar.v}}.
+The source code for this section can be accessed in the file \href{https://anonymous.4open.science/r/SigmaProtocol-EBA5/src/Utility/Zpstar.v}{\textcolor{blue}{Zpstar.v}}.
 
 \begin{lstlisting}[frame=single, language=Coq, caption={Vector Space Instantiation},
   label={vec_space},captionpos=t, basicstyle=\ttfamily\footnotesize,
@@ -1056,7 +1055,7 @@ The source code for this section can be accessed in the file \href{https://anony
 \end{lstlisting}
 
 \subsection{Efficient Extractor.}
-In this section, we explain the key ideas underlying the formalisation of an efficient extractor and simulator. Recall that in a $\Sigma$-protocol, the extractor is required to be efficient, i.e., it runs in time polynomial in the size of its input. However, functions defined over vector spaces do not capture computational complexity; in particular, they provide no information about the number of computational steps required to evaluate them on a given input. One possible approach in our formalisation would have been to adopt a monadic style~\cite{10.1145/3473585,10.1145/3158124}, where each function additionally returns the number of steps taken during its execution. This approach has the advantage of compositionality: given two monadic functions, their composition naturally yields the complexity of the combined computation. However, during code extraction, this additional bookkeeping would propagate through all functions, significantly complicating and effectively degrading the intended API. Instead, we adopt a more targeted approach. In practice, an extractor over a multiplicative group relies on the ability to efficiently compute inverses. In our concrete model, inverse is implemented via binary exponentiation using the function \texttt{\seqsplit{repeat\_op\_ntimes\_rec}}. We therefore introduce an inductive data type \texttt{\seqsplit{complexity\_repeat\_op\_ntimes\_rec}}, shown in Listing~\ref{extractor_complex}, that captures the number of steps performed by this binary exponentiation procedure. Finally, we prove in theorem \texttt{\seqsplit{correct\_complexity\_repeat\_op\_ntimes\_rec}} that the function \texttt{\seqsplit{repeat\_op\_ntimes\_rec}} runs in logarithmic time in the value of its input, equivalently linear in the bit-length of the input. This approach allows us to preserve a clean API without introducing monadic overhead. While it lacks the compositional advantages of the monadic approach, it is sufficient for our purposes, as our primary objective is to extract executable (Rust, OCaml, and WebAssembly) code whose APIs closely match those of real-world cryptographic libraries. The source code for this section can be access in the \href{https://anonymous.4open.science/r/SigmaProtocol-EBA5/src/Utility/Functions.v}{\textcolor{green}{Functions.v}} file.
+In this section, we explain the key ideas underlying the formalisation of an efficient extractor and simulator. Recall that in a $\Sigma$-protocol, the extractor is required to be efficient, i.e., it runs in time polynomial in the size of its input. However, functions defined over vector spaces do not capture computational complexity; in particular, they provide no information about the number of computational steps required to evaluate them on a given input. One possible approach in our formalisation would have been to adopt a monadic style~\cite{10.1145/3473585,10.1145/3158124}, where each function additionally returns the number of steps taken during its execution. This approach has the advantage of compositionality: given two monadic functions, their composition naturally yields the complexity of the combined computation. However, during code extraction, this additional bookkeeping would propagate through all functions, significantly complicating and effectively degrading the intended API. Instead, we adopt a more targeted approach. In practice, an extractor over a multiplicative group relies on the ability to efficiently compute inverses. In our concrete model, inverse is implemented via binary exponentiation using the function \texttt{\seqsplit{repeat\_op\_ntimes\_rec}}. We therefore introduce an inductive data type \texttt{\seqsplit{complexity\_repeat\_op\_ntimes\_rec}}, shown in Listing~\ref{extractor_complex}, that captures the number of steps performed by this binary exponentiation procedure. Finally, we prove in theorem \texttt{\seqsplit{correct\_complexity\_repeat\_op\_ntimes\_rec}} that the function \texttt{\seqsplit{repeat\_op\_ntimes\_rec}} runs in logarithmic time in the value of its input, equivalently linear in the bit-length of the input. This approach allows us to preserve a clean API without introducing monadic overhead. While it lacks the compositional advantages of the monadic approach, it is sufficient for our purposes, as our primary objective is to extract executable (Rust, OCaml, and WebAssembly) code whose APIs closely match those of real-world cryptographic libraries. The source code for this section can be access in the \href{https://anonymous.4open.science/r/SigmaProtocol-EBA5/src/Utility/Functions.v}{\textcolor{blue}{Functions.v}} file.
 
 
 \begin{lstlisting}[frame=single, language=Coq, caption={Extractor Complexity},
@@ -1138,7 +1137,7 @@ Proof. (* proof terms omitted. *) Qed.
 
 Finally, the function \texttt{\seqsplit{encrypt\_ballot\_and\_generate\_enc\_proof}} extends vote encryption to the entire ballot by vectorizing across all $n$ candidates. Each candidate 
 produces a tuple $(C_i, \pi_i)$ where $C_i$ is the encrypted vote and $\pi_i$ is the corresponding Or-$\Sigma$ 
-proof. A complete ballot is thus a vector of $n$ such tuples. We extract all frontend functions into WebAssembly. The related Rocq file can be accessed from the \href{https://anonymous.4open.science/r/SigmaProtocol-EBA5/src/Frontend/Approval.v}{\textcolor{green}{Approval.v}} file and the corresponding WebAssembly file from \href{https://anonymous.4open.science/r/SigmaProtocol-EBA5/src/Wasm/approval.wasm}{\textcolor{green}{approval.wasm}}.
+proof. A complete ballot is thus a vector of $n$ such tuples. We extract all frontend functions into WebAssembly. The related Rocq proofs can be accessed from the \href{https://anonymous.4open.science/r/SigmaProtocol-EBA5/src/Frontend/Approval.v}{\textcolor{blue}{Approval.v}} file and the corresponding WebAssembly file from \href{https://anonymous.4open.science/r/SigmaProtocol-EBA5/src/Wasm/approval.wasm}{\textcolor{blue}{approval.wasm}}.
 
 
 \textbf{Homomorphic Tallying}: Tallying is specified as an inductive state machine \texttt{count}, parameterised 
@@ -1148,9 +1147,9 @@ The judgment \texttt{count : state -> Type} defines legal counting traces throug
 (i) \textbf{\texttt{ax}} (initialisation): starts from empty ballot lists and an identity tally vector \texttt{ms} $= (1_G,1_G),\ldots,(1_G,1_G)$. This means no vote has contributed yet; 
 (ii) \textbf{\texttt{cvalid}} (accept valid ballot): if a new ballot \texttt{u} satisfies \texttt{\seqsplit{verify\_encryption\_ballot\_proof}} \texttt{u = true}, then \texttt{u} is moved into \texttt{vbs} (set of valid ballots), and the encrypted tally is updated homomorphically: \texttt{nms = \seqsplit{mul\_encrypted\_ballots}} \texttt{ms} (\texttt{map fst u}). Intuitively, ciphertext components are multiplied coordinate-wise, so exponents (hence votes) add; 
 (iii) \textbf{\texttt{cinvalid}} (reject invalid ballot): if \texttt{\seqsplit{verify\_encryption\_ballot\_proof}} \texttt{u = false}, then \texttt{u} is appended to \texttt{inbs} (set of invalid ballots), while the running (encrypted) tally \texttt{ms} remains unchanged; and 
-(iv) \textbf{\texttt{cfinish}} (finalisation): after all ballots are processed, decryption outputs \texttt{ds} and decryption proofs \texttt{pf} are checked. The rule requires pointwise relation $g^{pt_i}=ds_i$, i.e., plaintext counts are discrete logs of decrypted group elements and acceptance of the vector decryption proof \texttt{\seqsplit{decryption\_proof\_accepting\_conversations\_vector}} \texttt{ms} \texttt{ds} \texttt{pf = true}. Only then the system transitions to \texttt{finished}.
+(iv) \textbf{\texttt{cfinish}} (finalisation): after all ballots are processed, decryption outputs \texttt{ds} and decryption proofs \texttt{pf} are checked. The rule requires pointwise relation $g^{pt_i}=ds_i$, i.e., plaintext counts are discrete logs of decrypted group elements and acceptance of the decryption proof \texttt{\seqsplit{decryption\_proof\_accepting\_conversations\_vector}} \texttt{ms} \texttt{ds} \texttt{pf = true}. Only then the system transitions to \texttt{finished}.
 
-The executable function \texttt{\seqsplit{compute\_final\_tally}} implements the first phase (classification and encrypted aggregation) by recursion on the ballot list. For each ballot, it branches on \texttt{\seqsplit{verify\_encryption\_ballot\_proof}}: the true branch applies \texttt{cvalid}, the false branch applies \texttt{cinvalid}. It returns \texttt{(vbs,inbs,ms)} together with the invariant \texttt{Permutation bs (vbs ++ inbs)}, ensuring that every input ballot is accounted for exactly once. Finally, the function \texttt{\seqsplit{compute\_final\_count}} then derives the final plaintext tally by decrypting aggregate ciphertexts with secret key $x$ to obtain \texttt{ds}, computing \texttt{pt} by pointwise discrete-log search relative to generator $g$, and concludes \texttt{count (finished bs vbs inbs pt)} via \texttt{cfinish}. Hence, the formal counting pipeline is: \emph{verify each ballot} $\to$ \emph{homomorphically aggregate valid ciphertexts} $\to$ \emph{verify decryption} $\to$ \emph{extract plaintext counts}, with explicit proof obligations at each step. The source code for this section can be accessed in the \href{https://anonymous.4open.science/r/SigmaProtocol-EBA5/src/Backend/Tally.v}{\textcolor{green}{Tally.v}} file.
+The executable function \texttt{\seqsplit{compute\_final\_tally}} implements the first phase (classification and encrypted aggregation) by recursion on the ballot list. For each ballot, it branches on \texttt{\seqsplit{verify\_encryption\_ballot\_proof}}: the true branch applies \texttt{cvalid}, the false branch applies \texttt{cinvalid}. It returns \texttt{(vbs,inbs,ms)} together with the invariant \texttt{Permutation bs (vbs ++ inbs)}, ensuring that every input ballot is accounted for exactly once. Finally, the function \texttt{\seqsplit{compute\_final\_count}} then derives the final plaintext tally by decrypting aggregate ciphertexts with secret key $x$ to obtain \texttt{ds}, computing \texttt{pt} by pointwise discrete-log search relative to generator $g$, and concludes \texttt{count (finished bs vbs inbs pt)} via \texttt{cfinish}. Hence, the formal counting pipeline is: \emph{verify each ballot} $\to$ \emph{homomorphically aggregate valid ciphertexts} $\to$ \emph{verify decryption} $\to$ \emph{extract plaintext counts}, with explicit proof obligations at each step. The source code for this section can be accessed in the \href{https://anonymous.4open.science/r/SigmaProtocol-EBA5/src/Backend/Tally.v}{\textcolor{blue}{Tally.v}} file.
 
 
 
@@ -1159,8 +1158,8 @@ The executable function \texttt{\seqsplit{compute\_final\_tally}} implements the
 To demonstrate the practical applicability of our formalisation, we have developed a certified verifier for 
 the Helios voting system that processes real-world election data from the IACR elections. Helios is a 
 widely-deployed open-source internet voting system that implements end-to-end verifiable elections using 
-cryptographic proofs. Our verifier validates the complete election tally including ballot verification, 
-ciphertext aggregation, and decryption verification using the formal proofs embedded in our Rocq formalisation.
+cryptographic proofs. Our verifier validates the complete election tally, including ballot verification, ciphertext aggregation, and decryption correctness using formally verified proofs 
+extracted as OCaml code. 
 
 The election verification process follows a very similar approach described in the 
 previous section. We have an inductive datatype \texttt{count}, index by \texttt{state}. 
@@ -1170,19 +1169,18 @@ verification checks: (i) Decryption verification: Each of the $m$ talliers has p
 (where $\alpha$ is the first component of the final ciphertext and $s_i$ is their secret key). The verifier 
 checks the decryption factor's validity using Chaum-Pedersen proofs that prove the discrete log relation 
 $\log_g(y_i) = \log_\alpha(d_i)$ (same exponent used for both); (ii) Plaintext verification: The plaintext tally is computed from decryption factors and checked for 
-consistency: for each candidate position, the prover must verify that $g^{\text{plaintext}} = \text{decrypted value}$, 
-which is the final discrete log equality check; (iii) Proof of knowledge (POK) checks: Each tallier has published a Schnorr proof of knowledge of their 
+consistency, i.e., for each candidate position, the prover must verify that $g^{\text{plaintext}} = \text{decrypted value}$; (iii) Proof of knowledge (POK) checks: Each tallier has published a Schnorr proof of knowledge of their 
 secret key, which is verified to ensure key ownership; and (iv) Public key consistency: The verifier confirms that the product of all talliers' public keys equals 
 the election's public key $h = \prod_i y_i$, ensuring no key material was substituted.  The function \texttt{compute\_final\_count} is the top-level certified
-verifier. Its type states that for \emph{any} list of ballots $\mathit{bs}$,
-any list of talliers $\mathit{ts}$, and any published plaintext
+verifier. Its type states that for a list of ballots $\mathit{bs}$,
+a list of talliers $\mathit{ts}$, and a published plaintext
 tally $\mathit{pt}$, one can always compute a Boolean $\mathit{bfinal}$ together
 with a partition of $\mathit{bs}$ into valid ballots $\mathit{vbs}$ and invalid
 ballots $\mathit{inbs}$, and---crucially---a term of type
 $\texttt{count}~(\texttt{finished}~\mathit{bs}~\mathit{vbs}~\mathit{inbs}~\mathit{ts}~\mathit{pt}~\mathit{bfinal})$.
 Because \texttt{count} is an inductive datatype whose constructors encode all
 verification rules, inhabiting this type is itself a machine-checked
-certificate of the entire end-to-end verification. The related Rocq proof can be accessed in the \href{https://anonymous.4open.science/r/SigmaProtocol-EBA5/src/Backend/HeliosTally.v}{\textcolor{green}{HeliosTally.v}} file.
+certificate of the entire end-to-end verification. The related Rocq proof can be accessed in the \href{https://anonymous.4open.science/r/SigmaProtocol-EBA5/src/Backend/HeliosTally.v}{\textcolor{blue}{HeliosTally.v}} file.
 
 The generic function \texttt{compute\_final\_count} is parameterised over an
 arbitrary field $F$, group $G$, and all associated operations.
@@ -1196,21 +1194,21 @@ modular-arithmetic functions \texttt{Schnorr.one}, \texttt{\seqsplit{inv\_schnor
 \texttt{\seqsplit{mul\_schnorr\_group}}, and \texttt{pow}.
 The generator $g$ and the election public key $h$
 are supplied as further arguments, together with the ballot list $\mathit{bs}$,
-the tallier vector $\mathit{ts}$, and the published plaintext tally
+the tallier list $\mathit{ts}$, and the published plaintext tally
 $\mathit{pt}$.
 The body of \texttt{\seqsplit{compute\_final\_count\_ins}} is a single call to
 \texttt{\seqsplit{compute\_final\_count}} with all arguments filled in; the result is a
 term of the fully instantiated type
 $\texttt{count}~(\texttt{finished}~\mathit{bs}~\mathit{vbs}~\mathit{inbs}~\mathit{ts}~\mathit{pt}~\mathit{bfinal})$,
 which is a machine-checked certificate that the election tally is correct. The related Rocq code can be accessed from  the 
-\href{https://anonymous.4open.science/r/SigmaProtocol-EBA5/src/Examples/HeliosTallyIns.v}{\textcolor{green}{HeliosTallyIns.v}} file.
+\href{https://anonymous.4open.science/r/SigmaProtocol-EBA5/src/Examples/HeliosTallyIns.v}{\textcolor{blue}{HeliosTallyIns.v}} file.
 
 
 Finally, the toplevel \texttt{main.ml} file ties together the parser
 and the certified verifier (extracted from Rocq proofs) into a single end-to-end pipeline.
 The program reads election data from standard input, which is structured
-in three sections separated by semicolons: the list of voter ballots
-(\texttt{bs}), the vector of trustees (\texttt{us}), and the published
+in three sections: the list of voter ballots
+(\texttt{bs}), the list of trustees (\texttt{us}), and the published
 plaintext tally (\texttt{rs}).
 The parser reconstructs each ballot as a tuple containing the cast timestamp,
 a vector of ElGamal ciphertexts $(\alpha_i, \beta_i)$, a vector of Or-sigma
@@ -1229,8 +1227,8 @@ image of the $\Sigma$-type---which is pattern-matched to recover the
 Boolean verdict \texttt{bfinal}, the lists of valid and invalid ballots
 \texttt{vbs} and \texttt{inbs}, and, crucially, a \texttt{count} term
 that is a machine-checked certificate of the entire verification.
-The program then prints the full certificate trace via \texttt{print\_count},
-which recursively deconstructs the \texttt{count} inductive, displaying for
+The program then prints the full certificate trace by
+recursively deconstructing the \texttt{count}, displaying for
 each ballot whether it was valid or invalid and, at the \texttt{finish}
 node, reporting the four individual Boolean checks---decryption proof
 validity, plaintext consistency, proof-of-knowledge validity, and public-key
@@ -1239,16 +1237,16 @@ product consistency---together with the conjunction \texttt{bfinal}.
 The verifier has successfully validated real IACR 2024 and IACR 2023 election data, demonstrating practical deployment 
 of formal verification in privacy-preserving voting systems. The end-to-end verification provides strong 
 cryptographic assurance: if any ballot is modified, any decryption factor is forged, or any tally is 
-changed, the verifier will detect the corruption. The source code can accessed 
-from the \href{https://anonymous.4open.science/r/SigmaProtocol-EBA5/src/Executable/HeliosVerifiercode/main.ml}{\textcolor{green}{main.ml}} file.
+changed, the verifier will detect the corruption. The related source code can accessed 
+from the \href{https://anonymous.4open.science/r/SigmaProtocol-EBA5/src/Executable/HeliosVerifiercode/main.ml}{\textcolor{blue}{main.ml}} file.
 
 
 \textbf{Primality of $p$ and $q$}:
 The two large primes used in the Helios parameters are the 256-bit prime~$q$
 and the 2048-bit safe prime~$p = kq + 1$.
 Their primality is established inside Rocq using the
-\textsc{Coqprime}~\cite{thery2007primality} library.  For $q$, the proof can be accessed from the \href{https://anonymous.4open.science/r/SigmaProtocol-EBA5/src/Examples/primeQ.v}{\textcolor{green}{primeQ.v}} file and 
-for $p$, the proof can be accessed from \href{https://anonymous.4open.science/r/SigmaProtocol-EBA5/src/Examples/primeP.v}{\textcolor{green}{primeP.v}} file.  
+\textsc{Coqprime}~\cite{thery2007primality} library.  For $q$, the proof can be accessed from the \href{https://anonymous.4open.science/r/SigmaProtocol-EBA5/src/Examples/primeQ.v}{\textcolor{blue}{primeQ.v}} file and 
+for $p$, the proof can be accessed from \href{https://anonymous.4open.science/r/SigmaProtocol-EBA5/src/Examples/primeP.v}{\textcolor{blue}{primeP.v}} file.  
 
 
 
@@ -1289,7 +1287,11 @@ produce a zero-knowledge proof to ensure the correctness of the shuffle \cite{10
    will require some non-trivial work.
  
 
-  In this paper, we present a certified implementation that the voting community can readily adopt to encode their protocol with all security guarantees. We demonstrate its usefulness by encoding a Helios verifier and a client–server system for Approval voting. Moreover, our formalisation extracts to OCaml, WebAssembly, and Rust without redundant effort.
+  In this paper, we present a certified implementation that the voting community can readily adopt to encode their protocol with all security guarantees. We demonstrate its usefulness by encoding a Helios verifier and a client-server system for Approval voting. Moreover, our formalisation extracts to OCaml, WebAssembly, and Rust without redundant effort.
+
+\section{Acknowledgements}
+This paper was edited for grammar using ChatGPT. 
+
 
 %%
 %% The next two lines define the bibliography style to be used, and
