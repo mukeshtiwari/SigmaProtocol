@@ -412,9 +412,9 @@ a smart contract certification framework, etc.
 \section{Schnorr Protocol Rocq Encoding}\label{schn_proof}
   We briefly explain the Schnorr protocol, an interactive protocol 
   between a prover and a verifier. 
-  Given some public input $G = (g, q, h)$ where $G$
-  is a cyclic group of prime order $q$, $g$ and $h$ are two 
-  generators of the group $G$, the prover claims that they know a
+  Given some public input $G = (g, q, h)$ where $\langle g\rangle$
+  is a cyclic group of prime order $q$ and $h\in\langle g\rangle$,
+  the prover claims that they know a
   witness $w$ for the statement $h = g^w$; the existence of such
   a $w$ is immediate because $g$ generates the group. However,
   does the prover know the witness $w$? In order to convince the
@@ -424,46 +424,46 @@ a smart contract certification framework, etc.
     and sends $a$ to the verifier.
     \item the verifier picks a random challenge $c$ and sends it to
     the prover
-    \item the prover computes $r = u + c * w$ and sends $r$ to the
+    \item the prover computes $r = u + c \cdot w \pmod q$ and sends $r$ to the
     verifier
   \end{itemize}
 
-The verifier accepts the transcript $(a, c, r)$ if $g^r = a * h^c$, otherwise rejects. We can prove that 
-this protocol has completeness, special soundness, and special honest-verifier 
-zero-knowledge proof. 
+The verifier accepts the transcript $(a, c, r)$ if $g^r = a \cdot h^c$, otherwise rejects. We can prove that 
+this protocol satisfies completeness, special soundness, and special honest-verifier 
+zero-knowledgeness. 
 
 
 \begin{itemize}
-  \item \textbf{completeness:} when $P$ and $V$ both follows the protocol, $V$ accepts the proof, i.e., 
+  \item \textbf{completeness:} when $P$ and $V$ both follow the protocol, $V$ accepts the proof, i.e., 
   the verification equation checks out. We can see by algebraic simplification that it is the case.
     \begin{align*}
-      g^r = g^{u + c * w} = g^u * (g^w)^c = a * h^c
+      g^r = g^{u + c \cdot w} = g^u \cdot (g^w)^c = a \cdot h^c
     \end{align*}
   \item \textbf{special soundness:} given two accepting 
   conversations $(a, c, r)$ and $(a, c', r')$ with $c \neq c'$,
   we have 
-  \[ g^r = a * h^c, \quad g^{r'} = a * h^{c'}. \]
+  \[ g^r = a \cdot h^c, \quad g^{r'} = a \cdot h^{c'}. \]
   It follows that $h = g^{(r-r')/(c-c')}$, hence we obtain
-  the witness $w$ satisfying $h=g^w$ as $w = (r - r')/(c - c')$.
+  the witness $w$ satisfying $h=g^w$ as $w = (r - r')/(c - c') \pmod q$.
 
-  \item \textbf{special honest-verifier zero-knowledge proof:}
+  \item \textbf{special honest-verifier zero-knowledgeness:}
    given challenge $c$, the distribution of conversations between a prover using
    witness $w$ and an honest verifier and the distribution of conversations output by a
    simulator as defined below--without access to witness $w$--are identical. Both
    distributions (\ref{f}) and (\ref{snd}) are uniform with each conversation occurring 
    with probability $1/q$.
    \begin{align}\label{f}
-    \{(a, c, r) \mid u \in_{R} Z_q ; a := g^u; r := u + c * w \}
+    \{(a, c, r) \mid u \in_{R} Z_q ; a := g^u; r := u + c \cdot w \pmod q \}
    \end{align}
    \begin{align}\label{snd}
-    \{(a, c, r) \mid r \in_{R} Z_q ; a := g^r * h^{-c}\}
+    \{(a, c, r) \mid r \in_{R} Z_q ; a := g^r \cdot h^{-c}\}
    \end{align}
    
 \end{itemize}
 
 
-In the Schnorr protocol, the elements $g$, $h$, and $a$ are group elements from the underlying group, while $u$, $c$, and $r$ are scalar values from the underlying prime field. In practice, both the group elements and the field elements are large 
-numbers modulo some prime numbers, although the operations on them differ. 
+In the Schnorr protocol, $g$, $h$, and $a$ are group elements from the underlying group, while $u$, $c$, and $r$ are scalar values from the underlying prime field. In concrete implementations, both the group elements and the field elements might be large 
+numbers modulo some prime numbers. 
 One possibility is to encode the Rocq functions to work with concrete numbers from the underlying group and field, but this leads to cumbersome proofs because we need to deal with the details of concrete numbers during the security proofs. More importantly, it is not modular because it binds the formalisation to multiplicative groups; therefore, it can no longer be used over elliptic curve groups. For most programming languages, this distinction 
 may not be significant, but it can be a potential source of bugs \cite{10.1007/978-3-662-63958-0_24} undermining the security of underlying cryptographic primitives. 
 However, when encoding it in Rocq, we need to thoroughly detail these distinctions because 
@@ -473,16 +473,16 @@ we abstract the underlying group as an abstract type $G$, endowed with
 usual group operation, and the underlying field as an abstract type $F$, endowed with 
 field operation in our formalisation. 
 Moreover, we abstract these two types into a vector space for smooth interaction between 
-group element and field element (exponentiation in multiplicative group or mulitplication of a field element 
-with a curve point in ellptic curve group is an instance of this interaction). This 
-makes our formalisation generic that can be instantiated with 
+group element and field elements (exponentiation in multiplicative group or mulitplication of a field element 
+with a curve point in elliptic curve group is an instance of this interaction). This 
+makes our formalisation generic and can be instantiated with 
 any kind of group and field as long as it follows the axioms of 
 vector space. For example, in our formalisation we have developed 
-efficient algorithm for the Schnorr (mulitplicative) group but our formalisation can 
-later be also instantiated with elliptic curve group. In addition, 
-one of the major benefit of this abstraction is easiness of proofs 
-which can be easily automated. Therefore, we model the Schnorr 
-protocol, the simulator, and the verification equation in Rocq as showing in 
+an efficient algorithm for the Schnorr (multiplicative) group but our formalisation can 
+later also be instantiated with an elliptic curve group. In addition, 
+one of the major benefits of this abstraction is the ease with which proofs 
+can be automated. Therefore, we model the Schnorr 
+protocol, the simulator, and the verification equation in Rocq as shown in 
 Listing \ref{schn_nat}. The source code for this section can be accessed from the
 \href{https://anonymous.4open.science/r/SigmaProtocol-EBA5/src/Crypto/Sigma.v}{\textcolor{blue}{Sigma.v}} file from our anonymous repo.
  
@@ -571,20 +571,20 @@ Proof using -(x R). (* proof terms omitted *) Qed.
 To reason about special honest-verifier zero-knowledge proof 
 intuitively, we need a model of uniform distribution. 
 We follow \cite{erwig2006functional}  and 
-encode the distribution, shown in Listing \ref{prob_def}, as a list of tuples where the 
-second element of a tuple is probability--represented as 
-a rational number--of the first element 
-of the tuple. Moreover, we define equality on distribution by 
-stating that two distributions are equal if they are permutation 
+encode the distribution as shown in Listing \ref{prob_def}, using a list of pairs where the 
+second element is the probability--represented as 
+a rational number--for the first element.
+Moreover, we define equality on distribution by 
+stating that two distributions are equal if they are permutations 
 of each other. This encoding is flexible and allows us 
-to encode any kind of distribution. We prove that the \texttt{dist} is a 
+to encode any kind of distribution. We prove that \texttt{dist} is a 
 monad \cite{erwig2006functional} by 
-giving it a suitable definitions of \texttt{Ret} and 
-\texttt{Bind}. Making it an instance of monad allows us 
-to compose a distribution $d$ $n$ times to 
+giving it suitable definitions of \texttt{Ret} and 
+\texttt{Bind}. Making it a monad allows us 
+to compose a distribution $n$ times to 
 obtain a distribution on a vector of $n$ elements, 
 needed in proving the special honest-verifier 
-zero-knowledge proof of $n$ composed $\Sigma$-protocol.
+zero-knowledge proof of $n$ composed $\Sigma$-protocols.
 However, we need uniform 
 distribution, rather than an arbitrary distribution, to reason about 
 zero-knowledge of $\Sigma$-protocol, and therefore we define a function 
