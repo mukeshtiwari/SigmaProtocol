@@ -181,7 +181,7 @@
   
   In this paper, we present a certified formalisation of a comprehensive library of $\Sigma$-protocols 
   in the Rocq theorem prover, and we formally prove (special) soundness, completeness, and 
-  (special honest-verifier) zero-knowledge properties. Our generic formalisation over abstract vector spaces enables us to uniformly express and compose a wide class of discrete-logarithm-based $\Sigma$-protocols, while remaining independent of any concrete group or cryptographic instantiation. Moreover, the constructive nature of our formalisation allow us to extract and compile to executable implementations in OCaml, Rust, and WebAssembly and thereby
+  (special honest-verifier) zero-knowledge properties. Our generic formalisation over abstract vector spaces enables us to uniformly express and compose a wide class of discrete-logarithm-based $\Sigma$-protocols, while remaining independent of any concrete group or cryptographic instantiation. Moreover, the constructive nature of our formalisation allow us to extract and compile to executable implementations in OCaml and WebAssembly and thereby
   eliminating code duplication. We demonstrate the practical applicability of our framework by implementing a voting client and server for Approval Voting, as well as an International Association for Cryptologic Research (IACR) election verifier. Our certified library provides a foundation for 
   building formally verified privacy-preserving applicatons. 
 
@@ -312,7 +312,7 @@ Rocq implementation using Peregrine\footnote{https://peregrine-project.github.io
 \subsection{Outline}
 The remainder of the paper is organised as follows. 
 Section \ref{sigma_protocol} introduces zero-knowledge proofs and $\Sigma$-protocols, with emphasis on their role in electronic voting. 
-Section \ref{coq_theorem} briefly presents the Rocq theorem prover and the MetaRocq infrastructure used for extraction to targets such as WebAssembly and Rust. 
+Section \ref{coq_theorem} briefly presents the Rocq theorem prover and the infrastructure used for extraction to targets such as WebAssembly. 
 Section \ref{schn_proof} develops our formal encoding of the Schnorr protocol, our model of uniform distributions, the main $\Sigma$-protocol compositions, concrete modular arithmetic instantiations, and our approach to extractor/simulator complexity. 
 Section \ref{case_studies} demonstrates the practical use of the library through an Approval Voting client-server workflow and a certified Helios election verifier for IACR data. Finally, Section \ref{rel_work} discusses related work, current limitations, and directions for future research.
 
@@ -367,44 +367,15 @@ Moreover, we formalise the \(n\)-ary composition of Schnorr \(\Sigma\)-protocols
 Ideally, given the abstraction of our formlisation (\textit{vector space}), we could have 
 abstracted the sigma protocol and their composition in a generic way \cite{10.1007/978-3-642-02384-2_17},
 but we decided to focus on the Schnorr protocol and its composition to ensure familiar APIs 
-for electronic voting in WebAssembly and Rust.
+for electronic voting in WebAssembly and OCaml.
 
 
 
 
 \section{The Rocq Theorem Prover}\label{coq_theorem}
-The Rocq theorem prover \cite{the_coq_development_team} is a computer program that interacts with users, 
-enabling them to encode mathematical definitions, express specifications (true statements) about 
-their definitions, and formally prove that the definitions imply the specifications. 
-A user first defines their mathematical object (definition) and then figures 
-out some true statements (specifications) about 
-that object. Once the user has definition and specifications, they need to prove 
-that the definition satisfies the specifications 
-(proof writing). In general, amongst these three steps, 
-the proof writing step is the most challenging and important step. 
-During the proof writing, an user interacts with Rocq
-via \emph{tactics}, a domain specific language 
-to ease the proof writing. Even though Rocq  
-provides some amount of automation and proof 
-search, most of the time it requires human assistance to finish the proof. 
-It is one the most popular and robust theorem, and
-one of reasons for its popularity is 
-dependent types that makes it possible to encode
-any mathematical statement in its logic.
-It has been used to verify many real world software projects and mathematical 
-artefacts. For example, Rocq has been used to 
-formally verify CompCert \cite{10.1145/1111037.1111042}, 
-a C compiler used by many companies\footnote{https://www.absint.com/partners.htm}, 
-Fiat-Crypto \cite{8835346} 
-used in BoringSSL --a cryptographic library used in Chrome, Android, 
-and CloudFlare--, ConCert \cite{10.1145/3372885.3373829}, 
-a smart contract certification framework, etc.
+The Rocq theorem prover~\cite{the_coq_development_team} is an interactive proof assistant that lets users define mathematical objects, state specifications about them, and prove that the definitions satisfy those specifications. Proof writing is the most challenging step; users guide Rocq using \emph{tactics} (a domain-specific language). While Rocq offers some automation, human assistance is usually required. Its popularity stems from dependent types, which allow encoding arbitrary mathematical statements. Rocq has verified many real‑world projects, including the CompCert C compiler~\cite{10.1145/1111037.1111042} (used by companies such as AbsInt\footnote{https://www.absint.com/partners.htm}), the Fiat-Crypto~\cite{8835346} library (used in BoringSSL for Chrome, Android, and CloudFlare), and the ConCert smart contract framework~\cite{10.1145/3372885.3373829}.
 
-
-\subsection{Web Assembly and Rust from the Roq Formalisation}
-  Bas
-
-
+We use CertiRocq \cite{anand2017certicoq} that turns Rocq programs into WebAssembly (Wasm) with machine-checked correctness guarantees. For Wasm, CertiRocq extends its extraction pipeline to target a low-level, stack-based intermediate representation compatible with Wasm that enables the compilation of Rocq developments into \texttt{.wasm} binaries. The Wasm backend, originally developed as CertiCoq-Wasm~\cite{meier2025certicoq} and now integrated into CertiRocq, is itself implemented and verified in Rocq with its semantics mechanised against the WebAssembly standard. The compiler takes CertiRocq's minimal lambda calculus in administrative normal form (ANF) as input and generates efficient Wasm code by mapping Rocq's primitive integer operations directly to native Wasm instructions. The key insight is that programs proven correct within Rocq can be extracted, compiled, and executed in a Wasm runtime while preserving their formal semantics through the compiler's verified passes. This bridges high-assurance formal verification with practical deployment, allowing certified components such as cryptographic protocols or voting primitives to run securely in web or sandboxed environments without sacrificing the guarantees established in the proof assistant. 
 
 
 
@@ -1047,7 +1018,7 @@ The source code for this section can be accessed in the file \href{https://anony
 \end{lstlisting}
 
 \subsection{Efficient Extractor.}
-In this section, we explain the key ideas underlying the formalisation of an efficient extractor and simulator. Recall that in a $\Sigma$-protocol, the extractor is required to be efficient, i.e., it runs in time polynomial in the size of its input. However, functions defined over vector spaces do not capture computational complexity; in particular, they provide no information about the number of computational steps required to evaluate them on a given input. One possible approach in our formalisation would have been to adopt a monadic style~\cite{10.1145/3473585,10.1145/3158124}, where each function additionally returns the number of steps taken during its execution. This approach has the advantage of compositionality: given two monadic functions, their composition naturally yields the complexity of the combined computation. However, during code extraction, this additional bookkeeping would propagate through all functions, significantly complicating and effectively degrading the intended API. Instead, we adopt a more targeted approach. In practice, an extractor over a multiplicative group relies on the ability to efficiently compute inverses. In our concrete model, inverse is implemented via binary exponentiation using the function \texttt{\seqsplit{repeat\_op\_ntimes\_rec}}. We therefore introduce an inductive data type \texttt{\seqsplit{complexity\_repeat\_op\_ntimes\_rec}}, shown in Listing~\ref{extractor_complex}, that captures the number of steps performed by this binary exponentiation procedure. Finally, we prove in theorem \texttt{\seqsplit{correct\_complexity\_repeat\_op\_ntimes\_rec}} that the function \texttt{\seqsplit{repeat\_op\_ntimes\_rec}} runs in logarithmic time in the value of its input, equivalently linear in the bit-length of the input. This approach allows us to preserve a clean API without introducing monadic overhead. While it lacks the compositional advantages of the monadic approach, it is sufficient for our purposes, as our primary objective is to extract executable (Rust, OCaml, and WebAssembly) code whose APIs closely match those of real-world cryptographic libraries. The source code for this section can be access in the \href{https://anonymous.4open.science/r/SigmaProtocol-EBA5/src/Utility/Functions.v}{\textcolor{blue}{Functions.v}} file.
+In this section, we explain the key ideas underlying the formalisation of an efficient extractor and simulator. Recall that in a $\Sigma$-protocol, the extractor is required to be efficient, i.e., it runs in time polynomial in the size of its input. However, functions defined over vector spaces do not capture computational complexity; in particular, they provide no information about the number of computational steps required to evaluate them on a given input. One possible approach in our formalisation would have been to adopt a monadic style~\cite{10.1145/3473585,10.1145/3158124}, where each function additionally returns the number of steps taken during its execution. This approach has the advantage of compositionality: given two monadic functions, their composition naturally yields the complexity of the combined computation. However, during code extraction, this additional bookkeeping would propagate through all functions, significantly complicating and effectively degrading the intended API. Instead, we adopt a more targeted approach. In practice, an extractor over a multiplicative group relies on the ability to efficiently compute inverses. In our concrete model, inverse is implemented via binary exponentiation using the function \texttt{\seqsplit{repeat\_op\_ntimes\_rec}}. We therefore introduce an inductive data type \texttt{\seqsplit{complexity\_repeat\_op\_ntimes\_rec}}, shown in Listing~\ref{extractor_complex}, that captures the number of steps performed by this binary exponentiation procedure. Finally, we prove in theorem \texttt{\seqsplit{correct\_complexity\_repeat\_op\_ntimes\_rec}} that the function \texttt{\seqsplit{repeat\_op\_ntimes\_rec}} runs in logarithmic time in the value of its input, equivalently linear in the bit-length of the input. This approach allows us to preserve a clean API without introducing monadic overhead. While it lacks the compositional advantages of the monadic approach, it is sufficient for our purposes, as our primary objective is to extract executable (OCaml and WebAssembly) code whose APIs closely match those of real-world cryptographic libraries. The source code for this section can be access in the \href{https://anonymous.4open.science/r/SigmaProtocol-EBA5/src/Utility/Functions.v}{\textcolor{blue}{Functions.v}} file.
 
 
 \begin{lstlisting}[frame=single, language=Coq, caption={Extractor Complexity},
@@ -1271,7 +1242,7 @@ Our formalisation lacks mix-net~\cite{10.1145/358549.358563}, a key primitive in
    will require some non-trivial work.
  
 
-  In this paper, we present a certified implementation that the voting community can readily adopt to encode their protocol with all security guarantees. We demonstrate its usefulness by encoding a Helios verifier and a client-server system for Approval voting. Moreover, our formalisation extracts to OCaml, WebAssembly, and Rust without redundant effort.
+  In this paper, we present a certified implementation that the voting community can readily adopt to encode their protocol with all security guarantees. We demonstrate its usefulness by encoding a Helios verifier and a client-server system for Approval voting. Moreover, our formalisation extracts to OCaml and WebAssembly without redundant effort.
 
 \section{Acknowledgements}
 This paper was edited for grammar using ChatGPT. 
