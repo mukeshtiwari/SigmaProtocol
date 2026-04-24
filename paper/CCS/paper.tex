@@ -261,7 +261,7 @@ It is important to note that end-to-end verifiability is a valuable feature beca
 allows for the verification of the election results by checking the proofs of correctness 
 once the election has concluded. This ensures that the election process was conducted 
 properly and that the results are accurate, but it is only in action during or after the voting has taken place.
-However, can we use it as a guiding principle to develop an electronic voting software, way before 
+However, can we use it as a guiding principle to develop an electronic voting software way before 
 an election? The answer is yes; we can use a formal language to express end-to-end verifiability, or parts of 
 it, and develop various components of an electronic voting 
 software in this formal language. This process is called formal verification, or correct-by-construction,
@@ -333,10 +333,8 @@ verifier is assumed to be honest and characterised by completeness, (special) so
   i.e., $V$ accepts; (ii) \textbf{special soundness:}
 there exists a probabilistic polynomial-time extractor $E$ which given 
 two accepting transcripts $(a, c, r)$ and $(a, c', r')$ for $x$, 
-it can extract a witness $w$ such that $(x, w) \in R$. In other words, 
-if $P$ does not know $w$ for $x$ then it cannot construct a proof 
-$(a, c, r)$ that will passes the verification check; and (iii) \textbf{special honest-verifier zero-knowledge:}
-There exists a probabilistic polynomial-time simulator \(S\) such that, for every \(x \in L_R\) and every challenge \(c \in C\), \(S\) outputs a transcript \((a,c,r)\) whose distribution is identical to that of a real interaction between an honest prover \(P\) (holding a witness \(w\) with \((x,w)\in R\)) and an honest verifier \(V\). Furthermore, for any \(x \notin L_R\), the simulator \(S\) is only required to output an arbitrary accepting transcript \((a,c,r)\) for the given challenge \(c \in C\).
+it can extract a witness $w$ such that $(x, w) \in R$; and (iii) \textbf{special honest-verifier zero-knowledge:}
+there exists a probabilistic polynomial-time simulator \(S\) such that, for every \(x \in L_R\) and every challenge \(c \in C\), \(S\) outputs a transcript \((a,c,r)\) whose distribution is identical to that of a real interaction between an honest prover \(P\) (holding a witness \(w\) with \((x,w)\in R\)) and an honest verifier \(V\). Furthermore, for any \(x \notin L_R\), the simulator \(S\) is only required to output an arbitrary accepting transcript \((a,c,r)\) for the given challenge \(c \in C\).
 
 
 
