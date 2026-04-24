@@ -1205,8 +1205,8 @@ Our formalisation lacks mix-net~\cite{10.1145/358549.358563}, a key primitive in
    will require some non-trivial work.
  
 
-  In this paper, we present a certified implementation that the voting community can readily adopt to encode their protocol with all security guarantees. We demonstrate its usefulness by encoding a Helios verifier and a client-server system for Approval voting. Moreover, our formalisation extracts to OCaml and WebAssembly without redundant effort.
-
+   In this paper, we have presented a certified implementation of a comprehensive library of $\Sigma$-protocols in the Rocq theorem prover, providing machine-checked proofs of completeness, special soundness, and special honest-verifier zero-knowledge for each construction. Our generic formalisation over abstract vector spaces captures a wide class of discrete-logarithm-based protocols while remaining independent of concrete cryptographic groups. Unlike prior work, our approach supports simultaneous extraction to OCaml and WebAssembly, eliminating code duplication between frontend and backend without sacrificing correctness. We have demonstrated the practical utility of our library by implementing a Helios election verifier (validating real IACR 2023/2024 elections) and a full client-server system for Approval Voting. The voting community can readily adopt our certified primitives to build end-to-end verifiable systems with strong, machine-checked security guarantees.
+   
 \section{Acknowledgements}
 This paper was edited for grammar using ChatGPT. 
 
