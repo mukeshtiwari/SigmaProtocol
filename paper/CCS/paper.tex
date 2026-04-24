@@ -433,9 +433,7 @@ later also be instantiated with an elliptic curve group. In addition,
 one of the major benefits of this abstraction is the ease with which proofs 
 can be automated. Therefore, we model the Schnorr 
 protocol, the simulator, and the verification equation in Rocq as shown in 
-Listing \ref{schn_nat}. The source code for this section can be accessed from the
-\href{https://anonymous.4open.science/r/SigmaProtocol-EBA5/src/Crypto/Sigma.v}{\textcolor{blue}{Sigma.v}} file from our anonymous repo.
- 
+Listing \ref{schn_nat}. 
 \begin{lstlisting}[frame=single, language=Coq, caption={Schnorr protocol},
   label={schn_nat},captionpos=t, basicstyle=\ttfamily\footnotesize,
   abovecaptionskip=-\medskipamount]
@@ -468,30 +466,17 @@ Definition accepting_conversation (g h : G)
  $* : F \rightarrow F \rightarrow F$ is the field multiplication, 
  $gop : G \rightarrow G \rightarrow G$ is the group operation, and
  $\mbox{\textasciicircum}: G \rightarrow F \rightarrow G$ is the scalar multiplication of the underlying vector space.  
- Recall that a vector space consists of a set of 
- vectors, denoted by \(V\), a field \(F\) (elements of \(F\) are called scalars), and 
- two operations: vector addition and scalar multiplication.
-\begin{itemize}
-    \item Vector addition: for any vectors \(\mathbf{v}, \mathbf{w} \in V\), their sum, denoted by \(\mathbf{v} + \mathbf{w}\), is also in \(V\).
-    \item Scalar multiplication: for any vector \(\mathbf{v} \in V\) and any scalar \(c \in F\), their product, denoted by \(c\mathbf{v}\), is also in \(V\).
-\end{itemize}
-
-These operations must satisfy the following properties for all vectors \(\mathbf{u}, \mathbf{v}, \mathbf{w} \in V\) and all scalars \(c, d \in F\):
-(i) closure under addition: \(\mathbf{u} + \mathbf{v} \in V\), (ii) commutativity of addition: \(\mathbf{u} + \mathbf{v} = \mathbf{v} + \mathbf{u}\), 
-(iii)  associativity of addition: \((\mathbf{u} + \mathbf{v}) + \mathbf{w} = \mathbf{u} + (\mathbf{v} + \mathbf{w})\), 
-(iv) existence of zero vector: there exists a vector \(\mathbf{0} \in V\) such that \(\mathbf{v} + \mathbf{0} = \mathbf{v}\) for all \(\mathbf{v} \in V\), 
-(v) existence of additive inverse: for each vector \(\mathbf{v} \in V\), there exists a vector \(-\mathbf{v} \in V\) such that \(\mathbf{v} + (-\mathbf{v}) = \mathbf{0}\),
-(vi) closure under scalar multiplication: \(c\mathbf{v} \in V\), 
-(vii) distributive properties: \(c(\mathbf{u} + \mathbf{v}) = c\mathbf{u} + c\mathbf{v}\) and \((c + d)\mathbf{v} = c\mathbf{v} + d\mathbf{v}\), 
-and (viii) compatibility with field multiplication: \(c(d\mathbf{v}) = (cd)\mathbf{v}\) and \(1\mathbf{v} = \mathbf{v}\), where \(1\) denotes the multiplicative identity in \(F\). In our setting we instantiate the set of vectors with $G$ and field with $F$. 
+In our setting we instantiate the set of vectors with $G$ and field with $F$. 
 Moreover, our notation for scalar multiplication is $\mbox{\textasciicircum}$ because it represents, 
 when instantiated concretely, exponentiation function but it is purely for notational convenience. 
-
 
 We prove the completeness and special soundness property of the Schnorr protocol, 
 as shown in Listing \ref{comp_sound}. However, to prove the special honest-verifier 
 zero-knowledge property we need a model to reason about uniform probability 
-distribution in Rocq that we introduce in the next section.
+distribution in Rocq that we introduce in the next section. The source code for this section can be accessed from the
+\href{https://anonymous.4open.science/r/SigmaProtocol-EBA5/src/Crypto/Sigma.v}{\textcolor{blue}{Sigma.v}} file from our anonymous repo.
+ 
+
 
 \begin{lstlisting}[frame=single, language=Coq, caption={Completeness and Soundness},
   label={comp_sound},captionpos=t, basicstyle=\ttfamily\footnotesize,
