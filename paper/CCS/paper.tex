@@ -724,16 +724,16 @@ $\prod_{i=1}^{n} g_i^{r_i} = t \cdot h^c$. Verification correctness follows from
 
 Our Rocq formalisation implements the generalised Okamoto protocol for $n \geq 2$ generators and can be accessed in the file \href{https://anonymous.4open.science/r/SigmaProtocol-EBA5/src/Crypto/Okamoto.v}{\textcolor{blue}{Okamoto.v}}. The key functions include: \texttt{\seqsplit{generalised\_okamoto\_commitment}} (computes $\prod_{i=1}^{n} g_i^{u_i}$), \texttt{\seqsplit{generalised\_okamoto\_response}} (computes responses $r_i = u_i + c \cdot x_i$), and 
 \texttt{\seqsplit{generalised\_okamoto\_accepting\_conversation}} (verifies the product equality condition). We also provide specialised instances for the base case of exactly two generators ($n=2$), which is heavily used in the Neq composition. The formalisation proves all three security properties: (i) \textbf{completeness}: 
-When both prover and verifier follow the protocol honestly with $h = \prod_{i=1}^{n} g_i^{x_i}$, 
+when both prover and verifier follow the protocol honestly with $h = \prod_{i=1}^{n} g_i^{x_i}$, 
 the verification check always succeeds. The proof proceeds by induction on $n$, leveraging the 
 vector space properties of scalar multiplication distributivity over field addition; (ii) \textbf{special soundness}: 
-Given two accepting transcripts $(t, c_1, \mathbf{r}_1)$ and $(t, c_2, \mathbf{r}_2)$ with 
+given two accepting transcripts $(t, c_1, \mathbf{r}_1)$ and $(t, c_2, \mathbf{r}_2)$ with 
 the same commitment $t$ but different challenges $c_1 \neq c_2$, an extractor can compute 
 witnesses $\mathbf{x} = (x_1, \ldots, x_n)$ where 
 $x_i = (r_{1,i} - r_{2,i}) \cdot (c_1 - c_2)^{-1}$ for each $i$. The proof establishes that 
 these extracted values satisfy $h = \prod_{i=1}^{n} g_i^{x_i}$, which is critical for the 
 soundness of the Neq protocol that uses Okamoto as a building block; and (iii) \textbf{special honest-verifier zero-knowledge}: 
-The real transcript distribution (involving secrets $\mathbf{x}$) is identical to the simulator 
+the real transcript distribution (involving secrets $\mathbf{x}$) is identical to the simulator 
 distribution (without secrets). The simulator chooses random $\mathbf{u}$ and $c$, then computes 
 the commitment as $t = \left(\prod_{i=1}^{n} g_i^{u_i}\right) \cdot h^{-c}$ with responses 
 $\mathbf{r} = \mathbf{u}$. Both distributions produce accepting transcripts with probability 
@@ -741,8 +741,7 @@ $1/|\mathbb{F}|^n$ where $\mathbb{F}$ is the underlying field, proven using our 
 distribution framework.
 
 
-Beyond the standard $\Sigma$-protocol properties, our formalisation includes witness indistinguishability 
-results critical for the Neq composition. We prove that transcripts generated with different witness 
+Beyond the standard $\Sigma$-protocol properties, our formalisation includes witness indistinguishability. We prove that transcripts generated with different witness 
 vectors $\mathbf{x}_1$ and $\mathbf{x}_2$ satisfying the same relation $h = \prod_{i=1}^{n} g_i^{x_{1,i}} = 
 \prod_{i=1}^{n} g_i^{x_{2,i}}$ are computationally indistinguishable. The proof \texttt{\seqsplit{generalised\_okamoto\_witness\_indistinguishable}}, shown in Listing \ref{wit_ind}, relies on two 
 bijective transformation functions that map 
@@ -754,15 +753,15 @@ $\prod_{i=1}^{n} g_i^{u_i - v_i} = \left(\prod_{i=1}^{n} g_i^{u_i}\right) \cdot
 label={wit_ind},captionpos=t, basicstyle=\ttfamily\footnotesize,
 abovecaptionskip=-\medskipamount]
 Theorem generalised_okamoto_witness_indistinguishable {n : nat} :
-  forall (gs : Vector.t G (2 + n)) (h : G) (xs1 xs1 : Vector.t F (2 + n)),
+  forall (gs : Vector.t G (2 + n)) (h : G) (xs1 xs2 : Vector.t F (2 + n)),
   (* Both witnesses produce the same public key h *)
   h = generalised_okamoto_commitment gs xs1 ->
   h = generalised_okamoto_commitment gs xs2 ->
-  (* For every conversation (a, c, rs) from xs, there exists unique us' 
-    such that the same conversation is produced by xs' *)
+  (* For every conversation (a, c, rs) from xs1, there exists unique us' 
+    such that the same conversation is produced by xs2 *)
   forall (us rs : Vector.t F (2 + n)) (a : G) (c : F),
   ([a]; [c]; rs) = generalised_okamoto_real_protocol xs1 gs h us c ->
-  (* Then there exists unique us' producing the same transcript for xs' *)
+  (* Then there exists unique us' producing the same transcript for xs2 *)
   exists! us' : Vector.t F (2 + n),
   ([a]; [c]; rs) = generalised_okamoto_real_protocol xs2 gs h us' c.
 Proof. (* proof terms omitted *) Qed.
