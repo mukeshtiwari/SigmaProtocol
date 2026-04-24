@@ -507,7 +507,7 @@ Proof using -(x R). (* proof terms omitted *) Qed.
 To reason about special honest-verifier zero-knowledge proof 
 intuitively, we need a model of uniform distribution. 
 We follow \cite{erwig2006functional}  and 
-encode the distribution as shown in Listing \ref{prob_def}, using a list of pairs where the 
+encode the distribution, as shown in Listing \ref{prob_def}, using a list of pairs where the 
 second element is the probability--represented as 
 a rational number--for the first element.
 Moreover, we define equality on distribution by 
@@ -531,12 +531,10 @@ The relevant source code can be accessed from \href{https://anonymous.4open.scie
     label={prob_def},captionpos=t, basicstyle=\ttfamily\footnotesize,
     abovecaptionskip=-\medskipamount]
 (* Probability Distribution on a type A *)
-Definition dist (A : Type) : Type := 
- list (A * prob).
+Definition dist (A : Type) : Type := list (A * prob).
   
 (* Probability Monad *)
-Definition Ret {A : Type} (x : A) : 
-  dist A := [(x, one)].
+Definition Ret {A : Type} (x : A) : dist A := [(x, one)].
 
 Fixpoint Bind {A B : Type} (xs : dist A)  
   (f : A -> dist B) : dist B := 
