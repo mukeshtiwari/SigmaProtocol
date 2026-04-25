@@ -447,8 +447,7 @@ Definition schnorr_simulator (g h : G)
  (u c : F) : sigma_proto := 
  ([gop (g^u) (h^(opp c))]; [c]; [u]).
 
-(*This function checks if a transcript (a; c; r) 
-is accepting or not. It checks if g^r = a * h^c*)
+(* It checks if g^r = a * h^c *)
 Definition accepting_conversation (g h : G) 
  (v : sigma_proto) : bool :=
  match v with
@@ -921,11 +920,9 @@ a typeclass that encodes the axioms of a field.
   abovecaptionskip=-\medskipamount]
 (* Prime Field *)
 Section ZpField.
-  Context 
-    {p : Z} {Hp : prime p}.
+  Context {p : Z} {Hp : prime p}.
 
-  Record Zp := mk_zp 
-    {v : Z; Hv : Z.modulo v p = v}.
+  Record Zp := mk_zp {v : Z; Hv : Z.modulo v p = v}.
 
   Global Instance zp_field : @field Zp zero 
     one zp_opp zp_add zp_sub zp_mul zp_inv zp_div.
