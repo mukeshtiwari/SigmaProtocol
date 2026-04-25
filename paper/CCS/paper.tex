@@ -692,7 +692,7 @@ Definition generalised_or_simulator_distribution {n : nat}
 Lemma generalised_or_special_honest_verifier_zkp {n : nat}
  (x : F) (* secret witness *)
  (gs hs : Vector.t G (2 + n)) (rindex : Fin.t (2 + n))
- (* Prover knows a relation *) 
+ (* Prover knows rindex relation *) 
  (R : Vector.nth hs rindex = Vector.nth gs rindex ^ x) : 
  forall (lf : list F) (Hlfn : lf <> List.nil) (c : F),
  List.map (fun '(a, p) => 
@@ -879,30 +879,23 @@ an instance of the typeclass \texttt{\seqsplit{schnorr\_comm}}, which is an abst
   label={group_def},captionpos=t, basicstyle=\ttfamily\footnotesize,
   abovecaptionskip=-\medskipamount]
 Section SchnorrGroup. 
-  Context 
-    {k p q : Z} {Hk : p = k * q + 1}
+  Context {k p q : Z} {Hk : p = k * q + 1}
     {Hp : prime p} {Hq : prime q}.
 
-  Record Schnorr_group := mk_schnorr 
-    {v : Z; Ha : 0 < v < p; 
+  Record Schnorr_group := mk_schnorr {v : Z; Ha : 0 < v < p; 
     Hb : v ^ q mod p = 1}.
 
   (* u ^ (p - 2) is inverse of u *)
-  Definition inv_schnorr_group 
-  (u : Schnorr_group) : Schnorr_group.
-  refine(
-    match u with 
-    | mk_schnorr au Hu Hv => mk_schnorr
-        (* terms omitted *)
+  Definition inv_schnorr_group (u : Schnorr_group) : Schnorr_group.
+  refine(match u with 
+    | mk_schnorr au Hu Hv => mk_schnorr (* terms omitted *)
     end).
   Defined.
 
   (* Schnorr is a commutative Group *)
   Global Instance schnorr_comm : 
-    @commutative_group 
-    Schnorr_group (@eq Schnorr_group) 
+    @commutative_group Schnorr_group (@eq Schnorr_group) 
     mul_schnorr_group one inv_schnorr_group.
-  Proof. ... Qed. 
 End SchnorrGroup.
 \end{lstlisting}
 
