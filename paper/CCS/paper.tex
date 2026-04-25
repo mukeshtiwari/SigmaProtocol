@@ -338,13 +338,13 @@ it can extract a witness $w$ such that $(x, w) \in R$; and (iii) \textbf{special
 there exists a probabilistic polynomial-time simulator \(S\) such that, for every \(x \in L_R\) and every challenge \(c \in C\), \(S\) outputs a transcript \((a,c,r)\) whose distribution is identical to that of a real interaction between an honest prover \(P\) (holding a witness \(w\) with \((x,w)\in R\)) and an honest verifier \(V\). Furthermore, for any \(x \notin L_R\), the simulator \(S\) is only required to output an arbitrary accepting transcript \((a,c,r)\) for the given challenge \(c \in C\).
 
 
-
-Sigma protocol was first defined by Ronald Cramer \cite{cramer1996modular} 
-and the first efficient sigma protocol was introduced by Schnorr in \cite{schnorr1991efficient}. 
-Even though there exists many sigma protocols, the Schnorr protocol is used extensively in privacy-preserving voting systems, e.g, Helios, Belenios, SwissPost, etc. Therefore, 
-our formalisation is geared towards the Schnorr protocol. 
-Moreover, we formalise the \(n\)-ary composition of Schnorr \(\Sigma\)-protocols, instantiating Parallel, And, Or, Eq, and Neq constructions for arbitrary \(n\). In addition, we also formalise the Chaum-Pedersen protocol for proving equality of discrete logarithms, the Okamoto protocol, encryption proofs (demonstrating that ElGamal ciphertexts encrypt specific values), decryption proofs (verifying correct decryption by election trustees), and the Pedersen Linear Relation protocol for proving knowledge of committed values satisfying linear constraints.
-Ideally, given the abstraction of our formlisation (\textit{vector space}), we could have 
+The notion of a Sigma-protocol was first identified and studied by Cramer~\cite{cramer1996modular},
+as an appropriate abstraction of the (special) honest-verifier zero-knowledge, special-sound protocols considered in~\cite{cramer1994proofs}.
+Probably the best-known Sigma-protocol is due to Schnorr~\cite{schnorr1991efficient}.
+The Schnorr protocol is used extensively in privacy-preserving voting systems, e.g, Helios, Belenios, SwissPost, etc. Therefore, 
+our formalisation is geared towards this protocol. 
+Moreover, we formalise the \(n\)-ary composition of Schnorr \(\Sigma\)-protocols, instantiating Parallel, And, Or, Eq, and Neq constructions for arbitrary \(n\). In addition, we also formalise the Chaum-Pedersen protocol \todo{this is same as EQ-composition} for proving equality of discrete logarithms, the Okamoto protocol, encryption proofs (demonstrating that ElGamal ciphertexts encrypt specific values), decryption proofs (verifying correct decryption by election trustees), and the Pedersen Linear Relation protocol for proving knowledge of committed values satisfying linear constraints.\todo{This is not connected to `Pedersen', but rather to work by Stefan Brands}
+Ideally, given the abstraction of our formalisation (\textit{vector space}), we could have 
 abstracted the sigma protocol and their composition in a generic way \cite{10.1007/978-3-642-02384-2_17},
 but we decided to focus on the Schnorr protocol and its composition to ensure familiar APIs 
 for electronic voting in WebAssembly and OCaml.
