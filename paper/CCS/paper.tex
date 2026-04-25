@@ -1070,9 +1070,7 @@ The judgment \texttt{count : state -> Type} defines legal counting traces throug
 The executable function \texttt{\seqsplit{compute\_final\_tally}} implements the first phase (classification and encrypted aggregation) by recursion on the ballot list. For each ballot, it branches on \texttt{\seqsplit{verify\_encryption\_ballot\_proof}}: the true branch applies \texttt{cvalid}, the false branch applies \texttt{cinvalid}. It returns \texttt{(vbs,inbs,ms)} together with the invariant \texttt{Permutation bs (vbs ++ inbs)}, ensuring that every input ballot is accounted for exactly once. Finally, the function \texttt{\seqsplit{compute\_final\_count}} then derives the final plaintext tally by decrypting aggregate ciphertexts with secret key $x$ to obtain \texttt{ds}, computing \texttt{pt} by pointwise discrete-log search relative to generator $g$, and concludes \texttt{count (finished bs vbs inbs pt)} via \texttt{cfinish}. Hence, the formal counting pipeline is: \emph{verify each ballot} $\to$ \emph{homomorphically aggregate valid ciphertexts} $\to$ \emph{verify decryption} $\to$ \emph{extract plaintext counts}, with explicit proof obligations at each step. The source code for this section can be accessed in the \href{https://anonymous.4open.science/r/SigmaProtocol-EBA5/src/Backend/Tally.v}{\textcolor{blue}{Tally.v}} file.
 
 
-
 \subsection{Helios Verifier}
-
 To demonstrate the practical applicability of our formalisation, we have developed a certified verifier for 
 the Helios voting system that processes real-world election data from the IACR elections. Helios is a 
 widely-deployed open-source internet voting system that implements end-to-end verifiable elections using 
