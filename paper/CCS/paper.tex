@@ -333,9 +333,9 @@ verifier is assumed to be honest and characterised by completeness, (special) so
   then $P$ can successfully construct a proof $(a, c, r)$ that always passes the verification equation, 
   i.e., $V$ accepts; (ii) \textbf{special soundness:}
 there exists a probabilistic polynomial-time extractor $E$ which given 
-two accepting transcripts $(a, c, r)$ and $(a, c', r')$ for $x$, 
+two accepting transcripts $(a, c, r)$ and $(a, c', r')$ with $c\neq c'$ for $x$, 
 it can extract a witness $w$ such that $(x, w) \in R$; and (iii) \textbf{special honest-verifier zero-knowledge:}
-there exists a probabilistic polynomial-time simulator \(S\) such that, for every \(x \in L_R\) and every challenge \(c \in C\), \(S\) outputs a transcript \((a,c,r)\) whose distribution is identical to that of a real interaction between an honest prover \(P\) (holding a witness \(w\) with \((x,w)\in R\)) and an honest verifier \(V\). Furthermore, for any \(x \notin L_R\), the simulator \(S\) is only required to output an arbitrary accepting transcript \((a,c,r)\) for the given challenge \(c \in C\).
+there exists a probabilistic polynomial-time simulator \(S\) such that, for every \(x \in L_R\) and every challenge \(c \in C\), \(S\) outputs a transcript \((a,c,r)\) whose distribution is identical to that of a real interaction between an honest prover \(P\) (holding a witness \(w\) with \((x,w)\in R\)) and an honest verifier \(V\) using challenge $c$. Furthermore, for any \(x \notin L_R\), the simulator \(S\) is only required to output an arbitrary accepting transcript \((a,c,r)\) for the given challenge \(c \in C\).
 
 
 The notion of a Sigma-protocol was first identified and studied by Cramer~\cite{cramer1996modular},
@@ -731,8 +731,7 @@ given two accepting transcripts $(t, c_1, \mathbf{r}_1)$ and $(t, c_2, \mathbf{r
 the same commitment $t$ but different challenges $c_1 \neq c_2$, an extractor can compute 
 witnesses $\mathbf{x} = (x_1, \ldots, x_n)$ where 
 $x_i = (r_{1,i} - r_{2,i}) \cdot (c_1 - c_2)^{-1}$ for each $i$. The proof establishes that 
-these extracted values satisfy $h = \prod_{i=1}^{n} g_i^{x_i}$, which is critical for the 
-soundness of the Neq protocol that uses Okamoto as a building block; and (iii) \textbf{special honest-verifier zero-knowledge}: 
+these extracted values satisfy $h = \prod_{i=1}^{n} g_i^{x_i}$; and (iii) \textbf{special honest-verifier zero-knowledge}: 
 the real transcript distribution (involving secrets $\mathbf{x}$) is identical to the simulator 
 distribution (without secrets). The simulator chooses random $\mathbf{u}$ and $c$, then computes 
 the commitment as $t = \left(\prod_{i=1}^{n} g_i^{u_i}\right) \cdot h^{-c}$ with responses 
@@ -743,7 +742,7 @@ distribution framework.
 
 Beyond the standard $\Sigma$-protocol properties, our formalisation includes witness indistinguishability. We prove that transcripts generated with different witness 
 vectors $\mathbf{x}_1$ and $\mathbf{x}_2$ satisfying the same relation $h = \prod_{i=1}^{n} g_i^{x_{1,i}} = 
-\prod_{i=1}^{n} g_i^{x_{2,i}}$ are computationally indistinguishable. The proof \texttt{\seqsplit{generalised\_okamoto\_witness\_indistinguishable}}, shown in Listing \ref{wit_ind}, relies on two 
+\prod_{i=1}^{n} g_i^{x_{2,i}}$ are information-theoretically indistinguishable. The proof \texttt{\seqsplit{generalised\_okamoto\_witness\_indistinguishable}}, shown in Listing \ref{wit_ind}, relies on two 
 bijective transformation functions that map 
 randomness between the two witness spaces, along with the homomorphic property showing that 
 $\prod_{i=1}^{n} g_i^{u_i - v_i} = \left(\prod_{i=1}^{n} g_i^{u_i}\right) \cdot 
@@ -771,7 +770,7 @@ Proof. (* proof terms omitted *) Qed.
 The Neq composition formalises the statement that a prover knows witnesses
 $x_1, \ldots, x_{2+n}$ for public instances $(g_i, h_i)$ such that $h_i = g_i^{x_i}$ for every
 $i$, and moreover these witnesses are pairwise distinct, i.e., $x_i \neq x_j$ for all distinct pairs $i \neq j$. 
-In contrast to Or and And compositions, which combine existing statements by logical connectives, the Neq protocol has to encode a family of inequality constraints between witnesses.  In our development, this is done by combining an And proof of all discrete-logarithm relations with one Okamoto proof for every unordered pair of witnesses. This protocol is essential in voting systems  for proving ballot validity constraints beyond simple well-formedness, though it is less commonly 
+In contrast to Or and And compositions, which combine existing statements by logical connectives, the Neq protocol has to encode a family of inequality constraints between witnesses.  In our development, this is done by combining an And proof of all discrete-logarithm relations with one Okamoto proof for every unordered pair of witnesses. This protocol is essential in voting systems \todo{Which voting systems concretely?}  for proving ballot validity constraints beyond simple well-formedness, though it is less commonly 
 deployed than Or and And compositions in current systems like Helios and Belenios.
 
 
@@ -793,7 +792,7 @@ using our uniform probability distribution framework; and (iii) \textbf{special 
 the protocol is sound either because witnesses separate cleanly, or because the algebraic structure itself reveals an underlying dependency. We would like to emphasise the importance of Rocq in this development. For the special soundness proof, our initial expectation was simply to extract the witness vector from two accepting transcripts sharing identical commitments. However, during the proof, Rocq exposed additional structural requirements that were not apparent at the informal level, forcing us to confront hidden dependencies and edge cases that would otherwise have been silently assumed away.
 
 
-The implementation \texttt{\seqsplit{generalised\_construct\_neq\_conversations\_real\_transcript}} requires randomness of dimension \((2+n) + (2+n)(1+n) = (2+n)^2\) and produces proof transcripts of size \(O(n^2)\), reflecting the inherently quadratic nature of enforcing pairwise inequality constraints. Consequently, while theoretically sound and fully general, this construction is not particularly practical for large-scale instances, as both the randomness requirements and transcript size grow rapidly with \(n\).
+The implementation \texttt{\seqsplit{generalised\_construct\_neq\_conversations\_real\_transcript}} requires randomness of dimension \((2+n) + (2+n)(1+n) = (2+n)^2\) and produces proof transcripts of size \(O(n^2)\), reflecting the inherently quadratic nature of enforcing pairwise inequality constraints. \todo{It's therefore debatable why this analysis is included for general $n>2$, as the practical case is jsut $n=2$.} Consequently, while theoretically sound and fully general, this construction is not particularly practical for large-scale instances, as both the randomness requirements and transcript size grow rapidly with \(n\).
 
 \begin{lstlisting}[frame=single, language=Coq, caption={Neq $\Sigma$ Protocol},
 label={neq_special_sound},captionpos=t, basicstyle=\ttfamily\footnotesize,
@@ -1158,8 +1157,8 @@ from the \href{https://anonymous.4open.science/r/SigmaProtocol-EBA5/src/Executab
 
 
 \textbf{Primality of $p$ and $q$}:
-The two large primes used in the Helios parameters are the 256-bit prime~$q$
-and the 2048-bit safe prime~$p = kq + 1$.
+The two large primes used in the Helios parameters are a 256-bit prime~$q$
+and a 2048-bit prime~$p = kq + 1$.
 Their primality is established inside Rocq using the
 \textsc{Coqprime}~\cite{thery2007primality} library.  For $q$, the proof can be accessed from the \href{https://anonymous.4open.science/r/SigmaProtocol-EBA5/src/Examples/primeQ.v}{\textcolor{blue}{primeQ.v}} file and 
 for $p$, the proof can be accessed from \href{https://anonymous.4open.science/r/SigmaProtocol-EBA5/src/Examples/primeP.v}{\textcolor{blue}{primeP.v}} file.  
