@@ -1005,6 +1005,11 @@ support for multiple candidates, resulting in fairer representation of voter pre
 implements approval voting using ElGamal encryption paired with \emph{Or-$\Sigma$} proofs to guarantee that 
 each vote is either 0 (not approved) or 1 (approved).  The frontend functions, shown in Listing \ref{frontend_fun}, realise the ballot-construction pipeline for approval voting. The function \texttt{\seqsplit{encrypt\_vote}} computes the ElGamal ciphertext $(g^r,\; g^m \cdot h^r)$ from generator $g$, public key $h$, vote value $m$, and randomness $r$. The function \texttt{\seqsplit{generate\_enc\_proof}} then constructs a two-branch $\Sigma$-proof that the ciphertext encrypts either zero ($0$) or a non-zero value: it performs a case split with \texttt{Fdec} $m$ \texttt{zero}, places the real witness in the corresponding branch index (\texttt{Fin.F1} when $m=0$, otherwise \texttt{Fin.FS} \texttt{Fin.F1}), and simulates the other branch. Finally, \texttt{\seqsplit{encrypt\_vote\_and\_generate\_enc\_proof}} composes both steps and returns the ciphertext together with its proof as a single object for verification. Ideally, for the non-zero case a voter should encrypt $1$ but it runs on the voter's computer so the voter can encrypt any value and produce a zero-knowledge proof but the verification function running at the backend (server) will reject the proof, except for some negligible probability. More precisely, theorem \texttt{\seqsplit{vote\_proof\_invalid\_reject}} shows that for invalid votes $m \neq 0,1$, verification returns false under the usual non-degenerate assumptions. The companion theorem \texttt{\seqsplit{vote\_proof\_invalid\_accept}} captures the exceptional case: if the prover can predict the verifier challenge ($c_1 = c$), an invalid transcript can still be accepted. Together, these results characterise the standard \(\Sigma\)-protocol soundness boundary and explain why unpredictable challenges are essential \cite{10.1007/978-3-642-34961-4_38,dao2023weak}. 
 
+Finally, the function \texttt{\seqsplit{encrypt\_ballot\_and\_generate\_enc\_proof}} extends vote encryption to the entire ballot by vectorizing across all $n$ candidates. Each candidate 
+produces a tuple $(C_i, \pi_i)$ where $C_i$ is the encrypted vote and $\pi_i$ is the corresponding Or-$\Sigma$ 
+proof. A complete ballot is thus a vector of $n$ such tuples. We extract all frontend functions into WebAssembly. The related Rocq proofs can be accessed from the \href{https://anonymous.4open.science/r/SigmaProtocol-EBA5/src/Frontend/Approval.v}{\textcolor{blue}{Approval.v}} file and the corresponding WebAssembly file from \href{https://anonymous.4open.science/r/SigmaProtocol-EBA5/src/Wasm/approval.wasm}{\textcolor{blue}{approval.wasm}}.
+
+
 \begin{lstlisting}[frame=single, language=Coq, caption={Frontend Functions},
   label={frontend_fun},captionpos=t, basicstyle=\ttfamily\footnotesize,
   abovecaptionskip=-\medskipamount]
@@ -1050,10 +1055,6 @@ Theorem vote_proof_invalid_accept :
  (encrypt_vote_and_generate_enc_proof g h r m [u1; u2; c1] c) = true.
 Proof. (* proof terms omitted. *) Qed.
 \end{lstlisting}
-
-Finally, the function \texttt{\seqsplit{encrypt\_ballot\_and\_generate\_enc\_proof}} extends vote encryption to the entire ballot by vectorizing across all $n$ candidates. Each candidate 
-produces a tuple $(C_i, \pi_i)$ where $C_i$ is the encrypted vote and $\pi_i$ is the corresponding Or-$\Sigma$ 
-proof. A complete ballot is thus a vector of $n$ such tuples. We extract all frontend functions into WebAssembly. The related Rocq proofs can be accessed from the \href{https://anonymous.4open.science/r/SigmaProtocol-EBA5/src/Frontend/Approval.v}{\textcolor{blue}{Approval.v}} file and the corresponding WebAssembly file from \href{https://anonymous.4open.science/r/SigmaProtocol-EBA5/src/Wasm/approval.wasm}{\textcolor{blue}{approval.wasm}}.
 
 
 \textbf{Homomorphic Tallying}: Tallying is specified as an inductive state machine \texttt{count}, parameterised 
