@@ -300,18 +300,18 @@ Section \ref{case_studies} demonstrates the practical use of the library through
 
 
 
-\section{Sigma Protocol}\label{sigma_protocol}
+\section{$\Sigma$-Protocols}\label{sigma_protocol}
 Despite the recent growth and popularity of zero-knowledge succinct 
-argument of knowledge (zk-SNARK), $\Sigma$-protocol remains a
+arguments of knowledge (zk-SNARKs), $\Sigma$-protocols remain a
 leading cryptographic proof system in privacy-preserving voting systems. 
-$\Sigma$-protocol is used in Helios (a widely popular voting system) \cite{adida2008helios}, 
+$\Sigma$-protocols are used in Helios (a widely popular voting system) \cite{adida2008helios}, 
 Belenios (used in French elections for overseas 
 voters\footnote{VVFE, used in French elections, is a derivative of (part of) Belenios and 
 inherited all the zero-knowledge proofs from Belenios. \url{https://gitlab.inria.fr/vvfe/vvfe}}), \cite{cortier2023french}, and 
 SwissPost (used in Swiss elections for overseas voters) voting 
 systems \cite{10.1007/978-3-031-15911-4_4}. 
 Moreover, recently the zero-knowledge proof community started a movement to standardise
-the sigma protocol \cite{ZKProof}.
+$\Sigma$-protocols \cite{ZKProof}.
 One of the main reasons for its popularity in privacy-preserving voting systems is its
 efficiency and well-understood security.
 
@@ -323,10 +323,10 @@ problems that have efficient verifiers; that is, for a given problem in the $NP$
 a polynomial-time algorithm that can verify whether a given solution, or witness, to the problem is correct or not.
 More formally, for a given binary $NP$-relation $R$ and a statement $x$, zero-knowledge proof allows a prover 
 $P$ to convince a verifier $V$ that they posses a witness $w$--polynomial in the length of $x$--such 
-that ($x$, $w$) $\in$ $R$. To achieve this, $P$ and $V$ engage in a 
-interactive protocol and  at the end of the protocol $V$ either accepts or rejects the proofs.
-$\Sigma$-protocol  is an efficient three move zero-knowledge proof where the 
-verifier is assumed to be honest and characterised by completeness, (special) soundness, and 
+that ($x$, $w$) $\in$ $R$. To achieve this, $P$ and $V$ engage in an 
+interactive protocol and at the end $V$ either accepts or rejects the proof.
+A $\Sigma$-protocol is an efficient 3-move zero-knowledge proof (where the 
+verifier is assumed to be honest) characterised by completeness, (special) soundness, and 
 (special honest-verifier) zero-knowledge. More formally: (i) \textbf{completeness:}
   when $P$ and $V$ follow the protocol, $V$ always accepts. 
   In other words, if $P$ knows $w$ for $x$ such that ($x$, $w$) $\in$ $R$,  
@@ -338,12 +338,12 @@ it can extract a witness $w$ such that $(x, w) \in R$; and (iii) \textbf{special
 there exists a probabilistic polynomial-time simulator \(S\) such that, for every \(x \in L_R\) and every challenge \(c \in C\), \(S\) outputs a transcript \((a,c,r)\) whose distribution is identical to that of a real interaction between an honest prover \(P\) (holding a witness \(w\) with \((x,w)\in R\)) and an honest verifier \(V\) using challenge $c$. Furthermore, for any \(x \notin L_R\), the simulator \(S\) is only required to output an arbitrary accepting transcript \((a,c,r)\) for the given challenge \(c \in C\).
 
 
-The notion of a Sigma-protocol was first identified and studied by Cramer~\cite{cramer1996modular},
+The notion of a $\Sigma$-protocol was first identified and studied by Cramer~\cite{cramer1996modular},
 as an appropriate abstraction of the (special) honest-verifier zero-knowledge, special-sound protocols considered in~\cite{cramer1994proofs}.
-Probably the best-known Sigma-protocol is due to Schnorr~\cite{schnorr1991efficient}.
+Probably the best-known $\Sigma$-protocol is due to Schnorr~\cite{schnorr1991efficient}.
 The Schnorr protocol is used extensively in privacy-preserving voting systems, e.g, Helios, Belenios, SwissPost, etc. Therefore, 
-our formalisation is geared towards this protocol. Moreover, we formalise the \(n\)-ary composition of Schnorr \(\Sigma\)-protocols, instantiating Parallel, And, Or, Eq, and Neq constructions for arbitrary \(n\). In addition, we also formalise the Okamoto protocol, encryption proofs (demonstrating that ElGamal ciphertexts encrypt specific values), decryption proofs (verifying correct decryption by election trustees), and protocol for proving knowledge of committed values satisfying linear constraints~\cite{Bra97}. Additionally, we instantiate Eq-composition to obtain the Chaum-Pedersen protocol for proving equality of discrete logarithms. Ideally, given the abstraction of our formalisation (\textit{vector space}), we could have 
-abstracted the sigma protocol and their composition in a generic way \cite{10.1007/978-3-642-02384-2_17},
+our formalisation is geared towards this protocol. Moreover, we formalise the $n$-ary composition of Schnorr $\Sigma$-protocols, instantiating Parallel, And, Or, Eq, and Neq constructions for arbitrary $n$. In addition, we also formalise the Okamoto protocol, encryption proofs (demonstrating that ElGamal ciphertexts encrypt specific values), decryption proofs (verifying correct decryption by election trustees), and protocol for proving knowledge of committed values satisfying linear constraints~\cite{Bra97}. Additionally, we instantiate Eq-composition to obtain the Chaum-Pedersen protocol for proving equality of discrete logarithms. Ideally, given the abstraction of our formalisation (\textit{vector space}), we could have 
+abstracted $\Sigma$-protocols and their composition in a generic way \cite{10.1007/978-3-642-02384-2_17},
 but we decided to focus on the Schnorr protocol and its composition to ensure familiar APIs 
 for electronic voting in WebAssembly and OCaml.
 
@@ -564,7 +564,7 @@ Both distributions sample a random field element $u$ from
 \texttt{\seqsplit{uniform\_with\_replacement}} \texttt{lf} \ \texttt{Hlfn}, 
 where \texttt{lf} lists the elements from which $u$ is drawn and 
 \texttt{Hlfn} asserts that \texttt{lf} is non-empty, 
-to construct their respective distributions on the sigma protocol.
+to construct their respective distributions for a $\Sigma$-protocol.
 Using these definitions, we prove that the two distributions coincide in the 
 \texttt{\seqsplit{special\_honest\_verifier\_zkp}} theorem. Unlike the standard informal 
 presentation pervasive throughout the cryptography literature, these distributions 
@@ -641,18 +641,18 @@ Definition parallel_schnorr_distribution
 
 
 \subsection{OR Composition}
-The Or-$\Sigma$ protocol allows a prover to demonstrate knowledge of one witness among $n$ possible discrete logarithm statements 
+OR-compositions of $\Sigma$-protocols allow a prover to demonstrate knowledge of one witness among $n$ possible discrete logarithm statements 
 without revealing which specific statement they know. Formally, given public group elements $(g_1, h_1), (g_2, h_2), \ldots, (g_n, h_n)$, 
 the prover convinces the verifier that they know a witness $x_k$ such that $h_k = g_k^{x_k}$ for some $k \in \{1, \ldots, n\}$, 
 without revealing the index $k$ or the witness $x_k$. The key insight behind the Or composition, introduced by Cramer, Damg\aa rd, and Schoenmakers~\cite{cramer1994proofs}, 
 is to allow the prover a controlled degree of freedom to \emph{cheat} on statements for which they do not know witnesses.  We implement this protocol generically for $n \geq 2$ statements. The prover, knowing the witness for the $k$-th relation (where $k$ is specified as a finite index of sort \texttt{Fin.t (2+n)}), first enters the commitment phase by choosing random values: $u_k$ for the real commitment, and for each simulated statement $i \neq k$, random values $u_i$ and $c_i$. The prover then computes the real commitment $t_k = g_k^{u_k}$ for statement $k$ and simulated commitments $t_i = g_i^{u_i} \cdot h_i^{-c_i}$ for $i \neq k$, sending the vector of commitments $(t_1, \ldots, t_n)$ to the verifier. In the challenge phase, the verifier responds with a random challenge $c$. Finally, during the response phase, the prover computes $c_k = c - \sum_{i \neq k} c_i$, along with $s_k = u_k + c_k \cdot x_k$ as the honest response for the real statement, while for $i \neq k$, the responses $s_i$ are set to the previously chosen $u_i$. The prover then sends both response vectors $(s_1, \ldots, s_n)$ and $(c_1, \ldots, c_n)$. The verifier accepts if: (i) $c = \sum_{i=1}^{n} c_i$, and (ii) for each $i$, $g_i^{s_i} = t_i \cdot h_i^{c_i}$.
 
 
-Our Rocq formalisation of the Or-$\Sigma$ protocol supports $n \geq 2$ statements with arbitrary generators for each statement, enabling proofs of knowledge for relations $g_i^{x_i} = h_i$. The function \texttt{\seqsplit{generalised\_construct\_or\_conversations\_schnorr}} constructs a proof for the relation
+Our Rocq formalisation of the OR-composition of $\Sigma$-protocols supports $n \geq 2$ statements with arbitrary generators for each statement, enabling proofs of knowledge for relations $g_i^{x_i} = h_i$. The function \texttt{\seqsplit{generalised\_construct\_or\_conversations\_schnorr}} constructs a proof for the relation
 $\{ (x_1, x_2, \ldots, x_n) \mid h_1 = g_1^{x_1} \lor h_2 = g_2^{x_2} \lor \cdots \lor h_n = g_n^{x_n} \}$, 
 where the prover knows the witness for the relation indicated by the index \texttt{rindex}. One advantage of this generic formalisation is that we can instantiate \( n \) with any finite number of statements at compile time, thereby uniformly capturing arbitrary-length disjunctions without modifying the underlying protocol definition.  Similarly, we define the simulator \texttt{\seqsplit{generalised\_construct\_or\_conversations\_simulator}}, which generates accepting transcripts for the disjunctive relation without access to any witness. Building on this, we construct two distributions: \texttt{\seqsplit{generalised\_or\_schnorr\_distribution}}, which depends on the secret witness \(x\), and \texttt{\seqsplit{generalised\_or\_simulator\_distribution}}, which is independent of any witness. These distributions are then used to establish the zero-knowledge property captured by \texttt{\seqsplit{generalised\_or\_special\_honest\_verifier\_zkp}}. The two distributions are identical and therefore the protocol is information-theoretically zero-knowledge. The formalisation proves three security properties: completeness (honest execution always verifies), special soundness (which recovers a witness from two accepting transcripts with the same commitments but different challenges), and special honest-verifier zero-knowledge (the distribution of real transcripts involving the witness is identical to the simulator distribution without the witness). The source code for this section can be accessed in the \href{https://anonymous.4open.science/r/SigmaProtocol-EBA5/src/Crypto/OrSigmaGen.v}{\textcolor{blue}{OrSigmaGen.v}} file.
 
-\begin{lstlisting}[frame=single, language=Coq, caption={Or-$\Sigma$ Protocol},
+\begin{lstlisting}[frame=single, language=Coq, caption={Or-$\Sigma$-Protocol},
 label={or_proof},captionpos=t, basicstyle=\ttfamily\footnotesize,
 abovecaptionskip=-\medskipamount]
 Definition generalised_construct_or_conversations_schnorr {n : nat} 
@@ -968,7 +968,7 @@ The source code for this section can be accessed in the file \href{https://anony
 \end{lstlisting}
 
 \subsection{Efficient Extractor.}
-In this section, we explain the key ideas underlying the formalisation of an efficient extractor and simulator. Recall that in a $\Sigma$-protocol, the extractor is required to be efficient, i.e., it runs in time polynomial in the size of its input. However, functions defined over vector spaces do not capture computational complexity; in particular, they provide no information about the number of computational steps required to evaluate them on a given input. One possible approach in our formalisation would have been to adopt a monadic style~\cite{10.1145/3473585,10.1145/3158124}, where each function additionally returns the number of steps taken during its execution. This approach has the advantage of compositionality: given two monadic functions, their composition naturally yields the complexity of the combined computation. However, during code extraction, this additional bookkeeping would propagate through all functions, significantly complicating and effectively degrading the intended API. Instead, we adopt a more targeted approach. In practice, an extractor over a multiplicative group relies on the ability to efficiently compute inverses. In our concrete model, inverse is implemented via binary exponentiation using the function \texttt{\seqsplit{repeat\_op\_ntimes\_rec}}. We therefore introduce an inductive data type \texttt{\seqsplit{complexity\_repeat\_op\_ntimes\_rec}}, shown in Listing~\ref{extractor_complex}, that captures the number of steps performed by this binary exponentiation procedure. Finally, we prove in theorem \texttt{\seqsplit{correct\_complexity\_repeat\_op\_ntimes\_rec}} that the function \texttt{\seqsplit{repeat\_op\_ntimes\_rec}} runs in logarithmic time in the value of its input, equivalently linear in the bit-length of the input. This approach allows us to preserve a clean API without introducing monadic overhead. While it lacks the compositional advantages of the monadic approach, it is sufficient for our purposes, as our primary objective is to extract executable (OCaml and WebAssembly) code whose APIs closely match those of real-world cryptographic libraries. The source code for this section can be access in the \href{https://anonymous.4open.science/r/SigmaProtocol-EBA5/src/Utility/Functions.v}{\textcolor{blue}{Functions.v}} file.
+In this section, we explain the key ideas underlying the formalisation of an efficient extractor and simulator. Recall that for a $\Sigma$-protocol, the extractor is required to be efficient, i.e., it runs in time polynomial in the size of its input. However, functions defined over vector spaces do not capture computational complexity; in particular, they provide no information about the number of computational steps required to evaluate them on a given input. One possible approach in our formalisation would have been to adopt a monadic style~\cite{10.1145/3473585,10.1145/3158124}, where each function additionally returns the number of steps taken during its execution. This approach has the advantage of compositionality: given two monadic functions, their composition naturally yields the complexity of the combined computation. However, during code extraction, this additional bookkeeping would propagate through all functions, significantly complicating and effectively degrading the intended API. Instead, we adopt a more targeted approach. In practice, an extractor over a multiplicative group relies on the ability to efficiently compute inverses. In our concrete model, inverse is implemented via binary exponentiation using the function \texttt{\seqsplit{repeat\_op\_ntimes\_rec}}. We therefore introduce an inductive data type \texttt{\seqsplit{complexity\_repeat\_op\_ntimes\_rec}}, shown in Listing~\ref{extractor_complex}, that captures the number of steps performed by this binary exponentiation procedure. Finally, we prove in theorem \texttt{\seqsplit{correct\_complexity\_repeat\_op\_ntimes\_rec}} that the function \texttt{\seqsplit{repeat\_op\_ntimes\_rec}} runs in logarithmic time in the value of its input, equivalently linear in the bit-length of the input. This approach allows us to preserve a clean API without introducing monadic overhead. While it lacks the compositional advantages of the monadic approach, it is sufficient for our purposes, as our primary objective is to extract executable (OCaml and WebAssembly) code whose APIs closely match those of real-world cryptographic libraries. The source code for this section can be access in the \href{https://anonymous.4open.science/r/SigmaProtocol-EBA5/src/Utility/Functions.v}{\textcolor{blue}{Functions.v}} file.
 
 
 \begin{lstlisting}[frame=single, language=Coq, caption={Extractor Complexity},
@@ -999,12 +999,11 @@ Proof. (* proof terms omitted *) Qed.
 Approval voting is a voting method where each voter can approve any subset of candidates independently. 
 Unlike plurality voting where each voter selects exactly one candidate, approval voting allows voters to express 
 support for multiple candidates, resulting in fairer representation of voter preferences. Our formalisation 
-implements approval voting using ElGamal encryption paired with \emph{Or-$\Sigma$} proofs to guarantee that 
-each vote is either 0 (not approved) or 1 (approved).  The frontend functions, shown in Listing \ref{frontend_fun}, realise the ballot-construction pipeline for approval voting. The function \texttt{\seqsplit{encrypt\_vote}} computes the ElGamal ciphertext $(g^r,\; g^m \cdot h^r)$ from generator $g$, public key $h$, vote value $m$, and randomness $r$. The function \texttt{\seqsplit{generate\_enc\_proof}} then constructs a two-branch $\Sigma$-proof that the ciphertext encrypts either zero ($0$) or a non-zero value: it performs a case split with \texttt{Fdec} $m$ \texttt{zero}, places the real witness in the corresponding branch index (\texttt{Fin.F1} when $m=0$, otherwise \texttt{Fin.FS} \texttt{Fin.F1}), and simulates the other branch. Finally, \texttt{\seqsplit{encrypt\_vote\_and\_generate\_enc\_proof}} composes both steps and returns the ciphertext together with its proof as a single object for verification. Ideally, for the non-zero case a voter should encrypt $1$ but it runs on the voter's computer so the voter can encrypt any value and produce a zero-knowledge proof but the verification function running at the backend (server) will reject the proof, except for some negligible probability. More precisely, theorem \texttt{\seqsplit{vote\_proof\_invalid\_reject}} shows that for invalid votes $m \neq 0,1$, verification returns false under the usual non-degenerate assumptions. The companion theorem \texttt{\seqsplit{vote\_proof\_invalid\_accept}} captures the exceptional case: if the prover can predict the verifier challenge ($c_1 = c$), an invalid transcript can still be accepted. Together, these results characterise the standard \(\Sigma\)-protocol soundness boundary and explain why unpredictable challenges are essential \cite{10.1007/978-3-642-34961-4_38,dao2023weak}. 
+implements approval voting using ElGamal encryptions paired with OR-compositions of $\Sigma$-proofs to guarantee that 
+each vote is either 0 (not approved) or 1 (approved).  The frontend functions, shown in Listing \ref{frontend_fun}, realise the ballot-construction pipeline for approval voting. The function \texttt{\seqsplit{encrypt\_vote}} computes the ElGamal ciphertext $(g^r,\; g^m \cdot h^r)$ from generator $g$, public key $h$, vote value $m$, and randomness $r$. The function \texttt{\seqsplit{generate\_enc\_proof}} then constructs a two-branch $\Sigma$-proof that the ciphertext encrypts either zero ($0$) or a non-zero value: it performs a case split with \texttt{Fdec} $m$ \texttt{zero}, places the real witness in the corresponding branch index (\texttt{Fin.F1} when $m=0$, otherwise \texttt{Fin.FS} \texttt{Fin.F1}), and simulates the other branch. Finally, \texttt{\seqsplit{encrypt\_vote\_and\_generate\_enc\_proof}} composes both steps and returns the ciphertext together with its proof as a single object for verification. Ideally, for the non-zero case a voter should encrypt $1$ but it runs on the voter's computer so the voter can encrypt any value and produce a zero-knowledge proof but the verification function running at the backend (server) will reject the proof, except for some negligible probability. More precisely, theorem \texttt{\seqsplit{vote\_proof\_invalid\_reject}} shows that for invalid votes $m \neq 0,1$, verification returns false under the usual non-degenerate assumptions. The companion theorem \texttt{\seqsplit{vote\_proof\_invalid\_accept}} captures the exceptional case: if the prover can predict the verifier challenge ($c_1 = c$), an invalid transcript can still be accepted. Together, these results characterise the standard $\Sigma$-protocol soundness boundary and explain why unpredictable challenges are essential \cite{10.1007/978-3-642-34961-4_38,dao2023weak}. 
 
 Finally, the function \texttt{\seqsplit{encrypt\_ballot\_and\_generate\_enc\_proof}} extends vote encryption to the entire ballot by vectorizing across all $n$ candidates. Each candidate 
-produces a tuple $(C_i, \pi_i)$ where $C_i$ is the encrypted vote and $\pi_i$ is the corresponding Or-$\Sigma$ 
-proof. A complete ballot is thus a vector of $n$ such tuples. We extract all frontend functions into WebAssembly. The related Rocq proofs can be accessed from the \href{https://anonymous.4open.science/r/SigmaProtocol-EBA5/src/Frontend/Approval.v}{\textcolor{blue}{Approval.v}} file and the corresponding WebAssembly file from \href{https://anonymous.4open.science/r/SigmaProtocol-EBA5/src/Wasm/approval.wasm}{\textcolor{blue}{approval.wasm}}.
+produces a tuple $(C_i, \pi_i)$ where $C_i$ is the encrypted vote and $\pi_i$ is the accompanying $\Sigma$-proof. A complete ballot is thus a vector of $n$ such tuples. We extract all frontend functions into WebAssembly. The related Rocq proofs can be accessed from the \href{https://anonymous.4open.science/r/SigmaProtocol-EBA5/src/Frontend/Approval.v}{\textcolor{blue}{Approval.v}} file and the corresponding WebAssembly file from \href{https://anonymous.4open.science/r/SigmaProtocol-EBA5/src/Wasm/approval.wasm}{\textcolor{blue}{approval.wasm}}.
 
 
 \begin{lstlisting}[frame=single, language=Coq, caption={Frontend Functions},
@@ -1123,8 +1122,7 @@ in three sections: the list of voter ballots
 (\texttt{bs}), the list of trustees (\texttt{us}), and the published
 plaintext tally (\texttt{rs}).
 The parser reconstructs each ballot as a tuple containing the cast timestamp,
-a vector of ElGamal ciphertexts $(\alpha_i, \beta_i)$, a vector of Or-sigma
-proofs (one per candidate, certifying that the plaintext is $0$ or $1$),
+a vector of ElGamal ciphertexts $(\alpha_i, \beta_i)$, a vector of $\Sigma$-proofs (one per candidate, certifying that the plaintext is $0$ or $1$),
 and metadata strings (election hash, voter hash, etc.).
 Each trustee is parsed into a tuple containing the decryption factor vector,
 the Chaum-Pedersen decryption proof vector, the Schnorr proof of knowledge,
@@ -1170,31 +1168,31 @@ Given the widespread use of $\Sigma$-protocols in electronic voting and related 
 
   
 \subsection{Limitation and Future Work}
-Our formalisation lacks mix-net~\cite{10.1145/358549.358563}, a key primitive in electronic voting that breaks the link between voters and their ballots by taking encrypted ballots and outputting them in a randomised order. Since outputs remain encrypted, a malicious mix-net could replace genuine ballots with forged ones, so it must provide a zero-knowledge proof of correct shuffling~\cite{10.1007/978-3-642-02620-1_28,10.1007/978-3-642-29011-4_17}. Mix-net is also used to verify ballot validity in the Schulze voting method \cite{haines2019verifiable}. Another possibility is to formalise Bulletproofs \cite{bunz2018bulletproofs}; this would allow us to provide compact range proofs for ballot validity (e.g., proving that a vote is $0$ or $1$), and could also be adapted to construct verifiable shuffles with logarithmic proof size (we have encoded the inner-product protocol but have not yet proved any security properties about our encoding). Another promising direction is a domain-specific language (DSL) for sigma protocols embedded in Rocq. The \texttt{\seqsplit{sigma-compiler}}~\cite{sigma-compiler} macro for Rust allows a protocol designer to write a high-level, declarative specification---lists of public parameters, secret witnesses, and logical statements---and automatically synthesises the corresponding prover and verifier functions. While this eliminates many manual implementation errors, the generated code itself is not formally verified. By embedding a similar DSL within Rocq, one could obtain a correct-by-construction pipeline: the same specification that is used to generate executable OCaml or Rust code could also serve as the input to a formalisation that proves, inside Rocq, that the resulting proof satisfies completeness, special soundness, and honest-verifier zero-knowledge. Given our current infrastructure, it would be fairly straightforward to  encode these algorithms and prove their security properties. 
+Our formalisation lacks mix-net~\cite{10.1145/358549.358563}, a key primitive in electronic voting that breaks the link between voters and their ballots by taking encrypted ballots and outputting them in a randomised order. Since outputs remain encrypted, a malicious mix-net could replace genuine ballots with forged ones, so it must provide a zero-knowledge proof of correct shuffling~\cite{10.1007/978-3-642-02620-1_28,10.1007/978-3-642-29011-4_17}. Mix-net is also used to verify ballot validity in the Schulze voting method \cite{haines2019verifiable}. Another possibility is to formalise Bulletproofs \cite{bunz2018bulletproofs}; this would allow us to provide compact range proofs for ballot validity (e.g., proving that a vote is $0$ or $1$), and could also be adapted to construct verifiable shuffles with logarithmic proof size (we have encoded the inner-product protocol but have not yet proved any security properties about our encoding). Another promising direction is a domain-specific language (DSL) for $\Sigma$-protocols embedded in Rocq. The \texttt{\seqsplit{sigma-compiler}}~\cite{sigma-compiler} macro for Rust allows a protocol designer to write a high-level, declarative specification---lists of public parameters, secret witnesses, and logical statements---and automatically synthesises the corresponding prover and verifier functions. While this eliminates many manual implementation errors, the generated code itself is not formally verified. By embedding a similar DSL within Rocq, one could obtain a correct-by-construction pipeline: the same specification that is used to generate executable OCaml or Rust code could also serve as the input to a formalisation that proves, inside Rocq, that the resulting proof satisfies completeness, special soundness, and honest-verifier zero-knowledge. Given our current infrastructure, it would be fairly straightforward to  encode these algorithms and prove their security properties. 
    
 
    Another limitation of our work is 
    that we have formalised the interactive version 
-   of sigma protocol and proved it correctness. However, 
+   of $\Sigma$-protocols and proved their correctness. However, 
    in reality the interaction is removed by 
    using a hash function. Ideally, one would like 
-   to formalise the security of sigma protocol in random oracle 
+   to formalise the security of $\Sigma$-protocols in the random oracle 
    model, the closest we can get. This means that under the assumption 
    that the hash function behaves as a random oracle, the non-interactive 
    proof derived from the Fiat-Shamir transform \cite{10.5555/36664.36676} is secure. 
    The random oracle model provides a framework where we can 
    reason about the security properties  of 
    the transform. There is an existing 
-   work about formalising random oracle in the Rocq theorem 
+   work about formalising random oracles in the Rocq theorem 
    prover \cite{10.1007/11617990_3} and we would like to 
-   connect it our implementation; however, it 
+   connect it to our implementation; however, it 
    will require some non-trivial work.
  
 
    In this paper, we have presented a certified implementation of a comprehensive library of $\Sigma$-protocols in the Rocq theorem prover, providing machine-checked proofs of completeness, special soundness, and special honest-verifier zero-knowledge for each construction. Our generic formalisation over abstract vector spaces captures a wide class of discrete-logarithm-based protocols while remaining independent of concrete cryptographic groups. Unlike prior work, our approach supports simultaneous extraction to OCaml and WebAssembly, eliminating code duplication between frontend and backend without sacrificing correctness. We have demonstrated the practical utility of our library by implementing a Helios election verifier (validating real IACR 2023/2024 elections) and a full client-server system for Approval Voting. The voting community can readily adopt our certified primitives to build end-to-end verifiable systems with strong, machine-checked security guarantees.
    
 \section{Acknowledgements}
-This paper was edited for grammar using ChatGPT. 
+This paper was edited for grammar using ChatGPT. \todo{Better omit this altogether, I mean the entire Acknowledgements section}
 
 
 %%
