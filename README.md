@@ -1,5 +1,5 @@
 # Dlog-zkp
-Formalisation of Schnorr Protocol and other proofs (https://www.win.tue.nl/~berry/2WC13/LectureNotes.pdf). The end goal is verify all the crypto primitives of [SwissPost](https://gitlab.com/swisspost-evoting/crypto-primitives/crypto-primitives/) in [Rocq](https://rocq-prover.org/).
+Formalisation of Schnorr Protocol and other proofs. The end goal is verify all the crypto primitives of [SwissPost](https://gitlab.com/swisspost-evoting/crypto-primitives/crypto-primitives/) in [Rocq](https://rocq-prover.org/).
 
 Run `dune build` (ignore the warinings) in this directory to compile the project. It will compile the Rocq code and 
 generate OCaml code from it [_CoqProject file](/_CoqProject). It takes a while (3 hours) because it verifies the primality and generator order in Rocq [HeliosTallyIns.v](/src/Examples/HeliosTallyIns.v) used in [Helios](https://github.com/benadida/js-voting-crypto/blob/master/test/elgamal-test.js#L14). `dune build  6554.20s user 15.53s system 57% cpu 3:08:53.70 total`. If you want to compile it quickly, admit --`Proof. Admitted.`--[prime_q](src/Examples/HeliosTallyIns.v#L33) and [prime_p](src/Examples/HeliosTallyIns.v#L33), and comment out [import](src/Examples/HeliosTallyIns.v#L6) in [HeliosTallyIns.v](/src/Examples/HeliosTallyIns.v),  [primeP.v](/src/Examples/primeP.v), and [primeQ.v](/src/Examples/primeQ.v). 
