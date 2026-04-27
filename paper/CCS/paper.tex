@@ -287,7 +287,7 @@ completeness, special soundness, and special honest-verifier zero-knowledge prop
 Our formalisation is developed 
 generically over abstract vector spaces, enabling uniform expression and composition of discrete-logarithm-based 
 $\Sigma$-protocols while remaining independent of any concrete group or cryptographic instantiation. Additionally, we have implemented efficient arithmetic procedures for prime fields and Schnorr groups (including the Helios parameters, 
-with formally verified primality proofs for the 2048-bit prime $p$ and 256-bit prime $q$) to 
+with formally verified primality proofs for 2048-bit prime $p$ and 256-bit prime $q$) to 
 ensure our library is practically usable. Finally, we extract OCaml and WebAssembly code from our certified 
 Rocq implementation. We demonstrate the applicability of our framework by implementing a voting client, extracted to WebAssembly from Rocq proofs, and a server, extracted to OCaml from Rocq proofs, for Approval Voting and a complete Helios election verifier that validates IACR elections (2023, 2024), verifying ballot proofs, tallying, and trustee decryption proofs. To the best of our knowledge, this is the first formal verification of $\Sigma$-protocols in Rocq that supports simultaneous extraction to both WebAssembly and OCaml. Our proofs can be accessed from this \href{https://anonymous.4open.science/r/SigmaProtocol-EBA5/README.md}{\textcolor{blue}{anonymous repo}}, which contains 30,000 lines of Rocq proofs.
 
@@ -862,11 +862,11 @@ The Pedersen Linear Relation protocol is particularly powerful in blockchain pri
 As stated earlier, to ensure the ease of proving and modularity, 
 we worked with an (abstract) vector space. However, to execute the code of 
 our formalisation, we need to instantiate the vector space with a concrete entity. 
-Therefore, we have encoded the Schnorr group \cite{schnorr1991efficient} (mulitplicative 
+Therefore, we have encoded the Schnorr group \cite{schnorr1991efficient} (multiplicative 
 group of integers modulo a large prime p), shown in Listing \ref{group_def}, and a prime field, shown in Listing \ref{field_def}, in the Rocq theorem prover. 
-To encode the Schnorr group, we postulate three integer $k, p, \text{ and } q$. 
-Moreover, we assume $p \text{ and } q$ are primes where $p = k * q + 1$ (when 
-$k = 2$, these primes are called Sophie Germain primes). Finally, we encode the neutral element (\texttt{one}), the group multiplication (\texttt{\seqsplit{mul\_schnorr\_group}}), 
+To encode the Schnorr group, we postulate three integers $k$, $p$, and $q$. 
+We assume $p$ and $q$ are primes and $p = k q + 1$ (when 
+$k = 2$, $p$ is called a safe prime and $q$ is a Sophie Germain prime). Finally, we encode the neutral element (\texttt{one}), the group multiplication (\texttt{\seqsplit{mul\_schnorr\_group}}), 
 and the group inverse (\texttt{\seqsplit{inv\_schnorr\_group}}) and we prove that our encoding 
 of the Schnorr group in Rocq is a commutative group by making it 
 an instance of the typeclass \texttt{\seqsplit{schnorr\_comm}}, which is an abstract typeclass that bundles the axioms of a commutative group.
