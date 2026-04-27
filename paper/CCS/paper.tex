@@ -818,6 +818,11 @@ Theorem generalised_neq_accepting_conversations_soundenss :
 
 \subsection{Linear Relation over Pedersen Commitment}
 
+\todo{Adding a todo here because it's not good to have something like "Pedersen Linear Relation protocol" terms, and similar ones.
+
+In fact, the protocol as is, in the current described situation, is trivial I would say. Therefore, reference Brands is not even that relevant.
+Have to revise this section still before submitting...}
+
 The Pedersen Linear Relation protocol is a zero-knowledge proof for proving knowledge of openings 
 (secret values and randomness) of Pedersen commitments \cite{Bra97} that satisfy a linear constraint. Unlike the 
 protocols discussed so far which prove discrete logarithm relations directly, this protocol operates 
@@ -852,6 +857,8 @@ simulator distribution (without witnesses). Both produce accepting transcripts w
 $1/|\mathbb{F}|^{2n}$, proven using our uniform distribution framework. The identical distributions 
 guarantee information-theoretic security: the verifier learns nothing beyond the validity of the 
 statements, even with unlimited computational power.
+
+\todo{In actual voting systems, we would just reveal $\sum_{i=1}^{n} \ \alpha_i \cdot r_i$ to prove the linear relation, as part of the Tally protocol.}
 
 The Pedersen Linear Relation protocol is particularly powerful in blockchain privacy applications, such as confidential transactions~\cite{10.1007/978-3-030-17653-2_22}. In systems like Bitcoin, transaction amounts are publicly visible, which compromises user privacy. To address this, a sender (e.g., Alice) can commit to the input amount $v_1$, the output amount $v_2$, and her new balance $v_3$ using Pedersen commitments of the form $C_i = g^{v_i} h^{r_i}$. She then proves that the committed values satisfy the linear relation $v_1 - v_2 - v_3 = 0$ (i.e., money is conserved) without revealing any individual amount. Using coefficients $\alpha = (1, -1, -1)$ and public value $z = 0$, the proof establishes that the input balance equals the sum of the transferred amount and the resulting balance. This guarantees that no money is created or destroyed, while all transaction values remain hidden. We formalise this idea in the \href{https://anonymous.4open.science/r/SigmaProtocol-EBA5/src/Examples/PedLinearRelIns.v}{\textcolor{blue}{PedLinearRelIns.v}} file. The same technique is employed in real-world cryptocurrencies such as Mimblewimble and Monero. The protocol supports arbitrary linear constraints through the algebraic structures provided by the field and group abstractions, making it widely applicable to systems requiring commit-and-prove mechanisms over structured secrets.
 
