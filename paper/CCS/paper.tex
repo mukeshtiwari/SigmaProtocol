@@ -342,9 +342,7 @@ The notion of a Sigma-protocol was first identified and studied by Cramer~\cite{
 as an appropriate abstraction of the (special) honest-verifier zero-knowledge, special-sound protocols considered in~\cite{cramer1994proofs}.
 Probably the best-known Sigma-protocol is due to Schnorr~\cite{schnorr1991efficient}.
 The Schnorr protocol is used extensively in privacy-preserving voting systems, e.g, Helios, Belenios, SwissPost, etc. Therefore, 
-our formalisation is geared towards this protocol. 
-Moreover, we formalise the \(n\)-ary composition of Schnorr \(\Sigma\)-protocols, instantiating Parallel, And, Or, Eq, and Neq constructions for arbitrary \(n\). In addition, we also formalise the Chaum-Pedersen protocol \todo{this is same as EQ-composition} for proving equality of discrete logarithms, the Okamoto protocol, encryption proofs (demonstrating that ElGamal ciphertexts encrypt specific values), decryption proofs (verifying correct decryption by election trustees), and the Pedersen Linear Relation protocol for proving knowledge of committed values satisfying linear constraints.\todo{This is not connected to `Pedersen', but rather to work by Stefan Brands}
-Ideally, given the abstraction of our formalisation (\textit{vector space}), we could have 
+our formalisation is geared towards this protocol. Moreover, we formalise the \(n\)-ary composition of Schnorr \(\Sigma\)-protocols, instantiating Parallel, And, Or, Eq, and Neq constructions for arbitrary \(n\). In addition, we also formalise the Okamoto protocol, encryption proofs (demonstrating that ElGamal ciphertexts encrypt specific values), decryption proofs (verifying correct decryption by election trustees), and protocol for proving knowledge of committed values satisfying linear constraints~\cite{Bra97}. Additionally, we instantiate Eq-composition to obtain the Chaum-Pedersen protocol for proving equality of discrete logarithms. Ideally, given the abstraction of our formalisation (\textit{vector space}), we could have 
 abstracted the sigma protocol and their composition in a generic way \cite{10.1007/978-3-642-02384-2_17},
 but we decided to focus on the Schnorr protocol and its composition to ensure familiar APIs 
 for electronic voting in WebAssembly and OCaml.
@@ -791,7 +789,7 @@ using our uniform probability distribution framework; and (iii) \textbf{special 
 the protocol is sound either because witnesses separate cleanly, or because the algebraic structure itself reveals an underlying dependency. We would like to emphasise the importance of Rocq in this development. For the special soundness proof, our initial expectation was simply to extract the witness vector from two accepting transcripts sharing identical commitments. However, during the proof, Rocq exposed additional structural requirements that were not apparent at the informal level, forcing us to confront hidden dependencies and edge cases that would otherwise have been silently assumed away.
 
 
-The implementation \texttt{\seqsplit{generalised\_construct\_neq\_conversations\_real\_transcript}} requires randomness of dimension \((2+n) + (2+n)(1+n) = (2+n)^2\) and produces proof transcripts of size \(O(n^2)\), reflecting the inherently quadratic nature of enforcing pairwise inequality constraints. \todo{It's therefore debatable why this analysis is included for general $n>2$, as the practical case is jsut $n=2$.} Consequently, while theoretically sound and fully general, this construction is not particularly practical for large-scale instances, as both the randomness requirements and transcript size grow rapidly with \(n\).
+The implementation \texttt{\seqsplit{generalised\_construct\_neq\_conversations\_real\_transcript}} requires randomness of dimension \((2+n) + (2+n)(1+n) = (2+n)^2\) and produces proof transcripts of size \(O(n^2)\), reflecting the inherently quadratic nature of enforcing pairwise inequality constraints. Consequently, while theoretically sound and fully general, this construction is not particularly practical for large-scale instances, as both the randomness requirements and transcript size grow rapidly with \(n\).
 
 \begin{lstlisting}[frame=single, language=Coq, caption={Neq $\Sigma$ Protocol},
 label={neq_special_sound},captionpos=t, basicstyle=\ttfamily\footnotesize,
@@ -1208,7 +1206,9 @@ This paper was edited for grammar using ChatGPT.
 
 %%
 %% If your work has an appendix, this is the place to put it.
-%\appendix
+\appendix
+\section{Open Science}
+This formalisation is implemented in Rocq 9.0.1, with additional dependencies on Dune and ExtLib. We have given detailed instructions in the README file.
 
 \end{document}
 \endinput
