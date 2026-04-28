@@ -706,15 +706,14 @@ Proof. (* terms omitted *) Qed.
 
 \subsection{Okamoto Protocol}
 
-The Okamoto protocol~\cite{okamoto1992provably,10.1007/3-540-39118-5_13} generalises the Schnorr protocol to support multiple generators, thereby enabling proofs of knowledge for linear relations over discrete logarithms. While the Schnorr protocol proves 
-knowledge of a single discrete logarithm $x$ such that $h = g^x$, the Okamoto protocol proves knowledge of 
-multiple exponents $x_1, x_2, \ldots, x_n$ satisfying a relation $h = g_1^{x_1} \cdot g_2^{x_2} \cdots g_n^{x_n}$, 
-where $g_1, g_2, \ldots, g_n$ are public generators and $h$ is a public group element. This construction is 
-fundamental for building more complex protocols, particularly serving as a crucial sub-protocol in our 
-inequality (Neq) composition where we need to prove distinctness of discrete logarithms.
+Okamoto's protocol~\cite[Identification scheme 1]{okamoto1992provably} was originally introduced as a provably secure variation of Schnorr's identification protocol.
+While Schnorr's protocol proves knowledge of a single exponent $x$ such that $h = g^x$, Okamoto's protocol proves knowledge of 
+exponents $x_1, x_2$ satisfying $h = g_1^{x_1} \cdot g_2^{x_2}$, given fixed generators $g_1,g_2$. Okamoto's protocol and its generalization to multiple exponents and generators
+(already considered in~\cite{10.1007/3-540-39118-5_13}) are commonly viewed as $\Sigma$-protocols, and are often used as building block in more advanced constructions.
+We will use it, in particular, for NEQ-composition as explained in the next section.
 
-The Okamoto protocol follows the standard three-move $\Sigma$-protocol structure. Given public generators $\mathbf{g} = (g_1, g_2, \ldots, g_n)$, a public value $h$, and secret witnesses $\mathbf{x} = (x_1, x_2, \ldots, x_n)$ satisfying $h = \prod_{i=1}^{n} g_i^{x_i}$, the prover begins by selecting random values from the underlying field $\mathbf{u} = (u_1, u_2, \ldots, u_n)$ and computing the commitment $t = \prod_{i=1}^{n} g_i^{u_i}$, which is sent to the verifier. Next, the verifier responds with a random challenge $c$ from the field. Finally, the prover computes responses $r_i = u_i + c \cdot x_i$ for each $i \in {1, \ldots, n}$ and sends the vector $\mathbf{r} = (r_1, r_2, \ldots, r_n)$ to the verifier for verification. The verifier accepts the transcript $(t, c, \mathbf{r})$ if and only if 
-$\prod_{i=1}^{n} g_i^{r_i} = t \cdot h^c$. Verification correctness follows from the fact that:
+The generalized Okamoto protocol follows the standard 3-move $\Sigma$-protocol structure. Given public generators $\mathbf{g} = (g_1, g_2, \ldots, g_n)$, public value $h$, and secret witnesses $\mathbf{x} = (x_1, x_2, \ldots, x_n)$ satisfying $h = \prod_{i=1}^{n} g_i^{x_i}$, the prover begins by selecting random values from the underlying field $\mathbf{u} = (u_1, u_2, \ldots, u_n)$ and computing announcement $t = \prod_{i=1}^{n} g_i^{u_i}$, which is sent to the verifier. Next, the verifier responds with a random challenge $c$ from the field. Finally, the prover computes responses $r_i = u_i + c \cdot x_i$ for each $i \in {1, \ldots, n}$ and sends the vector $\mathbf{r} = (r_1, r_2, \ldots, r_n)$ to the verifier for verification. The verifier accepts if and only if 
+$\prod_{i=1}^{n} g_i^{r_i} = t \cdot h^c$. Completeness follows from the fact that:
 \[
 \prod_{i=1}^{n} g_i^{r_i} = \prod_{i=1}^{n} g_i^{u_i + c \cdot x_i} = 
 \left(\prod_{i=1}^{n} g_i^{u_i}\right) \cdot \left(\prod_{i=1}^{n} g_i^{x_i}\right)^c = t \cdot h^c
@@ -815,21 +814,13 @@ Theorem generalised_neq_accepting_conversations_soundenss :
   gs[@i] = gid \/ gs[@j] = gid)))
 \end{lstlisting}
 
-\subsection{Linear Relation over Pedersen Commitment}
+\subsection{Linear Relations}
+A further type of subprotocol that we have formalized involves a simple linear relation between committed secret values.
+Concretely, we consider the use of Pedersen commitments~\cite{pedersen1991non} for a standard setup given by two generators $g$ 
+and $h$ (where the discrete logarithm of $h$ with respect to $g$ is unknown). 
 
-\todo{Adding a todo here because it's not good to have something like "Pedersen Linear Relation protocol" terms, and similar ones.
-
-In fact, the protocol as is, in the current described situation, is trivial I would say. Therefore, reference Brands is not even that relevant.
-Have to revise this section still before submitting...}
-
-The Pedersen Linear Relation protocol is a zero-knowledge proof for proving knowledge of openings 
-(secret values and randomness) of Pedersen commitments \cite{Bra97} that satisfy a linear constraint. Unlike the 
-protocols discussed so far which prove discrete logarithm relations directly, this protocol operates 
-over Pedersen commitments~\cite{pedersen1991non}, which are computationally binding and 
-information-theoretically hiding --commonly used in cryptographic constructions. Formally, given generators $g$ 
-and $h$ (where the discrete logarithm of $h$ with respect to $g$ is unknown), public coefficients 
-$\alpha_1, \alpha_2, \ldots, \alpha_n$, and public commitments $C_1, C_2, \ldots, C_n$, the prover 
-proves knowledge of values $(v_1, r_1), (v_2, r_2), \ldots, (v_n, r_n)$ such that:
+For publicly given Pedersen commitments $C_1, C_2, \ldots, C_n$, publicly given coefficients $\alpha_1, \alpha_2, \ldots, \alpha_n$,
+and public value $z$, the prover proves knowledge of values $(v_1, r_1), (v_2, r_2), \ldots, (v_n, r_n)$ such that:
 \begin{itemize}
 \item $C_i = g^{v_i} \cdot h^{r_i}$ for all $i$ (each commitment opens correctly)
 \item $z = \sum_{i=1}^{n} \alpha_i \cdot v_i$ (a linear constraint on the committed values)
@@ -857,12 +848,9 @@ $1/|\mathbb{F}|^{2n}$, proven using our uniform distribution framework. The iden
 guarantee information-theoretic security: the verifier learns nothing beyond the validity of the 
 statements, even with unlimited computational power.
 
-\todo{In actual voting systems, we would just reveal $\sum_{i=1}^{n} \ \alpha_i \cdot r_i$ to prove the linear relation, as part of the Tally protocol.}
+The above $\Sigma$-protocol is particularly powerful in blockchain privacy applications, such as confidential transactions~\cite{10.1007/978-3-030-17653-2_22}. In systems like Bitcoin, transaction amounts are publicly visible, which compromises user privacy. To address this, a sender (e.g., Alice) can commit to the input amount $v_1$, the output amount $v_2$, and her new balance $v_3$ using Pedersen commitments of the form $C_i = g^{v_i} h^{r_i}$. She then proves that the committed values satisfy the linear relation $v_1 - v_2 - v_3 = 0$ (i.e., money is conserved) without revealing any individual amount. Using coefficients $\alpha = (1, -1, -1)$ and public value $z = 0$, the proof establishes that the input balance equals the sum of the transferred amount and the resulting balance. This guarantees that no money is created or destroyed, while all transaction values remain hidden. We formalise this idea in the \href{https://anonymous.4open.science/r/SigmaProtocol-EBA5/src/Examples/PedLinearRelIns.v}{\textcolor{blue}{PedLinearRelIns.v}} file. The same technique is employed in real-world cryptocurrencies such as Mimblewimble and Monero. The protocol supports arbitrary linear constraints through the algebraic structures provided by the field and group abstractions, making it widely applicable to systems requiring commit-and-prove mechanisms over structured secrets.
 
-The Pedersen Linear Relation protocol is particularly powerful in blockchain privacy applications, such as confidential transactions~\cite{10.1007/978-3-030-17653-2_22}. In systems like Bitcoin, transaction amounts are publicly visible, which compromises user privacy. To address this, a sender (e.g., Alice) can commit to the input amount $v_1$, the output amount $v_2$, and her new balance $v_3$ using Pedersen commitments of the form $C_i = g^{v_i} h^{r_i}$. She then proves that the committed values satisfy the linear relation $v_1 - v_2 - v_3 = 0$ (i.e., money is conserved) without revealing any individual amount. Using coefficients $\alpha = (1, -1, -1)$ and public value $z = 0$, the proof establishes that the input balance equals the sum of the transferred amount and the resulting balance. This guarantees that no money is created or destroyed, while all transaction values remain hidden. We formalise this idea in the \href{https://anonymous.4open.science/r/SigmaProtocol-EBA5/src/Examples/PedLinearRelIns.v}{\textcolor{blue}{PedLinearRelIns.v}} file. The same technique is employed in real-world cryptocurrencies such as Mimblewimble and Monero. The protocol supports arbitrary linear constraints through the algebraic structures provided by the field and group abstractions, making it widely applicable to systems requiring commit-and-prove mechanisms over structured secrets.
-
-
-
+Note that sometimes the direct approach of just revealing $r=\sum_{i=1}^{n} \alpha_i \cdot r_i$ and checking that $g^z h^r = \prod_{i=1}^n C_i^{\alpha_i}$ suffices in standalone protocols (see, e.g, the tallying protocol of~\cite{CFSY96}).
 
 \subsection{Efficient Modular Arithmetic}
 As stated earlier, to ensure the ease of proving and modularity, 
