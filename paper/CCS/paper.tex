@@ -361,7 +361,7 @@ We use CertiRocq \cite{anand2017certicoq} that turns Rocq programs into WebAssem
 \section{Schnorr Protocol Rocq Encoding}\label{schn_proof}
   We briefly explain the Schnorr protocol, an interactive protocol 
   between a prover and a verifier. 
-  Given some public input $G = (g, q, h)$ where $\langle g\rangle$
+  Given some public input $(g, q, h)$ where $\langle g\rangle$
   is a cyclic group of prime order $q$ and $h\in\langle g\rangle$,
   the prover claims that they know a
   witness $w$ for the statement $h = g^w$; the existence of such
@@ -413,7 +413,7 @@ zero-knowledgeness.
 
 In the Schnorr protocol, $g$, $h$, and $a$ are group elements from the underlying group, while $u$, $c$, and $r$ are scalar values from the underlying prime field. In concrete implementations, both the group elements and the field elements might be large 
 numbers modulo some prime numbers. 
-One possibility is to encode the Rocq functions to work with concrete numbers from the underlying group and field, but this leads to cumbersome proofs because we need to deal with the details of concrete numbers during the security proofs. More importantly, it is not modular because it binds the formalisation to multiplicative groups; therefore, it can no longer be used over elliptic curve groups. For most programming languages, this distinction 
+One possibility is to encode the Rocq functions to work with concrete numbers from the underlying group and field, but this leads to cumbersome proofs because we need to deal with the details of concrete numbers during the security proofs. More importantly, it is not modular because it binds the formalisation to specific groups, excluding the use elliptic curve groups, for instance. For most programming languages, this distinction 
 may not be significant, but it can be a potential source of bugs \cite{10.1007/978-3-662-63958-0_24} undermining the security of underlying cryptographic primitives. 
 However, when encoding it in Rocq, we need to thoroughly detail these distinctions because 
 the same large number can belong to a group or field and that dictates what operations are available for them. 
@@ -422,16 +422,16 @@ we abstract the underlying group as an abstract type $G$, endowed with
 usual group operation, and the underlying field as an abstract type $F$, endowed with 
 field operation in our formalisation. 
 Moreover, we abstract these two types into a vector space for smooth interaction between 
-group element and field elements (exponentiation in multiplicative group or mulitplication of a field element 
-with a curve point in elliptic curve group is an instance of this interaction). This 
+group elements and field elements (exponentiation in a multiplicative group as well as multiplication of a field element 
+with a point on an elliptic curve are instances of this interaction). This 
 makes our formalisation generic and can be instantiated with 
 any kind of group and field as long as it follows the axioms of 
-vector space. For example, in our formalisation we have developed 
-an efficient algorithm for the Schnorr (multiplicative) group but our formalisation can 
-later also be instantiated with an elliptic curve group. In addition, 
+a vector space. For example, in our formalisation we have developed 
+an efficient algorithm for the Schnorr group but our formalisation can 
+also be instantiated with an elliptic curve group. In addition, 
 one of the major benefits of this abstraction is the ease with which proofs 
 can be automated. Therefore, we model the Schnorr 
-protocol, the simulator, and the verification equation in Rocq as shown in 
+protocol, its simulator, and its verification equation in Rocq as shown in 
 Listing \ref{schn_nat}. 
 \begin{lstlisting}[frame=single, language=Coq, caption={Schnorr protocol},
   label={schn_nat},captionpos=t, basicstyle=\ttfamily\footnotesize,
@@ -465,11 +465,11 @@ Definition accepting_conversation (g h : G)
  $opp : F \rightarrow F$ is the additive inverse (field negation),
  $gop : G \rightarrow G \rightarrow G$ is the group operation, and
  $\mbox{\textasciicircum}: G \rightarrow F \rightarrow G$ is the scalar multiplication of the underlying vector space.  
-In our setting we instantiate the set of vectors with $G$ and field with $F$. 
-Moreover, our notation for scalar multiplication is $\mbox{\textasciicircum}$ because it represents, 
-when instantiated concretely, exponentiation function but it is purely for notational convenience. 
+Thus, in our setting we instantiate vectors with elements of $G$ and scalars with elements of $F$. 
+Moreover, our notation for scalar multiplication is $\mbox{\textasciicircum}$ because it corresponds to exponentiation, 
+when instantiated concretely with multiplicative groups, such as Schnorr groups.
 
-We prove the completeness and special soundness property of the Schnorr protocol, 
+We prove completeness and special soundness for the Schnorr protocol 
 as shown in Listing \ref{comp_sound}. However, to prove the special honest-verifier 
 zero-knowledge property we need a model to reason about uniform probability 
 distribution in Rocq that we introduce in the next section. The source code for this section can be accessed from the
@@ -503,12 +503,12 @@ Proof using -(x R). (* proof terms omitted *) Qed.
  
 \subsection{Uniform Distribution}
 To reason about special honest-verifier zero-knowledge proof 
-intuitively, we need a model of uniform distribution. 
+intuitively, we need a model for uniform probability distributions. 
 We follow \cite{erwig2006functional}  and 
-encode the distribution, as shown in Listing \ref{prob_def}, using a list of pairs where the 
-second element is the probability--represented as 
-a rational number--for the first element.
-Moreover, we define equality on distribution by 
+encode a probability distribution as shown in Listing \ref{prob_def}, using a list of pairs where the 
+second element is the probability---represented as 
+a rational number---for the first element.
+Moreover, we define equality of distributions by 
 stating that two distributions are equal if they are permutations 
 of each other. This encoding is flexible and allows us 
 to encode any kind of distribution. We prove that \texttt{dist} is a 
@@ -518,11 +518,10 @@ giving it suitable definitions of \texttt{Ret} and
 to compose a distribution $n$ times to 
 obtain a distribution on a vector of $n$ elements, 
 needed in proving the special honest-verifier 
-zero-knowledge proof of $n$ composed $\Sigma$-protocols.
-However, we need uniform 
-distribution, rather than an arbitrary distribution, to reason about 
-zero-knowledge of $\Sigma$-protocol, and therefore we define a function 
-\texttt{\seqsplit{uniform\_with\_replacement}} to generate uniform distributions, shown in Listing \ref{prob_def}.
+zero-knowledge proof of $n$-fold compositions of $\Sigma$-protocols.
+However, to reason about zero-knowledge properties of $\Sigma$-protocol, we need uniform 
+distributions, and therefore we define a function 
+\texttt{\seqsplit{uniform\_with\_replacement}} to generate uniform distributions as shown in Listing \ref{prob_def}.
 The relevant source code can be accessed from \href{https://anonymous.4open.science/r/SigmaProtocol-EBA5/src/Probability/Prob.v}{\textcolor{blue}{Prob.v}} and \href{https://anonymous.4open.science/r/SigmaProtocol-EBA5/src/Probability/Distr.v}{\textcolor{blue}{Distr.v}}.
 
 \begin{lstlisting}[frame=single, language=Coq, caption={Uniform Probability Distribution},
@@ -559,7 +558,7 @@ We now have all ingredients for the special honest-verifier zero-knowledge proof
 Schnorr distribution \texttt{\seqsplit{schnorr\_distribution}}
 that involves the secret $x$ and 
 the simulator distribution \texttt{\seqsplit{simulator\_distribution}}
-that does not involve the secret $x$, shown in Listing \ref{def_zero}. 
+that does not involve the secret $x$, see Listing~\ref{def_zero}. 
 Both distributions sample a random field element $u$ from 
 \texttt{\seqsplit{uniform\_with\_replacement}} \texttt{lf} \ \texttt{Hlfn}, 
 where \texttt{lf} lists the elements from which $u$ is drawn and 
@@ -769,7 +768,7 @@ $x_1, \ldots, x_{2+n}$ for public instances $(g_i, h_i)$ such that $h_i = g_i^{x
 $i$, and moreover these witnesses are pairwise distinct, i.e., $x_i \neq x_j$ for all distinct pairs $i \neq j$. 
 In contrast to Or and And compositions, which combine existing statements by logical connectives, the Neq protocol has to encode a family of inequality constraints between witnesses.  In our development, this is done by combining an And proof of all discrete-logarithm relations with one Okamoto proof for every unordered pair of witnesses.
 
-The protocol structure for $(2+n)$ statements (with $n \ge 0$, i.e., at least two statements) is inherently quadratic in complexity due to the pairwise nature of inequality constraints. For each pair of indices $(i, j)$ with $i < j$, the prover must demonstrate that $x_i \neq x_j$ without revealing the values. Our implementation works as follows: in the commitment phase, the prover generates randomness of size $(2 + n) + ((2 + n) \cdot (1 + n))$ for two components. The first $2+n$ random values $u_i$ are used for the AND component, creating commitments $t_i = g_i^{u_i}$ for each $i \in \{1,\dots,2+n\}$, thereby proving knowledge of all discrete logarithms. The remaining randomness, of size $(2+n)(1+n)$, is split into two halves of equal length and zipped together to provide two random field elements per unordered pair $(i,j)$. For each pair, the prover generates an Okamoto commitment using the combined generators $(g_i \cdot g_j,\; h_i \cdot h_j)$ and the two allocated randomness values. 
+The protocol structure for $2+n$ statements (with $n \ge 0$, i.e., at least two statements) is inherently quadratic in complexity due to the pairwise nature of inequality constraints. For each pair of indices $(i, j)$ with $i < j$, the prover must demonstrate that $x_i \neq x_j$ without revealing the values. Our implementation works as follows: in the commitment phase, the prover generates randomness of size $(2 + n) + ((2 + n) \cdot (1 + n))$ for two components. The first $2+n$ random values $u_i$ are used for the AND component, creating commitments $t_i = g_i^{u_i}$ for each $i \in \{1,\dots,2+n\}$, thereby proving knowledge of all discrete logarithms. The remaining randomness, of size $(2+n)(1+n)$, is split into two halves of equal length and zipped together to provide two random field elements per unordered pair $(i,j)$. For each pair, the prover generates an Okamoto commitment using the combined generators $(g_i \cdot g_j,\; h_i \cdot h_j)$ and the two allocated randomness values. 
 The number of such commitments is $\binom{2+n}{2}$, one for each  pair $(i,j)$. The combined commitment vector, of dimension $(2+n) + \binom{2+n}{2}$, is then sent to the verifier. In the challenge phase, the verifier responds with a random challenge $c$ from the underlying field. In the response phase, the prover computes two sets of responses. The AND responses are $r_i = u_i + c \cdot x_i$ for each $i$ (as in the standard AND composition). For the Okamoto component, the prover constructs, for each pair $(i,j)$, the witnesses $w_{ij} = x_i \cdot (x_i - x_j)^{-1}$ and $w_{ji} = (x_j - x_i)^{-1}$ that encode the inequality $x_i \neq x_j$. Using these witnesses, the prover computes a two-dimensional Okamoto response; this yields $(2+n)(1+n)$ field elements. The total response vector thus has dimension $(2+n) + (2+n)(1+n) = (2+n)^2$, which is sent to the verifier.
 
 The verifier accepts if both sub-protocol verifications succeed: (i) the AND verifier confirms that each $g_i^{r_i} = t_i \cdot h_i^c$, and (ii) for each pair $(i, j)$, the Okamoto verifier confirms that the relation $(g_i \cdot g_j)^{r_{i,1}} \cdot (h_i \cdot h_j)^{r_{i,2}} = t_{i,j} \cdot g_j^c$ holds, where $r_{i,1}, r_{i,2}$ are the two responses for pair $(i,j)$ and $t_{i,j}$ is the corresponding Okamoto commitment. The correctness of the Okamoto component for inequality relies on the algebraic identity: if $x_i = x_j$, then $(x_i - x_j)^{-1}$ would be undefined (division by zero), making it impossible for the prover to construct valid witnesses. Conversely, when $x_i \neq x_j$, the witnesses $\left(x_i \cdot (x_i - x_j)^{-1}, (x_j - x_i)^{-1}\right)$ satisfy $(g_i \cdot g_j)^{x_i \cdot (x_i - x_j)^{-1}} \cdot (h_i \cdot h_j)^{(x_j - x_i)^{-1}} = g_j$, where we use $h_i = g_i^{x_i}$, $h_j = g_j^{x_j}$, and $(x_j - x_i)^{-1} = -(x_i - x_j)^{-1}$.
@@ -783,7 +782,7 @@ simulator distribution (without witnesses). The simulator splits randomness betw
 components: for And, it uses the standard simulator producing commitments $t_i = g^{u_i} \cdot h_i^{-c}$; 
 for each Okamoto pair, it generates simulated commitments independently. Both distributions produce 
 accepting transcripts with probability $1/|\mathbb{F}|^{(2+n) + (2+n)(1+n)} = 1/|\mathbb{F}|^{(2+n)^2}$, proven 
-using our uniform probability distribution framework; and (iii) \textbf{special soundness:} from two accepting transcripts sharing identical commitments but responding to distinct challenges \(c_1 \neq c_2\), an extractor is able to reconstruct witnesses \(x_1, \ldots, x_{2+n}\) satisfying the underlying discrete logarithm relations.  However, establishing that these extracted witnesses are genuinely distinct is far more subtle, and cannot, in general, be achieved without additional structural assumptions on the generators. In classical treatments, this is swept under an independence assumption; in our development, we instead expose the underlying algebraic relation explicitly. As formalised in Listing~\ref{neq_special_sound}, we obtain an unconditional dichotomy: either the extracted witnesses are pairwise distinct, or the generator structure itself is degenerate in a precise sense, namely that there exists a non-trivial discrete logarithm relation between generators, i.e., \(g_j = g_i^\alpha\) for some \(\alpha\), or one of the generators collapses to the identity.  In this way, special soundness is derived without postulating independence as an axiom. Instead, we exploit decidability of the relevant algebraic predicates to transform what is typically an implicit assumption into an explicit disjunction:
+using our uniform probability distribution framework; and (iii) \textbf{special soundness:} from two accepting transcripts sharing identical commitments but responding to distinct challenges \(c_1 \neq c_2\), an extractor is able to reconstruct witnesses \(x_1, \ldots, x_{2+n}\) satisfying the underlying discrete logarithm relations.  However, establishing that these extracted witnesses are genuinely distinct is far more subtle, and cannot, in general, be achieved without additional structural assumptions on the generators. In classical treatments, this is covered by an independence assumption; in our development, we instead expose the underlying algebraic relation explicitly. As formalised in Listing~\ref{neq_special_sound}, we obtain an unconditional dichotomy: either the extracted witnesses are pairwise distinct, or the generator structure itself is degenerate in a precise sense, namely that there exists a non-trivial discrete logarithm relation between generators, i.e., \(g_j = g_i^\alpha\) for some \(\alpha\), or one of the generators collapses to the identity.  In this way, special soundness is derived without postulating independence as an axiom. Instead, we exploit decidability of the relevant algebraic predicates to transform what is typically an implicit assumption into an explicit disjunction:
 the protocol is sound either because witnesses separate cleanly, or because the algebraic structure itself reveals an underlying dependency. We would like to emphasise the importance of Rocq in this development. For the special soundness proof, our initial expectation was simply to extract the witness vector from two accepting transcripts sharing identical commitments. However, during the proof, Rocq exposed additional structural requirements that were not apparent at the informal level, forcing us to confront hidden dependencies and edge cases that would otherwise have been silently assumed away.
 
 
@@ -800,7 +799,7 @@ Definition generalised_construct_neq_conversations_real_transcript
   1 ((2 + n) + (2 + n) * (1 + n)).
 Proof. intros xs gs hs us c. (* terms omitted *) Defined. 
 
-Theorem generalised_neq_accepting_conversations_soundenss :
+Theorem generalised_neq_accepting_conversations_soundness :
   forall (n : nat) (a : Vector.t G (2 + n + (2 + n) * (1 + n) / 2)) 
   (c1 c2 : F) (rs1 rs2 : Vector.t F (2 + n + (2 + n) * (1 + n))) 
   (gs hs : Vector.t G (2 + n)), [c1] <> [c2] ->
