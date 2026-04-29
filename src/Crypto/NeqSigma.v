@@ -550,7 +550,7 @@ Section DL.
             destruct (vector_inv_S xs) as (xsh & xst & hx).
             destruct (vector_inv_S xst) as (xsth & xstt & hxx).
             pose proof (vector_inv_0 xstt) as hxxx.
-            clear ho.
+            revert ho. 
             subst xs. subst xst.
             subst xstt. cbn in hm.
             rewrite <-hii, <-hjj, <-hk in hm.
@@ -572,7 +572,7 @@ Section DL.
             *
               (* gamma zero *)
               rewrite hf, field_zero, left_identity,
-              field_zero in hm.
+              field_zero in hm. intro ho.
               right. right. exact hm.
             *
               destruct (Fdec gamma one) as [hfo | hfo].
@@ -582,6 +582,7 @@ Section DL.
                 eapply f_equal with (f := fun x => gop x (ginv g₂)) in hm.
                 rewrite right_inverse, <-associative, 
                 right_inverse, right_identity in hm.
+                intro ho.
                 right. left. now rewrite hm.
               **
                 (* gamma <> 0 ∧ gamma <> one *)
@@ -608,12 +609,13 @@ Section DL.
                 rewrite right_identity, left_identity in hg.
                 now rewrite hg.
                 rewrite ht, field_one in hm.
+                intro ho.
                 left.
                 exists ((gamma * inv (one + opp gamma))).
                 exact hm.
           -
             destruct hl as (hl₁ & hl₂ & hl₃ & hl₄ & hl₅ & hl₆).
-            exists ii, jj. split. exact hj. 
+            exists ii, jj. split. exact hj.
             remember (pair_zip (rew <- [λ n : nat, t F n] nat_div_2 n in rr₁))[@kk] 
             as rrs₁; clear Heqrrs₁.
             remember (pair_zip (rew <- [λ n : nat, t F n] nat_div_2 n in rr₂))[@kk] 
@@ -633,7 +635,7 @@ Section DL.
             destruct (vector_inv_S xs) as (xsh & xst & hx).
             destruct (vector_inv_S xst) as (xsth & xstt & hxx).
             pose proof (vector_inv_0 xstt) as hxxx.
-            clear ho.
+            revert ho.
             subst xs. subst xst.
             subst xstt. cbn in hm.
             rewrite <-hii, <-hjj, <-hk in hm.
@@ -656,6 +658,7 @@ Section DL.
               (* gamma zero *)
               rewrite hf, field_zero, left_identity,
               field_zero in hm.
+              intro ho.
               right. left. exact hm.
             *
               destruct (Fdec gamma one) as [hfo | hfo].
@@ -665,6 +668,7 @@ Section DL.
                 eapply f_equal with (f := fun x => gop x (ginv g₂)) in hm.
                 rewrite right_inverse, <-associative, 
                 right_inverse, right_identity in hm.
+                intro ho.
                 right. right. now rewrite hm.
               **
                 (* gamma <> 0 ∧ gamma <> one *)
@@ -704,6 +708,7 @@ Section DL.
                 rewrite right_identity, left_identity in hg.
                 now rewrite hg.
                 rewrite hgam, field_one in hm.
+                intro ho.
                 left.
                 exists (inv (gamma * inv (one + opp gamma))).
                 exact (eq_sym hm).
