@@ -711,6 +711,7 @@ Section DL.
                 intro ho.
                 left.
                 exists (inv (gamma * inv (one + opp gamma))).
+                
                 exact (eq_sym hm).
       Qed.
       
