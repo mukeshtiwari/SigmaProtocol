@@ -165,7 +165,7 @@
   in the Rocq theorem prover, and we formally prove (special) soundness, completeness, and 
   (special honest-verifier) zero-knowledge properties. Our generic formalisation over abstract vector spaces enables us to uniformly express and compose a wide class of discrete-logarithm-based $\Sigma$-protocols, while remaining independent of any concrete group or cryptographic instantiation. Moreover, the constructive nature of our formalisation allow us to extract and compile to executable implementations in OCaml and WebAssembly and thereby
   eliminating code duplication. We demonstrate the practical applicability of our framework by implementing a voting client and server for Approval Voting, as well as an International Association for Cryptologic Research (IACR) election verifier. Our certified library provides a foundation for 
-  building formally verified privacy-preserving applicatons. 
+  building formally verified privacy-preserving applications. 
 
 
  
@@ -353,7 +353,7 @@ for electronic voting in WebAssembly and OCaml.
 \section{The Rocq Theorem Prover}\label{coq_theorem}
 The Rocq theorem prover~\cite{the_coq_development_team} is an interactive proof assistant that lets users define mathematical objects, state specifications about them, and prove that the definitions satisfy those specifications. Proof writing is the most challenging step; users guide Rocq using \emph{tactics}, a domain-specific language for building proofs incrementally. While Rocq offers some automation (e.g., decision procedures and proof search), human guidance is usually required to complete non-trivial proofs. Its popularity stems from dependent types, which allow encoding arbitrary mathematical statements directly in its logic, and from its ability to extract certified programs to efficient code in OCaml, Haskell, or Scheme.  Rocq has verified many real-world projects, including the CompCert C compiler~\cite{10.1145/1111037.1111042} (used by companies such as AbsInt\footnote{https://www.absint.com/partners.htm}), the Fiat-Crypto~\cite{8835346} library (used in BoringSSL for Chrome, Android, and CloudFlare), and the ConCert smart contract framework~\cite{10.1145/3372885.3373829}.
 
-We use CertiRocq \cite{anand2017certicoq} that turns Rocq programs into WebAssembly (wasm) with machine-checked correctness guarantees. For wasm, CertiRocq extends its extraction pipeline to enables compilation of Rocq developments into \texttt{.wasm} binaries. The wasm backend, originally developed as CertiCoq-Wasm~\cite{meier2025certicoq} and now integrated into CertiRocq, is itself implemented and verified in Rocq with its semantics mechanised against the WebAssembly standard. It takes Rocq as input and compiles it to wasm code by mapping Rocq's primitive integer operations directly to native wasm instructions. The key insight is that programs proven correct within Rocq can be extracted, compiled, and executed in a wasm runtime while preserving their formal semantics. This bridges high-assurance formal verification with practical deployment, allowing certified components such as cryptographic protocols or voting primitives to run securely in web or sandboxed environments without sacrificing the guarantees established in the proof assistant. 
+We use CertiRocq \cite{anand2017certicoq} that turns Rocq programs into WebAssembly (wasm) with machine-checked correctness guarantees. For wasm, CertiRocq extends its extraction pipeline to enable compilation of Rocq developments into \texttt{.wasm} binaries. The wasm backend, originally developed as CertiCoq-Wasm~\cite{meier2025certicoq} and now integrated into CertiRocq, is itself implemented and verified in Rocq with its semantics mechanised against the WebAssembly standard. It takes Rocq as input and compiles it to wasm code by mapping Rocq's primitive integer operations directly to native wasm instructions. The key insight is that programs proven correct within Rocq can be extracted, compiled, and executed in a wasm runtime while preserving their formal semantics. This bridges high-assurance formal verification with practical deployment, allowing certified components such as cryptographic protocols or voting primitives to run securely in web or sandboxed environments without sacrificing the guarantees established in the proof assistant. 
 
 
 
@@ -776,7 +776,7 @@ The verifier accepts if both sub-protocol verifications succeed: (i) the AND ver
 
 Our Rocq formalisation, can be accessed in the file \href{https://anonymous.4open.science/r/SigmaProtocol-EBA5/src/Crypto/NeqSigma.v}{\textcolor{blue}{NeqSigma.v}}, proves the three standard $\Sigma$-protocol properties: (i) \textbf{completeness}: 
 when the prover knows distinct witnesses $x_1, \ldots, x_{2+n}$ satisfying $g_i^{x_i} = h_i$ and $x_i \neq x_j$ 
-for all $i \neq j$, the verification always succeeds. The proof combines completeness results from both the And composition completenes and the Okamoto protocol completeness for each pair; (ii) \textbf{special honest-verifier zero-knowledge}: 
+for all $i \neq j$, the verification always succeeds. The proof combines completeness results from both the And composition completeness and the Okamoto protocol completeness for each pair; (ii) \textbf{special honest-verifier zero-knowledge}: 
 the real transcript distribution (generated with witnesses $x_1, \ldots, x_{2+n}$) is identical to the 
 simulator distribution (without witnesses). The simulator splits randomness between And and Okamoto 
 components: for And, it uses the standard simulator producing commitments $t_i = g^{u_i} \cdot h_i^{-c}$; 
@@ -918,8 +918,8 @@ the Schnorr group and the scalar set with the prime field,
 shown in Listing \ref{vec_space}. 
 However, in order to establish that it is an 
 instance of vector space we need the definition 
-of scalar mulitiplication. We encode the  
-the scalar mulitplication \texttt{pow} of 
+of scalar multiplication. We encode the  
+the scalar multiplication \texttt{pow} of 
 vector space that takes an element from 
 a Schnorr group and an element from 
 the prime field and returns an element in the 
