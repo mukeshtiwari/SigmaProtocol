@@ -814,7 +814,7 @@ Theorem generalised_neq_accepting_conversations_soundness :
 \end{lstlisting}
 
 \subsection{Linear Relations}
-A further type of subprotocol that we have formalized involves a simple linear relation between committed secret values.
+A further type of subprotocol that we have formalised involves a simple linear relation between committed secret values.
 Concretely, we consider the use of Pedersen commitments~\cite{pedersen1991non} for a standard setup given by two generators $g$ 
 and $h$ (where the discrete logarithm of $h$ with respect to $g$ is unknown). 
 
@@ -960,7 +960,7 @@ The source code for this section can be accessed in the file \href{https://anony
   
 \end{lstlisting}
 
-\subsection{Efficient Extractor.}
+\subsection{Efficient Extractor}
 In this section, we explain the key ideas underlying the formalisation of an efficient extractor and simulator. Recall that for a $\Sigma$-protocol, the extractor is required to be efficient, i.e., it runs in time polynomial in the size of its input. However, functions defined over vector spaces do not capture computational complexity; in particular, they provide no information about the number of computational steps required to evaluate them on a given input. One possible approach in our formalisation would have been to adopt a monadic style~\cite{10.1145/3473585,10.1145/3158124}, where each function additionally returns the number of steps taken during its execution. This approach has the advantage of compositionality: given two monadic functions, their composition naturally yields the complexity of the combined computation. However, during code extraction, this additional bookkeeping would propagate through all functions, significantly complicating and effectively degrading the intended API. Instead, we adopt a more targeted approach. In practice, an extractor over a multiplicative group relies on the ability to efficiently compute inverses. In our concrete model, inverse is implemented via binary exponentiation using the function \texttt{\seqsplit{repeat\_op\_ntimes\_rec}}. We therefore introduce an inductive data type \texttt{\seqsplit{complexity\_repeat\_op\_ntimes\_rec}}, shown in Listing~\ref{extractor_complex}, that captures the number of steps performed by this binary exponentiation procedure. Finally, we prove in theorem \texttt{\seqsplit{correct\_complexity\_repeat\_op\_ntimes\_rec}} that the function \texttt{\seqsplit{repeat\_op\_ntimes\_rec}} runs in logarithmic time in the value of its input, equivalently linear in the bit-length of the input. This approach allows us to preserve a clean API without introducing monadic overhead. While it lacks the compositional advantages of the monadic approach, it is sufficient for our purposes, as our primary objective is to extract executable (OCaml and WebAssembly) code whose APIs closely match those of real-world cryptographic libraries. The source code for this section can be access in the \href{https://anonymous.4open.science/r/SigmaProtocol-EBA5/src/Utility/Functions.v}{\textcolor{blue}{Functions.v}} file.
 
 
