@@ -5,11 +5,6 @@ Local Close Scope nat_scope.
 Local Close Scope type_scope.
 Local Close Scope core_scope.
 
-(* This code is inspired/taken from Fiat-Crypto and extended with 
-  Vector Space to avoid the scalor_mult type class. Moreover, 
-  some improvements have been added (pull request already 
-  sent: https://github.com/mit-plv/fiat-crypto/pull/1012 
-*)
 
 Section Algebra.
 
