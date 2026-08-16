@@ -60,11 +60,18 @@ let rec print_count (bs : (Z.t, Z.t) HeliosTallylib.HeliosTally.count) : string 
 
 
  
-let _ = 
+let _ =
+  (* Election year as first command-line argument: 2023 or 2024 (default). *)
+  let year = if Array.length Sys.argv > 1 then Sys.argv.(1) else "2024" in
   let (bs, us, rs) = Parser.main Lexer.token (Lexing.from_channel stdin) in
-  let result = HeliosTallylib.HeliosTallyIns.compute_final_count_ins 
-    (Big_int_Z.big_int_of_int 7) (Big_int_Z.big_int_of_int 2) 
-    (HeliosTallylib.HeliosTallyIns.h2024) bs us rs in 
+  let result =
+    match year with
+    | "2023" -> HeliosTallylib.HeliosTallyIns.compute_final_count_ins
+        (Big_int_Z.big_int_of_int 6) (Big_int_Z.big_int_of_int 2)
+        (HeliosTallylib.HeliosTallyIns.h2023) bs us rs
+    | _ -> HeliosTallylib.HeliosTallyIns.compute_final_count_ins
+        (Big_int_Z.big_int_of_int 7) (Big_int_Z.big_int_of_int 2)
+        (HeliosTallylib.HeliosTallyIns.h2024) bs us rs in
   match result with
   | HeliosTallylib.Specif.Coq_existT (bfinal, 
     HeliosTallylib.Specif.Coq_existT (vbs, 

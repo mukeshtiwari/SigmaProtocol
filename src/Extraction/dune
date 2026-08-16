@@ -14,7 +14,7 @@
 (subdir HeliosTallylib
  (coq.extraction
   (prelude Extraction)
-  (extracted_modules HeliosTallyIns HeliosTally Sigma Datatypes Vector 
+  (extracted_modules HeliosTallyIns HeliosFrontendIns HeliosTally Sigma Datatypes Vector Fin 
    VectorDef Zpstar BinInt PosDef Functions BinNat Approval
    EncProof Specif Util EqdepFacts
    ChaumPedersen EqSigma DistElgamal Elgamal 
