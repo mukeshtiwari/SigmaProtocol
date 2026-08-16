@@ -20,17 +20,16 @@ dune exec _build/default/src/Executable/HeliosBenchcode/main.exe -- 7 30
 
 ## Running the JavaScript benchmark
 
-Requirements: Node.js (tested with v26.5.0). The Helios scripts are not
-vendored here; fetch them first:
+Requirements: Node.js (tested with v26.5.0). The Helios scripts are included
+as a git submodule (`bench/helios-server`), pinned to commit
+`88621e3196961ec03fe54bbd3a1c2196e715e9a2` — the version used for the numbers
+reported in the paper. Fetch it and run:
 
 ```
+git submodule update --init bench/helios-server
 cd bench
-git clone --depth 1 https://github.com/benadida/helios-server.git
 node bench_helios_js.js 7 30       # 7 candidates, 30 iterations
 ```
-
-The numbers reported in the paper were obtained at helios-server commit
-`88621e3196961ec03fe54bbd3a1c2196e715e9a2`.
 
 ## What it does
 

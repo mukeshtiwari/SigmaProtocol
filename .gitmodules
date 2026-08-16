@@ -1,0 +1,3 @@
+[submodule "bench/helios-server"]
+	path = bench/helios-server
+	url = https://github.com/benadida/helios-server.git
