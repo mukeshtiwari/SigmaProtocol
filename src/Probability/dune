@@ -1,5 +1,5 @@
 (include_subdirs qualified)
-(coq.theory
+(rocq.theory
  (name Probability)
  (synopsis "Formalisation of probability theory")
  (modules (:standard))
