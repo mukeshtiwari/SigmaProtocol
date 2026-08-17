@@ -39,15 +39,18 @@ Module Zpgroup.
     Qed.
 
 
+    (* Defined, not Qed: this is computational content (used by the
+       verifier to compare group elements), and opaque constants cannot
+       be compiled by CertiRocq. *)
     Lemma dec_zpstar : forall x y : Zpstar, {x = y} + {x <> y}.
     Proof.
       intros [x Hx] [y Hy].
       destruct (Z.eq_dec x y) as [Hl | Hr].
-      left. subst. f_equal. 
+      left. subst. f_equal.
       apply uniqueness_zpstar_proof.
-      right. intro H; inversion H; 
+      right. intro H; inversion H;
       contradiction.
-    Qed.
+    Defined.
 
 
     Lemma construct_zpstar : 
@@ -772,20 +775,21 @@ Module Schnorr.
       apply uniqueness_of_schnorr_proof_second.
     Qed. 
 
-    Lemma dec_zpstar : 
-      forall x y : Schnorr_group, 
+    (* Defined, not Qed: computational content, see dec_zpstar above. *)
+    Lemma dec_zpstar :
+      forall x y : Schnorr_group,
       {x = y} + {x <> y}.
     Proof.
       intros [x Hxa Hxb] [y Hya Hyb].
       destruct (Z.eq_dec x y) as [Hl | Hr].
-      + left; subst. 
+      + left; subst.
         apply construct_schnorr_group;
         reflexivity.
       + right; subst.
         intros Hf.
         inversion Hf as (Hft).
         congruence.
-    Qed.
+    Defined.
 
 
     Lemma one_mod_p : 0 < 1 < p.

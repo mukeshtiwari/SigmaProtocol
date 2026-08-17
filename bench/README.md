@@ -1,120 +1,55 @@
 # Benchmarks
 
-This directory contains the JavaScript baseline benchmark used in the paper's
-performance evaluation. It measures ballot encryption and 0/1 disjunctive
-proof generation (and verification) using the **unmodified cryptographic
-JavaScript served by the Helios voting booth** (`heliosbooth/js/jscrypto/`:
-`jsbn` big-integer arithmetic, `elgamal.js` for encryption and disjunctive
-Chaum-Pedersen proofs, SHA-1 Fiat-Shamir challenges), at the IACR 2024 Helios
-election parameters (2048-bit `p`, 256-bit `q` — the same constants as in
-`src/Examples/HeliosTallyIns.v`).
+Benchmarks for the paper. We measure our certified OCaml code against the hand-written JavaScript that the [Helios voting booth](https://github.com/benadida/helios-server) serves to voters, at the real Helios parameters (2048 bit p, 256 bit q, same as [HeliosTallyIns.v](/src/Examples/HeliosTallyIns.v)). All the numbers below are from an Apple M3 Pro laptop.
 
-The certified counterpart of this benchmark is the extracted OCaml program in
-`src/Executable/HeliosBenchcode/` (built by `dune build`), which encrypts a
-ballot and generates the NIZK proofs via `src/Examples/HeliosFrontendIns.v`
-with a SHAKE-256 random oracle:
+1. Run `dune exec _build/default/src/Executable/HeliosBenchcode/main.exe -- 7 30` (7 candidates, 30 iterations) to benchmark the certified OCaml code. It encrypts an approval ballot and generates the NIZK proofs (SHAKE-256 as random oracle), and then verifies them, using the functions from [HeliosFrontendIns.v](/src/Examples/HeliosFrontendIns.v). You will see an output like this:
+   ```OCaml
+   candidates n = 7, iterations = 30, all ballots verified = true
+   ballot encryption + NIZK proofs: median 61.82 ms, mean 62.29 ms
+   ballot verification:             median 48.64 ms, mean 49.52 ms
+   p bits = 2048, q bits = 256
+   ```
+2. Run `git submodule update --init bench/helios-server` (from the repository root) to fetch the Helios booth code. It is pinned to commit `88621e3196961ec03fe54bbd3a1c2196e715e9a2`, the version we used for the paper. Then run `node bench_helios_js.js 7 30` in this directory (we tested with Node v26.5.0). It loads the booth scripts (jsbn big integers, elgamal.js, SHA-1 Fiat-Shamir) in the same order as `heliosbooth/vote.html` and does exactly what the booth does per candidate: encrypt g^0 or g^1 and produce a disjunctive 0/1 proof. You will see an output like this:
+   ```
+   Helios booth JS (jsbn), n=7, iters=30, all verified=true
+   ballot encryption + proofs: median 333.70 ms, mean 334.11 ms
+   ballot verification:        median 384.85 ms, mean 387.06 ms
+   ```
+   So our certified OCaml code is about 5 times faster than the JavaScript that Helios actually ships. Two caveats: this runs under Node's V8 rather than a browser (same engine as Chrome, so the timings transfer), and the JS verification recomputes the SHA-1 challenge while our verifier checks the equations against the challenge in the transcript (the hash is microseconds, it does not change the picture).
 
-```
-dune exec _build/default/src/Executable/HeliosBenchcode/main.exe -- 7 30
-```
+## WebAssembly (CertiRocq)
 
-## Running the JavaScript benchmark
+We also tried to benchmark the WebAssembly path at the same 2048 bit parameters, using [CertiRocq](https://github.com/certirocq/certirocq) to compile the terms in [WasmBenchDefs.v](/src/Examples/WasmBenchDefs.v) (a fixed 7-candidate ballot, a single vote, and small modular exponentiation probes). The short version: everything compiles, but the generated code cannot execute at real-world parameters. CertiRocq computes on Rocq's binary-represented integers with no garbage collector, so a single 2048 bit modular multiplication allocates about 50 MB and takes about 0.5 seconds. A full exponentiation (256 bit exponent, roughly 384 multiplications) would need about 19 GB, well past the 2 GB WebAssembly address space, so the vote and ballot modules run out of memory before finishing. Running certified clients in the browser at real parameters has to wait for primitive big-integer arithmetic in the verified backend. The `g^65537` probe (17 modular operations) does run:
+   ```
+   Examples.WasmBenchDefs.helios_wasm_modexp16_bench.wasm: iters=3 median 8377.27 ms, min 8258.96 ms, max 8500.51 ms
+     mem used: 839.6 MB
+   ```
 
-Requirements: Node.js (tested with v26.5.0). The Helios scripts are included
-as a git submodule (`bench/helios-server`), pinned to commit
-`88621e3196961ec03fe54bbd3a1c2196e715e9a2` — the version used for the numbers
-reported in the paper. Fetch it and run:
+To reproduce it, first set up the toolchain. CertiRocq needs Rocq 9.1 and a MetaRocq commit that matches its main branch (the released MetaRocq 1.5.1 does not have `EImplementLazyForce` and the current MetaRocq 9.1 head has moved past CertiRocq, so pin the exact commits below -- this pairing is known to build, CertiRocq `45a1950` with MetaRocq `4b201296`):
+   ```
+   opam switch create certirocq ocaml-base-compiler.4.14.2
+   opam repo add --switch=certirocq rocq-released https://rocq-prover.org/opam/released
+   git clone https://github.com/certirocq/certirocq
+   git clone -b 9.1 https://github.com/MetaRocq/metarocq
+   (cd metarocq && git checkout 4b201296)
+   opam pin -n -y --switch=certirocq ./metarocq
+   opam pin -n -y --switch=certirocq ./certirocq
+   brew install gsed        # macOS only, CertiRocq's Makefile needs GNU sed
+   opam install -y --switch=certirocq rocq-certirocq dune coq-ext-lib
+   ```
 
-```
-git submodule update --init bench/helios-server
-cd bench
-node bench_helios_js.js 7 30       # 7 candidates, 30 iterations
-```
+Then compile this repository in the certirocq switch. Use the quick compilation trick from the [top-level README](/README.md) (admit `prime_p` and `prime_q` in [HeliosTallyIns.v](/src/Examples/HeliosTallyIns.v), comment out the primeP primeQ import, and also remove `Coqprime Bignums` from the theory list in [src/Examples/dune](/src/Examples/dune)) -- the primality proofs are erased during compilation anyway, so the generated code is identical. Then:
+   ```
+   opam exec --switch=certirocq -- dune build _build/default/src/Examples/WasmBenchDefs.vo
+   cd bench/wasm
+   ulimit -s 65520          # CertiRocq compilation needs a large stack
+   B=../../_build/default
+   opam exec --switch=certirocq -- rocq c \
+     -Q $B/src/Utility Utility -Q $B/src/Algebra Algebra \
+     -Q $B/src/Probability Probability -Q $B/src/Crypto Crypto \
+     -Q $B/src/Frontend Frontend -Q $B/src/Backend Backend \
+     -Q $B/src/Examples Examples WasmBench.v
+   node bench_wasm.js Examples.WasmBenchDefs.helios_wasm_modexp16_bench.wasm 3
+   ```
 
-## What it does
-
-`bench_helios_js.js` loads the booth scripts in the same order as
-`heliosbooth/vote.html` into a Node `vm` context, seeds sjcl's PRNG from
-Node's CSPRNG, and then, per candidate, performs exactly what the booth's
-`helios.js` does when constructing an `EncryptedAnswer`: encrypt `g^0` or
-`g^1` with fresh randomness and produce a disjunctive 0/1 encryption proof
-with `ElGamal.disjunctive_challenge_generator`. A ballot is `n` such
-candidates (default `n = 7`, matching the IACR 2024 election). It reports the
-median and mean wall-clock time per ballot for proof generation and for
-verification, over the requested number of iterations (default 30, after one
-unmeasured warm-up round).
-
-Caveats: the scripts run under Node's V8 rather than a browser (the same
-engine as Chrome, so timings transfer), and verification in the JS baseline
-recomputes the SHA-1 Fiat-Shamir challenge, whereas the certified verifier
-checks the Σ-protocol equations against the challenge in the transcript; the
-hash accounts for microseconds and does not affect the comparison.
-
-## WebAssembly benchmark (CertiRocq)
-
-`wasm/WasmBench.v` compiles the terms defined in
-`src/Examples/WasmBenchDefs.v` (a fixed 7-candidate ballot, a single vote,
-and modular-exponentiation probes, all at the 2048-bit Helios parameters)
-to WebAssembly with [CertiRocq](https://github.com/certirocq/certirocq),
-and `wasm/bench_wasm.js` times the resulting modules in Node.
-
-**Result summary (Apple M3 Pro, Node 26):** the current CertiRocq/
-CertiCoq-Wasm backend computes on constructor-represented binary integers
-with bump allocation and no garbage collector. A single 2048-bit modular
-multiplication allocates ~50 MB and takes ~0.5 s (measured with the
-`helios_wasm_modexp16_bench` probe, `g^65537`: 8.4 s, 840 MB for 17
-modular operations). A full 256-bit-exponent exponentiation therefore
-needs ~19 GB — beyond the 2 GB wasm32 address space — so the vote and
-ballot benchmarks compile but run out of linear memory at real-world
-parameters. Certified browser clients at these parameters await primitive
-big-integer arithmetic in the verified backend.
-
-### Toolchain setup (exact versions used)
-
-CertiRocq requires Rocq 9.1 and a MetaRocq commit that matches its `main`
-branch; the released MetaRocq 1.5.1 does not. The pairing below is known
-to build (CertiRocq commit `45a1950`, MetaRocq branch `9.1` commit
-`4b201296`):
-
-```
-opam switch create certirocq ocaml-base-compiler.4.14.2
-opam repo add --switch=certirocq rocq-released https://rocq-prover.org/opam/released
-git clone https://github.com/certirocq/certirocq   # tested at 45a1950
-git clone -b 9.1 https://github.com/MetaRocq/metarocq
-(cd metarocq && git checkout 4b201296)
-opam pin -n -y --switch=certirocq ./metarocq
-opam pin -n -y --switch=certirocq ./certirocq
-brew install gsed        # macOS only; CertiRocq's Makefile needs GNU sed
-opam install -y --switch=certirocq rocq-certirocq dune coq-ext-lib
-```
-
-### Building the benchmark modules
-
-Compile this repository's theories in the `certirocq` switch. To skip the
-~3 h Coqprime primality certificates (their proofs are erased during
-compilation, so the generated code is identical), use the fast path
-described in the top-level README: in `src/Examples/HeliosTallyIns.v`
-replace the proofs of `prime_p`/`prime_q` with `Admitted`, comment out the
-`From Examples Require Import primeP primeQ` line, and remove `Coqprime
-Bignums` from the theory list in `src/Examples/dune`. Then:
-
-```
-opam exec --switch=certirocq -- dune build _build/default/src/Examples/WasmBenchDefs.vo
-cd bench/wasm
-ulimit -s 65520          # CertiRocq compilation needs a large stack
-B=../../_build/default
-opam exec --switch=certirocq -- rocq c \
-  -Q $B/src/Utility Utility -Q $B/src/Algebra Algebra \
-  -Q $B/src/Probability Probability -Q $B/src/Crypto Crypto \
-  -Q $B/src/Frontend Frontend -Q $B/src/Backend Backend \
-  -Q $B/src/Examples Examples WasmBench.v
-node bench_wasm.js Examples.WasmBenchDefs.helios_wasm_modexp16_bench.wasm 3
-```
-
-Known limitations encountered: a term using `dec_zpstar` (e.g. ballot
-verification) cannot be compiled because that constant is `Qed`-opaque and
-CertiRocq, unlike extraction, does not unfold opaque proofs — changing it
-to `Defined` in `src/Utility/Zpstar.v` would enable it. The backend's
-linear memory is capped at 30000 pages (~1.9 GB) by `max_mem_pages` in
-CertiRocq's `theories/CodegenWasm/LambdaANF_to_Wasm.v`, and generated code
-does not address memory beyond 2 GB.
+Two gotchas we ran into, so you do not have to: `dec_zpstar` in [Zpstar.v](/src/Utility/Zpstar.v) used to be `Qed`, which CertiRocq rejects as an axiom (extraction unfolds opaque constants, CertiRocq does not) -- it is `Defined` now, so both the encryption and the verification terms compile. And the backend caps its linear memory at 30000 pages (about 1.9 GB), see `max_mem_pages` in CertiRocq's `theories/CodegenWasm/LambdaANF_to_Wasm.v`; patching the binary past 2 GB does not help because the generated code does not address memory beyond that.
