@@ -128,3 +128,6 @@ generate OCaml code from it [_CoqProject file](/_CoqProject). It takes a while (
    proof = { announcement = 3298, 108, 1153, 1286; challenge = 1770; response = 221, 2850, 2090, 2194, 2864, 1479 }
    Proof verified successfully.
    ```
+## Benchmarks
+
+All performance experiments for the paper -- the certified OCaml client vs the Helios booth JavaScript (jsbn and native BigInt), the certified IACR election verifier vs Helios's own Python crypto, the fully verified CakeML pipeline, and the CertiRocq WebAssembly measurements at real and reduced parameters -- live in [bench/](bench/), with full reproduction instructions in [bench/README.md](bench/README.md).
