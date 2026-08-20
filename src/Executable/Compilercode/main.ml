@@ -21,9 +21,17 @@ let () =
   Printf.printf "p = %s, q = %s\n" (str p) (str q);
   let u1 = rnd_field () and u2 = rnd_field () and s1 = rnd_field ()
   and s2 = rnd_field () and cs = rnd_field () and c = rnd_field () in
-  print_run "OR proof, left witness (knows dlog of H1):"
+  print_run "OR proof (interactive), left witness (knows dlog of H1):"
     (or_run_left u1 u2 s1 s2 cs c);
   let u1 = rnd_field () and u2 = rnd_field () and s1 = rnd_field ()
   and s2 = rnd_field () and cs = rnd_field () and c = rnd_field () in
-  print_run "OR proof, right witness (knows dlog of H2):"
-    (or_run_right u1 u2 s1 s2 cs c)
+  print_run "OR proof (interactive), right witness (knows dlog of H2):"
+    (or_run_right u1 u2 s1 s2 cs c);
+  let u1 = rnd_field () and u2 = rnd_field () and s1 = rnd_field ()
+  and s2 = rnd_field () and cs = rnd_field () in
+  print_run "OR NIZK (strong Fiat-Shamir, SHA-256), left witness:"
+    (or_nizk_run_left u1 u2 s1 s2 cs);
+  let u1 = rnd_field () and u2 = rnd_field () and s1 = rnd_field ()
+  and s2 = rnd_field () and cs = rnd_field () in
+  print_run "OR NIZK (strong Fiat-Shamir, SHA-256), right witness:"
+    (or_nizk_run_right u1 u2 s1 s2 cs)
