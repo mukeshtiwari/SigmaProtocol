@@ -6,7 +6,6 @@
 -R _build/default/src/Backend Backend
 -R _build/default/src/Examples Examples
 -R _build/default/src/Extraction Extraction
--R _build/default/src/Compiler Compiler
 
 _build/default/src/Algebra/Hierarchy.v 
 _build/default/src/Algebra/Monoid.v
@@ -69,12 +68,3 @@ _build/default/src/Extraction/Tallylib/Extraction.v
 _build/default/src/Extraction/ChaumPedersenlib/Extraction.v
 _build/default/src/Extraction/NeqSigmalib/Extraction.v
 _build/default/src/Extraction/PedLinearRellib/Extraction.v
-_build/default/src/Compiler/LinearRelation.v
-_build/default/src/Compiler/Composition.v
-_build/default/src/Compiler/Dsl.v
-_build/default/src/Compiler/Lagrange.v
-_build/default/src/Compiler/Nizk.v
-_build/default/src/Compiler/CompilerIns.v
-_build/default/src/Compiler/Threshold.v
-_build/default/src/Compiler/Serialization.v
-_build/default/src/Compiler/CompilerHelios.v
