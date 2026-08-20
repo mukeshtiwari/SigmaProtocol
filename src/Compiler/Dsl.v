@@ -96,6 +96,10 @@ Section Dsl.
     (@comp_real_distribution F add mul sub opp G gid gop gpow).
   #[local] Notation comp_simulator_distributionC :=
     (@comp_simulator_distribution F sub opp G gid gop gpow).
+  #[local] Notation comp_transcriptC :=
+    (@comp_transcript F G).
+  #[local] Notation comp_same_announcementC :=
+    (@comp_same_announcement F G).
 
   (* ---------------- Syntax ---------------- *)
 
@@ -232,6 +236,68 @@ Section Dsl.
     (* The compiled witness vector of a DSL witness environment *)
     Definition compile_witness (wenv : string -> F) : Vector.t F n :=
       Vector.map wenv privs.
+
+    (* ---------------- Disjunction invariant ---------------- *)
+
+    (* All private-variable occurrences of a statement *)
+    Fixpoint stmt_vars (s : stmt) : list string :=
+      match s with
+      | SLeaf eqs =>
+          List.flat_map (fun e => List.map t_var (eq_rhs e)) eqs
+      | SAnd a b => List.app (stmt_vars a) (stmt_vars b)
+      | SOr a b => List.app (stmt_vars a) (stmt_vars b)
+      end.
+
+    Definition disjointb (l₁ l₂ : list string) : bool :=
+      List.forallb
+        (fun x => negb (List.existsb (String.eqb x) l₂)) l₁.
+
+    (* Is the statement a pure AND-tree of leaves (compiled to a
+       single merged Leaf)? *)
+    Definition pureb (s : stmt) : bool :=
+      match leaves_only s with
+      | Some _ => true
+      | None => false
+      end.
+
+    (*
+      The disjunction-invariant checker.  A private variable shared
+      between two subtrees is only bound to a single value when both
+      subtrees compile into the same merged Leaf (one shared witness
+      vector).  Whenever compilation keeps a CAnd node — i.e. at
+      least one side contains an OR — the two sides have independent
+      witnesses, so the checker requires their variable sets to be
+      disjoint.  (sigma-compiler instead *repairs* violations with
+      Pedersen commitments; that transformation is future work, and
+      this checker is the precise acceptance condition it must
+      re-establish.)
+    *)
+    Fixpoint disj_inv (s : stmt) : bool :=
+      match s with
+      | SLeaf _ => true
+      | SAnd a b =>
+          (pureb a && pureb b) ||
+          (disjointb (stmt_vars a) (stmt_vars b) &&
+           disj_inv a && disj_inv b)
+      | SOr a b => disj_inv a && disj_inv b
+      end.
+
+    (* First-match lookup: reconstruct a witness environment from a
+       compiled witness vector. *)
+    Fixpoint lookup (names : list string) (vals : list F)
+      (x : string) : F :=
+      match names, vals with
+      | List.cons nm names', List.cons v vals' =>
+          if String.eqb nm x then v else lookup names' vals' x
+      | _, _ => zero
+      end.
+
+    (* Merge two branch environments: variables of the left branch
+       read from w₁, all others from w₂. *)
+    Definition combine_env (va : list string)
+      (w₁ w₂ : string -> F) : string -> F :=
+      fun x =>
+        if List.existsb (String.eqb x) va then w₁ x else w₂ x.
 
     (* ---------------- Proofs ---------------- *)
 
@@ -647,6 +713,388 @@ Section Dsl.
         exact hw.
       Qed.
 
+      (* ---------------- Phase 4: soundness reflection ------------ *)
+
+      Lemma in_vars_existsb :
+        ∀ (l : list string) (x : string),
+        List.In x l ->
+        List.existsb (String.eqb x) l = true.
+      Proof.
+        intros * ha.
+        eapply List.existsb_exists.
+        exists x.
+        split. exact ha. eapply String.eqb_refl.
+      Qed.
+
+      Lemma disjointb_existsb :
+        ∀ (l₁ l₂ : list string) (x : string),
+        disjointb l₁ l₂ = true ->
+        List.In x l₂ ->
+        List.existsb (String.eqb x) l₁ = false.
+      Proof.
+        intros * ha hb.
+        destruct (List.existsb (String.eqb x) l₁) eqn:hc;
+        [| reflexivity].
+        eapply List.existsb_exists in hc.
+        destruct hc as (y & hy & hxy).
+        eapply String.eqb_eq in hxy; subst.
+        unfold disjointb in ha.
+        pose proof (proj1 (List.forallb_forall _ _) ha y hy) as hd.
+        eapply negb_true_iff in hd.
+        pose proof (in_vars_existsb _ _ hb) as he.
+        congruence.
+      Qed.
+
+      Lemma lookup_skip :
+        ∀ (m : nat) (sv : Vector.t string m) (names : list string)
+          (vals : list F) (nm : string) (v : F),
+        List.existsb (String.eqb nm) (Vector.to_list sv) = false ->
+        Vector.map
+          (fun x => if String.eqb nm x then v else lookup names vals x)
+          sv =
+        Vector.map (lookup names vals) sv.
+      Proof.
+        induction m as [|m ihm].
+        +
+          intros * ha.
+          rewrite (vector_inv_0 sv).
+          reflexivity.
+        +
+          intros * ha.
+          destruct (vector_inv_S sv) as (svh & svt & hb); subst.
+          cbn in ha.
+          eapply orb_false_iff in ha.
+          destruct ha as (hal & har).
+          cbn.
+          rewrite hal.
+          f_equal.
+          eapply ihm.
+          exact har.
+      Qed.
+
+      (* Round trip: mapping the reconstructed environment over the
+         declarations recovers the witness vector. *)
+      Lemma map_lookup_gen :
+        ∀ (m : nat) (sv : Vector.t string m) (ws : Vector.t F m),
+        nodupb (Vector.to_list sv) = true ->
+        Vector.map (lookup (Vector.to_list sv) (Vector.to_list ws)) sv
+          = ws.
+      Proof.
+        induction m as [|m ihm].
+        +
+          intros * ha.
+          rewrite (vector_inv_0 sv), (vector_inv_0 ws).
+          reflexivity.
+        +
+          intros * ha.
+          destruct (vector_inv_S sv) as (svh & svt & hb).
+          destruct (vector_inv_S ws) as (wh & wt & hc).
+          subst.
+          cbn in ha.
+          eapply andb_true_iff in ha.
+          destruct ha as (hal & har).
+          eapply negb_true_iff in hal.
+          cbn.
+          rewrite String.eqb_refl.
+          f_equal.
+          rewrite lookup_skip.
+          eapply ihm.
+          exact har.
+          exact hal.
+      Qed.
+
+      (* Frame lemmas: denotations depend only on the values of the
+         variables occurring in the statement. *)
+      Lemma term_fold_ext :
+        ∀ (ts : list term) (w₁ w₂ : string -> F),
+        (∀ x, List.In x (List.map t_var ts) -> w₁ x = w₂ x) ->
+        List.fold_right (fun t acc => gop (term_denote w₁ t) acc)
+          gid ts =
+        List.fold_right (fun t acc => gop (term_denote w₂ t) acc)
+          gid ts.
+      Proof.
+        induction ts as [|t ts iht].
+        +
+          intros; reflexivity.
+        +
+          intros * ha.
+          cbn.
+          f_equal.
+          ++
+            unfold term_denote.
+            rewrite (ha (t_var t) (or_introl eq_refl)).
+            reflexivity.
+          ++
+            eapply iht.
+            intros x hx.
+            eapply ha.
+            right; exact hx.
+      Qed.
+
+      Lemma eq_denote_ext :
+        ∀ (e : equation) (w₁ w₂ : string -> F),
+        (∀ x, List.In x (List.map t_var (eq_rhs e)) -> w₁ x = w₂ x) ->
+        eq_denote w₁ e -> eq_denote w₂ e.
+      Proof.
+        intros * ha hb.
+        unfold eq_denote in hb |- *.
+        rewrite <-(term_fold_ext (eq_rhs e) w₁ w₂ ha).
+        exact hb.
+      Qed.
+
+      Lemma eqs_denote_ext :
+        ∀ (eqs : list equation) (w₁ w₂ : string -> F),
+        (∀ x, List.In x (List.flat_map
+          (fun e => List.map t_var (eq_rhs e)) eqs) -> w₁ x = w₂ x) ->
+        List.Forall (eq_denote w₁) eqs ->
+        List.Forall (eq_denote w₂) eqs.
+      Proof.
+        induction eqs as [|e eqs ihe].
+        +
+          intros; constructor.
+        +
+          intros * ha hb.
+          inversion hb as [| ? ? hbe hbr]; subst.
+          constructor.
+          ++
+            eapply eq_denote_ext; [| exact hbe].
+            intros x hx.
+            eapply ha; cbn.
+            eapply List.in_or_app.
+            left; exact hx.
+          ++
+            eapply ihe; [| exact hbr].
+            intros x hx.
+            eapply ha; cbn.
+            eapply List.in_or_app.
+            right; exact hx.
+      Qed.
+
+      Lemma stmt_denote_ext :
+        ∀ (s : stmt) (w₁ w₂ : string -> F),
+        (∀ x, List.In x (stmt_vars s) -> w₁ x = w₂ x) ->
+        stmt_denote w₁ s -> stmt_denote w₂ s.
+      Proof.
+        induction s as [eqs | a iha b ihb | a iha b ihb].
+        +
+          intros * ha hb; cbn in *.
+          eapply eqs_denote_ext; [exact ha | exact hb].
+        +
+          intros * ha hb; cbn in *.
+          destruct hb as (hbl & hbr).
+          split.
+          ++
+            eapply iha; [| exact hbl].
+            intros x hx.
+            eapply ha, List.in_or_app.
+            left; exact hx.
+          ++
+            eapply ihb; [| exact hbr].
+            intros x hx.
+            eapply ha, List.in_or_app.
+            right; exact hx.
+        +
+          intros * ha hb; cbn in *.
+          destruct hb as [hb | hb].
+          ++
+            left.
+            eapply iha; [| exact hb].
+            intros x hx.
+            eapply ha, List.in_or_app.
+            left; exact hx.
+          ++
+            right.
+            eapply ihb; [| exact hb].
+            intros x hx.
+            eapply ha, List.in_or_app.
+            right; exact hx.
+      Qed.
+
+      (* Main theorem (soundness reflection): under the disjunction
+         invariant, a witness for the compiled relation yields a DSL
+         witness environment satisfying the denotation. *)
+      Theorem compile_stmt_reflect :
+        ∀ (s : stmt),
+        wf_stmt s = true ->
+        nodupb (Vector.to_list privs) = true ->
+        disj_inv s = true ->
+        ∀ (w : comp_witnessC (compile s)),
+        comp_rel_holdsC (compile s) w ->
+        ∃ (wenv : string -> F), stmt_denote wenv s.
+      Proof.
+        induction s as [eqs | a iha b ihb | a iha b ihb].
+        +
+          (* SLeaf *)
+          intros ha hb hinv w hw.
+          cbn in w, hw.
+          exists (lookup (Vector.to_list privs) (Vector.to_list w)).
+          cbn.
+          eapply compile_leaf_correct.
+          exact ha.
+          exact hb.
+          unfold compile_witness.
+          rewrite map_lookup_gen.
+          exact hw.
+          exact hb.
+        +
+          (* SAnd *)
+          intros ha hb hinv.
+          cbn in ha.
+          eapply andb_true_iff in ha.
+          destruct ha as (hal & har).
+          cbn.
+          destruct (leaves_only a) as [la|] eqn:hd;
+          destruct (leaves_only b) as [lb|] eqn:he.
+          ++
+            (* both pure: one merged Leaf, shared witness vector *)
+            intros w hw.
+            assert (hwf : List.forallb wf_eq (List.app la lb) = true).
+            rewrite List.forallb_app.
+            eapply andb_true_iff; split.
+            eapply leaves_only_wf; [exact hd | exact hal].
+            eapply leaves_only_wf; [exact he | exact har].
+            exists (lookup (Vector.to_list privs) (Vector.to_list w)).
+            assert (hf : List.Forall
+              (eq_denote (lookup (Vector.to_list privs)
+                (Vector.to_list w))) (List.app la lb)).
+            eapply compile_leaf_correct.
+            exact hwf.
+            exact hb.
+            unfold compile_witness.
+            rewrite map_lookup_gen.
+            exact hw.
+            exact hb.
+            eapply List.Forall_app in hf.
+            destruct hf as (hfl & hfr).
+            cbn; split.
+            eapply (leaves_only_denote a la _ hd); exact hfl.
+            eapply (leaves_only_denote b lb _ he); exact hfr.
+          ++
+            (* unmerged: independent witnesses, disjointness *)
+            cbn in hinv.
+            unfold pureb in hinv.
+            rewrite hd, he in hinv.
+            cbn in hinv.
+            eapply andb_true_iff in hinv.
+            destruct hinv as (hinvl & hinvb).
+            eapply andb_true_iff in hinvl.
+            destruct hinvl as (hdisj & hinva).
+            intros w hw.
+            destruct w as (wa & wb).
+            cbn in hw.
+            destruct hw as (hwa & hwb).
+            destruct (iha hal hb hinva wa hwa) as (wea & hwea).
+            destruct (ihb har hb hinvb wb hwb) as (web & hweb).
+            exists (combine_env (stmt_vars a) wea web).
+            cbn; split.
+            eapply stmt_denote_ext; [| exact hwea].
+            intros x hx.
+            unfold combine_env.
+            rewrite (in_vars_existsb _ _ hx).
+            reflexivity.
+            eapply stmt_denote_ext; [| exact hweb].
+            intros x hx.
+            unfold combine_env.
+            rewrite (disjointb_existsb _ _ _ hdisj hx).
+            reflexivity.
+          ++
+            cbn in hinv.
+            unfold pureb in hinv.
+            rewrite hd, he in hinv.
+            cbn in hinv.
+            eapply andb_true_iff in hinv.
+            destruct hinv as (hinvl & hinvb).
+            eapply andb_true_iff in hinvl.
+            destruct hinvl as (hdisj & hinva).
+            intros w hw.
+            destruct w as (wa & wb).
+            cbn in hw.
+            destruct hw as (hwa & hwb).
+            destruct (iha hal hb hinva wa hwa) as (wea & hwea).
+            destruct (ihb har hb hinvb wb hwb) as (web & hweb).
+            exists (combine_env (stmt_vars a) wea web).
+            cbn; split.
+            eapply stmt_denote_ext; [| exact hwea].
+            intros x hx.
+            unfold combine_env.
+            rewrite (in_vars_existsb _ _ hx).
+            reflexivity.
+            eapply stmt_denote_ext; [| exact hweb].
+            intros x hx.
+            unfold combine_env.
+            rewrite (disjointb_existsb _ _ _ hdisj hx).
+            reflexivity.
+          ++
+            cbn in hinv.
+            unfold pureb in hinv.
+            rewrite hd, he in hinv.
+            cbn in hinv.
+            eapply andb_true_iff in hinv.
+            destruct hinv as (hinvl & hinvb).
+            eapply andb_true_iff in hinvl.
+            destruct hinvl as (hdisj & hinva).
+            intros w hw.
+            destruct w as (wa & wb).
+            cbn in hw.
+            destruct hw as (hwa & hwb).
+            destruct (iha hal hb hinva wa hwa) as (wea & hwea).
+            destruct (ihb har hb hinvb wb hwb) as (web & hweb).
+            exists (combine_env (stmt_vars a) wea web).
+            cbn; split.
+            eapply stmt_denote_ext; [| exact hwea].
+            intros x hx.
+            unfold combine_env.
+            rewrite (in_vars_existsb _ _ hx).
+            reflexivity.
+            eapply stmt_denote_ext; [| exact hweb].
+            intros x hx.
+            unfold combine_env.
+            rewrite (disjointb_existsb _ _ _ hdisj hx).
+            reflexivity.
+        +
+          (* SOr *)
+          intros ha hb hinv.
+          cbn in ha, hinv.
+          eapply andb_true_iff in ha.
+          destruct ha as (hal & har).
+          eapply andb_true_iff in hinv.
+          destruct hinv as (hinva & hinvb).
+          cbn.
+          intros w hw.
+          destruct w as [wa | wb].
+          ++
+            destruct (iha hal hb hinva wa hw) as (wea & hwea).
+            exists wea.
+            left; exact hwea.
+          ++
+            destruct (ihb har hb hinvb wb hw) as (web & hweb).
+            exists web.
+            right; exact hweb.
+      Qed.
+
+      (* DSL-level special soundness: two accepting transcripts with
+         the same announcements and different challenges imply the
+         *statement itself* has a witness environment. *)
+      Corollary compile_protocol_soundness :
+        ∀ (s : stmt) (c c' : F)
+          (t t' : comp_transcriptC (compile s)),
+        wf_stmt s = true ->
+        nodupb (Vector.to_list privs) = true ->
+        disj_inv s = true ->
+        c <> c' ->
+        comp_same_announcementC (compile s) t t' ->
+        comp_verifyC (compile s) c t = true ->
+        comp_verifyC (compile s) c' t' = true ->
+        ∃ (wenv : string -> F), stmt_denote wenv s.
+      Proof.
+        intros * ha hb hc hd he hf hg.
+        destruct (@comp_special_soundness F zero one add mul sub div
+          opp inv Fdec G gid ginv gop gpow Gdec Hvec
+          (compile s) c c' t t' hd he hf hg) as (w & hw).
+        eapply compile_stmt_reflect.
+        exact ha. exact hb. exact hc. exact hw.
+      Qed.
+
     End Proofs.
 
   End Spec.
@@ -671,6 +1119,42 @@ Section Dsl.
 
     Example schnorr_nodup :
       nodupb (Vector.to_list schnorr_privs) = true := eq_refl.
+
+    (* The disjunction-invariant checker runs by computation. *)
+    Example schnorr_disj : disj_inv schnorr_stmt = true := eq_refl.
+
+    (* An OR over disjoint variables — knowledge of the discrete log
+       of H1 or of H2 — passes the checker. *)
+    Definition or_stmt : stmt :=
+      SOr
+        (SLeaf (List.cons
+          (mkeq "H1" (List.cons (mkterm (PConst one) "x" "G")
+            List.nil)) List.nil))
+        (SLeaf (List.cons
+          (mkeq "H2" (List.cons (mkterm (PConst one) "y" "G")
+            List.nil)) List.nil)).
+
+    Example or_disj : disj_inv or_stmt = true := eq_refl.
+
+    (* Sharing a private variable between an OR branch and a
+       statement outside the OR is rejected: the compiled witnesses
+       would be independent, so the shared x would not be bound.
+       (sigma-compiler repairs this with Pedersen commitments; here
+       it is the checker's acceptance condition.) *)
+    Definition bad_stmt : stmt :=
+      SAnd
+        (SLeaf (List.cons
+          (mkeq "C" (List.cons (mkterm (PConst one) "x" "G")
+            List.nil)) List.nil))
+        (SOr
+          (SLeaf (List.cons
+            (mkeq "H1" (List.cons (mkterm (PConst one) "x" "G")
+              List.nil)) List.nil))
+          (SLeaf (List.cons
+            (mkeq "H2" (List.cons (mkterm (PConst one) "y" "G")
+              List.nil)) List.nil))).
+
+    Example bad_disj : disj_inv bad_stmt = false := eq_refl.
 
     (* The denotation is the Schnorr relation (up to the unit
        coefficient and the trailing identity of the fold). *)
