@@ -156,3 +156,13 @@
    (name PedLinearRellib)
    (libraries zarith)
    (modules :standard)))
+(subdir Compilerlib
+ (rocq.extraction
+  (prelude Extraction)
+  (extracted_files CompilerIns.ml CompilerIns.mli Dsl.ml Dsl.mli Composition.ml Composition.mli LinearRelation.ml LinearRelation.mli Ascii.ml Ascii.mli BinInt.ml BinInt.mli BinNat.ml BinNat.mli BinNums.ml BinNums.mli BinPos.ml BinPos.mli Datatypes.ml Datatypes.mli EqdepFacts.ml EqdepFacts.mli Functions.ml Functions.mli List.ml List.mli PosDef.ml PosDef.mli Sigma.ml Sigma.mli Specif.ml Specif.mli String.ml String.mli Util.ml Util.mli Vector.ml Vector.mli VectorDef.ml VectorDef.mli Zpstar.ml Zpstar.mli)
+  (theories ExtLib Stdlib Utility Crypto Algebra 
+   Probability Examples Compiler))
+ (library 
+   (name Compilerlib)
+   (libraries zarith)
+   (modules :standard)))

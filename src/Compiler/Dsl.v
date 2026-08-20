@@ -313,6 +313,117 @@ Section Dsl.
     | List.cons s₀ rest => big_or s₀ rest
     end.
 
+  (* All private-variable occurrences of a statement *)
+  Fixpoint stmt_vars (s : stmt) : list string :=
+    match s with
+    | SLeaf eqs =>
+        List.flat_map (fun e => List.map t_var (eq_rhs e)) eqs
+    | SAnd a b => List.app (stmt_vars a) (stmt_vars b)
+    | SOr a b => List.app (stmt_vars a) (stmt_vars b)
+    end.
+
+  (* ---------------- Automated Pedersen repair ---------------- *)
+
+  (* Generated names: the commitment point, the root commitment
+     randomness, and the per-branch copy / randomness for each
+     repaired variable.  The '#' marker keeps generated names out of
+     the user's namespace; freshness is *validated* by the boolean
+     checkers below rather than proven about the generator
+     (validated-compilation style). *)
+  Definition c_name (x : string) : string := String.append x "#C".
+  Definition r_name (x : string) : string := String.append x "#r".
+  Definition l_name (x : string) : string := String.append x "#1".
+  Definition lr_name (x : string) : string := String.append x "#1r".
+  Definition rn_name (x : string) : string := String.append x "#2".
+  Definition rr_name (x : string) : string := String.append x "#2r".
+
+  Fixpoint dedup (l : list string) : list string :=
+    match l with
+    | List.nil => List.nil
+    | List.cons x r =>
+        if List.existsb (String.eqb x) r then dedup r
+        else List.cons x (dedup r)
+    end.
+
+  (* The disjunction-invariant violations of SAnd sc (SOr sa sb):
+     root variables that also occur in a disjunction branch. *)
+  Definition shared_vars (sc sa sb : stmt) : list string :=
+    dedup (List.filter
+      (fun x => List.existsb (String.eqb x)
+        (List.app (stmt_vars sa) (stmt_vars sb)))
+      (stmt_vars sc)).
+
+  Definition rename_list (ps : list (string * string)) (s : stmt) :
+    stmt :=
+    List.fold_right (fun p acc => rename_stmt (fst p) (snd p) acc)
+      s ps.
+
+  (* Each original differs from all later originals and copies —
+     what the sequential-renaming semantics needs. *)
+  Fixpoint pairs_ok (ps : list (string * string)) : bool :=
+    match ps with
+    | List.nil => true
+    | List.cons (x, _) ps' =>
+        List.forallb (fun p =>
+          negb (String.eqb x (fst p)) &&
+          negb (String.eqb x (snd p))) ps'
+        && pairs_ok ps'
+    end.
+
+  Definition left_pairs (xs : list string) :
+    list (string * string) :=
+    List.map (fun x => (x, l_name x)) xs.
+  Definition right_pairs (xs : list string) :
+    list (string * string) :=
+    List.map (fun x => (x, rn_name x)) xs.
+
+  Definition root_commits (An Bn : string) (xs : list string) :
+    list equation :=
+    List.map (fun x => commit_eq (c_name x) An Bn x (r_name x)) xs.
+  Definition left_binds (An Bn : string) (xs : list string) :
+    list equation :=
+    List.map (fun x =>
+      commit_eq (c_name x) An Bn (l_name x) (lr_name x)) xs.
+  Definition right_binds (An Bn : string) (xs : list string) :
+    list equation :=
+    List.map (fun x =>
+      commit_eq (c_name x) An Bn (rn_name x) (rr_name x)) xs.
+
+  (* The repaired form: the root keeps sc and gains one Pedersen
+     commitment per shared variable (in the same, mergeable,
+     AND-branch, so the compiled root witness binds them to sc's
+     variables); each OR branch has the shared variables renamed to
+     fresh copies, each bound to the same commitment. *)
+  Definition repair_with (An Bn : string) (xs : list string)
+    (sc sa sb : stmt) : stmt :=
+    match xs with
+    | List.nil => SAnd sc (SOr sa sb)
+    | _ =>
+      SAnd (SAnd sc (SLeaf (root_commits An Bn xs)))
+        (SOr
+          (SAnd (rename_list (left_pairs xs) sa)
+            (SLeaf (left_binds An Bn xs)))
+          (SAnd (rename_list (right_pairs xs) sb)
+            (SLeaf (right_binds An Bn xs))))
+    end.
+
+  (* The automated pass. *)
+  Definition auto_repair (An Bn : string) (sc sa sb : stmt) : stmt :=
+    repair_with An Bn (shared_vars sc sa sb) sc sa sb.
+
+  (* First variable whose renamed copy carries a different value —
+     the constructive pivot of the soundness dichotomy. *)
+  Fixpoint find_unequal (wenv : string -> F) (f : string -> string)
+    (xs : list string) : option string :=
+    match xs with
+    | List.nil => None
+    | List.cons x r =>
+        match Fdec (wenv x) (wenv (f x)) with
+        | left _ => find_unequal wenv f r
+        | right _ => Some x
+        end
+    end.
+
   Section Spec.
 
     Context {n : nat}.
@@ -406,15 +517,6 @@ Section Dsl.
       Vector.map wenv privs.
 
     (* ---------------- Disjunction invariant ---------------- *)
-
-    (* All private-variable occurrences of a statement *)
-    Fixpoint stmt_vars (s : stmt) : list string :=
-      match s with
-      | SLeaf eqs =>
-          List.flat_map (fun e => List.map t_var (eq_rhs e)) eqs
-      | SAnd a b => List.app (stmt_vars a) (stmt_vars b)
-      | SOr a b => List.app (stmt_vars a) (stmt_vars b)
-      end.
 
     Definition disjointb (l₁ l₂ : list string) : bool :=
       List.forallb
@@ -1671,6 +1773,204 @@ Section Dsl.
             eapply big_and_denote; exact hall.
       Qed.
 
+      (* ------------- The automated repair pass ------------- *)
+
+      Lemma find_unequal_none :
+        ∀ (xs : list string) (wenv : string -> F)
+          (f : string -> string),
+        find_unequal wenv f xs = None ->
+        ∀ x, List.In x xs -> wenv x = wenv (f x).
+      Proof.
+        induction xs as [|a xs ih]; intros * ha x hb.
+        +
+          destruct hb.
+        +
+          cbn in ha.
+          destruct (Fdec (wenv a) (wenv (f a))) as [he | hne];
+          [| congruence].
+          destruct hb as [hb | hb].
+          ++
+            subst; exact he.
+          ++
+            eapply ih; [exact ha | exact hb].
+      Qed.
+
+      Lemma find_unequal_some :
+        ∀ (xs : list string) (wenv : string -> F)
+          (f : string -> string) (x : string),
+        find_unequal wenv f xs = Some x ->
+        List.In x xs ∧ wenv x <> wenv (f x).
+      Proof.
+        induction xs as [|a xs ih]; intros * ha.
+        +
+          cbn in ha; congruence.
+        +
+          cbn in ha.
+          destruct (Fdec (wenv a) (wenv (f a))) as [he | hne].
+          ++
+            destruct (ih _ _ _ ha) as (hi & hn).
+            split; [right; exact hi | exact hn].
+          ++
+            injection ha as ha; subst.
+            split; [left; reflexivity | exact hne].
+      Qed.
+
+      Lemma forall_map_in :
+        ∀ (A B : Type) (P : B -> Prop) (f : A -> B)
+          (l : list A) (x : A),
+        List.Forall P (List.map f l) ->
+        List.In x l ->
+        P (f x).
+      Proof.
+        intros * ha hb.
+        rewrite List.Forall_forall in ha.
+        eapply ha, List.in_map, hb.
+      Qed.
+
+      (* Sequential renaming collapses when every copy carries the
+         same value as its original. *)
+      Lemma rename_list_transfer :
+        ∀ (ps : list (string * string)) (s : stmt)
+          (wenv : string -> F),
+        pairs_ok ps = true ->
+        (∀ x x', List.In (x, x') ps -> wenv x = wenv x') ->
+        stmt_denote wenv (rename_list ps s) ->
+        stmt_denote wenv s.
+      Proof.
+        induction ps as [|(x, x') ps ih]; intros * hok heq hd.
+        +
+          exact hd.
+        +
+          cbn in hd, hok.
+          eapply andb_true_iff in hok.
+          destruct hok as (hall & hok).
+          eapply rename_stmt_denote in hd.
+          assert (hd₂ : stmt_denote (override wenv x (wenv x')) s).
+          eapply ih.
+          exact hok.
+          intros y y' hin.
+          pose proof (proj1 (List.forallb_forall _ _) hall
+            (y, y') hin) as hp.
+          cbn in hp.
+          eapply andb_true_iff in hp.
+          destruct hp as (hp₁ & hp₂).
+          eapply negb_true_iff in hp₁, hp₂.
+          unfold override.
+          rewrite hp₁, hp₂.
+          eapply heq.
+          right; exact hin.
+          exact hd.
+          eapply stmt_denote_ext; [| exact hd₂].
+          intros y hy.
+          unfold override.
+          destruct (String.eqb x y) eqn:hxy.
+          ++
+            eapply String.eqb_eq in hxy; subst.
+            symmetry.
+            eapply heq.
+            left; reflexivity.
+          ++
+            reflexivity.
+      Qed.
+
+      (* Soundness of the automated pass: a witness environment for
+         the repaired statement satisfies the *original* statement —
+         with the same environment — or exhibits a discrete-log
+         relation between the commitment bases.  The two pairs_ok
+         hypotheses are decidable and hold by computation for
+         '#'-generated names. *)
+      Theorem auto_repair_sound :
+        ∀ (An Bn : string) (sc sa sb : stmt) (wenv : string -> F),
+        pairs_ok (left_pairs (shared_vars sc sa sb)) = true ->
+        pairs_ok (right_pairs (shared_vars sc sa sb)) = true ->
+        stmt_denote wenv (auto_repair An Bn sc sa sb) ->
+        stmt_denote wenv (SAnd sc (SOr sa sb)) ∨
+        (∃ d : F, genv An = (genv Bn) ^ d).
+      Proof.
+        intros * hokl hokr hd.
+        unfold auto_repair in hd.
+        revert hokl hokr hd.
+        generalize (shared_vars sc sa sb) as xs;
+        intros xs hokl hokr hd.
+        destruct xs as [|x₀ xs₀]; [left; exact hd |].
+        unfold repair_with in hd.
+        destruct hd as ((hsc & hroot) & hbranch).
+        change (List.Forall (eq_denote wenv)
+          (List.map (fun x => commit_eq (c_name x) An Bn x (r_name x))
+            (List.cons x₀ xs₀))) in hroot.
+        destruct hbranch as [hbranch | hbranch].
+        +
+          destruct hbranch as (hren & hbinds).
+          change (List.Forall (eq_denote wenv)
+            (List.map (fun x =>
+              commit_eq (c_name x) An Bn (l_name x) (lr_name x))
+              (List.cons x₀ xs₀))) in hbinds.
+          destruct (find_unequal wenv l_name (List.cons x₀ xs₀))
+            eqn:hfu.
+          ++
+            destruct (find_unequal_some _ _ _ _ hfu) as (hin & hne).
+            pose proof (forall_map_in _ _ _ _ _ _ hroot hin) as hce.
+            pose proof (forall_map_in _ _ _ _ _ _ hbinds hin) as hce₁.
+            eapply commit_eq_denote in hce, hce₁.
+            rewrite hce in hce₁.
+            destruct (pedersen_binding_dichotomy _ _ _ _ _ _ hce₁)
+              as [heq | hdlog].
+            +++
+              exfalso; eapply hne; exact heq.
+            +++
+              right; exact hdlog.
+          ++
+            left.
+            cbn; split.
+            exact hsc.
+            left.
+            eapply rename_list_transfer.
+            exact hokl.
+            intros x x' hin.
+            unfold left_pairs in hin.
+            eapply List.in_map_iff in hin.
+            destruct hin as (y & hy & hyin).
+            injection hy as h₁ h₂; subst.
+            eapply find_unequal_none.
+            exact hfu. exact hyin.
+            exact hren.
+        +
+          destruct hbranch as (hren & hbinds).
+          change (List.Forall (eq_denote wenv)
+            (List.map (fun x =>
+              commit_eq (c_name x) An Bn (rn_name x) (rr_name x))
+              (List.cons x₀ xs₀))) in hbinds.
+          destruct (find_unequal wenv rn_name (List.cons x₀ xs₀))
+            eqn:hfu.
+          ++
+            destruct (find_unequal_some _ _ _ _ hfu) as (hin & hne).
+            pose proof (forall_map_in _ _ _ _ _ _ hroot hin) as hce.
+            pose proof (forall_map_in _ _ _ _ _ _ hbinds hin) as hce₂.
+            eapply commit_eq_denote in hce, hce₂.
+            rewrite hce in hce₂.
+            destruct (pedersen_binding_dichotomy _ _ _ _ _ _ hce₂)
+              as [heq | hdlog].
+            +++
+              exfalso; eapply hne; exact heq.
+            +++
+              right; exact hdlog.
+          ++
+            left.
+            cbn; split.
+            exact hsc.
+            right.
+            eapply rename_list_transfer.
+            exact hokr.
+            intros x x' hin.
+            unfold right_pairs in hin.
+            eapply List.in_map_iff in hin.
+            destruct hin as (y & hy & hyin).
+            injection hy as h₁ h₂; subst.
+            eapply find_unequal_none.
+            exact hfu. exact hyin.
+            exact hren.
+      Qed.
+
     End Proofs.
 
   End Spec.
@@ -1731,6 +2031,37 @@ Section Dsl.
               List.nil)) List.nil))).
 
     Example bad_disj : disj_inv bad_stmt = false := eq_refl.
+
+    (* The automated repair pass turns the rejected pattern into an
+       accepted one; the checker, the pass, and its side conditions
+       all run by computation. *)
+    Definition bad_sc : stmt :=
+      SLeaf (List.cons
+        (mkeq "C" (List.cons (mkterm (PConst one) "x" "G")
+          List.nil)) List.nil).
+    Definition bad_sa : stmt :=
+      SLeaf (List.cons
+        (mkeq "H1" (List.cons (mkterm (PConst one) "x" "G")
+          List.nil)) List.nil).
+    Definition bad_sb : stmt :=
+      SLeaf (List.cons
+        (mkeq "H2" (List.cons (mkterm (PConst one) "y" "G")
+          List.nil)) List.nil).
+
+    Example bad_pattern_rejected :
+      disj_inv (SAnd bad_sc (SOr bad_sa bad_sb)) = false := eq_refl.
+
+    Example repaired_accepted :
+      disj_inv (auto_repair "A" "B" bad_sc bad_sa bad_sb) = true
+      := eq_refl.
+
+    Example repaired_pairs_left :
+      pairs_ok (left_pairs (shared_vars bad_sc bad_sa bad_sb)) = true
+      := eq_refl.
+
+    Example repaired_pairs_right :
+      pairs_ok (right_pairs (shared_vars bad_sc bad_sa bad_sb)) = true
+      := eq_refl.
 
     (* The denotation is the Schnorr relation (up to the unit
        coefficient and the trailing identity of the fold). *)
