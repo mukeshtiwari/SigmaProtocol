@@ -1,6 +1,7 @@
 From Stdlib Require Import Utf8 ZArith
-  Vector String List.
-From Utility Require Import Zpstar.
+  Vector String List Ascii
+  DecimalString DecimalZ.
+From Utility Require Import Zpstar Sha256.
 From Crypto Require Import Sigma.
 From Compiler Require Import
   LinearRelation Composition Dsl Nizk.
@@ -63,6 +64,8 @@ Section CompilerIns.
     @pow 2 p q safe_prime prime_p prime_q.
   Definition gdec : forall x y : G, {x = y} + {x <> y} :=
     @dec_zpstar p q.
+  Definition ginv_g : G -> G :=
+    @inv_schnorr_group 2 p q safe_prime prime_p prime_q.
 
   (* build a field element from an arbitrary integer *)
   Definition mk_field (z : Z) : F.
@@ -109,10 +112,10 @@ Section CompilerIns.
 
   Definition or_stmtI : @stmt F :=
     SOr
-      (SLeaf (List.cons (mkeq "H1"
+      (SLeaf (List.cons (@simple_eq F fone "H1"
         (List.cons (mkterm (PConst fone) "x" "G") List.nil))
         List.nil))
-      (SLeaf (List.cons (mkeq "H2"
+      (SLeaf (List.cons (@simple_eq F fone "H2"
         (List.cons (mkterm (PConst fone) "y" "G") List.nil))
         List.nil)).
 
@@ -124,7 +127,7 @@ Section CompilerIns.
   (* ---------------- the compiled protocol ---------------- *)
 
   Definition or_relI : @comp_rel G :=
-    @compile F fadd fmul fopp G gone gmul gpow 2
+    @compile F fadd fmul fopp G gone ginv_g gmul gpow 2
       privsI genvI penvI or_stmtI.
 
   Definition or_witness_left (xv yv : F) :
@@ -170,5 +173,48 @@ Section CompilerIns.
     let t := or_prove (or_witness_right fzero yval)
                (or_rand u₁ u₂ s₁ s₂ cs) c in
     (or_verify c t, or_transcript_flat t).
+
+  (* ------------- concrete Fiat-Shamir (Milestone H1) -------------
+
+     The challenge is SHA-256 over the strong-FS input: the group
+     parameters, the full instance (G, H1, H2), and both branch
+     announcements — then reduced into the field.  NIZK completeness
+     for *any* hash is Nizk.nizk_completeness; this instantiates it
+     with a real hash. *)
+
+  Definition g_to_string (g : G) : string :=
+    NilEmpty.string_of_int (Z.to_int (@Schnorr.v p q g)).
+
+  Definition or_hash (a : @comp_ann_t G or_relI) : F :=
+    mk_field (Z.of_N (sha256_string (String.concat ","
+      (List.cons (g_to_string gen)
+      (List.cons (g_to_string h1)
+      (List.cons (g_to_string h2)
+      (List.cons (g_to_string (Vector.hd (fst a)))
+      (List.cons (g_to_string (Vector.hd (snd a)))
+        List.nil)))))))).
+
+  Definition or_nizk_prove
+    (w : @comp_witness F G or_relI)
+    (rnd : @comp_rand F G or_relI) :
+    @comp_transcript F G or_relI :=
+    @nizk_prove F fzero fadd fmul fsub fopp G gone gmul gpow
+      or_relI or_hash w rnd.
+
+  Definition or_nizk_verify
+    (t : @comp_transcript F G or_relI) : bool :=
+    @nizk_verify F fsub G gone gmul gpow gdec or_relI or_hash t.
+
+  Definition or_nizk_run_left (u₁ u₂ s₁ s₂ cs : F) :
+    bool * ((G * list F) * (G * list F) * F) :=
+    let t := or_nizk_prove (or_witness_left xval fzero)
+               (or_rand u₁ u₂ s₁ s₂ cs) in
+    (or_nizk_verify t, or_transcript_flat t).
+
+  Definition or_nizk_run_right (u₁ u₂ s₁ s₂ cs : F) :
+    bool * ((G * list F) * (G * list F) * F) :=
+    let t := or_nizk_prove (or_witness_right fzero yval)
+               (or_rand u₁ u₂ s₁ s₂ cs) in
+    (or_nizk_verify t, or_transcript_flat t).
 
 End CompilerIns.
