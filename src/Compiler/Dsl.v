@@ -1,7 +1,8 @@
 From Stdlib Require Import Setoid
   setoid_ring.Field Lia Vector Utf8
   Psatz Bool Pnat BinNatDef
-  BinPos String List.
+  BinPos String List DecimalString
+  DecimalNat.
 From Algebra Require Import
   Hierarchy Group Monoid
   Field Integral_domain
@@ -229,10 +230,19 @@ Section Dsl.
       t_var : string;
       t_base : string }.
 
-  (* One equation  lhs = Π terms *)
+  (* One equation, in homogeneous form:
+       Π base_i ^ (coeff_i · x_i)  ·  Π base_j ^ coeff_j  =  1.
+     eq_rhs are the private terms; eq_off the *public offsets*
+     (Milestone B) — terms with no private variable, e.g. constants
+     and public-scalar multiples of points, and the (negated)
+     left-hand side.  simple_eq recovers the readable
+     P = Π terms  form. *)
   Record equation : Type := mkeq
-    { eq_lhs : string;
-      eq_rhs : list term }.
+    { eq_rhs : list term;
+      eq_off : list (pexpr * string) }.
+
+  Definition simple_eq (Pn : string) (ts : list term) : equation :=
+    mkeq ts (List.cons (POpp (PConst one), Pn) List.nil).
 
   (* Statement tree *)
   Inductive stmt : Type :=
@@ -269,7 +279,7 @@ Section Dsl.
       (t_base t).
 
   Definition rename_eq (x x' : string) (e : equation) : equation :=
-    mkeq (eq_lhs e) (List.map (rename_term x x') (eq_rhs e)).
+    mkeq (List.map (rename_term x x') (eq_rhs e)) (eq_off e).
 
   Fixpoint rename_stmt (x x' : string) (s : stmt) : stmt :=
     match s with
@@ -280,7 +290,7 @@ Section Dsl.
 
   (* The Pedersen commitment equation  C = A^v · B^w  *)
   Definition commit_eq (Cn An Bn v w : string) : equation :=
-    mkeq Cn (List.cons (mkterm (PConst one) v An)
+    simple_eq Cn (List.cons (mkterm (PConst one) v An)
       (List.cons (mkterm (PConst one) w Bn) List.nil)).
 
   (* The repaired form of  AND(C = A^x·B^r, OR(sa, sb))  when the
@@ -424,6 +434,352 @@ Section Dsl.
         end
     end.
 
+  (* ---------------- Not-equals lowering (Milestone D) ------------ *)
+
+  Definition neq_j (x : string) : string := String.append x "#j".
+  Definition neq_s (x : string) : string := String.append x "#s".
+
+  (* C = A^(coeff·x + off) · B^r, in homogeneous form *)
+  Definition neq_commit (Cn An Bn x r : string)
+    (coeff off : pexpr) : equation :=
+    mkeq (List.cons (mkterm coeff x An)
+      (List.cons (mkterm (PConst one) r Bn) List.nil))
+      (List.cons (off, An)
+        (List.cons (POpp (PConst one), Cn) List.nil)).
+
+  (*
+    The lowering of  coeff·x + off ≠ 0  (sigma-compiler's notequals
+    pass): commit to L(x) = coeff·x + off as C = A^L(x)·B^r, and
+    prove knowledge of j, s with  A = C^j · B^s  (honest prover:
+    j = L(x)⁻¹, s = −r·j).  Everything is linear, so the result
+    composes under the existing pipeline.
+  *)
+  Definition neq_stmt (Cn An Bn x j s r : string)
+    (coeff off : pexpr) : stmt :=
+    SLeaf (List.cons (neq_commit Cn An Bn x r coeff off)
+      (List.cons (simple_eq An
+        (List.cons (mkterm (PConst one) j Cn)
+          (List.cons (mkterm (PConst one) s Bn) List.nil)))
+        List.nil)).
+
+  (* automated wrapper with generated names *)
+  Definition neq_auto (An Bn x : string) (coeff off : pexpr) : stmt :=
+    neq_stmt (c_name x) An Bn x (neq_j x) (neq_s x) (r_name x)
+      coeff off.
+
+  (* ============ Surface expression language (Milestone C) ========
+
+     The sigma_compiler!-style front end: arbitrary arithmetic over
+     public scalars, private scalars, and points, normalized into
+     the homogeneous equation form.  Normalization returns None on
+     the ill-typed cases (private·private products, point·point
+     products are unrepresentable by the syntax split). *)
+
+  Inductive sexpr : Type :=
+  | SConst (c : F)
+  | SPubV (x : string)
+  | SPrivV (x : string)
+  | SAddE (a b : sexpr)
+  | SMulE (a b : sexpr)
+  | SOppE (a : sexpr).
+
+  Inductive gexpr : Type :=
+  | GIdE
+  | GPointV (P : string)
+  | GAddE (a b : gexpr)
+  | GInvE (a : gexpr)
+  | GSmulE (sc : sexpr) (a : gexpr).
+
+  (* normal form of a scalar expression: private linear part
+     (coefficient · variable) plus a public part *)
+  Definition lin : Type :=
+    (list (pexpr * string) * pexpr)%type.
+
+  Fixpoint snorm (e : sexpr) : option lin :=
+    match e with
+    | SConst c => Some (List.nil, PConst c)
+    | SPubV x => Some (List.nil, PVar x)
+    | SPrivV x =>
+        Some (List.cons (PConst one, x) List.nil, PConst zero)
+    | SAddE a b =>
+        match snorm a, snorm b with
+        | Some (la, pa), Some (lb, pb) =>
+            Some (List.app la lb, PAdd pa pb)
+        | _, _ => None
+        end
+    | SOppE a =>
+        match snorm a with
+        | Some (la, pa) =>
+            Some (List.map (fun cx => (POpp (fst cx), snd cx)) la,
+              POpp pa)
+        | None => None
+        end
+    | SMulE a b =>
+        match snorm a, snorm b with
+        | Some (la, pa), Some (lb, pb) =>
+            match la, lb with
+            | List.nil, _ =>
+                Some (List.map
+                  (fun cx => (PMul pa (fst cx), snd cx)) lb,
+                  PMul pa pb)
+            | _, List.nil =>
+                Some (List.map
+                  (fun cx => (PMul pb (fst cx), snd cx)) la,
+                  PMul pa pb)
+            | _, _ => None
+            end
+        | _, _ => None
+        end
+    end.
+
+  (* normal form of a point expression: private terms + offsets —
+     the two components of a homogeneous equation *)
+  Fixpoint gnorm (e : gexpr) :
+    option (list term * list (pexpr * string)) :=
+    match e with
+    | GIdE => Some (List.nil, List.nil)
+    | GPointV P =>
+        Some (List.nil, List.cons (PConst one, P) List.nil)
+    | GAddE a b =>
+        match gnorm a, gnorm b with
+        | Some (ta, oa), Some (tb, ob) =>
+            Some (List.app ta tb, List.app oa ob)
+        | _, _ => None
+        end
+    | GInvE a =>
+        match gnorm a with
+        | Some (ta, oa) =>
+            Some (List.map (fun t =>
+                mkterm (POpp (t_coeff t)) (t_var t) (t_base t)) ta,
+              List.map (fun o => (POpp (fst o), snd o)) oa)
+        | None => None
+        end
+    | GSmulE sc a =>
+        match snorm sc, gnorm a with
+        | Some (ls, ps), Some (ta, oa) =>
+            match ta, ls with
+            | List.nil, List.nil =>
+                Some (List.nil,
+                  List.map (fun o => (PMul ps (fst o), snd o)) oa)
+            | List.nil, _ =>
+                Some (List.flat_map (fun o =>
+                    List.map (fun cx =>
+                      mkterm (PMul (fst cx) (fst o))
+                        (snd cx) (snd o)) ls) oa,
+                  List.map (fun o => (PMul ps (fst o), snd o)) oa)
+            | _, List.nil =>
+                Some (List.map (fun t =>
+                    mkterm (PMul ps (t_coeff t))
+                      (t_var t) (t_base t)) ta,
+                  List.map (fun o => (PMul ps (fst o), snd o)) oa)
+            | _, _ => None
+            end
+        | _, _ => None
+        end
+    end.
+
+  (* surface statements *)
+  Inductive sstmt : Type :=
+  | SSEq (lhs rhs : gexpr)
+  | SSNeq (a b : sexpr)
+  | SSAndS (a b : sstmt)
+  | SSOrS (a b : sstmt).
+
+  (* elaborate a point equation:  lhs = rhs  becomes the
+     homogeneous  rhs · lhs⁻¹ = 1 *)
+  Definition elab_eq (lhs rhs : gexpr) : option equation :=
+    match gnorm (GAddE rhs (GInvE lhs)) with
+    | Some (ts, os) => Some (mkeq ts os)
+    | None => None
+    end.
+
+  (* elaborate a surface statement; An Bn are the two cind base
+     names used by the not-equals lowering *)
+  Fixpoint elab (An Bn : string) (s : sstmt) : option stmt :=
+    match s with
+    | SSEq l r =>
+        match elab_eq l r with
+        | Some e => Some (SLeaf (List.cons e List.nil))
+        | None => None
+        end
+    | SSNeq a b =>
+        match snorm (SAddE a (SOppE b)) with
+        | Some (List.cons (c, x) List.nil, off) =>
+            Some (neq_auto An Bn x c off)
+        | _ => None
+        end
+    | SSAndS a b =>
+        match elab An Bn a, elab An Bn b with
+        | Some a', Some b' => Some (SAnd a' b')
+        | _, _ => None
+        end
+    | SSOrS a b =>
+        match elab An Bn a, elab An Bn b with
+        | Some a', Some b' => Some (SOr a' b')
+        | _, _ => None
+        end
+    end.
+
+  (* ---------------- Substitution (Milestone A1) ---------------- *)
+
+  Fixpoint sexpr_subst (x : string) (v : sexpr) (e : sexpr) :
+    sexpr :=
+    match e with
+    | SConst c => SConst c
+    | SPubV y => SPubV y
+    | SPrivV y => if String.eqb y x then v else SPrivV y
+    | SAddE a b => SAddE (sexpr_subst x v a) (sexpr_subst x v b)
+    | SMulE a b => SMulE (sexpr_subst x v a) (sexpr_subst x v b)
+    | SOppE a => SOppE (sexpr_subst x v a)
+    end.
+
+  Fixpoint gexpr_subst (x : string) (v : sexpr) (e : gexpr) :
+    gexpr :=
+    match e with
+    | GIdE => GIdE
+    | GPointV P => GPointV P
+    | GAddE a b => GAddE (gexpr_subst x v a) (gexpr_subst x v b)
+    | GInvE a => GInvE (gexpr_subst x v a)
+    | GSmulE sc a => GSmulE (sexpr_subst x v sc) (gexpr_subst x v a)
+    end.
+
+  Fixpoint sstmt_subst (x : string) (v : sexpr) (s : sstmt) :
+    sstmt :=
+    match s with
+    | SSEq l r => SSEq (gexpr_subst x v l) (gexpr_subst x v r)
+    | SSNeq a b => SSNeq (sexpr_subst x v a) (sexpr_subst x v b)
+    | SSAndS a b => SSAndS (sstmt_subst x v a) (sstmt_subst x v b)
+    | SSOrS a b => SSOrS (sstmt_subst x v a) (sstmt_subst x v b)
+    end.
+
+  Fixpoint neq_free (s : sstmt) : bool :=
+    match s with
+    | SSEq _ _ => true
+    | SSNeq _ _ => false
+    | SSAndS a b => neq_free a && neq_free b
+    | SSOrS a b => neq_free a && neq_free b
+    end.
+
+  (* ---------------- Vectors and SIMD (Milestone F) ---------------
+     Vector variables are families of indexed scalar/point names;
+     vec statements expand at a runtime length.  sum(x*A)-style dot
+     products are single equations with one term per index. *)
+
+  Definition nat_name (k : nat) : string :=
+    NilEmpty.string_of_uint (Nat.to_uint k).
+
+  Definition vname (x : string) (i : nat) : string :=
+    String.append x (String.append "@" (nat_name i)).
+
+  Definition vec_names (x : string) (nv : nat) : list string :=
+    List.map (vname x) (List.seq 0 nv).
+
+  (* AND of a family of statements (SIMD componentwise statements) *)
+  Definition big_sand (s : sstmt) (l : list sstmt) : sstmt :=
+    List.fold_right SSAndS s l.
+
+  (* product of a family of point expressions *)
+  Definition big_gop (e : gexpr) (l : list gexpr) : gexpr :=
+    List.fold_right GAddE e l.
+
+  (* Σᵢ x@i · A@i  — the sum(x*A) dot product *)
+  Definition dot_terms (x A : string) (nv : nat) : list gexpr :=
+    List.map (fun i => GSmulE (SPrivV (vname x i))
+      (GPointV (vname A i))) (List.seq 0 nv).
+
+  Definition dot_product_stmt (C x A : string) (nv : nat) : sstmt :=
+    SSEq (GPointV C) (big_gop GIdE (dot_terms x A nv)).
+
+  (* ---------------- Range lowering (Milestone E) -----------------
+
+     (a..b).contains(L) reduces (after normalization) to
+     0 <= x < u.  The lowering follows sigma-compiler: commit to
+     selection bits b_i, prove each is a bit with the *linear*
+     b = b² trick (C = A^b·B^r ∧ C = C^b·B^s), and add one linear
+     equation linking x to the weighted bit sum, with weights
+     [1, 2, ..., 2^(m-1), u - 2^m] (m = log2 u) whose subset sums
+     are exactly [0, u).
+
+     "0 <= x < u" is an *integer* statement about a field element;
+     its semantics uses the canonical embedding fnat : nat -> F
+     (1 + ... + 1).  Injectivity of fnat below u — a characteristic
+     hypothesis, true in Z_q for u < q — is where the field meets
+     the integers; the soundness theorem produces the witness
+     k < u with  x = fnat k  directly, so no injectivity hypothesis
+     is needed for soundness. *)
+
+  Fixpoint fnat (k : nat) : F :=
+    match k with
+    | 0 => zero
+    | S k' => one + fnat k'
+    end.
+
+  (* the field-to-bit projection used by the extractor *)
+  Definition bitof (v : F) : nat :=
+    match Fdec v zero with
+    | left _ => 0
+    | right _ => 1
+    end.
+
+  Definition bit_b (x : string) (i : nat) : string :=
+    vname (String.append x "#b") i.
+  Definition bit_r (x : string) (i : nat) : string :=
+    vname (String.append x "#br") i.
+  Definition bit_s (x : string) (i : nat) : string :=
+    vname (String.append x "#bs") i.
+  Definition bit_C (x : string) (i : nat) : string :=
+    vname (String.append x "#bC") i.
+
+  Definition range_weights (u : nat) : list nat :=
+    List.app
+      (List.map (fun i => Nat.pow 2 i) (List.seq 0 (Nat.log2 u)))
+      (List.cons (u - Nat.pow 2 (Nat.log2 u))%nat List.nil).
+
+  Definition indexed_weights (u : nat) : list (nat * nat) :=
+    List.combine
+      (List.seq 0 (List.length (range_weights u)))
+      (range_weights u).
+
+  (* bit equations for index i:
+       Cb_i = A^{b_i} · B^{r_i}   and   Cb_i = Cb_i^{b_i} · B^{s_i} *)
+  Definition bit_eqs (An Bn x : string) (i : nat) : list equation :=
+    List.cons (commit_eq (bit_C x i) An Bn (bit_b x i) (bit_r x i))
+    (List.cons (simple_eq (bit_C x i)
+      (List.cons (mkterm (PConst one) (bit_b x i) (bit_C x i))
+        (List.cons (mkterm (PConst one) (bit_s x i) Bn) List.nil)))
+      List.nil).
+
+  (* linking equation:  A^x · Π A^{-w_i·b_i} = 1 *)
+  Definition range_link (An x : string) (iws : list (nat * nat)) :
+    equation :=
+    mkeq (List.cons (mkterm (PConst one) x An)
+      (List.map (fun iw =>
+        mkterm (PConst (opp (fnat (snd iw))))
+          (bit_b x (fst iw)) An) iws))
+      List.nil.
+
+  Definition range_stmt (An Bn x : string) (u : nat) : stmt :=
+    SLeaf (List.cons (range_link An x (indexed_weights u))
+      (List.flat_map (fun iw => bit_eqs An Bn x (fst iw))
+        (indexed_weights u))).
+
+  (* first index whose committed value is not a bit — the pivot of
+     the soundness dichotomy *)
+  Fixpoint find_nonbit (wenv : string -> F) (x : string)
+    (l : list (nat * nat)) : option (nat * nat) :=
+    match l with
+    | List.nil => None
+    | List.cons iw l' =>
+        match Fdec (wenv (bit_b x (fst iw))) zero with
+        | left _ => find_nonbit wenv x l'
+        | right _ =>
+            match Fdec (wenv (bit_b x (fst iw))) one with
+            | left _ => find_nonbit wenv x l'
+            | right _ => Some iw
+            end
+        end
+    end.
+
   Section Spec.
 
     Context {n : nat}.
@@ -436,16 +792,62 @@ Section Dsl.
     Definition term_denote (wenv : string -> F) (t : term) : G :=
       (genv (t_base t)) ^ (peval penv (t_coeff t) * wenv (t_var t)).
 
-    Definition eq_denote (wenv : string -> F) (e : equation) : Prop :=
-      genv (eq_lhs e) =
+    Definition terms_fold (wenv : string -> F) (ts : list term) : G :=
       List.fold_right (fun t acc => gop (term_denote wenv t) acc)
-        gid (eq_rhs e).
+        gid ts.
+
+    Definition off_denote (o : pexpr * string) : G :=
+      (genv (snd o)) ^ (peval penv (fst o)).
+
+    Definition off_fold (os : list (pexpr * string)) : G :=
+      List.fold_right (fun o acc => gop (off_denote o) acc) gid os.
+
+    Definition eq_denote (wenv : string -> F) (e : equation) : Prop :=
+      gop (terms_fold wenv (eq_rhs e)) (off_fold (eq_off e)) = gid.
 
     Fixpoint stmt_denote (wenv : string -> F) (s : stmt) : Prop :=
       match s with
       | SLeaf eqs => List.Forall (eq_denote wenv) eqs
       | SAnd a b => stmt_denote wenv a ∧ stmt_denote wenv b
       | SOr a b => stmt_denote wenv a ∨ stmt_denote wenv b
+      end.
+
+    (* ---------------- surface semantics ---------------- *)
+
+    Fixpoint seval (wenv : string -> F) (e : sexpr) : F :=
+      match e with
+      | SConst c => c
+      | SPubV x => penv x
+      | SPrivV x => wenv x
+      | SAddE a b => seval wenv a + seval wenv b
+      | SMulE a b => seval wenv a * seval wenv b
+      | SOppE a => opp (seval wenv a)
+      end.
+
+    Fixpoint geval (wenv : string -> F) (e : gexpr) : G :=
+      match e with
+      | GIdE => gid
+      | GPointV P => genv P
+      | GAddE a b => gop (geval wenv a) (geval wenv b)
+      | GInvE a => ginv (geval wenv a)
+      | GSmulE sc a => (geval wenv a) ^ (seval wenv sc)
+      end.
+
+    Definition priv_fold (wenv : string -> F)
+      (l : list (pexpr * string)) : F :=
+      List.fold_right
+        (fun cx acc => peval penv (fst cx) * wenv (snd cx) + acc)
+        zero l.
+
+    Definition lin_denote (wenv : string -> F) (l : lin) : F :=
+      priv_fold wenv (fst l) + peval penv (snd l).
+
+    Fixpoint sstmt_denote (wenv : string -> F) (s : sstmt) : Prop :=
+      match s with
+      | SSEq l r => geval wenv l = geval wenv r
+      | SSNeq a b => seval wenv a <> seval wenv b
+      | SSAndS a b => sstmt_denote wenv a ∧ sstmt_denote wenv b
+      | SSOrS a b => sstmt_denote wenv a ∨ sstmt_denote wenv b
       end.
 
     (* ---------------- Well-formedness (typechecker) ---------------- *)
@@ -485,7 +887,8 @@ Section Dsl.
     Definition compile_leaf (eqs : list equation) : @comp_rel G :=
       Leaf (List.length eqs) n
         (Vector.map compile_eq_row (Vector.of_list eqs))
-        (Vector.map (fun e => genv (eq_lhs e)) (Vector.of_list eqs)).
+        (Vector.map (fun e => ginv (off_fold (eq_off e)))
+          (Vector.of_list eqs)).
 
     (* A statement is "pure" when it is an AND-tree of leaves; those
        merge into a single Leaf so that shared private variables are
@@ -515,6 +918,30 @@ Section Dsl.
     (* The compiled witness vector of a DSL witness environment *)
     Definition compile_witness (wenv : string -> F) : Vector.t F n :=
       Vector.map wenv privs.
+
+    (* ------- Public-scalar equality checks (pubscalareq) ------- *)
+    (* sigma-compiler removes public equations from the ZK statement
+       and emits runtime checks for both parties.  A checked spec is
+       a statement together with the removed public checks; verify
+       conjoins them. *)
+
+    Definition check_denote (c : pexpr * pexpr) : Prop :=
+      peval penv (fst c) = peval penv (snd c).
+
+    Definition checkb (c : pexpr * pexpr) : bool :=
+      match Fdec (peval penv (fst c)) (peval penv (snd c)) with
+      | left _ => true
+      | right _ => false
+      end.
+
+    Definition cspec_denote (wenv : string -> F)
+      (checks : list (pexpr * pexpr)) (s : stmt) : Prop :=
+      List.Forall check_denote checks ∧ stmt_denote wenv s.
+
+    Definition cspec_verify (checks : list (pexpr * pexpr))
+      (s : stmt) (c : F)
+      (t : comp_transcriptC (compile s)) : bool :=
+      List.forallb checkb checks && comp_verifyC (compile s) c t.
 
     (* ---------------- Disjunction invariant ---------------- *)
 
@@ -762,6 +1189,40 @@ Section Dsl.
           exact hb.
       Qed.
 
+      Lemma gop_eq_gid_iff : ∀ (a b : G),
+        gop a b = gid <-> a = ginv b.
+      Proof.
+        intros *; split; intro ha.
+        +
+          eapply f_equal with (f := fun z => gop z (ginv b)) in ha.
+          rewrite <-associative, right_inverse, right_identity,
+            left_identity in ha.
+          exact ha.
+        +
+          rewrite ha.
+          rewrite commutative, right_inverse.
+          reflexivity.
+      Qed.
+
+      (* The readable  P = Π terms  reading of simple_eq *)
+      Lemma simple_eq_denote :
+        ∀ (Pn : string) (ts : list term) (wenv : string -> F),
+        eq_denote wenv (simple_eq Pn ts) <->
+        genv Pn = terms_fold wenv ts.
+      Proof.
+        intros *.
+        unfold eq_denote, simple_eq; cbn.
+        unfold off_fold, off_denote; cbn.
+        rewrite right_identity.
+        assert (ha : (genv Pn) ^ (opp one) = ginv (genv Pn)).
+        rewrite <-connection_between_vopp_and_fopp.
+        rewrite field_one. reflexivity.
+        rewrite ha.
+        rewrite gop_eq_gid_iff.
+        rewrite group_inv_inv.
+        split; intro hb; symmetry; exact hb.
+      Qed.
+
       (* Leaf-level equivalence: the compiled relation holds of the
          compiled witness iff the denotation holds. *)
       Lemma compile_leaf_correct :
@@ -793,10 +1254,10 @@ Section Dsl.
             constructor.
             +++
               unfold eq_denote.
-              rewrite <-hh.
-              unfold compile_eq_row.
-              eapply row_of_terms_correct.
-              exact hae. exact hb.
+              eapply gop_eq_gid_iff.
+              unfold terms_fold.
+              rewrite <-(row_of_terms_correct (eq_rhs e) wenv hae hb).
+              exact hh.
             +++
               eapply ihe.
               exact ht.
@@ -808,7 +1269,7 @@ Section Dsl.
               unfold compile_eq_row.
               rewrite row_of_terms_correct;
               [| exact hae | exact hb].
-              symmetry.
+              eapply gop_eq_gid_iff.
               exact hde.
             +++
               eapply ihe.
@@ -1107,7 +1568,7 @@ Section Dsl.
         eq_denote w₁ e -> eq_denote w₂ e.
       Proof.
         intros * ha hb.
-        unfold eq_denote in hb |- *.
+        unfold eq_denote, terms_fold in hb |- *.
         rewrite <-(term_fold_ext (eq_rhs e) w₁ w₂ ha).
         exact hb.
       Qed.
@@ -1365,6 +1826,83 @@ Section Dsl.
         exact ha. exact hb. exact hc. exact hw.
       Qed.
 
+      (* ------------- Checked specs (pubscalareq) ------------- *)
+
+      Lemma checkb_correct : ∀ (c : pexpr * pexpr),
+        checkb c = true <-> check_denote c.
+      Proof.
+        intros; unfold checkb, check_denote.
+        destruct (Fdec (peval penv (fst c)) (peval penv (snd c)))
+          as [he | hne]; split; intro ha.
+        + exact he.
+        + reflexivity.
+        + congruence.
+        + exfalso; eapply hne; exact ha.
+      Qed.
+
+      Lemma forallb_checkb : ∀ (cl : list (pexpr * pexpr)),
+        List.forallb checkb cl = true <->
+        List.Forall check_denote cl.
+      Proof.
+        induction cl as [|c cl ih]; cbn; split; intro ha.
+        + constructor.
+        + reflexivity.
+        + eapply andb_true_iff in ha.
+          destruct ha as (hal & har).
+          constructor.
+          eapply checkb_correct; exact hal.
+          eapply ih; exact har.
+        + inversion ha as [| ? ? hb hc]; subst.
+          eapply andb_true_iff; split.
+          eapply checkb_correct; exact hb.
+          eapply ih; exact hc.
+      Qed.
+
+      Theorem cspec_protocol_completeness :
+        ∀ (checks : list (pexpr * pexpr)) (s : stmt)
+          (wenv : string -> F),
+        wf_stmt s = true ->
+        nodupb (Vector.to_list privs) = true ->
+        cspec_denote wenv checks s ->
+        ∃ (w : comp_witnessC (compile s)),
+          ∀ (rnd : comp_randC (compile s)) (c : F),
+          cspec_verify checks s c
+            (comp_proveC (compile s) w rnd c) = true.
+      Proof.
+        intros * ha hb (hcheck & hst).
+        destruct (compile_stmt_sound s wenv ha hb hst) as (w & hw).
+        exists w; intros *.
+        unfold cspec_verify.
+        eapply andb_true_iff; split.
+        eapply forallb_checkb; exact hcheck.
+        eapply comp_completeness; exact hw.
+      Qed.
+
+      Theorem cspec_protocol_soundness :
+        ∀ (checks : list (pexpr * pexpr)) (s : stmt) (c c' : F)
+          (t t' : comp_transcriptC (compile s)),
+        wf_stmt s = true ->
+        nodupb (Vector.to_list privs) = true ->
+        disj_inv s = true ->
+        c <> c' ->
+        comp_same_announcementC (compile s) t t' ->
+        cspec_verify checks s c t = true ->
+        cspec_verify checks s c' t' = true ->
+        ∃ (wenv : string -> F), cspec_denote wenv checks s.
+      Proof.
+        intros * ha hb hc hd he hf hg.
+        unfold cspec_verify in hf, hg.
+        eapply andb_true_iff in hf, hg.
+        destruct hf as (hfc & hfv).
+        destruct hg as (hgc & hgv).
+        destruct (compile_protocol_soundness s c c' t t'
+          ha hb hc hd he hfv hgv) as (wenv & hwenv).
+        exists wenv.
+        split.
+        eapply forallb_checkb; exact hfc.
+        exact hwenv.
+      Qed.
+
       (* ------------- Phase 4b: the Pedersen repair ------------- *)
 
       Lemma existsb_false_in :
@@ -1490,7 +2028,9 @@ Section Dsl.
         genv Cn = gop ((genv An) ^ (wenv v)) ((genv Bn) ^ (wenv w)).
       Proof.
         intros *.
-        unfold eq_denote, commit_eq, term_denote; cbn.
+        unfold commit_eq.
+        rewrite simple_eq_denote.
+        unfold terms_fold, term_denote; cbn.
         assert (ha : one * wenv v = wenv v). field.
         assert (hb : one * wenv w = wenv w). field.
         rewrite ha, hb, right_identity.
@@ -1971,6 +2511,1142 @@ Section Dsl.
             exact hren.
       Qed.
 
+      (* ------------- The not-equals pass ------------- *)
+
+      Lemma neq_commit_denote :
+        ∀ (Cn An Bn x r : string) (coeff off : pexpr)
+          (wenv : string -> F),
+        eq_denote wenv (neq_commit Cn An Bn x r coeff off) <->
+        genv Cn =
+          gop ((genv An) ^ (peval penv coeff * wenv x +
+                            peval penv off))
+              ((genv Bn) ^ (wenv r)).
+      Proof.
+        intros *.
+        unfold eq_denote, neq_commit, terms_fold, off_fold,
+          term_denote, off_denote; cbn.
+        rewrite !right_identity.
+        assert (ha : one * wenv r = wenv r). field.
+        rewrite ha.
+        assert (hb : (genv Cn) ^ (opp one) = ginv (genv Cn)).
+        rewrite <-connection_between_vopp_and_fopp.
+        rewrite field_one. reflexivity.
+        rewrite hb.
+        rewrite gop_simp.
+        rewrite <-smul_distributive_fadd.
+        rewrite associative.
+        rewrite gop_eq_gid_iff.
+        rewrite group_inv_inv.
+        split; intro hc; symmetry; exact hc.
+      Qed.
+
+      (* Soundness: from a witness of the lowered statement, either
+         the committed value is nonzero, or a discrete-log relation
+         between the bases. *)
+      Theorem neq_sound :
+        ∀ (Cn An Bn x j s r : string) (coeff off : pexpr)
+          (wenv : string -> F),
+        stmt_denote wenv (neq_stmt Cn An Bn x j s r coeff off) ->
+        (peval penv coeff * wenv x + peval penv off <> zero) ∨
+        (∃ d : F, genv An = (genv Bn) ^ d).
+      Proof.
+        intros * hd.
+        cbn in hd.
+        inversion hd as [| ? ? h₁ hrest]; subst.
+        inversion hrest as [| ? ? h₂ hnil]; subst.
+        eapply neq_commit_denote in h₁.
+        rewrite simple_eq_denote in h₂.
+        unfold terms_fold, term_denote in h₂; cbn in h₂.
+        destruct (Fdec (peval penv coeff * wenv x + peval penv off)
+          zero) as [hz | hnz]; [right | left; exact hnz].
+        rewrite hz in h₁.
+        rewrite field_zero, left_identity in h₁.
+        rewrite h₁ in h₂.
+        rewrite right_identity in h₂.
+        rewrite smul_pow_up in h₂.
+        rewrite <-smul_distributive_fadd in h₂.
+        exists (wenv r * (one * wenv j) + one * wenv s).
+        exact h₂.
+      Qed.
+
+      (* Completeness: an honest prover with a nonzero committed
+         value extends its environment with j = L(x)⁻¹ and
+         s = −r·j. *)
+      Theorem neq_complete :
+        ∀ (Cn An Bn x j s r : string) (coeff off : pexpr)
+          (wenv : string -> F),
+        String.eqb j x = false -> String.eqb j r = false ->
+        String.eqb s x = false -> String.eqb s r = false ->
+        String.eqb s j = false ->
+        peval penv coeff * wenv x + peval penv off <> zero ->
+        genv Cn =
+          gop ((genv An) ^ (peval penv coeff * wenv x +
+                            peval penv off))
+              ((genv Bn) ^ (wenv r)) ->
+        ∃ (wenv' : string -> F),
+          stmt_denote wenv' (neq_stmt Cn An Bn x j s r coeff off).
+      Proof.
+        intros * hjx hjr hsx hsr hsj hnz hcm.
+        set (L := peval penv coeff * wenv x + peval penv off) in *.
+        exists (override
+          (override wenv j (inv L)) s (opp (wenv r) * inv L)).
+        cbn.
+        constructor; [| constructor; [| constructor]].
+        +
+          eapply neq_commit_denote.
+          unfold override.
+          rewrite hsx, hjx, hsr, hjr.
+          exact hcm.
+        +
+          rewrite simple_eq_denote.
+          unfold terms_fold, term_denote; cbn.
+          unfold override.
+          rewrite hsj, !String.eqb_refl.
+          rewrite right_identity.
+          rewrite hcm.
+          rewrite smul_distributive_vadd.
+          rewrite !smul_pow_up.
+          rewrite <-associative.
+          rewrite <-smul_distributive_fadd.
+          assert (ha : L * (one * inv L) = one).
+          field. exact hnz.
+          assert (hb2 : wenv r * (one * inv L) +
+            one * (opp (wenv r) * inv L) = zero).
+          field. exact hnz.
+          rewrite ha, hb2, field_one, field_zero, right_identity.
+          reflexivity.
+      Qed.
+
+      (* ------------- Surface normalization: scalar side ------------- *)
+
+      Lemma priv_fold_app :
+        ∀ (la lb : list (pexpr * string)) (wenv : string -> F),
+        priv_fold wenv (List.app la lb) =
+        priv_fold wenv la + priv_fold wenv lb.
+      Proof.
+        induction la as [|cx la ih]; intros *; cbn.
+        +
+          unfold priv_fold; cbn. field.
+        +
+          unfold priv_fold in ih |- *; cbn.
+          rewrite ih. field.
+      Qed.
+
+      Lemma priv_fold_opp :
+        ∀ (la : list (pexpr * string)) (wenv : string -> F),
+        priv_fold wenv
+          (List.map (fun cx => (POpp (fst cx), snd cx)) la) =
+        opp (priv_fold wenv la).
+      Proof.
+        induction la as [|cx la ih]; intros *.
+        +
+          unfold priv_fold; cbn. field.
+        +
+          unfold priv_fold in ih |- *; cbn.
+          rewrite ih. field.
+      Qed.
+
+      Lemma priv_fold_scale :
+        ∀ (la : list (pexpr * string)) (k : pexpr)
+          (wenv : string -> F),
+        priv_fold wenv
+          (List.map (fun cx => (PMul k (fst cx), snd cx)) la) =
+        peval penv k * priv_fold wenv la.
+      Proof.
+        induction la as [|cx la ih]; intros *.
+        +
+          unfold priv_fold; cbn. field.
+        +
+          unfold priv_fold in ih |- *; cbn.
+          rewrite ih. field.
+      Qed.
+
+      Lemma snorm_correct :
+        ∀ (e : sexpr) (l : lin) (wenv : string -> F),
+        snorm e = Some l ->
+        seval wenv e = lin_denote wenv l.
+      Proof.
+        induction e as [c | x | x | a iha b ihb | a iha b ihb | a iha];
+        intros * hn; cbn in hn.
+        +
+          injection hn as hn; subst.
+          unfold lin_denote, priv_fold; cbn. field.
+        +
+          injection hn as hn; subst.
+          unfold lin_denote, priv_fold; cbn. field.
+        +
+          injection hn as hn; subst.
+          unfold lin_denote, priv_fold; cbn. field.
+        +
+          destruct (snorm a) as [(la, pa)|] eqn:hna; [| congruence].
+          destruct (snorm b) as [(lb, pb)|] eqn:hnb; [| congruence].
+          injection hn as hn; subst.
+          cbn.
+          rewrite (iha _ wenv eq_refl), (ihb _ wenv eq_refl).
+          unfold lin_denote; cbn [fst snd peval].
+          rewrite priv_fold_app.
+          field.
+        +
+          destruct (snorm a) as [(la, pa)|] eqn:hna; [| congruence].
+          destruct (snorm b) as [(lb, pb)|] eqn:hnb; [| congruence].
+          destruct la as [|cxa la'].
+          ++
+            injection hn as hn; subst.
+            cbn.
+            rewrite (iha _ wenv eq_refl), (ihb _ wenv eq_refl).
+            unfold lin_denote; cbn [fst snd peval].
+            rewrite priv_fold_scale.
+            unfold priv_fold; cbn.
+            field.
+          ++
+            destruct lb as [|cxb lb']; [| congruence].
+            injection hn as hn; subst.
+            cbn.
+            rewrite (iha _ wenv eq_refl), (ihb _ wenv eq_refl).
+            unfold lin_denote; cbn [fst snd peval].
+            change (((PMul pb (fst cxa), snd cxa) ::
+              List.map (fun cx => (PMul pb (fst cx), snd cx))
+                la')%list) with
+              (List.map (fun cx => (PMul pb (fst cx), snd cx))
+                ((cxa :: la')%list)).
+            rewrite priv_fold_scale.
+            unfold priv_fold; cbn.
+            field.
+        +
+          destruct (snorm a) as [(la, pa)|] eqn:hna; [| congruence].
+          injection hn as hn; subst.
+          cbn.
+          rewrite (iha _ wenv eq_refl).
+          unfold lin_denote; cbn [fst snd peval].
+          rewrite priv_fold_opp.
+          field.
+      Qed.
+
+      (* ------------- Surface normalization: group side ------------- *)
+
+      Lemma gfold_app :
+        ∀ (A : Type) (f : A -> G) (la lb : list A),
+        List.fold_right (fun a acc => gop (f a) acc) gid
+          (List.app la lb) =
+        gop (List.fold_right (fun a acc => gop (f a) acc) gid la)
+            (List.fold_right (fun a acc => gop (f a) acc) gid lb).
+      Proof.
+        intros A f.
+        induction la as [|a la ih]; intros *; cbn.
+        +
+          rewrite left_identity; reflexivity.
+        +
+          rewrite ih, associative; reflexivity.
+      Qed.
+
+      Lemma gfold_map_inv :
+        ∀ (A : Type) (f : A -> G) (g : A -> A) (la : list A),
+        (∀ a, f (g a) = ginv (f a)) ->
+        List.fold_right (fun a acc => gop (f a) acc) gid
+          (List.map g la) =
+        ginv (List.fold_right (fun a acc => gop (f a) acc) gid la).
+      Proof.
+        intros * hpt.
+        induction la as [|a la ih]; cbn.
+        +
+          rewrite group_inv_id; reflexivity.
+        +
+          rewrite hpt, ih.
+          rewrite group_inv_flip.
+          rewrite commutative.
+          reflexivity.
+      Qed.
+
+      Lemma gfold_map_pow :
+        ∀ (A : Type) (f : A -> G) (g : A -> A) (k : F) (la : list A),
+        (∀ a, f (g a) = (f a) ^ k) ->
+        List.fold_right (fun a acc => gop (f a) acc) gid
+          (List.map g la) =
+        (List.fold_right (fun a acc => gop (f a) acc) gid la) ^ k.
+      Proof.
+        intros * hpt.
+        induction la as [|a la ih]; cbn.
+        +
+          rewrite vid_identity; reflexivity.
+        +
+          rewrite hpt, ih, smul_distributive_vadd.
+          reflexivity.
+      Qed.
+
+      Lemma term_denote_opp :
+        ∀ (wenv : string -> F) (t : term),
+        term_denote wenv
+          (mkterm (POpp (t_coeff t)) (t_var t) (t_base t)) =
+        ginv (term_denote wenv t).
+      Proof.
+        intros *; unfold term_denote; cbn.
+        assert (ha : opp (peval penv (t_coeff t)) * wenv (t_var t) =
+          opp (peval penv (t_coeff t) * wenv (t_var t))). field.
+        rewrite ha.
+        rewrite <-connection_between_vopp_and_fopp.
+        reflexivity.
+      Qed.
+
+      Lemma off_denote_opp :
+        ∀ (o : pexpr * string),
+        off_denote (POpp (fst o), snd o) = ginv (off_denote o).
+      Proof.
+        intros *; unfold off_denote; cbn.
+        rewrite <-connection_between_vopp_and_fopp.
+        reflexivity.
+      Qed.
+
+      Lemma term_denote_scale :
+        ∀ (wenv : string -> F) (k : pexpr) (t : term),
+        term_denote wenv
+          (mkterm (PMul k (t_coeff t)) (t_var t) (t_base t)) =
+        (term_denote wenv t) ^ (peval penv k).
+      Proof.
+        intros *; unfold term_denote; cbn.
+        rewrite smul_pow_up.
+        assert (ha : peval penv k * peval penv (t_coeff t) *
+          wenv (t_var t) =
+          peval penv (t_coeff t) * wenv (t_var t) * peval penv k).
+        field.
+        rewrite ha; reflexivity.
+      Qed.
+
+      Lemma off_denote_scale :
+        ∀ (k : pexpr) (o : pexpr * string),
+        off_denote (PMul k (fst o), snd o) =
+        (off_denote o) ^ (peval penv k).
+      Proof.
+        intros *; unfold off_denote; cbn.
+        rewrite smul_pow_up.
+        assert (ha : peval penv k * peval penv (fst o) =
+          peval penv (fst o) * peval penv k).
+        field.
+        rewrite ha; reflexivity.
+      Qed.
+
+      (* one offset raised to a private linear form is a term list *)
+      Lemma smul_priv_fold :
+        ∀ (ls : list (pexpr * string)) (o : pexpr * string)
+          (wenv : string -> F),
+        (off_denote o) ^ (priv_fold wenv ls) =
+        terms_fold wenv
+          (List.map (fun cx =>
+            mkterm (PMul (fst cx) (fst o)) (snd cx) (snd o)) ls).
+      Proof.
+        induction ls as [|cx ls ih]; intros *;
+        unfold priv_fold, terms_fold in *; cbn.
+        +
+          rewrite field_zero; reflexivity.
+        +
+          rewrite smul_distributive_fadd.
+          rewrite ih.
+          f_equal.
+          unfold term_denote, off_denote; cbn.
+          rewrite smul_pow_up.
+          assert (ha : peval penv (fst o) *
+            (peval penv (fst cx) * wenv (snd cx)) =
+            peval penv (fst cx) * peval penv (fst o) *
+            wenv (snd cx)).
+          field.
+          rewrite ha; reflexivity.
+      Qed.
+
+      (* a pure-point value raised to a private linear form is the
+         flat_map of the per-offset term lists *)
+      Lemma off_fold_priv_pow :
+        ∀ (oa ls : list (pexpr * string)) (wenv : string -> F),
+        (off_fold oa) ^ (priv_fold wenv ls) =
+        terms_fold wenv
+          (List.flat_map (fun o =>
+            List.map (fun cx =>
+              mkterm (PMul (fst cx) (fst o)) (snd cx) (snd o)) ls)
+            oa).
+      Proof.
+        induction oa as [|o oa ih]; intros *.
+        +
+          unfold off_fold, terms_fold; cbn.
+          rewrite vid_identity; reflexivity.
+        +
+          unfold off_fold, terms_fold in ih |- *; cbn.
+          rewrite smul_distributive_vadd.
+          rewrite ih.
+          pose proof (smul_priv_fold ls o wenv) as hs.
+          unfold terms_fold in hs.
+          rewrite hs.
+          pose proof (gfold_app _ (term_denote wenv)
+            (List.map (fun cx => mkterm (PMul (fst cx) (fst o))
+              (snd cx) (snd o)) ls)
+            (List.flat_map (fun o' =>
+              List.map (fun cx => mkterm (PMul (fst cx) (fst o'))
+                (snd cx) (snd o')) ls) oa)) as hap.
+          rewrite hap.
+          reflexivity.
+      Qed.
+
+      Lemma gnorm_correct :
+        ∀ (e : gexpr) (ts : list term)
+          (os : list (pexpr * string)) (wenv : string -> F),
+        gnorm e = Some (ts, os) ->
+        geval wenv e = gop (terms_fold wenv ts) (off_fold os).
+      Proof.
+        induction e as [| P | a iha b ihb | a iha | sc a iha];
+        intros * hn; cbn in hn.
+        +
+          injection hn as h₁ h₂; subst.
+          cbn.
+          unfold terms_fold, off_fold; cbn.
+          rewrite left_identity.
+          reflexivity.
+        +
+          injection hn as h₁ h₂; subst.
+          cbn.
+          unfold terms_fold, off_fold, off_denote; cbn.
+          rewrite field_one, right_identity, left_identity.
+          reflexivity.
+        +
+          destruct (gnorm a) as [(ta, oa)|] eqn:hga; [| congruence].
+          destruct (gnorm b) as [(tb, ob)|] eqn:hgb; [| congruence].
+          injection hn as h₁ h₂; subst.
+          cbn.
+          rewrite (iha _ _ wenv eq_refl), (ihb _ _ wenv eq_refl).
+          unfold terms_fold, off_fold.
+          rewrite !gfold_app.
+          rewrite gop_simp.
+          reflexivity.
+        +
+          destruct (gnorm a) as [(ta, oa)|] eqn:hga; [| congruence].
+          injection hn as h₁ h₂; subst.
+          cbn.
+          rewrite (iha _ _ wenv eq_refl).
+          unfold terms_fold, off_fold.
+          rewrite (gfold_map_inv _ _ _ ta (term_denote_opp wenv)).
+          rewrite (gfold_map_inv _ _ _ oa off_denote_opp).
+          rewrite group_inv_flip.
+          rewrite commutative.
+          reflexivity.
+        +
+          destruct (snorm sc) as [(ls, ps)|] eqn:hs; [| congruence].
+          destruct (gnorm a) as [(ta, oa)|] eqn:hga; [| congruence].
+          destruct ta as [|t₀ ta'].
+          ++
+            destruct ls as [|cx₀ ls'].
+            +++
+              injection hn as h₁ h₂; subst.
+              cbn.
+              rewrite (iha _ _ wenv eq_refl).
+              rewrite (snorm_correct sc _ wenv hs).
+              unfold lin_denote; cbn [fst snd].
+              assert (hz : priv_fold wenv Datatypes.nil +
+                peval penv ps = peval penv ps).
+              unfold priv_fold; cbn; field.
+              rewrite hz.
+              unfold terms_fold at 1, off_fold at 1; cbn.
+              rewrite left_identity.
+              unfold terms_fold, off_fold; cbn.
+              rewrite left_identity.
+              symmetry.
+              eapply (gfold_map_pow _ _ _ _ oa
+                (off_denote_scale ps)).
+            +++
+              injection hn as h₁ h₂; subst.
+              cbn.
+              rewrite (iha _ _ wenv eq_refl).
+              rewrite (snorm_correct sc _ wenv hs).
+              unfold lin_denote; cbn [fst snd].
+              unfold terms_fold at 1, off_fold at 1; cbn.
+              rewrite left_identity.
+              rewrite smul_distributive_fadd.
+              pose proof (off_fold_priv_pow oa
+                ((cx₀ :: ls')%list) wenv) as hp.
+              unfold off_fold, priv_fold, terms_fold in hp;
+              cbn in hp.
+              rewrite hp.
+              f_equal.
+              symmetry.
+              unfold off_fold.
+              eapply (gfold_map_pow _ _ _ _ oa
+                (off_denote_scale ps)).
+          ++
+            destruct ls as [|]; [| congruence].
+            injection hn as h₁ h₂; subst.
+            cbn.
+            rewrite (iha _ _ wenv eq_refl).
+            rewrite (snorm_correct sc _ wenv hs).
+            unfold lin_denote; cbn [fst snd].
+            assert (hz : priv_fold wenv Datatypes.nil +
+              peval penv ps = peval penv ps).
+            unfold priv_fold; cbn; field.
+            rewrite hz.
+            rewrite smul_distributive_vadd.
+            unfold terms_fold, off_fold.
+            rewrite <-(gfold_map_pow _ _ _ _ ((t₀ :: ta')%list)
+              (term_denote_scale wenv ps)).
+            rewrite <-(gfold_map_pow _ _ _ _ oa
+              (off_denote_scale ps)).
+            cbn [List.map].
+            reflexivity.
+      Qed.
+
+      (* ------------- Elaboration correctness ------------- *)
+
+      Lemma elab_eq_correct :
+        ∀ (l r : gexpr) (e : equation) (wenv : string -> F),
+        elab_eq l r = Some e ->
+        (eq_denote wenv e <-> geval wenv l = geval wenv r).
+      Proof.
+        intros * he.
+        unfold elab_eq in he.
+        destruct (gnorm (GAddE r (GInvE l))) as [(ts, os)|] eqn:hg;
+        [| congruence].
+        injection he as he; subst.
+        unfold eq_denote.
+        cbn [eq_rhs eq_off].
+        pose proof (gnorm_correct _ _ _ wenv hg) as hv.
+        cbn in hv.
+        rewrite <-hv.
+        rewrite gop_eq_gid_iff, group_inv_inv.
+        split; intro h; symmetry; exact h.
+      Qed.
+
+      (* the neq-free fragment elaborates to an equivalent statement *)
+      Lemma elab_correct_pos :
+        ∀ (An Bn : string) (ss : sstmt) (s : stmt)
+          (wenv : string -> F),
+        neq_free ss = true ->
+        elab An Bn ss = Some s ->
+        (stmt_denote wenv s <-> sstmt_denote wenv ss).
+      Proof.
+        intros An Bn ss.
+        induction ss as [l r | a b | a iha b ihb | a iha b ihb];
+        intros * hf hn; cbn [neq_free] in hf; cbn [elab] in hn.
+        +
+          destruct (elab_eq l r) as [e|] eqn:he; [| congruence].
+          injection hn as hn; subst.
+          cbn; split.
+          ++
+            intro hd.
+            inversion hd as [|? ? hb hc]; subst.
+            exact (proj1 (elab_eq_correct _ _ _ wenv he) hb).
+          ++
+            intro hd.
+            constructor; [| constructor].
+            exact (proj2 (elab_eq_correct _ _ _ wenv he) hd).
+        +
+          congruence.
+        +
+          eapply andb_true_iff in hf.
+          destruct hf as (hfa & hfb).
+          destruct (elab An Bn a) as [a'|] eqn:hea; [| congruence].
+          destruct (elab An Bn b) as [b'|] eqn:heb; [| congruence].
+          injection hn as hn; subst.
+          cbn.
+          rewrite (iha _ wenv hfa eq_refl), (ihb _ wenv hfb eq_refl).
+          reflexivity.
+        +
+          eapply andb_true_iff in hf.
+          destruct hf as (hfa & hfb).
+          destruct (elab An Bn a) as [a'|] eqn:hea; [| congruence].
+          destruct (elab An Bn b) as [b'|] eqn:heb; [| congruence].
+          injection hn as hn; subst.
+          cbn.
+          rewrite (iha _ wenv hfa eq_refl), (ihb _ wenv hfb eq_refl).
+          reflexivity.
+      Qed.
+
+      (* full elaboration soundness, not-equals included: a witness
+         environment of the elaborated statement satisfies the
+         surface statement, or exhibits a dlog relation between the
+         cind bases *)
+      Lemma elab_sound :
+        ∀ (An Bn : string) (ss : sstmt) (s : stmt)
+          (wenv : string -> F),
+        elab An Bn ss = Some s ->
+        stmt_denote wenv s ->
+        sstmt_denote wenv ss ∨ (∃ d : F, genv An = (genv Bn) ^ d).
+      Proof.
+        intros An Bn ss.
+        induction ss as [l r | a b | a iha b ihb | a iha b ihb];
+        intros * hn hd; cbn [elab] in hn.
+        +
+          destruct (elab_eq l r) as [e|] eqn:he; [| congruence].
+          injection hn as hn; subst.
+          left; cbn.
+          inversion hd as [|? ? hb hc]; subst.
+          exact (proj1 (elab_eq_correct _ _ _ wenv he) hb).
+        +
+          destruct (snorm (SAddE a (SOppE b))) as [(l, off)|]
+            eqn:hsn; cbn in hn; [| congruence].
+          destruct l as [|cx l']; cbn in hn; [congruence |].
+          destruct cx as (c, x).
+          destruct l' as [|]; cbn in hn; [| congruence].
+          injection hn as hn; subst.
+          unfold neq_auto in hd.
+          destruct (neq_sound _ _ _ _ _ _ _ _ _ _ hd)
+            as [hne | hdlog].
+          ++
+            left; cbn.
+            intro heq.
+            eapply hne.
+            pose proof (snorm_correct _ _ wenv hsn) as hsc.
+            cbn in hsc.
+            rewrite heq in hsc.
+            assert (hz : seval wenv b + opp (seval wenv b) = zero).
+            field.
+            rewrite hz in hsc.
+            assert (hw : peval penv c * wenv x + peval penv off =
+              peval penv c * wenv x + zero + peval penv off).
+            field.
+            rewrite hw.
+            symmetry; exact hsc.
+          ++
+            right; exact hdlog.
+        +
+          destruct (elab An Bn a) as [a'|] eqn:hea; [| congruence].
+          destruct (elab An Bn b) as [b'|] eqn:heb; [| congruence].
+          injection hn as hn; subst.
+          cbn in hd.
+          destruct hd as (hda & hdb).
+          destruct (iha _ wenv eq_refl hda) as [ha | ha];
+          [| right; exact ha].
+          destruct (ihb _ wenv eq_refl hdb) as [hb | hb];
+          [| right; exact hb].
+          left; cbn; exact (conj ha hb).
+        +
+          destruct (elab An Bn a) as [a'|] eqn:hea; [| congruence].
+          destruct (elab An Bn b) as [b'|] eqn:heb; [| congruence].
+          injection hn as hn; subst.
+          cbn in hd.
+          destruct hd as [hd | hd].
+          ++
+            destruct (iha _ wenv eq_refl hd) as [ha | ha];
+            [left; cbn; left; exact ha | right; exact ha].
+          ++
+            destruct (ihb _ wenv eq_refl hd) as [hb | hb];
+            [left; cbn; right; exact hb | right; exact hb].
+      Qed.
+
+      (* ------------- Substitution semantics (A1) ------------- *)
+
+      Lemma sexpr_subst_eval :
+        ∀ (e : sexpr) (x : string) (v : sexpr)
+          (wenv : string -> F),
+        seval wenv (sexpr_subst x v e) =
+        seval (override wenv x (seval wenv v)) e.
+      Proof.
+        induction e as [c | y | y | a iha b ihb | a iha b ihb | a iha];
+        intros *; cbn;
+        try (rewrite ?iha, ?ihb; reflexivity).
+        destruct (String.eqb y x) eqn:h.
+        +
+          eapply String.eqb_eq in h; subst.
+          unfold override.
+          rewrite String.eqb_refl.
+          reflexivity.
+        +
+          cbn.
+          unfold override.
+          rewrite String.eqb_sym in h.
+          rewrite h.
+          reflexivity.
+      Qed.
+
+      Lemma gexpr_subst_eval :
+        ∀ (e : gexpr) (x : string) (v : sexpr)
+          (wenv : string -> F),
+        geval wenv (gexpr_subst x v e) =
+        geval (override wenv x (seval wenv v)) e.
+      Proof.
+        induction e as [| P | a iha b ihb | a iha | sc a iha];
+        intros *; cbn;
+        rewrite ?iha, ?ihb, ?sexpr_subst_eval; reflexivity.
+      Qed.
+
+      Lemma sstmt_subst_denote :
+        ∀ (ss : sstmt) (x : string) (v : sexpr)
+          (wenv : string -> F),
+        sstmt_denote wenv (sstmt_subst x v ss) <->
+        sstmt_denote (override wenv x (seval wenv v)) ss.
+      Proof.
+        induction ss as [l r | a b | a iha b ihb | a iha b ihb];
+        intros *; cbn.
+        +
+          rewrite !gexpr_subst_eval.
+          reflexivity.
+        +
+          rewrite !sexpr_subst_eval.
+          reflexivity.
+        +
+          rewrite (iha x v wenv), (ihb x v wenv).
+          reflexivity.
+        +
+          rewrite (iha x v wenv), (ihb x v wenv).
+          reflexivity.
+      Qed.
+
+      (* ------------- End-to-end surface theorems ------------- *)
+
+      Theorem surface_protocol_completeness :
+        ∀ (An Bn : string) (ss : sstmt) (s : stmt)
+          (wenv : string -> F),
+        neq_free ss = true ->
+        elab An Bn ss = Some s ->
+        wf_stmt s = true ->
+        nodupb (Vector.to_list privs) = true ->
+        sstmt_denote wenv ss ->
+        ∃ (w : comp_witnessC (compile s)),
+          ∀ (rnd : comp_randC (compile s)) (c : F),
+          comp_verifyC (compile s) c
+            (comp_proveC (compile s) w rnd c) = true.
+      Proof.
+        intros * hf he hw hn hd.
+        eapply (compile_protocol_completeness s wenv).
+        exact hw. exact hn.
+        eapply elab_correct_pos.
+        exact hf. exact he. exact hd.
+      Qed.
+
+      Theorem surface_protocol_soundness :
+        ∀ (An Bn : string) (ss : sstmt) (s : stmt) (c c' : F)
+          (t t' : comp_transcriptC (compile s)),
+        elab An Bn ss = Some s ->
+        wf_stmt s = true ->
+        nodupb (Vector.to_list privs) = true ->
+        disj_inv s = true ->
+        c <> c' ->
+        comp_same_announcementC (compile s) t t' ->
+        comp_verifyC (compile s) c t = true ->
+        comp_verifyC (compile s) c' t' = true ->
+        (∃ wenv : string -> F, sstmt_denote wenv ss) ∨
+        (∃ d : F, genv An = (genv Bn) ^ d).
+      Proof.
+        intros * he hw hn hdisj hcc hsame hv₁ hv₂.
+        destruct (compile_protocol_soundness s c c' t t'
+          hw hn hdisj hcc hsame hv₁ hv₂) as (wenv & hwenv).
+        destruct (elab_sound An Bn ss s wenv he hwenv) as [hd | hd].
+        left; exists wenv; exact hd.
+        right; exact hd.
+      Qed.
+
+      (* ------------- Vectors and SIMD ------------- *)
+
+      Lemma big_sand_denote :
+        ∀ (l : list sstmt) (s : sstmt) (wenv : string -> F),
+        sstmt_denote wenv (big_sand s l) <->
+        (sstmt_denote wenv s ∧ List.Forall (sstmt_denote wenv) l).
+      Proof.
+        induction l as [|a l ih]; intros *; cbn.
+        +
+          split.
+          intro ha; exact (conj ha (List.Forall_nil _)).
+          intros (ha & hb); exact ha.
+        +
+          split.
+          ++
+            intros (ha & hb).
+            eapply ih in hb.
+            destruct hb as (hbl & hbr).
+            split; [exact hbl | constructor; [exact ha | exact hbr]].
+          ++
+            intros (ha & hb).
+            inversion hb as [| ? ? hc hd]; subst.
+            split; [exact hc | eapply ih; exact (conj ha hd)].
+      Qed.
+
+      Lemma big_gop_map_eval :
+        ∀ (A : Type) (g : A -> gexpr) (l : list A) (e : gexpr)
+          (wenv : string -> F),
+        geval wenv (big_gop e (List.map g l)) =
+        List.fold_right
+          (fun i acc => gop (geval wenv (g i)) acc)
+          (geval wenv e) l.
+      Proof.
+        intros A g.
+        induction l as [|a l ih]; intros *; cbn.
+        +
+          reflexivity.
+        +
+          rewrite ih; reflexivity.
+      Qed.
+
+      (* The dot-product statement means exactly
+           C = Π_{i<nv}  A@i ^ x@i
+         — for every runtime length nv (compare
+         sigma-compiler's dot_product.rs test, which checks
+         vecsize ∈ {0,1,2,20} empirically). *)
+      (* ------------- Range soundness (Milestone E) ------------- *)
+
+      Lemma fnat_add : ∀ (a b : nat),
+        fnat (a + b)%nat = fnat a + fnat b.
+      Proof.
+        induction a as [|a ih]; intros *; cbn.
+        field.
+        rewrite ih. field.
+      Qed.
+
+      Lemma fnat_mul : ∀ (a b : nat),
+        fnat (a * b)%nat = fnat a * fnat b.
+      Proof.
+        induction a as [|a ih]; intros *; cbn.
+        field.
+        rewrite fnat_add, ih. field.
+      Qed.
+
+      Lemma fmul_zero_factor : ∀ (a b : F),
+        a * b = zero -> a = zero ∨ b = zero.
+      Proof.
+        intros * ha.
+        destruct (Fdec a zero) as [hz | hnz].
+        left; exact hz.
+        right.
+        assert (hb : b = inv a * (a * b)). field. exact hnz.
+        rewrite hb, ha. field. exact hnz.
+      Qed.
+
+      Lemma bitof_fnat : ∀ (v : F),
+        v = zero ∨ v = one ->
+        fnat (bitof v) = v.
+      Proof.
+        intros * ha.
+        unfold bitof.
+        destruct (Fdec v zero) as [hz | hnz].
+        +
+          cbn. rewrite hz. reflexivity.
+        +
+          destruct ha as [ha | ha]; [congruence |].
+          cbn. rewrite ha. field.
+      Qed.
+
+      (* the b = b² dichotomy for one bit *)
+      Lemma bit_dichotomy :
+        ∀ (Cb An Bn b r sn : string) (wenv : string -> F),
+        eq_denote wenv (commit_eq Cb An Bn b r) ->
+        eq_denote wenv (simple_eq Cb
+          (List.cons (mkterm (PConst one) b Cb)
+            (List.cons (mkterm (PConst one) sn Bn) List.nil))) ->
+        (wenv b = zero ∨ wenv b = one) ∨
+        (∃ d : F, genv An = (genv Bn) ^ d).
+      Proof.
+        intros * h₁ h₂.
+        eapply commit_eq_denote in h₁.
+        rewrite simple_eq_denote in h₂.
+        unfold terms_fold, term_denote in h₂; cbn in h₂.
+        rewrite right_identity in h₂.
+        rewrite h₁ in h₂.
+        rewrite smul_distributive_vadd, !smul_pow_up in h₂.
+        rewrite <-associative in h₂.
+        rewrite <-smul_distributive_fadd in h₂.
+        assert (ha : wenv b * (one * wenv b) = wenv b * wenv b).
+        field.
+        rewrite ha in h₂.
+        destruct (pedersen_binding_dichotomy _ _ _ _ _ _ h₂)
+          as [heq | hdlog]; [| right; exact hdlog].
+        left.
+        assert (hz : wenv b * (one + opp (wenv b)) = zero).
+        assert (hh : wenv b * (one + opp (wenv b)) =
+          wenv b + opp (wenv b * wenv b)). field.
+        rewrite hh, <-heq. field.
+        destruct (fmul_zero_factor _ _ hz) as [h0 | h1].
+        left; exact h0.
+        right.
+        assert (hh : wenv b = one + opp (one + opp (wenv b))).
+        field.
+        rewrite hh, h1. field.
+      Qed.
+
+      (* the A-power collapse of the linking equation *)
+      Lemma range_terms_fold :
+        ∀ (An x : string) (iws : list (nat * nat))
+          (wenv : string -> F),
+        terms_fold wenv
+          (List.map (fun iw =>
+            mkterm (PConst (opp (fnat (snd iw))))
+              (bit_b x (fst iw)) An) iws) =
+        (genv An) ^
+          (List.fold_right (fun iw acc =>
+            opp (fnat (snd iw)) * wenv (bit_b x (fst iw)) + acc)
+            zero iws).
+      Proof.
+        induction iws as [|iw iws ih]; intros *;
+        unfold terms_fold in *; cbn.
+        +
+          rewrite field_zero; reflexivity.
+        +
+          rewrite ih.
+          rewrite smul_distributive_fadd.
+          unfold term_denote; cbn.
+          reflexivity.
+      Qed.
+
+      Lemma fold_opp_coeff :
+        ∀ (x : string) (iws : list (nat * nat))
+          (wenv : string -> F),
+        List.fold_right (fun iw acc =>
+          opp (fnat (snd iw)) * wenv (bit_b x (fst iw)) + acc)
+          zero iws =
+        opp (List.fold_right (fun iw acc =>
+          fnat (snd iw) * wenv (bit_b x (fst iw)) + acc)
+          zero iws).
+      Proof.
+        induction iws as [|iw iws ih]; intros *; cbn.
+        field.
+        rewrite ih. field.
+      Qed.
+
+      Lemma range_link_sound :
+        ∀ (An x : string) (iws : list (nat * nat))
+          (wenv : string -> F),
+        eq_denote wenv (range_link An x iws) ->
+        (genv An = gid) ∨
+        (wenv x = List.fold_right (fun iw acc =>
+          fnat (snd iw) * wenv (bit_b x (fst iw)) + acc)
+          zero iws).
+      Proof.
+        intros * hd.
+        unfold eq_denote, range_link in hd; cbn in hd.
+        rewrite right_identity in hd.
+        pose proof (range_terms_fold An x iws wenv) as hf.
+        unfold terms_fold in hf; cbn in hf.
+        rewrite hf in hd.
+        unfold term_denote in hd; cbn in hd.
+        rewrite <-smul_distributive_fadd in hd.
+        destruct (@gid_power_zero F (@eq F) zero one add mul sub div
+          opp inv G (@eq G) gid ginv gop gpow Hvec Fdec _ _ hd)
+          as [hg | hz].
+        left; exact hg.
+        right.
+        rewrite fold_opp_coeff in hz.
+        assert (hh : wenv x =
+          one * wenv x +
+          opp (List.fold_right (fun iw acc =>
+            fnat (snd iw) * wenv (bit_b x (fst iw)) + acc)
+            zero iws) +
+          List.fold_right (fun iw acc =>
+            fnat (snd iw) * wenv (bit_b x (fst iw)) + acc)
+            zero iws).
+        field.
+        rewrite hh, hz. field.
+      Qed.
+
+      (* good bits: the F-value fold is the embedding of the
+         nat-side weighted bit sum *)
+      Lemma range_bits_value :
+        ∀ (x : string) (iws : list (nat * nat))
+          (wenv : string -> F),
+        (∀ iw, List.In iw iws ->
+          wenv (bit_b x (fst iw)) = zero ∨
+          wenv (bit_b x (fst iw)) = one) ->
+        List.fold_right (fun iw acc =>
+          fnat (snd iw) * wenv (bit_b x (fst iw)) + acc)
+          zero iws =
+        fnat (List.fold_right (fun iw acc =>
+          (snd iw * bitof (wenv (bit_b x (fst iw)))) + acc)%nat
+          0%nat iws).
+      Proof.
+        induction iws as [|iw iws ih]; intros * hb; cbn.
+        reflexivity.
+        rewrite fnat_add, fnat_mul.
+        rewrite (bitof_fnat _ (hb iw (or_introl eq_refl))).
+        rewrite ih.
+        reflexivity.
+        intros iw' hin; eapply hb; right; exact hin.
+      Qed.
+
+      (* ---- nat side: the weighted bit sum is below u ---- *)
+
+      Lemma fold_add_base : ∀ (l : list nat) (b : nat),
+        (List.fold_right Nat.add b l =
+         List.fold_right Nat.add 0 l + b)%nat.
+      Proof.
+        induction l as [|a l ih]; intros *; cbn.
+        lia.
+        rewrite ih; lia.
+      Qed.
+
+      Lemma pow2_sum : ∀ (m : nat),
+        (List.fold_right Nat.add 0
+          (List.map (fun i => Nat.pow 2 i) (List.seq 0 m)) =
+          Nat.pow 2 m - 1)%nat.
+      Proof.
+        induction m as [|m ih].
+        reflexivity.
+        rewrite List.seq_S, List.map_app, List.fold_right_app.
+        cbn.
+        rewrite fold_add_base, ih.
+        assert (hp : Nat.pow 2 m <> 0%nat).
+        eapply PeanoNat.Nat.pow_nonzero; lia.
+        cbn [Nat.pow].
+        lia.
+      Qed.
+
+      Lemma sum_mono :
+        ∀ (x : string) (iws : list (nat * nat))
+          (wenv : string -> F),
+        (List.fold_right (fun iw acc =>
+          (snd iw * bitof (wenv (bit_b x (fst iw)))) + acc)%nat
+          0%nat iws <=
+        List.fold_right (fun iw acc => (snd iw + acc)%nat)
+          0%nat iws)%nat.
+      Proof.
+        induction iws as [|iw iws ih]; intros *; cbn.
+        lia.
+        pose proof (ih wenv).
+        assert (hb : (bitof (wenv (bit_b x (fst iw))) <= 1)%nat).
+        unfold bitof;
+        destruct (Fdec (wenv (bit_b x (fst iw))) zero); lia.
+        nia.
+      Qed.
+
+      Lemma snd_fold_combine :
+        ∀ (ws : list nat) (a : nat),
+        (List.fold_right (fun iw acc => (snd iw + acc)%nat) 0%nat
+          (List.combine (List.seq a (List.length ws)) ws) =
+        List.fold_right Nat.add 0%nat ws)%nat.
+      Proof.
+        induction ws as [|w ws ih]; intros *; cbn.
+        reflexivity.
+        rewrite ih.
+        reflexivity.
+      Qed.
+
+      Lemma weights_sum : ∀ (u : nat),
+        (2 <= u)%nat ->
+        (List.fold_right Nat.add 0 (range_weights u) = u - 1)%nat.
+      Proof.
+        intros * hu.
+        unfold range_weights.
+        rewrite List.fold_right_app.
+        cbn.
+        rewrite fold_add_base, pow2_sum.
+        destruct (PeanoNat.Nat.log2_spec u) as (hl & hr); [lia |].
+        assert (hp : Nat.pow 2 (Nat.log2 u) <> 0%nat).
+        eapply PeanoNat.Nat.pow_nonzero; lia.
+        lia.
+      Qed.
+
+      (* ---- assembling the soundness theorem ---- *)
+
+      Lemma forall_flat_map_in :
+        ∀ (A B : Type) (P : B -> Prop) (f : A -> list B)
+          (l : list A) (a : A),
+        List.Forall P (List.flat_map f l) ->
+        List.In a l ->
+        List.Forall P (f a).
+      Proof.
+        intros * hf hin.
+        rewrite List.Forall_forall in hf.
+        rewrite List.Forall_forall.
+        intros b hb.
+        eapply hf.
+        eapply List.in_flat_map.
+        exists a; exact (conj hin hb).
+      Qed.
+
+      Lemma find_nonbit_none :
+        ∀ (l : list (nat * nat)) (wenv : string -> F) (x : string),
+        find_nonbit wenv x l = None ->
+        ∀ iw, List.In iw l ->
+        wenv (bit_b x (fst iw)) = zero ∨
+        wenv (bit_b x (fst iw)) = one.
+      Proof.
+        induction l as [|iw l ih]; intros * hf iw' hin.
+        destruct hin.
+        cbn in hf.
+        destruct (Fdec (wenv (bit_b x (fst iw))) zero) as [h0 | h0].
+        +
+          destruct hin as [hin | hin].
+          subst; left; exact h0.
+          eapply ih; eauto.
+        +
+          destruct (Fdec (wenv (bit_b x (fst iw))) one) as [h1 | h1];
+          [| congruence].
+          destruct hin as [hin | hin].
+          subst; right; exact h1.
+          eapply ih; eauto.
+      Qed.
+
+      Lemma find_nonbit_some :
+        ∀ (l : list (nat * nat)) (wenv : string -> F)
+          (x : string) (iw : nat * nat),
+        find_nonbit wenv x l = Some iw ->
+        List.In iw l ∧
+        wenv (bit_b x (fst iw)) <> zero ∧
+        wenv (bit_b x (fst iw)) <> one.
+      Proof.
+        induction l as [|iw₀ l ih]; intros * hf; cbn in hf.
+        congruence.
+        destruct (Fdec (wenv (bit_b x (fst iw₀))) zero).
+        +
+          destruct (ih _ _ _ hf) as (ha & hb & hc).
+          split; [right; exact ha | exact (conj hb hc)].
+        +
+          destruct (Fdec (wenv (bit_b x (fst iw₀))) one).
+          ++
+            destruct (ih _ _ _ hf) as (ha & hb & hc).
+            split; [right; exact ha | exact (conj hb hc)].
+          ++
+            injection hf as hf; subst.
+            split; [left; reflexivity | eauto].
+      Qed.
+
+      (* Range soundness: a witness of the lowered statement either
+         places x in [0, u) — as the embedding of an integer — or
+         yields a degenerate base (A = 1) or a dlog relation between
+         the cind bases. *)
+      Theorem range_sound :
+        ∀ (An Bn x : string) (u : nat) (wenv : string -> F),
+        (2 <= u)%nat ->
+        stmt_denote wenv (range_stmt An Bn x u) ->
+        (∃ k : nat, (k < u)%nat ∧ wenv x = fnat k) ∨
+        (genv An = gid) ∨
+        (∃ d : F, genv An = (genv Bn) ^ d).
+      Proof.
+        intros * hu hd.
+        cbn in hd.
+        inversion hd as [| ? ? hlink hbits]; subst.
+        destruct (find_nonbit wenv x (indexed_weights u)) eqn:hf.
+        +
+          destruct (find_nonbit_some _ _ _ _ hf)
+            as (hin & hnz & hno).
+          pose proof (forall_flat_map_in _ _ _ _ _ _ hbits hin)
+            as hbe.
+          inversion hbe as [| ? ? he₁ hbe']; subst.
+          inversion hbe' as [| ? ? he₂ hnil]; subst.
+          destruct (bit_dichotomy _ _ _ _ _ _ wenv he₁ he₂)
+            as [[h0 | h1] | hdlog].
+          exfalso; eapply hnz; exact h0.
+          exfalso; eapply hno; exact h1.
+          right; right; exact hdlog.
+        +
+          destruct (range_link_sound _ _ _ _ hlink) as [hg | hv].
+          right; left; exact hg.
+          left.
+          pose proof (find_nonbit_none _ _ _ hf) as hgood.
+          rewrite (range_bits_value _ _ _ hgood) in hv.
+          eexists; split; [| exact hv].
+          pose proof (sum_mono x (indexed_weights u) wenv) as hm.
+          pose proof (snd_fold_combine (range_weights u) 0) as hsf.
+          pose proof (weights_sum u hu) as hws.
+          unfold indexed_weights in *.
+          lia.
+      Qed.
+
+      Theorem dot_product_denote :
+        ∀ (nv : nat) (C x A : string) (wenv : string -> F),
+        sstmt_denote wenv (dot_product_stmt C x A nv) <->
+        genv C =
+        List.fold_right
+          (fun i acc =>
+            gop ((genv (vname A i)) ^ (wenv (vname x i))) acc)
+          gid (List.seq 0 nv).
+      Proof.
+        intros *.
+        unfold dot_product_stmt, dot_terms.
+        cbn [sstmt_denote].
+        rewrite big_gop_map_eval.
+        cbn [geval].
+        reflexivity.
+      Qed.
+
     End Proofs.
 
   End Spec.
@@ -1979,6 +3655,10 @@ Section Dsl.
 
   Section SchnorrExample.
 
+    Context
+      {Hvec : @vector_space F (@eq F) zero one add mul sub
+        div opp inv G (@eq G) gid ginv gop gpow}.
+
     #[local] Open Scope string_scope.
 
     (* One private scalar x; the statement  H = G^x  *)
@@ -1986,7 +3666,7 @@ Section Dsl.
 
     Definition schnorr_stmt : stmt :=
       SLeaf (List.cons
-        (mkeq "H" (List.cons (mkterm (PConst one) "x" "G") List.nil))
+        (simple_eq "H" (List.cons (mkterm (PConst one) "x" "G") List.nil))
         List.nil).
 
     (* The typechecker runs by computation. *)
@@ -2004,10 +3684,10 @@ Section Dsl.
     Definition or_stmt : stmt :=
       SOr
         (SLeaf (List.cons
-          (mkeq "H1" (List.cons (mkterm (PConst one) "x" "G")
+          (simple_eq "H1" (List.cons (mkterm (PConst one) "x" "G")
             List.nil)) List.nil))
         (SLeaf (List.cons
-          (mkeq "H2" (List.cons (mkterm (PConst one) "y" "G")
+          (simple_eq "H2" (List.cons (mkterm (PConst one) "y" "G")
             List.nil)) List.nil)).
 
     Example or_disj : disj_inv or_stmt = true := eq_refl.
@@ -2020,14 +3700,14 @@ Section Dsl.
     Definition bad_stmt : stmt :=
       SAnd
         (SLeaf (List.cons
-          (mkeq "C" (List.cons (mkterm (PConst one) "x" "G")
+          (simple_eq "C" (List.cons (mkterm (PConst one) "x" "G")
             List.nil)) List.nil))
         (SOr
           (SLeaf (List.cons
-            (mkeq "H1" (List.cons (mkterm (PConst one) "x" "G")
+            (simple_eq "H1" (List.cons (mkterm (PConst one) "x" "G")
               List.nil)) List.nil))
           (SLeaf (List.cons
-            (mkeq "H2" (List.cons (mkterm (PConst one) "y" "G")
+            (simple_eq "H2" (List.cons (mkterm (PConst one) "y" "G")
               List.nil)) List.nil))).
 
     Example bad_disj : disj_inv bad_stmt = false := eq_refl.
@@ -2037,15 +3717,15 @@ Section Dsl.
        all run by computation. *)
     Definition bad_sc : stmt :=
       SLeaf (List.cons
-        (mkeq "C" (List.cons (mkterm (PConst one) "x" "G")
+        (simple_eq "C" (List.cons (mkterm (PConst one) "x" "G")
           List.nil)) List.nil).
     Definition bad_sa : stmt :=
       SLeaf (List.cons
-        (mkeq "H1" (List.cons (mkterm (PConst one) "x" "G")
+        (simple_eq "H1" (List.cons (mkterm (PConst one) "x" "G")
           List.nil)) List.nil).
     Definition bad_sb : stmt :=
       SLeaf (List.cons
-        (mkeq "H2" (List.cons (mkterm (PConst one) "y" "G")
+        (simple_eq "H2" (List.cons (mkterm (PConst one) "y" "G")
           List.nil)) List.nil).
 
     Example bad_pattern_rejected :
@@ -2075,12 +3755,15 @@ Section Dsl.
       +
         intro ha.
         inversion ha as [| ? ? hb hc]; subst.
+        rewrite simple_eq_denote in hb.
         exact hb.
+        exact Hvec.
       +
         intro ha.
-        constructor.
+        constructor; [| constructor].
+        rewrite simple_eq_denote.
         exact ha.
-        constructor.
+        exact Hvec.
     Qed.
 
   End SchnorrExample.
