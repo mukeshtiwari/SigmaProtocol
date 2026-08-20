@@ -77,3 +77,4 @@ _build/default/src/Compiler/Nizk.v
 _build/default/src/Compiler/CompilerIns.v
 _build/default/src/Compiler/Threshold.v
 _build/default/src/Compiler/Serialization.v
+_build/default/src/Compiler/CompilerHelios.v
