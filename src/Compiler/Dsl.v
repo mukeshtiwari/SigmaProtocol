@@ -2205,6 +2205,210 @@ Section Dsl.
               exact hce.
       Qed.
 
+      Lemma nodup_in_neq :
+        ∀ (l : list string) (a b : string),
+        List.NoDup l -> List.In a l -> List.In b l ->
+        a <> b -> String.eqb b a = false.
+      Proof.
+        intros * hnd hia hib hne.
+        destruct (String.eqb b a) eqn:he; [| reflexivity].
+        eapply String.eqb_eq in he; subst; contradiction.
+      Qed.
+
+      (* Completeness of the automated repair (canonical single
+         shared-variable case).  genv already publishes the
+         commitment c_name x = A^{wenv x}·B^{wenv (r_name x)} (the
+         prover's committed value, as in repair_completeness); the
+         witness is extended on the four generated copy/randomness
+         names, all required fresh w.r.t. the whole statement and
+         pairwise distinct (both decidable, true by computation for
+         the '#'-suffixed names).  The n-variable case iterates this
+         environment extension over shared_vars. *)
+      Theorem auto_repair_complete :
+        ∀ (An Bn x : string) (sc sa sb : stmt) (wenv : string -> F),
+        List.NoDup (List.cons x (List.cons (r_name x)
+          (List.cons (l_name x) (List.cons (lr_name x)
+          (List.cons (rn_name x) (List.cons (rr_name x)
+          List.nil)))))) ->
+        List.existsb (String.eqb (l_name x))
+          (List.app (stmt_vars sa) (List.app (stmt_vars sb)
+            (stmt_vars sc))) = false ->
+        List.existsb (String.eqb (lr_name x))
+          (List.app (stmt_vars sa) (List.app (stmt_vars sb)
+            (stmt_vars sc))) = false ->
+        List.existsb (String.eqb (rn_name x))
+          (List.app (stmt_vars sa) (List.app (stmt_vars sb)
+            (stmt_vars sc))) = false ->
+        List.existsb (String.eqb (rr_name x))
+          (List.app (stmt_vars sa) (List.app (stmt_vars sb)
+            (stmt_vars sc))) = false ->
+        genv (c_name x) =
+          gop ((genv An) ^ (wenv x)) ((genv Bn) ^ (wenv (r_name x))) ->
+        stmt_denote wenv sc ->
+        (stmt_denote wenv sa ∨ stmt_denote wenv sb) ->
+        ∃ (wenv' : string -> F),
+          stmt_denote wenv'
+            (repair_with An Bn (List.cons x List.nil) sc sa sb).
+      Proof.
+        intros * hnd hfl hflr hfrn hfrr hcm hsc hbr.
+        set (l6 := List.cons x (List.cons (r_name x)
+          (List.cons (l_name x) (List.cons (lr_name x)
+          (List.cons (rn_name x) (List.cons (rr_name x) List.nil)))))).
+        assert (hnd6 : List.NoDup l6) by exact hnd.
+        assert (Hx : List.In x l6) by (left; reflexivity).
+        assert (Hr : List.In (r_name x) l6) by (right; left; reflexivity).
+        assert (Hl : List.In (l_name x) l6) by (do 2 right; left; reflexivity).
+        assert (Hlr : List.In (lr_name x) l6) by (do 3 right; left; reflexivity).
+        assert (Hrn : List.In (rn_name x) l6) by (do 4 right; left; reflexivity).
+        assert (Hrr : List.In (rr_name x) l6) by (do 5 right; left; reflexivity).
+        assert (D : ∀ a b, List.In a l6 -> List.In b l6 -> a <> b ->
+          String.eqb b a = false).
+        { intros a b ha hb hab; eapply nodup_in_neq;
+          [exact hnd6 | exact ha | exact hb | exact hab]. }
+        (* NoDup gives head distinct from every tail element *)
+        inversion hnd as [| ? ? hnx hnd1]; subst.
+        inversion hnd1 as [| ? ? hnr hnd2]; subst.
+        inversion hnd2 as [| ? ? hnl hnd3]; subst.
+        inversion hnd3 as [| ? ? hnlr hnd4]; subst.
+        (* pairwise disequalities from non-membership *)
+        assert (drl : r_name x <> l_name x)
+          by (intro hh; symmetry in hh; apply hnr; left; exact hh).
+        assert (drlr : r_name x <> lr_name x)
+          by (intro hh; symmetry in hh; apply hnr; right; left; exact hh).
+        assert (drrn : r_name x <> rn_name x)
+          by (intro hh; symmetry in hh; apply hnr; right; right; left; exact hh).
+        assert (drrr : r_name x <> rr_name x)
+          by (intro hh; symmetry in hh; apply hnr; right; right; right; left; exact hh).
+        assert (dxl : x <> l_name x)
+          by (intro hh; symmetry in hh; apply hnx; right; left; exact hh).
+        assert (dxlr : x <> lr_name x)
+          by (intro hh; symmetry in hh; apply hnx; right; right; left; exact hh).
+        assert (dxrn : x <> rn_name x)
+          by (intro hh; symmetry in hh; apply hnx; right; right; right; left; exact hh).
+        assert (dxrr : x <> rr_name x)
+          by (intro hh; symmetry in hh; apply hnx; do 4 right; left; exact hh).
+        assert (dllr : l_name x <> lr_name x)
+          by (intro hh; symmetry in hh; apply hnl; left; exact hh).
+        assert (dlrn : l_name x <> rn_name x)
+          by (intro hh; symmetry in hh; apply hnl; right; left; exact hh).
+        assert (dlrr : l_name x <> rr_name x)
+          by (intro hh; symmetry in hh; apply hnl; right; right; left; exact hh).
+        assert (dlrrr : lr_name x <> rr_name x)
+          by (intro hh; symmetry in hh; apply hnlr; right; left; exact hh).
+        assert (dlrrn : lr_name x <> rn_name x)
+          by (intro hh; symmetry in hh; apply hnlr; left; exact hh).
+        inversion hnd4 as [| ? ? hnrn hnd5]; subst.
+        assert (drnrr : rn_name x <> rr_name x)
+          by (intro hh; symmetry in hh; apply hnrn; left; exact hh).
+        set (wenv' := override (override (override (override wenv
+          (l_name x) (wenv x)) (rn_name x) (wenv x))
+          (lr_name x) (wenv (r_name x))) (rr_name x) (wenv (r_name x))).
+        assert (hoff : ∀ y,
+          String.eqb (l_name x) y = false ->
+          String.eqb (lr_name x) y = false ->
+          String.eqb (rn_name x) y = false ->
+          String.eqb (rr_name x) y = false ->
+          wenv' y = wenv y).
+        { intros y h1 h2 h3 h4; unfold wenv', override.
+          rewrite h4, h2, h3, h1; reflexivity. }
+        assert (hagree : ∀ s, (∀ y, List.In y (stmt_vars s) ->
+          List.In y (List.app (stmt_vars sa)
+            (List.app (stmt_vars sb) (stmt_vars sc)))) ->
+          ∀ y, List.In y (stmt_vars s) -> wenv' y = wenv y).
+        { intros s hsub y hy.
+          eapply hoff.
+          eapply (existsb_false_in _ _ _ hfl); eapply hsub; exact hy.
+          eapply (existsb_false_in _ _ _ hflr); eapply hsub; exact hy.
+          eapply (existsb_false_in _ _ _ hfrn); eapply hsub; exact hy.
+          eapply (existsb_false_in _ _ _ hfrr); eapply hsub; exact hy. }
+        assert (hwr : wenv' (r_name x) = wenv (r_name x)).
+        { eapply hoff.
+          exact (D (r_name x) (l_name x) Hr Hl drl).
+          exact (D (r_name x) (lr_name x) Hr Hlr drlr).
+          exact (D (r_name x) (rn_name x) Hr Hrn drrn).
+          exact (D (r_name x) (rr_name x) Hr Hrr drrr). }
+        assert (hwx : wenv' x = wenv x).
+        { eapply hoff.
+          exact (D x (l_name x) Hx Hl dxl).
+          exact (D x (lr_name x) Hx Hlr dxlr).
+          exact (D x (rn_name x) Hx Hrn dxrn).
+          exact (D x (rr_name x) Hx Hrr dxrr). }
+        assert (hwl : wenv' (l_name x) = wenv x).
+        { unfold wenv', override.
+          rewrite (D (l_name x) (rr_name x) Hl Hrr dlrr).
+          rewrite (D (l_name x) (lr_name x) Hl Hlr dllr).
+          rewrite (D (l_name x) (rn_name x) Hl Hrn dlrn).
+          rewrite String.eqb_refl; reflexivity. }
+        assert (hwrn : wenv' (rn_name x) = wenv x).
+        { unfold wenv', override.
+          rewrite (D (rn_name x) (rr_name x) Hrn Hrr drnrr).
+          rewrite (D (rn_name x) (lr_name x) Hrn Hlr (not_eq_sym dlrrn)).
+          rewrite String.eqb_refl; reflexivity. }
+        assert (hwlr : wenv' (lr_name x) = wenv (r_name x)).
+        { unfold wenv', override.
+          rewrite (D (lr_name x) (rr_name x) Hlr Hrr dlrrr).
+          rewrite String.eqb_refl; reflexivity. }
+        assert (hwrr : wenv' (rr_name x) = wenv (r_name x)).
+        { unfold wenv', override.
+          rewrite String.eqb_refl; reflexivity. }
+                exists wenv'.
+        cbn.
+        split.
+        +
+          split.
+          ++
+            eapply stmt_denote_ext; [| exact hsc].
+            intros z hz; symmetry.
+            eapply (hagree sc); [| exact hz].
+            intros y hy; eapply List.in_or_app; right;
+              eapply List.in_or_app; right; exact hy.
+          ++
+            constructor; [| constructor].
+            eapply commit_eq_denote.
+            rewrite hwx, hwr; exact hcm.
+        +
+          destruct hbr as [hbr | hbr].
+          ++
+            left; split.
+            +++
+              eapply rename_stmt_denote.
+              eapply stmt_denote_ext; [| exact hbr].
+              intros y hy.
+              unfold override; fold wenv'.
+              destruct (String.eqb x y) eqn:hxy.
+              ++++
+                eapply String.eqb_eq in hxy; subst.
+                rewrite hwl; reflexivity.
+              ++++
+                symmetry.
+                eapply (hagree sa); [| exact hy].
+                intros z hz; eapply List.in_or_app; left; exact hz.
+            +++
+              constructor; [| constructor].
+              eapply commit_eq_denote.
+              rewrite hwl, hwlr; exact hcm.
+          ++
+            right; split.
+            +++
+              eapply rename_stmt_denote.
+              eapply stmt_denote_ext; [| exact hbr].
+              intros y hy.
+              unfold override; fold wenv'.
+              destruct (String.eqb x y) eqn:hxy.
+              ++++
+                eapply String.eqb_eq in hxy; subst.
+                rewrite hwrn; reflexivity.
+              ++++
+                symmetry.
+                eapply (hagree sb); [| exact hy].
+                intros z hz; eapply List.in_or_app; right;
+                  eapply List.in_or_app; left; exact hz.
+            +++
+              constructor; [| constructor].
+              eapply commit_eq_denote.
+              rewrite hwrn, hwrr; exact hcm.
+      Qed.
+
       (* ------------- Phase 5: THRESH semantics ------------- *)
 
       Lemma big_and_denote :

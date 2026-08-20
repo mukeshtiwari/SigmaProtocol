@@ -166,3 +166,15 @@
    (name Compilerlib)
    (libraries zarith)
    (modules :standard)))
+
+(subdir Helioslib
+ (rocq.extraction
+  (prelude Extraction)
+  (extracted_files Ascii0.ml Ascii0.mli BinInt.ml BinInt.mli BinNat.ml BinNat.mli BinNums.ml BinNums.mli BinPos.ml BinPos.mli Byte0.ml Byte0.mli Byte1.ml Byte1.mli CompilerHelios.ml CompilerHelios.mli Composition.ml Composition.mli Datatypes.ml Datatypes.mli Decimal0.ml Decimal0.mli DecimalString.ml DecimalString.mli Dsl.ml Dsl.mli EqdepFacts.ml EqdepFacts.mli Functions.ml Functions.mli LinearRelation.ml LinearRelation.mli List0.ml List0.mli ListDef.ml ListDef.mli Nat0.ml Nat0.mli Nizk.ml Nizk.mli PeanoNat.ml PeanoNat.mli PosDef.ml PosDef.mli Sha256.ml Sha256.mli Sigma.ml Sigma.mli Specif.ml Specif.mli String0.ml String0.mli Util.ml Util.mli Vector.ml Vector.mli VectorDef.ml VectorDef.mli Zpstar.ml Zpstar.mli)
+  (theories ExtLib Stdlib Utility Crypto Algebra 
+   Probability Examples Frontend Backend Compiler
+   Coqprime Bignums))
+ (library 
+   (name Helioslib)
+   (libraries zarith)
+   (modules :standard)))

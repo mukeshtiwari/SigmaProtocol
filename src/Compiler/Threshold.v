@@ -328,6 +328,133 @@ Section Threshold.
         eapply hchild'; exact hin.
     Qed.
 
+    (* ---------- completeness ---------- *)
+
+    (* A prover who can answer any challenge on the honest children
+       (from a witness) and simulate any challenge on the rest can
+       build an accepting threshold transcript.  The construction:
+       choose the n - thr simulated branches' challenges freely as
+       base points, add (0, c), interpolate; the honest branches'
+       challenges are then read off the degree-(n-thr) interpolant. *)
+
+    Variable child_prove : nat -> F -> T.
+    Variable child_sim : nat -> F -> T.
+    Hypothesis child_prove_ok :
+      ∀ i c, child_holds i -> child_verify i c (child_prove i c) = true.
+    Hypothesis child_sim_ok :
+      ∀ i c, child_verify i c (child_sim i c) = true.
+
+    Section Complete.
+
+      Variables (thr n : nat) (c : F) (default : T).
+      (* sim : the n - thr indices to simulate, with their chosen
+         challenges; hon : the thr honest indices (all holding). *)
+      Variable sim : list (nat * F).
+      Variable hon : list nat.
+      Hypothesis hlen_xs : length xs = n.
+      Hypothesis hsim_len : length sim = (n - thr)%nat.
+      Hypothesis hthr_le : (thr <= n)%nat.
+      (* base = (0,c) plus the simulated challenge points *)
+      Definition base0 : list (F * F) :=
+        (zero, c) :: List.map (fun p => (nth (fst p) xs zero, snd p)) sim.
+      (* the challenge assigned to child i *)
+      Definition chal (i : nat) : F := lag_interpF base0 (nth i xs zero).
+      (* the transcript for child i *)
+      Definition tr (i : nat) : T :=
+        if existsb (fun p => Nat.eqb (fst p) i) sim
+        then child_sim i (chal i)
+        else child_prove i (chal i).
+      Definition cs_out : list F := List.map chal (seq 0 n).
+      Definition ts_out : list T := List.map tr (seq 0 n).
+
+      Hypothesis base0_nodup_nodes :
+        List.NoDup (List.map fst base0).
+      Hypothesis honest_hold :
+        ∀ i, (i < n)%nat ->
+        existsb (fun p => Nat.eqb (fst p) i) sim = false ->
+        child_holds i.
+
+      Lemma base0_len : length base0 = S (n - thr).
+      Proof.
+        unfold base0; cbn.
+        rewrite map_length, hsim_len.
+        reflexivity.
+      Qed.
+
+      Lemma nth_cs_out : ∀ i, (i < n)%nat -> nth i cs_out zero = chal i.
+      Proof.
+        intros i hi.
+        unfold cs_out.
+        rewrite (nth_indep _ _ (chal 0)).
+        rewrite map_nth.
+        rewrite seq_nth; [reflexivity | exact hi].
+        rewrite map_length, seq_length; exact hi.
+      Qed.
+
+      Lemma nth_ts_out : ∀ i, (i < n)%nat -> nth i ts_out default = tr i.
+      Proof.
+        intros i hi.
+        unfold ts_out.
+        rewrite (nth_indep _ _ (tr 0)).
+        rewrite map_nth.
+        rewrite seq_nth; [reflexivity | exact hi].
+        rewrite map_length, seq_length; exact hi.
+      Qed.
+
+      Theorem thresh_complete :
+        thresh_verify thr n default c cs_out ts_out base0 = true.
+      Proof.
+        unfold thresh_verify.
+        eapply andb_true_iff; split;
+        [eapply andb_true_iff; split;
+         [eapply andb_true_iff; split;
+          [eapply andb_true_iff; split |] |] |].
+        +
+          eapply Nat.eqb_eq; exact hlen_xs.
+        +
+          eapply Nat.eqb_eq.
+          unfold cs_out; rewrite map_length, seq_length; reflexivity.
+        +
+          eapply Nat.leb_le.
+          rewrite base0_len; reflexivity.
+        +
+          (* lag_okb: interpolant passes through (0,c) and hits cs *)
+          unfold lag_okb.
+          eapply andb_true_iff; split.
+          ++
+            destruct (Fdec (lag_interpF base0 zero) c) as [he | he];
+            [reflexivity | exfalso; eapply he].
+            eapply (@lag_interp_eval F zero one add mul sub div opp
+              inv Hfield base0 zero c).
+            exact base0_nodup_nodes.
+            unfold base0; left; reflexivity.
+          ++
+            eapply forallb_forall.
+            intros i hi.
+            eapply in_seq in hi.
+            destruct (Fdec (lag_interpF base0 (nth i xs zero))
+              (nth i cs_out zero)) as [he | he]; [reflexivity |].
+            exfalso; eapply he.
+            rewrite nth_cs_out; [reflexivity | lia].
+        +
+          (* every child verifies at its challenge *)
+          eapply forallb_forall.
+          intros i hi.
+          eapply in_seq in hi.
+          assert (hilt : (i < n)%nat) by lia.
+          rewrite nth_cs_out; [| exact hilt].
+          rewrite nth_ts_out; [| exact hilt].
+          unfold tr.
+          destruct (existsb (fun p => Nat.eqb (fst p) i) sim) eqn:hex.
+          ++
+            eapply child_sim_ok.
+          ++
+            eapply child_prove_ok.
+            eapply honest_hold; [exact hilt | exact hex].
+      Qed.
+
+    End Complete.
+
   End Protocol.
 
   (* ---------- concrete instantiation over comp_rel ---------- *)
