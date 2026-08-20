@@ -35,3 +35,19 @@ let () =
   and s2 = rnd_field () and cs = rnd_field () in
   print_run "OR NIZK (strong Fiat-Shamir, SHA-256), right witness:"
     (or_nizk_run_right u1 u2 s1 s2 cs)
+
+let () =
+  (* H4: throughput benchmark of the extracted verified protocol *)
+  let iters = 2000 in
+  let u1 = rnd_field () and u2 = rnd_field () and s1 = rnd_field ()
+  and s2 = rnd_field () and cs = rnd_field () in
+  let t0 = Unix.gettimeofday () in
+  let ok = ref true in
+  for _ = 1 to iters do
+    let (v, _) = or_nizk_run_left u1 u2 s1 s2 cs in
+    ok := !ok && v
+  done;
+  let dt = Unix.gettimeofday () -. t0 in
+  Printf.printf
+    "\nbenchmark: %d verified NIZK prove+verify in %.3fs = %.0f/s (all ok: %b)\n"
+    iters dt (float_of_int iters /. dt) !ok

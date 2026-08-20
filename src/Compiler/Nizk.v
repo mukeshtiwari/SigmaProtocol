@@ -15,6 +15,7 @@ From Crypto Require Import
   Sigma.
 From Compiler Require Import
   LinearRelation Composition Dsl.
+From Utility Require Import Util.
 
 Import VectorNotations.
 
@@ -82,6 +83,10 @@ Section Nizk.
   #[local] Notation compile_stmt_soundC :=
     (@compile_stmt_sound F zero one add mul sub div opp inv
       G gid ginv gop gpow).
+  #[local] Notation row_evalC :=
+    (@row_eval F G gid gop gpow).
+  #[local] Notation verify_fwd :=
+    (@verify_linear_relation_forward F G gid gop gpow Gdec).
 
   Section Def.
 
@@ -202,5 +207,99 @@ Section Nizk.
     Qed.
 
   End Proofs.
+
+  (* ---------- Compact wire format (Milestone H2) ----------
+
+     The compact encoding stores only responses (and the OR
+     sub-challenges), dropping announcements; the verifier
+     recomputes each leaf announcement from its challenge and
+     response via the simulator formula
+       a_i = row_eval mat_i res · pub_i^(-c).
+     comp_compact_recover proves this recomputation recovers the
+     original announcements of any accepting transcript, so the
+     compact form carries the same information as the batchable one
+     (the sigma-proofs prove_compact / verify_compact pair). *)
+  Section Compact.
+
+    Context
+      {Hvec : @vector_space F (@eq F) zero one add mul sub
+        div opp inv G (@eq G) gid ginv gop gpow}.
+    Add Field field : (@field_theory_for_stdlib_tactic F
+      eq zero one opp add mul sub inv div vector_space_field).
+
+    Fixpoint compact_t (r : @comp_rel G) : Type :=
+      match r with
+      | Leaf m n _ _ => Vector.t F n
+      | CAnd rl rr => (compact_t rl * compact_t rr)%type
+      | COr rl rr => (compact_t rl * compact_t rr * F)%type
+      end.
+
+    (* drop announcements *)
+    Fixpoint compact_proj (r : @comp_rel G) :
+      comp_transcriptC r -> compact_t r :=
+      match r with
+      | Leaf _ _ _ _ => fun t => snd t
+      | CAnd rl rr => fun t =>
+          (compact_proj rl (fst t), compact_proj rr (snd t))
+      | COr rl rr => fun t =>
+          (compact_proj rl (fst (fst t)),
+           compact_proj rr (snd (fst t)), snd t)
+      end.
+
+    (* recompute announcements from challenge + compact data *)
+    Fixpoint compact_fill (r : @comp_rel G) :
+      F -> compact_t r -> comp_transcriptC r :=
+      match r with
+      | Leaf m n mat pub => fun c res =>
+          (zip_with (fun row p =>
+            gop (row_evalC row res) (gpow p (opp c))) mat pub, res)
+      | CAnd rl rr => fun c t =>
+          (compact_fill rl c (fst t), compact_fill rr c (snd t))
+      | COr rl rr => fun c t =>
+          (compact_fill rl (snd t) (fst (fst t)),
+           compact_fill rr (sub c (snd t)) (snd (fst t)), snd t)
+      end.
+
+    Theorem comp_compact_recover :
+      ∀ (r : @comp_rel G) (c : F) (t : comp_transcriptC r),
+      comp_verifyC r c t = true ->
+      compact_fill r c (compact_proj r t) = t.
+    Proof.
+      induction r as [m n mat pub | rl ihl rr ihr | rl ihl rr ihr].
+      +
+        intros * hv.
+        destruct t as (comm & res); cbn.
+        f_equal.
+        eapply Vector.eq_nth_iff.
+        intros i j hij; subst.
+        rewrite nth_zip_with.
+        pose proof (verify_fwd m n mat pub comm c res hv j) as hf.
+        rewrite hf.
+        rewrite <-associative.
+        rewrite <-(@vector_space_smul_distributive_fadd
+          F (@eq F) zero one add mul sub div opp inv
+          G (@eq G) gid ginv gop gpow Hvec).
+        assert (ha : add c (opp c) = zero). field.
+        rewrite ha.
+        rewrite (@vector_space_field_zero
+          F (@eq F) zero one add mul sub div opp inv
+          G (@eq G) gid ginv gop gpow Hvec).
+        rewrite right_identity.
+        reflexivity.
+      +
+        intros * hv; cbn in hv |- *.
+        eapply andb_true_iff in hv.
+        destruct hv as (hvl & hvr).
+        rewrite (ihl _ _ hvl), (ihr _ _ hvr).
+        destruct t as (tl & tr); reflexivity.
+      +
+        intros * hv; cbn in hv |- *.
+        eapply andb_true_iff in hv.
+        destruct hv as (hvl & hvr).
+        rewrite (ihl _ _ hvl), (ihr _ _ hvr).
+        destruct t as ((tl & tr) & c1); reflexivity.
+    Qed.
+
+  End Compact.
 
 End Nizk.
