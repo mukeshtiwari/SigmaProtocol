@@ -70,3 +70,5 @@ _build/default/src/Extraction/ChaumPedersenlib/Extraction.v
 _build/default/src/Extraction/NeqSigmalib/Extraction.v
 _build/default/src/Extraction/PedLinearRellib/Extraction.v
 _build/default/src/Compiler/LinearRelation.v
+_build/default/src/Compiler/Composition.v
+_build/default/src/Compiler/Dsl.v

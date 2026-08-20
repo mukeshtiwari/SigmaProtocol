@@ -75,6 +75,21 @@ Section LinearRelation.
       Vector.map (fun row => row_eval row xs) mat.
 
     (*
+      Identity-like matrix: row i has g in column i and gid in
+      every other column.  Used to fold a per-witness family of
+      equations (e.g. Pedersen commitments C_i = g^{v_i}·h^{r_i})
+      into the single matrix form.
+    *)
+    Fixpoint diag_mat (n : nat) (g : G) :
+      Vector.t (Vector.t G n) n :=
+      match n with
+      | 0 => []
+      | S n' =>
+        (g :: Vector.const gid n') ::
+        Vector.map (fun row => gid :: row) (diag_mat n' g)
+      end.
+
+    (*
       Real transcript. us is the commitment randomness, c the
       challenge.
         commitment : mat_eval mat us
@@ -271,6 +286,177 @@ Section LinearRelation.
         f_equal.
         rewrite commutative.
         reflexivity.
+    Qed.
+
+    (* Structural lemmas about row_eval / mat_eval, used to fold
+       block-structured statements (Pedersen commitments, public
+       scalars in exponents) into the matrix form. *)
+
+    Lemma row_eval_const_gid :
+      ∀ (n : nat) (xs : Vector.t F n),
+      row_eval (Vector.const gid n) xs = gid.
+    Proof.
+      induction n as [|n ihn].
+      +
+        intros *.
+        rewrite (vector_inv_0 xs).
+        reflexivity.
+      +
+        intros *.
+        destruct (vector_inv_S xs) as (xh & xt & ha); subst.
+        specialize (ihn xt).
+        unfold row_eval in ihn |- *; cbn.
+        rewrite vid_identity, left_identity.
+        exact ihn.
+    Qed.
+
+    Lemma row_eval_app :
+      ∀ (n₁ n₂ : nat) (r₁ : Vector.t G n₁) (r₂ : Vector.t G n₂)
+        (x₁ : Vector.t F n₁) (x₂ : Vector.t F n₂),
+      row_eval (r₁ ++ r₂) (x₁ ++ x₂) =
+      gop (row_eval r₁ x₁) (row_eval r₂ x₂).
+    Proof.
+      induction n₁ as [|n₁ ihn].
+      +
+        intros *.
+        rewrite (vector_inv_0 r₁), (vector_inv_0 x₁).
+        unfold row_eval; cbn.
+        rewrite left_identity.
+        reflexivity.
+      +
+        intros *.
+        destruct (vector_inv_S r₁) as (rh & rt & ha).
+        destruct (vector_inv_S x₁) as (xh & xt & hb).
+        subst.
+        specialize (ihn n₂ rt r₂ xt x₂).
+        unfold row_eval in ihn |- *; cbn.
+        rewrite ihn, associative.
+        reflexivity.
+    Qed.
+
+    Lemma mat_eval_cons_col_gid :
+      ∀ (m n : nat) (mat : Vector.t (Vector.t G n) m)
+        (x : F) (xs : Vector.t F n),
+      mat_eval (Vector.map (fun row => gid :: row) mat) (x :: xs) =
+      mat_eval mat xs.
+    Proof.
+      induction m as [|m ihm].
+      +
+        intros *.
+        rewrite (vector_inv_0 mat).
+        reflexivity.
+      +
+        intros *.
+        destruct (vector_inv_S mat) as (rh & rt & ha); subst.
+        specialize (ihm n rt x xs).
+        unfold mat_eval in ihm |- *; cbn.
+        f_equal.
+        ++
+          unfold row_eval; cbn.
+          rewrite vid_identity, left_identity.
+          reflexivity.
+        ++
+          exact ihm.
+    Qed.
+
+    Lemma mat_eval_diag :
+      ∀ (n : nat) (g : G) (xs : Vector.t F n),
+      mat_eval (diag_mat n g) xs = Vector.map (gpow g) xs.
+    Proof.
+      induction n as [|n ihn].
+      +
+        intros *.
+        rewrite (vector_inv_0 xs).
+        reflexivity.
+      +
+        intros *.
+        destruct (vector_inv_S xs) as (xh & xt & ha); subst.
+        cbn; f_equal.
+        ++
+          pose proof (row_eval_const_gid n xt) as hb.
+          unfold row_eval in hb |- *; cbn.
+          rewrite hb, right_identity.
+          reflexivity.
+        ++
+          pose proof (mat_eval_cons_col_gid n n (diag_mat n g) xh xt) as hb.
+          specialize (ihn g xt).
+          unfold mat_eval in hb, ihn |- *.
+          rewrite hb, ihn.
+          reflexivity.
+    Qed.
+
+    (* A public scalar coefficient α on a witness v folds into the
+       base as g^α; a public scalar z on the right-hand side folds
+       into the target as g^z.  This row realizes the linear
+       constraint Σ αᵢ·vᵢ = z as the group equation
+       Π (g^{αᵢ})^{vᵢ} = g^z. *)
+    Lemma row_eval_pow_row :
+      ∀ (n : nat) (g : G) (αs vs : Vector.t F n),
+      row_eval (Vector.map (gpow g) αs) vs =
+      g ^ (fold_right (fun '(α, v) acc => α * v + acc)
+        (zip_with pair αs vs) zero).
+    Proof.
+      induction n as [|n ihn].
+      +
+        intros *.
+        rewrite (vector_inv_0 αs), (vector_inv_0 vs).
+        unfold row_eval; cbn.
+        rewrite field_zero.
+        reflexivity.
+      +
+        intros *.
+        destruct (vector_inv_S αs) as (αh & αt & ha).
+        destruct (vector_inv_S vs) as (vh & vt & hb).
+        subst.
+        specialize (ihn g αt vt).
+        unfold row_eval in ihn |- *; cbn.
+        rewrite smul_distributive_fadd, ihn.
+        f_equal.
+        rewrite <-smul_associative_fmul.
+        reflexivity.
+    Qed.
+
+    Lemma mat_eval_app_rows :
+      ∀ (m₁ m₂ n : nat) (M₁ : Vector.t (Vector.t G n) m₁)
+        (M₂ : Vector.t (Vector.t G n) m₂) (xs : Vector.t F n),
+      mat_eval (M₁ ++ M₂) xs = mat_eval M₁ xs ++ mat_eval M₂ xs.
+    Proof.
+      induction m₁ as [|m₁ ihm].
+      +
+        intros *.
+        rewrite (vector_inv_0 M₁).
+        reflexivity.
+      +
+        intros *.
+        destruct (vector_inv_S M₁) as (rh & rt & ha); subst.
+        specialize (ihm m₂ n rt M₂ xs).
+        unfold mat_eval in ihm |- *; cbn.
+        rewrite ihm.
+        reflexivity.
+    Qed.
+
+    Lemma mat_eval_zip_app :
+      ∀ (m n₁ n₂ : nat) (M₁ : Vector.t (Vector.t G n₁) m)
+        (M₂ : Vector.t (Vector.t G n₂) m)
+        (x₁ : Vector.t F n₁) (x₂ : Vector.t F n₂),
+      mat_eval (zip_with (fun r₁ r₂ => r₁ ++ r₂) M₁ M₂) (x₁ ++ x₂) =
+      zip_with gop (mat_eval M₁ x₁) (mat_eval M₂ x₂).
+    Proof.
+      induction m as [|m ihm].
+      +
+        intros *.
+        rewrite (vector_inv_0 M₁), (vector_inv_0 M₂).
+        reflexivity.
+      +
+        intros *.
+        destruct (vector_inv_S M₁) as (r₁h & r₁t & ha).
+        destruct (vector_inv_S M₂) as (r₂h & r₂t & hb).
+        subst.
+        specialize (ihm n₁ n₂ r₁t r₂t x₁ x₂).
+        unfold mat_eval in ihm |- *; cbn.
+        rewrite ihm.
+        f_equal.
+        eapply row_eval_app.
     Qed.
 
     (* ------------------ Completeness ------------------ *)
@@ -617,6 +803,49 @@ Section LinearRelation.
           subst; unfold mat_eval, row_eval; cbn.
           repeat f_equal;
           try (rewrite right_identity; reflexivity).
+      Qed.
+
+      (*
+        Pedersen linear relation (PedLinearRel.v):
+          ∃ (vs, rs) : (∀ i, C_i = g^{v_i}·h^{r_i}) ∧ Σ αᵢ·vᵢ = z.
+
+        As a linear relation over the witness vs ++ rs:
+        - rows 1..n are the commitment equations, built from two
+          diagonal blocks (g-block for vs, h-block for rs);
+        - the last row realizes the *public-scalar* constraint by
+          folding the public coefficients αᵢ into the bases (g^{αᵢ})
+          and the public z into the target (g^z) — the same
+          transformation the compiler will perform for any public
+          scalar appearing in a statement.
+
+        The first component of the right-hand side is definitionally
+        PedLinearRel.pedersen_commitment_vector g h vs rs.
+      *)
+      Theorem pedersen_linear_relation_as_instance :
+        ∀ (n : nat) (g h : G) (αs vs rs : Vector.t F n),
+        mat_eval
+          (zip_with (fun r₁ r₂ => r₁ ++ r₂) (diag_mat n g) (diag_mat n h) ++
+            [Vector.map (gpow g) αs ++ Vector.const gid n])
+          (vs ++ rs) =
+        zip_with (fun v r => gop (g ^ v) (h ^ r)) vs rs ++
+        [g ^ (fold_right (fun '(α, v) acc => α * v + acc)
+          (zip_with pair αs vs) zero)].
+      Proof.
+        intros *.
+        rewrite mat_eval_app_rows, mat_eval_zip_app.
+        f_equal.
+        +
+          rewrite !mat_eval_diag.
+          eapply eq_nth_iff.
+          intros i j hij; subst.
+          rewrite !nth_zip_with, !(nth_map _ _ j j eq_refl).
+          reflexivity.
+        +
+          unfold mat_eval; cbn.
+          f_equal.
+          rewrite row_eval_app, row_eval_pow_row,
+            row_eval_const_gid, right_identity.
+          reflexivity.
       Qed.
 
     End Instances.
