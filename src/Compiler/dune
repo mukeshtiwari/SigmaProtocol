@@ -3,4 +3,4 @@
  (name Compiler)
  (synopsis "Verified sigma-protocol compiler")
  (modules (:standard))
- (theories Stdlib Algebra Utility Probability Crypto))
+ (theories Stdlib Algebra Utility Probability Crypto Examples))

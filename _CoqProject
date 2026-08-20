@@ -72,3 +72,6 @@ _build/default/src/Extraction/PedLinearRellib/Extraction.v
 _build/default/src/Compiler/LinearRelation.v
 _build/default/src/Compiler/Composition.v
 _build/default/src/Compiler/Dsl.v
+_build/default/src/Compiler/Lagrange.v
+_build/default/src/Compiler/Nizk.v
+_build/default/src/Compiler/CompilerIns.v

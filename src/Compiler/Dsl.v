@@ -19,6 +19,118 @@ From Compiler Require Import
 
 Import VectorNotations.
 
+(* Generic k-combinations of a list, used for the THRESH
+   construction: THRESH(t, l) is the OR over all t-element
+   subsequences of l of the AND of the subsequence. *)
+Section Combinations.
+
+  Context {A : Type}.
+
+  Fixpoint combs (k : nat) (l : list A) : list (list A) :=
+    match k with
+    | 0 => List.cons List.nil List.nil
+    | S k' =>
+        match l with
+        | List.nil => List.nil
+        | List.cons x xs =>
+            List.app (List.map (List.cons x) (combs k' xs))
+              (combs (S k') xs)
+        end
+    end.
+
+  Inductive subseq : list A -> list A -> Prop :=
+  | sub_nil : ∀ l, subseq List.nil l
+  | sub_take : ∀ x l₁ l₂,
+      subseq l₁ l₂ -> subseq (List.cons x l₁) (List.cons x l₂)
+  | sub_skip : ∀ x l₁ l₂,
+      subseq l₁ l₂ -> subseq l₁ (List.cons x l₂).
+
+  Lemma combs_sound :
+    ∀ (l : list A) (k : nat) (c : list A),
+    List.In c (combs k l) ->
+    subseq c l ∧ List.length c = k.
+  Proof.
+    induction l as [|x xs ihl].
+    +
+      intros [|k'] c ha; cbn in ha.
+      ++
+        destruct ha as [ha | ha]; [| destruct ha].
+        subst; split; [constructor | reflexivity].
+      ++
+        destruct ha.
+    +
+      intros [|k'] c ha; cbn in ha.
+      ++
+        destruct ha as [ha | ha]; [| destruct ha].
+        subst; split; [constructor | reflexivity].
+      ++
+        eapply List.in_app_or in ha.
+        destruct ha as [ha | ha].
+        +++
+          eapply List.in_map_iff in ha.
+          destruct ha as (c' & hb & hc); subst.
+          destruct (ihl k' c' hc) as (hd & he).
+          split.
+          eapply sub_take; exact hd.
+          cbn; rewrite he; reflexivity.
+        +++
+          destruct (ihl (S k') c ha) as (hb & hc).
+          split.
+          eapply sub_skip; exact hb.
+          exact hc.
+  Qed.
+
+  Lemma combs_complete :
+    ∀ (c l : list A),
+    subseq c l ->
+    List.In c (combs (List.length c) l).
+  Proof.
+    intros * ha.
+    induction ha as [l | x l₁ l₂ hsub ih | x l₁ l₂ hsub ih].
+    +
+      destruct l as [|x xs]; cbn; left; reflexivity.
+    +
+      cbn.
+      eapply List.in_or_app; left.
+      eapply List.in_map; exact ih.
+    +
+      destruct l₁ as [|y l₁'].
+      ++
+        cbn; left; reflexivity.
+      ++
+        cbn.
+        eapply List.in_or_app; right.
+        exact ih.
+  Qed.
+
+  Lemma combs_nonempty :
+    ∀ (l : list A) (k : nat),
+    (k <= List.length l)%nat ->
+    combs k l <> List.nil.
+  Proof.
+    induction l as [|x xs ihl].
+    +
+      intros [|k'] ha; cbn.
+      ++
+        discriminate.
+      ++
+        cbn in ha; lia.
+    +
+      intros [|k'] ha; cbn.
+      ++
+        discriminate.
+      ++
+        intro hb.
+        eapply List.app_eq_nil in hb.
+        destruct hb as (hbl & hbr).
+        eapply List.map_eq_nil in hbl.
+        revert hbl.
+        eapply (ihl k').
+        cbn in ha; lia.
+  Qed.
+
+End Combinations.
+
 (*
   The statement DSL and its verified compiler.
 
@@ -143,6 +255,62 @@ Section Dsl.
     | List.nil => true
     | List.cons x r =>
         negb (List.existsb (String.eqb x) r) && nodupb r
+    end.
+
+  (* ---------------- Renaming (for the Pedersen repair) ------------ *)
+
+  Definition override (w : string -> F) (x : string) (v : F) :
+    string -> F :=
+    fun y => if String.eqb x y then v else w y.
+
+  Definition rename_term (x x' : string) (t : term) : term :=
+    mkterm (t_coeff t)
+      (if String.eqb (t_var t) x then x' else t_var t)
+      (t_base t).
+
+  Definition rename_eq (x x' : string) (e : equation) : equation :=
+    mkeq (eq_lhs e) (List.map (rename_term x x') (eq_rhs e)).
+
+  Fixpoint rename_stmt (x x' : string) (s : stmt) : stmt :=
+    match s with
+    | SLeaf eqs => SLeaf (List.map (rename_eq x x') eqs)
+    | SAnd a b => SAnd (rename_stmt x x' a) (rename_stmt x x' b)
+    | SOr a b => SOr (rename_stmt x x' a) (rename_stmt x x' b)
+    end.
+
+  (* The Pedersen commitment equation  C = A^v · B^w  *)
+  Definition commit_eq (Cn An Bn v w : string) : equation :=
+    mkeq Cn (List.cons (mkterm (PConst one) v An)
+      (List.cons (mkterm (PConst one) w Bn) List.nil)).
+
+  (* The repaired form of  AND(C = A^x·B^r, OR(sa, sb))  when the
+     private x is shared between the OR branches: rename x per
+     branch and bind each copy to the same commitment C. *)
+  Definition repair_or (sa sb : stmt)
+    (Cn An Bn x r x₁ r₁ x₂ r₂ : string) : stmt :=
+    SAnd (SLeaf (List.cons (commit_eq Cn An Bn x r) List.nil))
+      (SOr
+        (SAnd (rename_stmt x x₁ sa)
+          (SLeaf (List.cons (commit_eq Cn An Bn x₁ r₁) List.nil)))
+        (SAnd (rename_stmt x x₂ sb)
+          (SLeaf (List.cons (commit_eq Cn An Bn x₂ r₂) List.nil)))).
+
+  (* ---------------- THRESH by monotone expansion ------------------ *)
+
+  Definition big_and (l : list stmt) : stmt :=
+    List.fold_right SAnd (SLeaf List.nil) l.
+
+  Definition big_or (s : stmt) (l : list stmt) : stmt :=
+    List.fold_right SOr s l.
+
+  (* THRESH(t, l): at least t of the statements in l hold.  Encoded
+     as the OR over all t-element subsequences of l of their AND.
+     Proof size is C(|l|, t); the Shamir-based challenge-sharing
+     encoding is the future optimization (see Lagrange.v). *)
+  Definition thresh_stmt (t : nat) (l : list stmt) : stmt :=
+    match List.map big_and (combs t l) with
+    | List.nil => SLeaf List.nil
+    | List.cons s₀ rest => big_or s₀ rest
     end.
 
   Section Spec.
@@ -1093,6 +1261,414 @@ Section Dsl.
           (compile s) c c' t t' hd he hf hg) as (w & hw).
         eapply compile_stmt_reflect.
         exact ha. exact hb. exact hc. exact hw.
+      Qed.
+
+      (* ------------- Phase 4b: the Pedersen repair ------------- *)
+
+      Lemma existsb_false_in :
+        ∀ (l : list string) (z y : string),
+        List.existsb (String.eqb z) l = false ->
+        List.In y l ->
+        String.eqb z y = false.
+      Proof.
+        intros * ha hb.
+        destruct (String.eqb z y) eqn:hc; [| reflexivity].
+        eapply String.eqb_eq in hc; subst.
+        rewrite (in_vars_existsb _ _ hb) in ha.
+        congruence.
+      Qed.
+
+      Lemma rename_term_denote :
+        ∀ (x x' : string) (wenv : string -> F) (t : term),
+        term_denote wenv (rename_term x x' t) =
+        term_denote (override wenv x (wenv x')) t.
+      Proof.
+        intros *.
+        unfold term_denote, rename_term, override; cbn.
+        destruct (String.eqb (t_var t) x) eqn:ha.
+        +
+          eapply String.eqb_eq in ha; subst.
+          rewrite String.eqb_refl.
+          reflexivity.
+        +
+          rewrite String.eqb_sym in ha.
+          rewrite ha.
+          reflexivity.
+      Qed.
+
+      Lemma rename_eq_denote :
+        ∀ (x x' : string) (wenv : string -> F) (e : equation),
+        eq_denote wenv (rename_eq x x' e) <->
+        eq_denote (override wenv x (wenv x')) e.
+      Proof.
+        intros *.
+        unfold eq_denote, rename_eq; cbn.
+        enough (hf :
+          List.fold_right
+            (fun t acc => gop (term_denote wenv t) acc) gid
+            (List.map (rename_term x x') (eq_rhs e)) =
+          List.fold_right
+            (fun t acc =>
+              gop (term_denote (override wenv x (wenv x')) t) acc)
+            gid (eq_rhs e)).
+        rewrite hf; reflexivity.
+        induction (eq_rhs e) as [|t ts iht]; cbn.
+        reflexivity.
+        rewrite rename_term_denote, iht; reflexivity.
+      Qed.
+
+      Lemma rename_stmt_denote :
+        ∀ (s : stmt) (x x' : string) (wenv : string -> F),
+        stmt_denote wenv (rename_stmt x x' s) <->
+        stmt_denote (override wenv x (wenv x')) s.
+      Proof.
+        induction s as [eqs | a iha b ihb | a iha b ihb].
+        +
+          intros *; cbn.
+          induction eqs as [|e eqs ihe]; cbn.
+          ++
+            split; intro; constructor.
+          ++
+            split; intro ha;
+            inversion ha as [|? ? hb hc]; subst; constructor.
+            eapply rename_eq_denote; exact hb.
+            eapply ihe; exact hc.
+            eapply rename_eq_denote; exact hb.
+            eapply ihe; exact hc.
+        +
+          intros *; cbn.
+          rewrite (iha x x' wenv), (ihb x x' wenv).
+          reflexivity.
+        +
+          intros *; cbn.
+          rewrite (iha x x' wenv), (ihb x x' wenv).
+          reflexivity.
+      Qed.
+
+      (* The computational core: two openings of the same Pedersen
+         commitment either agree on the committed value or exhibit a
+         discrete-log relation between the two bases. *)
+      Lemma pedersen_binding_dichotomy :
+        ∀ (A B : G) (a b a' b' : F),
+        gop (A ^ a) (B ^ b) = gop (A ^ a') (B ^ b') ->
+        a = a' ∨ (∃ d : F, A = B ^ d).
+      Proof.
+        intros * ha.
+        destruct (Fdec a a') as [heq | hneq].
+        +
+          left; exact heq.
+        +
+          right.
+          exists ((b' + opp b) * inv (a + opp a')).
+          eapply f_equal with
+            (f := fun z => gop z (gop (ginv (A ^ a')) (ginv (B ^ b))))
+            in ha.
+          rewrite gop_simp in ha.
+          rewrite right_inverse, right_identity in ha.
+          rewrite gop_simp in ha.
+          rewrite right_inverse, left_identity in ha.
+          rewrite !connection_between_vopp_and_fopp in ha.
+          rewrite <-!smul_distributive_fadd in ha.
+          eapply f_equal with
+            (f := fun z => z ^ (inv (a + opp a'))) in ha.
+          rewrite <-!smul_associative_fmul in ha.
+          assert (hb : (a + opp a') * inv (a + opp a') = one).
+          field.
+          intro hb; eapply hneq.
+          eapply f_equal with (f := fun z => z + a') in hb.
+          rewrite left_identity in hb.
+          rewrite <-hb; field.
+          rewrite hb, field_one in ha.
+          exact ha.
+      Qed.
+
+      Lemma commit_eq_denote :
+        ∀ (Cn An Bn v w : string) (wenv : string -> F),
+        eq_denote wenv (commit_eq Cn An Bn v w) <->
+        genv Cn = gop ((genv An) ^ (wenv v)) ((genv Bn) ^ (wenv w)).
+      Proof.
+        intros *.
+        unfold eq_denote, commit_eq, term_denote; cbn.
+        assert (ha : one * wenv v = wenv v). field.
+        assert (hb : one * wenv w = wenv w). field.
+        rewrite ha, hb, right_identity.
+        reflexivity.
+      Qed.
+
+      (* Repair soundness: a witness environment for the repaired
+         statement yields either one for the original statement (the
+         shared variable is bound to the committed value), or an
+         explicit discrete-log relation between the commitment bases
+         — the extractor dichotomy. *)
+      Theorem repair_soundness :
+        ∀ (sa sb : stmt) (Cn An Bn x r x₁ r₁ x₂ r₂ : string)
+          (wenv : string -> F),
+        String.eqb x r = false ->
+        stmt_denote wenv (repair_or sa sb Cn An Bn x r x₁ r₁ x₂ r₂) ->
+        (∃ wenv' : string -> F,
+          stmt_denote wenv'
+            (SAnd (SLeaf (List.cons (commit_eq Cn An Bn x r) List.nil))
+              (SOr sa sb))) ∨
+        (∃ d : F, genv An = (genv Bn) ^ d).
+      Proof.
+        intros * hxr hd.
+        cbn in hd.
+        destruct hd as (hroot & hbranch).
+        inversion hroot as [| ? ? hce hnil]; subst.
+        eapply commit_eq_denote in hce.
+        destruct hbranch as [hbr | hbr].
+        +
+          destruct hbr as (hren & hcom).
+          inversion hcom as [| ? ? hce₁ hnil₁]; subst.
+          eapply commit_eq_denote in hce₁.
+          rewrite hce in hce₁.
+          destruct (pedersen_binding_dichotomy _ _ _ _ _ _ hce₁)
+            as [heq | hdlog].
+          ++
+            left.
+            exists (override wenv x (wenv x₁)).
+            cbn; split.
+            +++
+              constructor; [| constructor].
+              eapply commit_eq_denote.
+              unfold override.
+              rewrite String.eqb_refl, hxr.
+              rewrite <-heq.
+              exact hce.
+            +++
+              left.
+              eapply rename_stmt_denote.
+              exact hren.
+          ++
+            right; exact hdlog.
+        +
+          destruct hbr as (hren & hcom).
+          inversion hcom as [| ? ? hce₂ hnil₂]; subst.
+          eapply commit_eq_denote in hce₂.
+          rewrite hce in hce₂.
+          destruct (pedersen_binding_dichotomy _ _ _ _ _ _ hce₂)
+            as [heq | hdlog].
+          ++
+            left.
+            exists (override wenv x (wenv x₂)).
+            cbn; split.
+            +++
+              constructor; [| constructor].
+              eapply commit_eq_denote.
+              unfold override.
+              rewrite String.eqb_refl, hxr.
+              rewrite <-heq.
+              exact hce.
+            +++
+              right.
+              eapply rename_stmt_denote.
+              exact hren.
+          ++
+            right; exact hdlog.
+      Qed.
+
+      (* Repair completeness: an honest prover for the original
+         statement can prove the repaired one, by opening the
+         commitment for the renamed copy of the branch it holds. *)
+      Theorem repair_completeness :
+        ∀ (sa sb : stmt) (Cn An Bn x r x₁ r₁ x₂ r₂ : string)
+          (wenv : string -> F),
+        String.eqb x₁ x = false -> String.eqb r₁ x = false ->
+        String.eqb x₁ r = false -> String.eqb r₁ r = false ->
+        String.eqb r₁ x₁ = false ->
+        List.existsb (String.eqb x₁) (stmt_vars sa) = false ->
+        List.existsb (String.eqb r₁) (stmt_vars sa) = false ->
+        String.eqb x₂ x = false -> String.eqb r₂ x = false ->
+        String.eqb x₂ r = false -> String.eqb r₂ r = false ->
+        String.eqb r₂ x₂ = false ->
+        List.existsb (String.eqb x₂) (stmt_vars sb) = false ->
+        List.existsb (String.eqb r₂) (stmt_vars sb) = false ->
+        stmt_denote wenv
+          (SAnd (SLeaf (List.cons (commit_eq Cn An Bn x r) List.nil))
+            (SOr sa sb)) ->
+        ∃ (wenv' : string -> F),
+          stmt_denote wenv'
+            (repair_or sa sb Cn An Bn x r x₁ r₁ x₂ r₂).
+      Proof.
+        intros * hx₁x hr₁x hx₁r hr₁r hr₁x₁ hx₁sa hr₁sa
+          hx₂x hr₂x hx₂r hr₂r hr₂x₂ hx₂sb hr₂sb hd.
+        cbn in hd.
+        destruct hd as (hroot & hbranch).
+        inversion hroot as [| ? ? hce hnil]; subst.
+        eapply commit_eq_denote in hce.
+        destruct hbranch as [hbr | hbr].
+        +
+          (* left branch holds *)
+          exists (override (override wenv x₁ (wenv x)) r₁ (wenv r)).
+          cbn; split.
+          ++
+            constructor; [| constructor].
+            eapply commit_eq_denote.
+            unfold override.
+            rewrite hr₁x, hx₁x, hr₁r, hx₁r.
+            exact hce.
+          ++
+            left; split.
+            +++
+              eapply rename_stmt_denote.
+              eapply stmt_denote_ext; [| exact hbr].
+              intros y hy.
+              unfold override.
+              rewrite hr₁x₁, String.eqb_refl.
+              destruct (String.eqb x y) eqn:hxy.
+              ++++
+                eapply String.eqb_eq in hxy; subst.
+                reflexivity.
+              ++++
+                rewrite (existsb_false_in _ _ _ hr₁sa hy).
+                rewrite (existsb_false_in _ _ _ hx₁sa hy).
+                reflexivity.
+            +++
+              constructor; [| constructor].
+              eapply commit_eq_denote.
+              unfold override.
+              rewrite hr₁x₁, !String.eqb_refl.
+              exact hce.
+        +
+          (* right branch holds *)
+          exists (override (override wenv x₂ (wenv x)) r₂ (wenv r)).
+          cbn; split.
+          ++
+            constructor; [| constructor].
+            eapply commit_eq_denote.
+            unfold override.
+            rewrite hr₂x, hx₂x, hr₂r, hx₂r.
+            exact hce.
+          ++
+            right; split.
+            +++
+              eapply rename_stmt_denote.
+              eapply stmt_denote_ext; [| exact hbr].
+              intros y hy.
+              unfold override.
+              rewrite hr₂x₂, String.eqb_refl.
+              destruct (String.eqb x y) eqn:hxy.
+              ++++
+                eapply String.eqb_eq in hxy; subst.
+                reflexivity.
+              ++++
+                rewrite (existsb_false_in _ _ _ hr₂sb hy).
+                rewrite (existsb_false_in _ _ _ hx₂sb hy).
+                reflexivity.
+            +++
+              constructor; [| constructor].
+              eapply commit_eq_denote.
+              unfold override.
+              rewrite hr₂x₂, !String.eqb_refl.
+              exact hce.
+      Qed.
+
+      (* ------------- Phase 5: THRESH semantics ------------- *)
+
+      Lemma big_and_denote :
+        ∀ (l : list stmt) (wenv : string -> F),
+        stmt_denote wenv (big_and l) <->
+        List.Forall (stmt_denote wenv) l.
+      Proof.
+        induction l as [|s l ihl].
+        +
+          intros *; cbn.
+          split; intro ha; constructor.
+        +
+          intros *; cbn.
+          split.
+          ++
+            intros (hs & hl).
+            constructor; [exact hs | eapply ihl; exact hl].
+          ++
+            intro ha.
+            inversion ha; subst.
+            split; [assumption | eapply ihl; assumption].
+      Qed.
+
+      Lemma big_or_denote :
+        ∀ (l : list stmt) (s : stmt) (wenv : string -> F),
+        stmt_denote wenv (big_or s l) <->
+        (stmt_denote wenv s ∨ List.Exists (stmt_denote wenv) l).
+      Proof.
+        induction l as [|a l ihl].
+        +
+          intros *; cbn.
+          split.
+          intro ha; left; exact ha.
+          intros [ha | ha]; [exact ha | inversion ha].
+        +
+          intros *; cbn.
+          split.
+          ++
+            intros [ha | ha].
+            +++
+              right; eapply List.Exists_cons_hd; exact ha.
+            +++
+              eapply ihl in ha.
+              destruct ha as [ha | ha].
+              left; exact ha.
+              right; eapply List.Exists_cons_tl; exact ha.
+          ++
+            intros [ha | ha].
+            +++
+              right; eapply ihl; left; exact ha.
+            +++
+              inversion ha as [? ? hb | ? ? hb]; subst.
+              left; exact hb.
+              right; eapply ihl; right; exact hb.
+      Qed.
+
+      (* THRESH(t, l) denotes: some t-element subsequence of l holds
+         entirely — i.e. at least t of the statements hold. *)
+      Theorem thresh_stmt_denote :
+        ∀ (t : nat) (l : list stmt) (wenv : string -> F),
+        (t <= List.length l)%nat ->
+        (stmt_denote wenv (thresh_stmt t l) <->
+         (∃ c : list stmt, subseq c l ∧ List.length c = t ∧
+            List.Forall (stmt_denote wenv) c)).
+      Proof.
+        intros * ht.
+        unfold thresh_stmt.
+        destruct (List.map big_and (combs t l)) as [|s₀ rest] eqn:hm.
+        +
+          exfalso.
+          eapply List.map_eq_nil in hm.
+          eapply combs_nonempty; [exact ht | exact hm].
+        +
+          rewrite big_or_denote.
+          assert (hiff :
+            (stmt_denote wenv s₀ ∨ List.Exists (stmt_denote wenv) rest)
+            <-> List.Exists (stmt_denote wenv)
+                  (List.map big_and (combs t l))).
+          rewrite hm.
+          split.
+          intros [ha | ha].
+          eapply List.Exists_cons_hd; exact ha.
+          eapply List.Exists_cons_tl; exact ha.
+          intro ha.
+          inversion ha as [? ? hb | ? ? hb]; subst.
+          left; exact hb.
+          right; exact hb.
+          rewrite hiff.
+          rewrite List.Exists_exists.
+          split.
+          ++
+            intros (y & hy & hdy).
+            eapply List.in_map_iff in hy.
+            destruct hy as (c & hc & hcin); subst.
+            destruct (combs_sound _ _ _ hcin) as (hsub & hlen).
+            exists c.
+            split; [exact hsub | split; [exact hlen |]].
+            eapply big_and_denote; exact hdy.
+          ++
+            intros (c & hsub & hlen & hall).
+            exists (big_and c).
+            split.
+            eapply List.in_map.
+            rewrite <-hlen.
+            eapply combs_complete; exact hsub.
+            eapply big_and_denote; exact hall.
       Qed.
 
     End Proofs.
