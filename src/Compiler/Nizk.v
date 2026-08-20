@@ -78,7 +78,7 @@ Section Nizk.
   #[local] Notation stmt_denoteC :=
     (@stmt_denote F add mul opp G gid gop gpow).
   #[local] Notation compileC :=
-    (@compile F add mul opp G gid gop gpow).
+    (@compile F add mul opp G gid ginv gop gpow).
   #[local] Notation compile_stmt_soundC :=
     (@compile_stmt_sound F zero one add mul sub div opp inv
       G gid ginv gop gpow).
