@@ -114,6 +114,13 @@ generate OCaml code from it [_CoqProject file](/_CoqProject). It takes a while (
    ```OCaml
    pt is the correct plaintext tally: true, all talliers' decryption factor and proofs are valid: true, talliers' pok is valid: true, public key h is equal to all public keys of talliers: true
    ```
+    The verifier takes the election year as an optional first argument (`2023` or `2024`, defaulting to `2024`). It selects both the number of candidates and the election public key, so the year and the data file must match. Note the `--`: it tells `dune exec` to pass the argument through to the program instead of consuming it itself. Run `dune exec _build/default/src/Executable/HeliosVerifiercode/main.exe -- 2023 < src/Executable/HeliosDatacode/IACR2023.txt` to verify the [IACR 2023](src/Executable/HeliosDatacode/IACR2023.txt) election. You will see an output like [this](src/Executable/HeliosDatacode/IACR2023Verified.txt):
+    ```OCaml
+    Final tally: [true]
+    All votes : [848]
+    Valid vote : [848]
+    Invalid votes : [0]
+    ```
 14. Run `dune exec _build/default/src/Executable/NeqSigmacode/main.exe` to execute the [NeqSigma](src/Crypto/NeqSigma.v) code. You will see an output like this:
    ```OCaml
    (base) anonymous@anonymous-MacBook-Pro-2 SigmaProtocol % dune exec _build/default/src/Executable/NeqSigmacode/main.exe
