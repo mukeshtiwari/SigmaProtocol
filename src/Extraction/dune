@@ -13,7 +13,7 @@
 (subdir HeliosTallylib
  (rocq.extraction
   (prelude Extraction)
-  (extracted_files HeliosTallyIns.ml HeliosTallyIns.mli HeliosFrontendIns.ml HeliosFrontendIns.mli HeliosTally.ml HeliosTally.mli Sigma.ml Sigma.mli Datatypes.ml Datatypes.mli Vector.ml Vector.mli Fin.ml Fin.mli VectorDef.ml VectorDef.mli Zpstar.ml Zpstar.mli BinInt.ml BinInt.mli PosDef.ml PosDef.mli Functions.ml Functions.mli BinNat.ml BinNat.mli Approval.ml Approval.mli EncProof.ml EncProof.mli Specif.ml Specif.mli Util.ml Util.mli EqdepFacts.ml EqdepFacts.mli ChaumPedersen.ml ChaumPedersen.mli EqSigma.ml EqSigma.mli DistElgamal.ml DistElgamal.mli Elgamal.ml Elgamal.mli Nat.ml Nat.mli)
+  (extracted_files Approval.ml Approval.mli Ascii.ml Ascii.mli BinInt.ml BinInt.mli BinNat.ml BinNat.mli BinNums.ml BinNums.mli BinPos.ml BinPos.mli ChaumPedersen.ml ChaumPedersen.mli Datatypes.ml Datatypes.mli DistElgamal.ml DistElgamal.mli Elgamal.ml Elgamal.mli EncProof.ml EncProof.mli EqSigma.ml EqSigma.mli Fin.ml Fin.mli Functions.ml Functions.mli HeliosFrontendIns.ml HeliosFrontendIns.mli HeliosTally.ml HeliosTally.mli HeliosTallyIns.ml HeliosTallyIns.mli Logic.ml Logic.mli Nat.ml Nat.mli PosDef.ml PosDef.mli Sigma.ml Sigma.mli Specif.ml Specif.mli String.ml String.mli Util.ml Util.mli Vector.ml Vector.mli VectorDef.ml VectorDef.mli Zpstar.ml Zpstar.mli)
   (theories ExtLib Stdlib Utility Crypto Algebra 
    Probability Examples Coqprime Bignums Frontend 
    Backend))

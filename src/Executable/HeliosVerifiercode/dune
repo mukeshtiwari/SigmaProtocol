@@ -1,3 +1,3 @@
 (executable
  (name main)
- (libraries HeliosTallylib cryptokit hacl-star helios_parser))
+ (libraries HeliosTallylib cryptokit helios_parser))
