@@ -1,7 +1,7 @@
 From Stdlib Require Import Setoid
   setoid_ring.Field Lia Vector Utf8
   Psatz Bool Pnat BinNatDef 
-  BinPos.
+  BinPos Permutation.
 From Algebra Require Import 
   Hierarchy Group Monoid
   Field Integral_domain
@@ -188,9 +188,9 @@ Section DL.
         an accepting conversation.
       *)
       Lemma schnorr_completeness (g h : G) (x : F) (R : h = g^x) :
-        forall (r c : F),
+        forall (u c : F),
           accepting_conversation g h 
-          (schnorr_protocol x g r c) = true.
+          (schnorr_protocol x g u c) = true.
       Proof.
         unfold schnorr_protocol, 
         accepting_conversation; cbn.
@@ -214,8 +214,8 @@ Section DL.
           conversation to variables (a₁; c₁; r₁).
       *)
       Lemma schnorr_completeness_berry (g h : G) (x : F) (R : h = g^x) : 
-        forall (r c : F) (a₁ : t G 1) (c₁ r₁ : t F 1),
-        (a₁; c₁; r₁) = (schnorr_protocol x g r c) ->
+        forall (u c : F) (a₁ : t G 1) (c₁ r₁ : t F 1),
+        (a₁; c₁; r₁) = (schnorr_protocol x g u c) ->
         accepting_conversation g h (a₁; c₁; r₁) = true.
       Proof.
         intros * Ha; rewrite Ha;
@@ -237,16 +237,16 @@ Section DL.
       *)
 
       Lemma schnorr_completeness_corner_case_invalid_proof_accept 
-        (g h : G) (x : F) : forall (r c : F), c = zero -> 
+        (g h : G) (x : F) : forall (u c : F), c = zero -> 
         accepting_conversation g h 
-          (schnorr_protocol x g r c) = true.
+          (schnorr_protocol x g u c) = true.
       Proof.
         intros * ha.
         unfold schnorr_protocol, 
         accepting_conversation,
         schnorr_protocol_commitment; cbn.
         eapply dec_true. subst.
-        assert (ha : r + zero * x = r) by field.
+        assert (ha : u + zero * x = u) by field.
         rewrite ha; clear ha.
         rewrite field_zero, right_identity;
         reflexivity.
@@ -260,8 +260,8 @@ Section DL.
       (* simulator produces an accepting conversation,
           without using the secret x *)
       Lemma simulator_completeness (g h : G) : 
-        forall (r c : F), 
-        accepting_conversation g h (schnorr_simulator g h r c) = true.
+        forall (u c : F), 
+        accepting_conversation g h (schnorr_simulator g h u c) = true.
       Proof.
         unfold accepting_conversation, 
           schnorr_simulator; 
@@ -284,8 +284,8 @@ Section DL.
           to variables (a₁; c₁; r₁).
       *)
       Lemma simulator_completeness_berry (g h : G) : 
-        forall (r c : F) (a₁ : t G 1) (c₁ r₁ : t F 1),
-        (a₁; c₁; r₁) = (schnorr_simulator g h r c) ->
+        forall (u c : F) (a₁ : t G 1) (c₁ r₁ : t F 1),
+        (a₁; c₁; r₁) = (schnorr_simulator g h u c) ->
         accepting_conversation g h (a₁; c₁; r₁) = true.
       Proof.
         intros * Ha;
@@ -652,6 +652,133 @@ Section DL.
           eapply probability_simulator_distribution.
           reflexivity. 
           exact Ha. 
+      Qed.
+
+
+      (* ---------------------------------------------------------------- *)
+      (* Special honest-verifier zero-knowledge as equality of distributions.
+
+        The lemma above compares the two distributions only after mapping
+        [accepting_conversation] over them, which forgets the transcripts.
+        The theorems below compare the distributions themselves: the real
+        distribution is a permutation of the simulated one, i.e. the two
+        are equal as distributions.
+
+        The proof is the textbook bijection. The real transcript for
+        randomness u is the simulated transcript for randomness u + c * x,
+        so the real distribution is the image of the simulated one under
+        the shift u ↦ u + c * x of the randomness. The shift is a bijection
+        of the field, and it permutes the sample list lf whenever lf is
+        closed under it; in particular whenever lf enumerates the field. *)
+
+      Lemma schnorr_protocol_simulator_shift (x : F) (g h : G) (R : h = g^x) : 
+        forall (u c : F), 
+        schnorr_protocol x g u c = schnorr_simulator g h (u + c * x) c.
+      Proof.
+        intros *.
+        unfold schnorr_protocol, schnorr_simulator, 
+          schnorr_protocol_commitment.
+        f_equal; f_equal; rewrite R.
+        assert (ha : (g ^ x) ^ opp c = g ^ (x * opp c)) by 
+          (rewrite smul_pow_up; reflexivity).
+        rewrite ha; clear ha.
+        rewrite <-(@vector_space_smul_distributive_fadd F (@eq F) 
+          zero one add mul sub div opp inv G (@eq G) gid ginv gop gpow).
+        + assert (hb : u + c * x + x * opp c = u) by field.
+          rewrite hb; reflexivity.
+        + typeclasses eauto.
+      Qed.
+
+      (* Equality of distributions, under closure of lf under the shift. *)
+      Theorem special_honest_verifier_zkp_perm (x : F) (g h : G) (R : h = g^x) :
+        forall (lf : list F) (Hlfn : lf <> List.nil) (c : F),
+        Permutation (List.map (fun u => u + c * x) lf) lf ->
+        Permutation (@schnorr_distribution lf Hlfn x g c) 
+          (@simulator_distribution lf Hlfn g h c).
+      Proof.
+        intros * hp.
+        change (Permutation 
+          (Bind (uniform_with_replacement lf Hlfn) 
+            (fun u => Ret (schnorr_protocol x g u c)))
+          (Bind (uniform_with_replacement lf Hlfn) 
+            (fun u => Ret (schnorr_simulator g h u c)))).
+        eapply bind_ret_perm with (phi := fun u => u + c * x).
+        + eapply uniform_perm; exact hp.
+        + intros u p _.
+          eapply schnorr_protocol_simulator_shift; exact R.
+      Qed.
+
+      (* Equality of distributions when lf enumerates the field. *)
+      Theorem special_honest_verifier_zkp_enum (x : F) (g h : G) (R : h = g^x) :
+        forall (lf : list F) (Hlfn : lf <> List.nil) (c : F),
+        List.NoDup lf -> (forall y : F, List.In y lf) ->
+        Permutation (@schnorr_distribution lf Hlfn x g c) 
+          (@simulator_distribution lf Hlfn g h c).
+      Proof.
+        intros * hnd hall.
+        eapply special_honest_verifier_zkp_perm; [exact R |].
+        eapply enumerates_perm_map with (psi := fun u => u - c * x);
+        [exact hnd | exact hall | intros u; field | intros u; field].
+      Qed.
+
+      (* ---------------------------------------------------------------- *)
+      (* Soundness error.
+
+        A prover strategy fixes an announcement a and answers a challenge c
+        with resp c. Either two distinct challenges of the challenge space
+        lf are answered acceptingly, and then the extractor of
+        [special_soundness_berry_gen] computes a witness from the two
+        answers, or at most one challenge is answered acceptingly, and then
+        a uniformly drawn challenge is accepted with probability at most
+        1 / |lf|. The challenge space is a set, i.e. lf has no duplicates. *)
+
+      Theorem soundness_error_bound (g h a : G) (resp : F -> F) : 
+        forall (lf : list F) (Hlfn : lf <> List.nil), List.NoDup lf ->
+        (∃ c₁ c₂ : F, c₁ <> c₂ ∧ List.In c₁ lf ∧ List.In c₂ lf ∧ 
+          accepting_conversation g h ([a]; [c₁]; [resp c₁]) = true ∧
+          accepting_conversation g h ([a]; [c₂]; [resp c₂]) = true ∧
+          g ^ ((resp c₁ - resp c₂) * inv (c₁ - c₂)) = h) ∨ 
+        leq (@prob_of_an_event F 
+              (fun c => accepting_conversation g h ([a]; [c]; [resp c]))
+              (uniform_with_replacement lf Hlfn))
+            (mk_prob 1 (Pos.of_nat (List.length lf))) = true.
+      Proof.
+        intros * hnd.
+        set (e := fun c => accepting_conversation g h ([a]; [c]; [resp c])).
+        assert (hpe : @prob_of_an_event F e (uniform_with_replacement lf Hlfn) = 
+          List.fold_right (fun '(_, bx) ax => add_prob ax bx) Prob.zero
+            (List.map (fun x => (x, mk_prob 1 (Pos.of_nat (List.length lf)))) 
+              (List.filter e lf))).
+        {
+          unfold prob_of_an_event, list_of_events. 
+          rewrite uniform_with_replacement_unfold, list_of_events_uniform. 
+          reflexivity.
+        }
+        destruct (List.filter e lf) as [| c₁ [| c₂ cs]] eqn:hf.
+        + right. 
+          rewrite hpe; cbn; 
+          first [reflexivity | apply PeanoNat.Nat.leb_le; lia].
+        + right. 
+          rewrite hpe; cbn; 
+          first [reflexivity | apply PeanoNat.Nat.leb_le; lia].
+        + left. 
+          assert (hnf : List.NoDup (List.filter e lf)) by 
+            (apply List.NoDup_filter; exact hnd).
+          rewrite hf in hnf.
+          inversion hnf as [| ? ? hnin hnd']; subst.
+          assert (hc₁ : List.In c₁ (List.filter e lf)) by 
+            (rewrite hf; left; reflexivity).
+          assert (hc₂ : List.In c₂ (List.filter e lf)) by 
+            (rewrite hf; right; left; reflexivity).
+          apply List.filter_In in hc₁, hc₂.
+          destruct hc₁ as [hc₁ he₁], hc₂ as [hc₂ he₂].
+          assert (hne : c₁ <> c₂) by 
+            (intro heq; subst; apply hnin; left; reflexivity).
+          destruct (special_soundness_berry_gen g h a c₁ (resp c₁) c₂ (resp c₂) 
+            hne he₁ he₂) as (y & hy & heq).
+          exists c₁, c₂.
+          repeat split; try assumption.
+          rewrite <-heq; exact hy.
       Qed.
 
     End Proofs.

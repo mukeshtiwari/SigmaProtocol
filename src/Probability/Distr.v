@@ -2,7 +2,7 @@ From Stdlib Require Import
   Utf8 PeanoNat FunctionalExtensionality
   BinNatDef List Pnat BinPos Lia 
   Morphisms SetoidClass Permutation 
-  Relation_Definitions.
+  Relation_Definitions FinFun.
 From Utility Require Import Util. 
 From Probability Require Import Prob.
 From ExtLib.Structures Require Import 
@@ -911,6 +911,102 @@ Section Distr.
   Qed.  
 
 
+  (* ------------------------------------------------------------------ *)
+  (* Images of a distribution.
+
+     [Bind d (fun a => Ret (f a))] is the image of d under f. Two images
+     of the same distribution are permutations of each other, i.e. equal
+     as distributions, whenever f and g differ by a bijection of the
+     support of d that preserves probabilities. This is the tool behind
+     the zero-knowledge proofs: the real and the simulated transcript
+     distributions are both images of the same uniform distribution on
+     the randomness, and the simulator's randomness is the prover's
+     randomness moved by a bijection. *)
+
+  Lemma bind_ret_map {A B : Type} (d : dist A) (f : A -> B) :
+    Bind d (fun a => Ret (f a)) = 
+    List.map (fun '(a, p) => (f a, mul_prob p one)) d.
+  Proof.
+    induction d as [|(a, p) d ihd]; cbn; 
+    [reflexivity | rewrite ihd; reflexivity].
+  Qed.
+
+  Lemma bind_ret_perm {A B : Type} (d : dist A) (phi : A -> A) 
+    (f g : A -> B) :
+    Permutation (List.map (fun '(a, p) => (phi a, p)) d) d ->
+    (forall a p, In (a, p) d -> f a = g (phi a)) ->
+    Permutation (Bind d (fun a => Ret (f a))) (Bind d (fun a => Ret (g a))).
+  Proof.
+    intros hperm hfg.
+    rewrite !bind_ret_map.
+    eapply Permutation_trans with 
+      (l' := List.map (fun '(a, p) => (g a, mul_prob p one)) 
+        (List.map (fun '(a, p) => (phi a, p)) d)).
+    + apply Permutation_refl'.
+      change (List.map (fun '(a, p) => (f a, mul_prob p one)) d = 
+        List.map (fun '(a, p) => (g a, mul_prob p one)) 
+          (List.map (fun '(a, p) => (phi a, p)) d)).
+      rewrite List.map_map.
+      apply List.map_ext_in.
+      intros (a, p) hin; cbn.
+      rewrite (hfg a p hin); reflexivity.
+    + apply Permutation_map; exact hperm.
+  Qed.
+
+  Lemma uniform_with_replacement_unfold {A : Type} (lf : list A) 
+    (Hlfn : lf <> []) :
+    uniform_with_replacement lf Hlfn = 
+    List.map (fun x => (x, mk_prob 1 (Pos.of_nat (List.length lf)))) lf.
+  Proof.
+    unfold uniform_with_replacement; reflexivity.
+  Qed.
+
+  (* A bijection of the sample list is a probability-preserving bijection 
+     of the support of the uniform distribution. *)
+  Lemma uniform_perm {A : Type} (lf : list A) (Hlfn : lf <> []) 
+    (phi : A -> A) :
+    Permutation (List.map phi lf) lf ->
+    Permutation 
+      (List.map (fun '(a, p) => (phi a, p)) (uniform_with_replacement lf Hlfn)) 
+      (uniform_with_replacement lf Hlfn).
+  Proof.
+    intros hp.
+    rewrite uniform_with_replacement_unfold.
+    eapply Permutation_trans with 
+      (l' := List.map (fun x => (x, mk_prob 1 (Pos.of_nat (List.length lf)))) 
+        (List.map phi lf)).
+    + apply Permutation_refl'.
+      change (List.map (fun '(a, p) => (phi a, p)) 
+          (List.map (fun x => (x, mk_prob 1 (Pos.of_nat (List.length lf)))) lf) = 
+        List.map (fun x => (x, mk_prob 1 (Pos.of_nat (List.length lf)))) 
+          (List.map phi lf)).
+      rewrite !List.map_map.
+      apply List.map_ext_in.
+      intros x _; reflexivity.
+    + apply Permutation_map; exact hp.
+  Qed.
+
+  (* When the sample list enumerates the type, every bijection of the 
+     type permutes the list. This is how the closure hypotheses of the 
+     zero-knowledge theorems are discharged for a field enumerated by lf. *)
+  Lemma enumerates_perm_map {A : Type} (lf : list A) (phi psi : A -> A) :
+    NoDup lf -> (forall x, In x lf) ->
+    (forall x, psi (phi x) = x) -> (forall x, phi (psi x) = x) ->
+    Permutation (List.map phi lf) lf.
+  Proof.
+    intros hnd hall hpsi hphi.
+    apply NoDup_Permutation.
+    + apply Injective_map_NoDup; [| exact hnd].
+      intros x y hxy. 
+      rewrite <-(hpsi x), <-(hpsi y), hxy; reflexivity.
+    + exact hnd.
+    + intros x; split; intros _.
+      * apply hall.
+      * apply List.in_map_iff. 
+        exists (psi x); split; [apply hphi | apply hall].
+  Qed.
+
+
 End Distr.
 
 
@@ -1167,6 +1263,15 @@ Section Event.
       nia.
   Qed.
 
+
+  (* The events of a uniform distribution are the filtered sample list. *)
+  Lemma list_of_events_uniform : forall (e : event) (l : list A) (q : prob),
+    List.filter (fun '(x, _) => e x) (List.map (fun x => (x, q)) l) = 
+    List.map (fun x => (x, q)) (List.filter e l).
+  Proof.
+    intros e l q; induction l as [|a l ih]; cbn; [reflexivity |].
+    destruct (e a); cbn; [f_equal; exact ih | exact ih].
+  Qed.
 
   (* Probability of an event is bounded between 0 and 1 (included) *)
   Lemma event_uniform_prob : forall (e : event) (l : list A) 
