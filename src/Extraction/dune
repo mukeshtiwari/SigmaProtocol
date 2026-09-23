@@ -1,7 +1,7 @@
 (subdir Sigmalib
  (rocq.extraction
   (prelude Extraction)
-  (extracted_files SigmaIns.ml SigmaIns.mli Sigma.ml Sigma.mli Datatypes.ml Datatypes.mli Vector.ml Vector.mli VectorDef.ml VectorDef.mli Zpstar.ml Zpstar.mli BinInt.ml BinInt.mli PosDef.ml PosDef.mli Functions.ml Functions.mli BinNat.ml BinNat.mli Specif.ml Specif.mli)
+  (extracted_files BinInt.ml BinInt.mli BinNat.ml BinNat.mli BinNums.ml BinNums.mli BinPos.ml BinPos.mli Datatypes.ml Datatypes.mli Functions.ml Functions.mli PosDef.ml PosDef.mli Sigma.ml Sigma.mli SigmaIns.ml SigmaIns.mli Specif.ml Specif.mli Vector.ml Vector.mli VectorDef.ml VectorDef.mli Zpstar.ml Zpstar.mli)
   (theories ExtLib Stdlib Utility Crypto Algebra 
    Probability Examples))
  (library 
@@ -25,7 +25,7 @@
 (subdir ParaSigmalib
  (rocq.extraction
   (prelude Extraction)
-  (extracted_files ParaSigmaIns.ml ParaSigmaIns.mli ParallelSigma.ml ParallelSigma.mli Sigma.ml Sigma.mli Datatypes.ml Datatypes.mli Vector.ml Vector.mli VectorDef.ml VectorDef.mli Zpstar.ml Zpstar.mli BinInt.ml BinInt.mli PosDef.ml PosDef.mli Functions.ml Functions.mli BinNat.ml BinNat.mli Specif.ml Specif.mli Util.ml Util.mli EqdepFacts.ml EqdepFacts.mli Nat.ml Nat.mli)
+  (extracted_files BinInt.ml BinInt.mli BinNat.ml BinNat.mli BinNums.ml BinNums.mli BinPos.ml BinPos.mli Datatypes.ml Datatypes.mli Functions.ml Functions.mli Logic.ml Logic.mli Nat.ml Nat.mli ParaSigmaIns.ml ParaSigmaIns.mli ParallelSigma.ml ParallelSigma.mli PosDef.ml PosDef.mli Sigma.ml Sigma.mli Specif.ml Specif.mli Util.ml Util.mli Vector.ml Vector.mli VectorDef.ml VectorDef.mli Zpstar.ml Zpstar.mli)
   (theories ExtLib Stdlib Utility Crypto Algebra 
    Probability Examples))
  (library 
@@ -36,7 +36,7 @@
 (subdir AndSigmalib
  (rocq.extraction
   (prelude Extraction)
-  (extracted_files AndSigmaIns.ml AndSigmaIns.mli AndSigma.ml AndSigma.mli Sigma.ml Sigma.mli Zpow_facts.ml Zpow_facts.mli Datatypes.ml Datatypes.mli Vector.ml Vector.mli VectorDef.ml VectorDef.mli Zpstar.ml Zpstar.mli BinInt.ml BinInt.mli PosDef.ml PosDef.mli Functions.ml Functions.mli BinNat.ml BinNat.mli Specif.ml Specif.mli Util.ml Util.mli EqdepFacts.ml EqdepFacts.mli Nat.ml Nat.mli)
+  (extracted_files AndSigma.ml AndSigma.mli AndSigmaIns.ml AndSigmaIns.mli BinInt.ml BinInt.mli BinNat.ml BinNat.mli BinNums.ml BinNums.mli BinPos.ml BinPos.mli Datatypes.ml Datatypes.mli Functions.ml Functions.mli Logic.ml Logic.mli Nat.ml Nat.mli PosDef.ml PosDef.mli Sigma.ml Sigma.mli Specif.ml Specif.mli Util.ml Util.mli Vector.ml Vector.mli VectorDef.ml VectorDef.mli Zpow_facts.ml Zpow_facts.mli Zpstar.ml Zpstar.mli)
   (theories ExtLib Stdlib Utility Crypto Algebra 
    Probability Examples))
  (library 
@@ -47,7 +47,7 @@
 (subdir Elgamallib
  (rocq.extraction
   (prelude Extraction)
-  (extracted_files Elgamal.ml Elgamal.mli ElgamalIns.ml ElgamalIns.mli Datatypes.ml Datatypes.mli Vector.ml Vector.mli VectorDef.ml VectorDef.mli Zpstar.ml Zpstar.mli BinInt.ml BinInt.mli PosDef.ml PosDef.mli Functions.ml Functions.mli BinNat.ml BinNat.mli Util.ml Util.mli EqdepFacts.ml EqdepFacts.mli)
+  (extracted_files BinInt.ml BinInt.mli BinNat.ml BinNat.mli BinNums.ml BinNums.mli BinPos.ml BinPos.mli Datatypes.ml Datatypes.mli Elgamal.ml Elgamal.mli ElgamalIns.ml ElgamalIns.mli Functions.ml Functions.mli Logic.ml Logic.mli PosDef.ml PosDef.mli Util.ml Util.mli Vector.ml Vector.mli VectorDef.ml VectorDef.mli Zpstar.ml Zpstar.mli)
   (theories ExtLib Stdlib Utility Crypto Algebra 
    Probability Examples))
  (library 
@@ -58,7 +58,7 @@
 (subdir DistElgamallib
  (rocq.extraction
   (prelude Extraction)
-  (extracted_files Elgamal.ml Elgamal.mli DistElgamal.ml DistElgamal.mli DistElgamalIns.ml DistElgamalIns.mli Datatypes.ml Datatypes.mli Vector.ml Vector.mli VectorDef.ml VectorDef.mli Zpstar.ml Zpstar.mli BinInt.ml BinInt.mli PosDef.ml PosDef.mli Functions.ml Functions.mli BinNat.ml BinNat.mli Util.ml Util.mli EqdepFacts.ml EqdepFacts.mli Specif.ml Specif.mli Nat.ml Nat.mli)
+  (extracted_files BinInt.ml BinInt.mli BinNat.ml BinNat.mli BinNums.ml BinNums.mli BinPos.ml BinPos.mli Datatypes.ml Datatypes.mli DistElgamal.ml DistElgamal.mli DistElgamalIns.ml DistElgamalIns.mli Elgamal.ml Elgamal.mli Functions.ml Functions.mli Logic.ml Logic.mli Nat.ml Nat.mli PosDef.ml PosDef.mli Specif.ml Specif.mli Util.ml Util.mli Vector.ml Vector.mli VectorDef.ml VectorDef.mli Zpstar.ml Zpstar.mli)
   (theories ExtLib Stdlib Utility Crypto Algebra 
    Probability Examples))
  (library 
@@ -69,7 +69,7 @@
 (subdir OrSigmalib
  (rocq.extraction
   (prelude Extraction)
-  (extracted_files OrSigmaIns.ml OrSigmaIns.mli OrSigma.ml OrSigma.mli Datatypes.ml Datatypes.mli Vector.ml Vector.mli Nat.ml Nat.mli Fin.ml Fin.mli Specif.ml Specif.mli Sigma.ml Sigma.mli VectorDef.ml VectorDef.mli Zpstar.ml Zpstar.mli BinInt.ml BinInt.mli PosDef.ml PosDef.mli Functions.ml Functions.mli BinNat.ml BinNat.mli Util.ml Util.mli EqdepFacts.ml EqdepFacts.mli)
+  (extracted_files BinInt.ml BinInt.mli BinNat.ml BinNat.mli BinNums.ml BinNums.mli BinPos.ml BinPos.mli Datatypes.ml Datatypes.mli Fin.ml Fin.mli Functions.ml Functions.mli Logic.ml Logic.mli Nat.ml Nat.mli OrSigma.ml OrSigma.mli OrSigmaIns.ml OrSigmaIns.mli PosDef.ml PosDef.mli Sigma.ml Sigma.mli Specif.ml Specif.mli Util.ml Util.mli Vector.ml Vector.mli VectorDef.ml VectorDef.mli Zpstar.ml Zpstar.mli)
   (theories ExtLib Stdlib Utility Crypto Algebra 
    Probability Examples))
  (library 
@@ -80,7 +80,7 @@
 (subdir EncProoflib
  (rocq.extraction
   (prelude Extraction)
-  (extracted_files EncProofIns.ml EncProofIns.mli EncProof.ml EncProof.mli Datatypes.ml Datatypes.mli Vector.ml Vector.mli Nat.ml Nat.mli Fin.ml Fin.mli Specif.ml Specif.mli Sigma.ml Sigma.mli VectorDef.ml VectorDef.mli Zpstar.ml Zpstar.mli BinInt.ml BinInt.mli PosDef.ml PosDef.mli Functions.ml Functions.mli BinNat.ml BinNat.mli Util.ml Util.mli EqdepFacts.ml EqdepFacts.mli)
+  (extracted_files BinInt.ml BinInt.mli BinNat.ml BinNat.mli BinNums.ml BinNums.mli BinPos.ml BinPos.mli Datatypes.ml Datatypes.mli EncProof.ml EncProof.mli EncProofIns.ml EncProofIns.mli Fin.ml Fin.mli Functions.ml Functions.mli Logic.ml Logic.mli Nat.ml Nat.mli PosDef.ml PosDef.mli Sigma.ml Sigma.mli Specif.ml Specif.mli Util.ml Util.mli Vector.ml Vector.mli VectorDef.ml VectorDef.mli Zpstar.ml Zpstar.mli)
   (theories ExtLib Stdlib Utility Crypto Algebra 
    Probability Examples))
  (library 
@@ -91,7 +91,7 @@
 (subdir EqSigmalib
  (rocq.extraction
   (prelude Extraction)
-  (extracted_files EqSigmaIns.ml EqSigmaIns.mli EqSigma.ml EqSigma.mli Datatypes.ml Datatypes.mli Vector.ml Vector.mli Nat.ml Nat.mli Specif.ml Specif.mli Sigma.ml Sigma.mli VectorDef.ml VectorDef.mli Zpstar.ml Zpstar.mli BinInt.ml BinInt.mli PosDef.ml PosDef.mli Functions.ml Functions.mli BinNat.ml BinNat.mli Util.ml Util.mli)
+  (extracted_files BinInt.ml BinInt.mli BinNat.ml BinNat.mli BinNums.ml BinNums.mli BinPos.ml BinPos.mli Datatypes.ml Datatypes.mli EqSigma.ml EqSigma.mli EqSigmaIns.ml EqSigmaIns.mli Functions.ml Functions.mli Nat.ml Nat.mli PosDef.ml PosDef.mli Sigma.ml Sigma.mli Specif.ml Specif.mli Util.ml Util.mli Vector.ml Vector.mli VectorDef.ml VectorDef.mli Zpstar.ml Zpstar.mli)
   (theories ExtLib Stdlib Utility Crypto Algebra 
    Probability Examples))
  (library 
@@ -102,7 +102,7 @@
 (subdir Approvallib
  (rocq.extraction
   (prelude Extraction)
-  (extracted_files ApprovalIns.ml ApprovalIns.mli Approval.ml Approval.mli EncProof.ml EncProof.mli Datatypes.ml Datatypes.mli Vector.ml Vector.mli Nat.ml Nat.mli Specif.ml Specif.mli Sigma.ml Sigma.mli VectorDef.ml VectorDef.mli Zpstar.ml Zpstar.mli BinInt.ml BinInt.mli PosDef.ml PosDef.mli Functions.ml Functions.mli BinNat.ml BinNat.mli Util.ml Util.mli EqdepFacts.ml EqdepFacts.mli Fin.ml Fin.mli Elgamal.ml Elgamal.mli)
+  (extracted_files Approval.ml Approval.mli ApprovalIns.ml ApprovalIns.mli BinInt.ml BinInt.mli BinNat.ml BinNat.mli BinNums.ml BinNums.mli BinPos.ml BinPos.mli Datatypes.ml Datatypes.mli Elgamal.ml Elgamal.mli EncProof.ml EncProof.mli Fin.ml Fin.mli Functions.ml Functions.mli Logic.ml Logic.mli Nat.ml Nat.mli PosDef.ml PosDef.mli Sigma.ml Sigma.mli Specif.ml Specif.mli Util.ml Util.mli Vector.ml Vector.mli VectorDef.ml VectorDef.mli Zpstar.ml Zpstar.mli)
   (theories ExtLib Stdlib Utility Crypto Algebra 
    Probability Examples Frontend))
  (library 
@@ -113,7 +113,7 @@
 (subdir Tallylib
  (rocq.extraction
   (prelude Extraction)
-  (extracted_files TallyIns.ml TallyIns.mli Tally.ml Tally.mli Approval.ml Approval.mli EncProof.ml EncProof.mli DecProof.ml DecProof.mli ChaumPedersen.ml ChaumPedersen.mli EqSigma.ml EqSigma.mli Datatypes.ml Datatypes.mli Vector.ml Vector.mli Nat.ml Nat.mli Specif.ml Specif.mli Sigma.ml Sigma.mli VectorDef.ml VectorDef.mli Zpstar.ml Zpstar.mli BinInt.ml BinInt.mli PosDef.ml PosDef.mli Functions.ml Functions.mli BinNat.ml BinNat.mli Util.ml Util.mli EqdepFacts.ml EqdepFacts.mli Elgamal.ml Elgamal.mli)
+  (extracted_files Approval.ml Approval.mli BinInt.ml BinInt.mli BinNat.ml BinNat.mli BinNums.ml BinNums.mli BinPos.ml BinPos.mli ChaumPedersen.ml ChaumPedersen.mli Datatypes.ml Datatypes.mli DecProof.ml DecProof.mli Elgamal.ml Elgamal.mli EncProof.ml EncProof.mli EqSigma.ml EqSigma.mli Functions.ml Functions.mli Logic.ml Logic.mli Nat.ml Nat.mli PosDef.ml PosDef.mli Sigma.ml Sigma.mli Specif.ml Specif.mli Tally.ml Tally.mli TallyIns.ml TallyIns.mli Util.ml Util.mli Vector.ml Vector.mli VectorDef.ml VectorDef.mli Zpstar.ml Zpstar.mli)
   (theories ExtLib Stdlib Utility Crypto Algebra 
    Probability Examples Frontend Backend))
  (library 
@@ -124,7 +124,7 @@
 (subdir ChaumPedersenlib
  (rocq.extraction
   (prelude Extraction)
-  (extracted_files ChaumPedersenIns.ml ChaumPedersenIns.mli ChaumPedersen.ml ChaumPedersen.mli EqSigma.ml EqSigma.mli Datatypes.ml Datatypes.mli Vector.ml Vector.mli Nat.ml Nat.mli Specif.ml Specif.mli Sigma.ml Sigma.mli VectorDef.ml VectorDef.mli Zpstar.ml Zpstar.mli BinInt.ml BinInt.mli PosDef.ml PosDef.mli Functions.ml Functions.mli BinNat.ml BinNat.mli Util.ml Util.mli)
+  (extracted_files BinInt.ml BinInt.mli BinNat.ml BinNat.mli BinNums.ml BinNums.mli BinPos.ml BinPos.mli ChaumPedersen.ml ChaumPedersen.mli ChaumPedersenIns.ml ChaumPedersenIns.mli Datatypes.ml Datatypes.mli EqSigma.ml EqSigma.mli Functions.ml Functions.mli Nat.ml Nat.mli PosDef.ml PosDef.mli Sigma.ml Sigma.mli Specif.ml Specif.mli Util.ml Util.mli Vector.ml Vector.mli VectorDef.ml VectorDef.mli Zpstar.ml Zpstar.mli)
   (theories ExtLib Stdlib Utility Crypto Algebra 
    Probability Examples Frontend Backend))
  (library 
@@ -135,7 +135,7 @@
 (subdir NeqSigmalib
  (rocq.extraction
   (prelude Extraction)
-  (extracted_files NeqSigmaIns.ml NeqSigmaIns.mli Okamoto.ml Okamoto.mli NeqSigma.ml NeqSigma.mli Datatypes.ml Datatypes.mli Vector.ml Vector.mli Nat.ml Nat.mli Specif.ml Specif.mli Sigma.ml Sigma.mli VectorDef.ml VectorDef.mli Zpstar.ml Zpstar.mli BinInt.ml BinInt.mli PosDef.ml PosDef.mli Functions.ml Functions.mli BinNat.ml BinNat.mli Util.ml Util.mli EqdepFacts.ml EqdepFacts.mli AndSigmaGen.ml AndSigmaGen.mli PeanoNat.ml PeanoNat.mli Zpow_facts.ml Zpow_facts.mli)
+  (extracted_files AndSigmaGen.ml AndSigmaGen.mli BinInt.ml BinInt.mli BinNat.ml BinNat.mli BinNums.ml BinNums.mli BinPos.ml BinPos.mli Datatypes.ml Datatypes.mli Functions.ml Functions.mli Logic.ml Logic.mli Nat.ml Nat.mli NeqSigma.ml NeqSigma.mli NeqSigmaIns.ml NeqSigmaIns.mli Okamoto.ml Okamoto.mli PeanoNat.ml PeanoNat.mli PosDef.ml PosDef.mli Sigma.ml Sigma.mli Specif.ml Specif.mli Util.ml Util.mli Vector.ml Vector.mli VectorDef.ml VectorDef.mli Zpow_facts.ml Zpow_facts.mli Zpstar.ml Zpstar.mli)
   (theories ExtLib Stdlib Utility Crypto Algebra 
    Probability Examples Frontend Backend))
  (library 
@@ -146,7 +146,7 @@
 (subdir PedLinearRellib
  (rocq.extraction
   (prelude Extraction)
-  (extracted_files PedLinearRelIns.ml PedLinearRelIns.mli PedLinearRel.ml PedLinearRel.mli Datatypes.ml Datatypes.mli Vector.ml Vector.mli Nat.ml Nat.mli Sigma.ml Sigma.mli VectorDef.ml VectorDef.mli Zpstar.ml Zpstar.mli BinInt.ml BinInt.mli PosDef.ml PosDef.mli Functions.ml Functions.mli BinNat.ml BinNat.mli Util.ml Util.mli EqdepFacts.ml EqdepFacts.mli)
+  (extracted_files BinInt.ml BinInt.mli BinNat.ml BinNat.mli BinNums.ml BinNums.mli BinPos.ml BinPos.mli Datatypes.ml Datatypes.mli Functions.ml Functions.mli Logic.ml Logic.mli Nat.ml Nat.mli PedLinearRel.ml PedLinearRel.mli PedLinearRelIns.ml PedLinearRelIns.mli PosDef.ml PosDef.mli Sigma.ml Sigma.mli Specif.ml Specif.mli Util.ml Util.mli Vector.ml Vector.mli VectorDef.ml VectorDef.mli Zpstar.ml Zpstar.mli)
   (theories ExtLib Stdlib Utility Crypto Algebra 
    Probability Examples Frontend Backend))
  (library 
