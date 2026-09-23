@@ -7,5 +7,5 @@
 (library 
  (name helios_parser)
  (modules Ast lexer parser)
- (libraries menhirLib HeliosTallylib))
+ (libraries menhirLib HeliosTallylib cryptokit))
 

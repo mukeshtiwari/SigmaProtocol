@@ -1,6 +1,23 @@
 %{
   open Ast
   open Big_int_Z
+
+  (* Trusted boundary. The certified verifier's types assume that every 
+     group element lies in the order-q subgroup of Z_p^* and that every 
+     field element is below q. Helios itself checks subgroup membership 
+     only for the commitments of decryption proofs; we check it for every 
+     element read from the bulletin board and refuse to proceed otherwise. *)
+  let helios_p = HeliosTallylib.HeliosTallyIns.p
+  let helios_q = HeliosTallylib.HeliosTallyIns.q
+  let group_elt (s : string) : big_int =
+    let v = big_int_of_string s in
+    if sign_big_int v > 0 && lt_big_int v helios_p 
+       && eq_big_int (Z.powm v helios_q helios_p) unit_big_int
+    then v else failwith ("group element outside the order-q subgroup: " ^ s)
+  let field_elt (s : string) : big_int =
+    let v = big_int_of_string s in
+    if sign_big_int v >= 0 && lt_big_int v helios_q then v
+    else failwith ("field element out of range: " ^ s)
 %}
 
 
@@ -83,7 +100,7 @@ answer_fields:
  
 choice:
   | LBRACE ALPHA COLON a = STRING COMMA BETA COLON b = STRING RBRACE 
-    { (big_int_of_string a, big_int_of_string b) : Big_int_Z.big_int * Big_int_Z.big_int}
+    { (group_elt a, group_elt b) : Big_int_Z.big_int * Big_int_Z.big_int}
   
  
 
@@ -102,12 +119,16 @@ proof:
     RBRACE
     RBRACKET
     { 
+      let a0, b0, a1, b1 = group_elt aone, group_elt atwo, group_elt bone, group_elt btwo in
       {
-        HeliosTallylib.Sigma.announcement = vector_of_list [(big_int_of_string aone, big_int_of_string atwo); (big_int_of_string bone, big_int_of_string btwo)];
+        HeliosTallylib.Sigma.announcement = vector_of_list [(a0, b0); (a1, b1)];
         HeliosTallylib.Sigma.challenge = vector_of_list 
-          [mod_big_int (add_big_int (big_int_of_string cone) (big_int_of_string ctwo)) HeliosTallylib.HeliosTallyIns.q; 
-          big_int_of_string cone; big_int_of_string ctwo];
-        HeliosTallylib.Sigma.response = vector_of_list [big_int_of_string rone; big_int_of_string rtwo]
+          (* Helios does not transmit the overall challenge: it is the
+             SHA-1 of the announcements A0, B0, A1, B1, recomputed here.
+             The certified verifier checks that the two per-branch
+             challenges sum to it. *)
+          [helios_challenge [a0; b0; a1; b1]; field_elt cone; field_elt ctwo];
+        HeliosTallylib.Sigma.response = vector_of_list [field_elt rone; field_elt rtwo]
       } : (Big_int_Z.big_int, Big_int_Z.big_int * Big_int_Z.big_int) HeliosTallylib.Sigma.sigma_proto
 
     }
@@ -139,7 +160,7 @@ trustee_fields:
   
 
 factors:
-  | f = STRING { big_int_of_string f : Big_int_Z.big_int}
+  | f = STRING { group_elt f : Big_int_Z.big_int}
 
 proofs:
   | LBRACE 
@@ -148,10 +169,15 @@ proofs:
     RESPONSE COLON r = STRING 
     RBRACE
      { 
+      let a, b = group_elt aone, group_elt atwo in
+      let _ = field_elt c in
       {
-        HeliosTallylib.Sigma.announcement = vector_of_list ([big_int_of_string aone; big_int_of_string atwo]);
-        HeliosTallylib.Sigma.challenge = vector_of_list ([big_int_of_string c]);
-        HeliosTallylib.Sigma.response = vector_of_list ([big_int_of_string r])
+        HeliosTallylib.Sigma.announcement = vector_of_list ([a; b]);
+        (* Helios checks a decryption proof's challenge against SHA-1(A, B).
+           The recomputed value is installed here, so the certified verifier
+           accepts only if the response answers that challenge. *)
+        HeliosTallylib.Sigma.challenge = vector_of_list ([helios_challenge [a; b]]);
+        HeliosTallylib.Sigma.response = vector_of_list ([field_elt r])
       }
     }
   
@@ -162,10 +188,13 @@ pok_fields:
     COMMITMENT COLON a = STRING COMMA
     RESPONSE COLON r = STRING
     { 
+      let a = group_elt a in
+      let _ = field_elt c in
       {
-        HeliosTallylib.Sigma.announcement =  vector_of_list ([big_int_of_string a]);
-        HeliosTallylib.Sigma.challenge =  vector_of_list ([big_int_of_string c]);  
-        HeliosTallylib.Sigma.response =  vector_of_list ([big_int_of_string r])
+        HeliosTallylib.Sigma.announcement =  vector_of_list ([a]);
+        (* Helios checks a proof of knowledge against SHA-1(commitment). *)
+        HeliosTallylib.Sigma.challenge =  vector_of_list ([helios_challenge [a]]);  
+        HeliosTallylib.Sigma.response =  vector_of_list ([field_elt r])
       }
     }
   
@@ -175,7 +204,7 @@ key_fields:
     P COLON p = STRING COMMA
     Q COLON q = STRING COMMA
     Y COLON y = STRING
-    { (((big_int_of_string g, big_int_of_string p), big_int_of_string q), big_int_of_string y) }
+    { (((group_elt g, big_int_of_string p), big_int_of_string q), group_elt y) }
   
 
 result :
