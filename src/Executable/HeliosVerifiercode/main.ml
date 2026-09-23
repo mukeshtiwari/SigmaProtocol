@@ -1,7 +1,6 @@
 open HeliosTallylib.HeliosTallyIns
 open HeliosTallylib.Sigma
 open Cryptokit
-open Hacl_star.Hacl.Keccak
 open Helios_parser
 open Helios_parser.Parser
 open Ast 
