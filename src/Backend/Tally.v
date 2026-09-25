@@ -52,18 +52,30 @@ Section Tally.
     Context {n : nat} 
       (g h : G).
 
+    (* A ballot: one ElGamal ciphertext with its 0/1 encryption proof per 
+      candidate, and the overall proof that the ballot carries between 0 and 
+      n approvals (a disjunctive proof over the homomorphic product of the 
+      ciphertexts, see Approval.v). *)
+    Definition ballot : Type := 
+      (Vector.t (G * G * @Sigma.sigma_proto F (G * G) 2 3 2) n * 
+       @Sigma.sigma_proto F (G * G) (S n) (S (S n)) (S n))%type.
+
+    (* both the individual proofs and the overall proof must be accepted *)
+    Definition verify_ballot_full (b : ballot) : bool :=
+      @verify_ballot F zero one add Fdec G gid ginv gop gpow Gdec n g h b.
+
    
     (* each ciphertext comes with encryption sigma proof so a ballot is 
     a ciphertext and encryption proof of 0 or 1: 
     G * G *  @Sigma.sigma_proto F (G * G) 2 3 2 *)
     Inductive state : Type :=
-    | partial : list (Vector.t (G * G * @Sigma.sigma_proto F (G * G) 2 3 2) n) ->  
-      list (Vector.t (G * G * @Sigma.sigma_proto F (G * G) 2 3 2) n) -> 
-      list (Vector.t (G * G * @Sigma.sigma_proto F (G * G) 2 3 2) n) -> 
+    | partial : list (ballot) ->  
+      list (ballot) -> 
+      list (ballot) -> 
       Vector.t (G * G) n -> state
-    | finished : list (Vector.t (G * G * @Sigma.sigma_proto F (G * G) 2 3 2) n) ->  
-      list (Vector.t (G * G * @Sigma.sigma_proto F (G * G) 2 3 2) n) -> 
-      list (Vector.t (G * G * @Sigma.sigma_proto F (G * G) 2 3 2) n) -> 
+    | finished : list (ballot) ->  
+      list (ballot) -> 
+      list (ballot) -> 
       Vector.t F n -> state.
 
     
@@ -74,9 +86,9 @@ Section Tally.
     *)
     | ax  (ms : Vector.t (G * G) n) :  
       (∀ (i : Fin.t n), Vector.nth ms i = (gid, gid)) -> 
-      count (partial (@List.nil (Vector.t (G * G * @Sigma.sigma_proto F (G * G) 2 3 2) n))
-        (@List.nil (Vector.t (G * G * @Sigma.sigma_proto F (G * G) 2 3 2) n)) 
-        (@List.nil (Vector.t (G * G * @Sigma.sigma_proto F (G * G) 2 3 2) n)) ms)
+      count (partial (@List.nil (ballot))
+        (@List.nil (ballot)) 
+        (@List.nil (ballot)) ms)
     (* 
       u is a valid ballot with encryption proof of 0 or 1 
       ms is the tally so far and nms is the new tally nms = ms + u 
@@ -86,14 +98,13 @@ Section Tally.
       count (partial us vbs inbs ms) is the partial count seen so far
     *)
     | cvalid 
-      (u : Vector.t (G * G * @Sigma.sigma_proto F (G * G) 2 3 2) n)
-      (us vbs inbs : list (Vector.t (G * G * @Sigma.sigma_proto F (G * G) 2 3 2) n)) 
+      (u : ballot)
+      (us vbs inbs : list (ballot)) 
       (ms nms : Vector.t (G * G) n) :
       count (partial us vbs inbs ms) -> 
       Permutation us (vbs ++ inbs) -> 
-      @verify_encryption_ballot_proof F zero one add Fdec G ginv gop gpow Gdec
-        _ g h u = true (* u is valid vote *) ->
-      nms = @mul_encrypted_ballots G gop _ ms (Vector.map fst u) ->
+      verify_ballot_full u = true (* u is valid vote *) ->
+      nms = @mul_encrypted_ballots G gop _ ms (Vector.map fst (fst u)) ->
       count (partial (@List.cons _ u us) (@List.cons _ u vbs) inbs nms)
     (* 
       u is invalid ballot 
@@ -104,13 +115,12 @@ Section Tally.
       count (partial us vbs inbs ms) is the partial count seen so far
     *)
     | cinvalid 
-      (u : Vector.t (G * G * @Sigma.sigma_proto F (G * G) 2 3 2) n)
-      (us vbs inbs : list (Vector.t (G * G * @Sigma.sigma_proto F (G * G) 2 3 2) n)) 
+      (u : ballot)
+      (us vbs inbs : list (ballot)) 
       (ms : Vector.t (G * G) n) :
       count (partial us vbs inbs ms) -> 
       Permutation us (vbs ++ inbs) -> 
-      @verify_encryption_ballot_proof F zero one add Fdec G ginv gop gpow Gdec
-        _ g h u = false (* u is invalid vote *) ->
+      verify_ballot_full u = false (* u is invalid vote *) ->
       count (partial (@List.cons _ u us) vbs (@List.cons _ u inbs) ms)
     (*
       us all the ballots in an election 
@@ -121,7 +131,7 @@ Section Tally.
       pt is obtained by discrete logarithm search over ds 
     *)
     | cfinish 
-      (us vbs inbs : list (Vector.t (G * G * @Sigma.sigma_proto F (G * G) 2 3 2) n)) 
+      (us vbs inbs : list (ballot)) 
       (ms : Vector.t (G * G) n) (ds : Vector.t G n) 
       (pf : Vector.t (@sigma_proto F G 2 1 1) n) 
       (pt : Vector.t F n) : 
@@ -194,22 +204,22 @@ Section Tally.
     *)
     Definition compute_final_tally (x : F) (* rs us cs : Vector.t F n *) : 
       g^x = h -> (* relation between public key and group generator *)  
-      ∀ (bs : list (Vector.t (G * G * @Sigma.sigma_proto F (G * G) 2 3 2) n)), 
-      existsT (vbs inbs :  list (Vector.t (G * G * @Sigma.sigma_proto F (G * G) 2 3 2) n))
+      ∀ (bs : list (ballot)), 
+      existsT (vbs inbs :  list (ballot))
         (ms : Vector.t (G * G) n), (count (partial bs vbs inbs ms) *
         Permutation bs (vbs ++ inbs))%type.
     Proof.
       intro ha.
       (* we walk through the whole bs and and build up a tally bottom-up *)
-      refine(fix fn (bs : list (Vector.t (G * G * sigma_proto) n)) {struct bs} := 
+      refine(fix fn (bs : list (ballot)) {struct bs} := 
         match bs with 
         | @List.nil _ => _ 
         | @List.cons _ bh bt => _ 
         end).
       + 
         set (ms := repeat_ntimes n (gid, gid)).
-        exists (@List.nil (Vector.t (G * G * @Sigma.sigma_proto F (G * G) 2 3 2) n)),
-        (@List.nil (Vector.t (G * G * @Sigma.sigma_proto F (G * G) 2 3 2) n)), ms.
+        exists (@List.nil (ballot)),
+        (@List.nil (ballot)), ms.
         refine(pair (ax ms _) _).
         ++
           intros *.
@@ -220,10 +230,8 @@ Section Tally.
       +
         (* check if bh is valid ballot or not *)
         refine 
-          (match @verify_encryption_ballot_proof F zero one add Fdec G ginv gop gpow Gdec
-          _ g h bh as v return 
-          @verify_encryption_ballot_proof F zero one add Fdec G ginv gop gpow Gdec
-          _ g h bh = v -> _ 
+          (match verify_ballot_full bh as v return 
+          verify_ballot_full bh = v -> _ 
           with 
           | true => fun hv => _ 
           | false => fun hv => _ 
@@ -233,7 +241,7 @@ Section Tally.
         ++
           destruct (fn bt) as (vbs & inbs &  ms & hb & hc).
           exists (@List.cons _ bh vbs), inbs, 
-            (@mul_encrypted_ballots G gop _ ms (Vector.map fst bh)).
+            (@mul_encrypted_ballots G gop _ ms (Vector.map fst (fst bh))).
           refine(pair _ _ ). 
           *
             eapply cvalid. exact hb. 
@@ -288,9 +296,9 @@ Section Tally.
     (* us and cs is the randomness to produce final honest decryption proof *)
     Definition compute_final_count (x : F) (us cs : Vector.t F n) : 
       g^x = h -> (* relation between public key and group generator *)  
-      ∀ (bs : list (Vector.t (G * G * @Sigma.sigma_proto F (G * G) 2 3 2) n)), 
+      ∀ (bs : list (ballot)), 
       existsT (vbs inbs :  
-        list (Vector.t (G * G * @Sigma.sigma_proto F (G * G) 2 3 2) n))
+        list (ballot))
         (pt : Vector.t F n), count (finished bs vbs inbs pt).
     Proof.
       intros * ha *.
