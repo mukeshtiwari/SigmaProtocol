@@ -98,7 +98,7 @@ let rec print_count (bs : (Z.t, Z.t) Tallylib.Tally.count) : string =
     | Coq_ax ms -> "Identity-tally : " ^ vector_string_pair " " ms ^ "\n" ^ iterate_char "-" 150 ^ "\n"
     | Coq_cvalid (u, us, vbs, inbs, ms, nms, p) -> print_count p ^ "Valid ballot : " ^ vector_to_string proof_and_enc_string " " (fst u) ^ " \nPrevious tally : " ^ vector_string_pair " " ms ^ "\nCurrent tally : " ^ vector_string_pair " " nms ^ "\n" ^ iterate_char "-" 150 ^ "\n"
     | Coq_cinvalid (u, us, vbs, inbs, ms, p) -> print_count p ^ "Invalid ballot : " ^ vector_to_string proof_and_enc_string " " (fst u) ^ " \nPrevious tally : " ^ vector_string_pair " " ms ^ "\nCurrent tally : " ^ vector_string_pair " " ms ^ "\n" ^ iterate_char "-" 150 ^ "\n"
-    | Coq_cfinish (us, vbs, inbs, ms, ds, pf, pt, p) -> print_count p ^ "Final tally : " ^ vector_string_pair " " ms ^ "\nFinal Decrypted Tally : " ^ vector_string " " ds ^ "\nFinal Decrypted Tally (Discrete Logarithm Search) : " ^ vector_string " " pt ^ "\n" ^ iterate_char "-" 150 ^ "\n"
+    | Coq_cfinish (us, vbs, inbs, ms, ds, pf, pt, b, p) -> print_count p ^ "Final tally : " ^ vector_string_pair " " ms ^ "\nFinal Decrypted Tally : " ^ vector_string " " ds ^ "\nFinal Decrypted Tally (Discrete Logarithm Search) : " ^ vector_string " " pt ^ "\nPlaintext tally checked (g^pt = ds for every candidate) : " ^ string_of_bool b ^ "\n" ^ iterate_char "-" 150 ^ "\n"
 
 
 (* ---- Fiat-Shamir: recompute every challenge from the announcements ----
@@ -169,5 +169,6 @@ let _ =
   let tally = compute_final_count_ins (Big_int_Z.big_int_of_int n) discrete_log_search us cs bs in 
   match tally with 
   | Tallylib.Specif.Coq_existT (vbs, 
-    Tallylib.Specif.Coq_existT (inbs, Tallylib.Specif.Coq_existT (pt, count))) -> 
+    Tallylib.Specif.Coq_existT (inbs, Tallylib.Specif.Coq_existT (pt, 
+    Tallylib.Specif.Coq_existT (bfinal, count)))) -> 
     print_string (print_count count)

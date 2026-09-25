@@ -71,7 +71,7 @@ Section Ins.
     (bs :  list (@ballot (@Zp q) (@Schnorr_group p q) n)) : 
     existsT (vbs inbs : 
       list (@ballot (@Zp q) (@Schnorr_group p q) n))
-      (pt : Vector.t (@Zp q) n), 
+      (pt : Vector.t (@Zp q) n) (bfinal : bool), 
       @count (@Zp q) (@Zpfield.zero q prime_q) 
       (@Zpfield.one q prime_q) zp_add zp_dec
       (@Schnorr_group p q) 
@@ -80,7 +80,7 @@ Section Ins.
       (@mul_schnorr_group p q prime_p prime_q) 
       (@pow 2 p q safe_prime prime_p prime_q) 
       Schnorr.dec_zpstar n g h 
-     (finished bs vbs inbs pt).
+     (finished bs vbs inbs pt bfinal).
   Proof.
     refine(@compute_final_count (@Zp q) (@Zpfield.zero q prime_q) 
       (@Zpfield.one q prime_q) zp_add zp_mul 

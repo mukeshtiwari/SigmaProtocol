@@ -76,7 +76,7 @@ Section Tally.
     | finished : list (ballot) ->  
       list (ballot) -> 
       list (ballot) -> 
-      Vector.t F n -> state.
+      Vector.t F n -> bool -> state.
 
     
     Inductive count : state -> Type :=
@@ -134,13 +134,21 @@ Section Tally.
       (us vbs inbs : list (ballot)) 
       (ms : Vector.t (G * G) n) (ds : Vector.t G n) 
       (pf : Vector.t (@sigma_proto F G 2 1 1) n) 
-      (pt : Vector.t F n) : 
+      (pt : Vector.t F n) (b : bool) : 
       count (partial us vbs inbs ms) -> 
       Permutation us (vbs ++ inbs) -> 
-      (∀ (i : Fin.t n), g ^ (Vector.nth pt i) = Vector.nth ds i) -> 
+      (* pt is checked against ds: b records whether g ^ pt_i = ds_i holds 
+        for every candidate i. The check is explicit, so no assumption on 
+        the discrete-logarithm search is needed; a certificate with 
+        b = true is what finished_true_correct below unpacks. *)
+      vector_forallb (fun u => u) 
+        (zip_with (fun u v => match Gdec (g ^ u) v with
+          | left _ => true 
+          | right _ => false 
+          end) pt ds) = b -> 
       @decryption_proof_accepting_conversations_vector F G ginv gop gpow 
         Gdec _ g h ms ds pf = true -> 
-      count (finished us vbs inbs pt).
+      count (finished us vbs inbs pt b).
 
 
 
@@ -265,41 +273,18 @@ Section Tally.
             eapply Permutation_middle.
     Defined.
 
-    (* Discrete logarithms search and coherence axiom on it. This is for 
-    searching the exponent values in the tally. *)
+    (* Discrete-logarithm search, supplied by the caller (the extracted 
+      driver uses a linear search). Its result is checked, not trusted: 
+      the b component of the final state records whether g ^ pt_i = ds_i 
+      for every i. *)
     Variable (discrete_logarithm_search : G -> G -> F).
-    Axiom (hdiscrete : ∀ (y : F) (hx hy : G), discrete_logarithm_search hx hy = y ->
-      hx^y = hy). 
 
-    Theorem compute_final_count_aux : ∀ (m : nat) (i : Fin.t m) 
-      (ds : Vector.t G m) (pt : Vector.t F m), 
-      pt = map (λ hy : G, discrete_logarithm_search g hy) ds -> 
-      g ^ pt[@i] = ds[@i].
-    Proof.
-      induction m as [|m ihm].
-      +
-        intros * ha.
-        refine match i with end.
-      +
-        intros * ha.
-        destruct (vector_inv_S ds) as (dsh & dst & hb).
-        destruct (vector_inv_S pt) as (pth & ptt & hc).
-        destruct (fin_inv_S _ i) as [f' | (f' & hd)].
-        ++
-          subst; cbn.
-          now erewrite hdiscrete.
-        ++
-          subst; cbn.
-          now eapply ihm.
-    Qed.
-   
     (* us and cs is the randomness to produce final honest decryption proof *)
     Definition compute_final_count (x : F) (us cs : Vector.t F n) : 
       g^x = h -> (* relation between public key and group generator *)  
       ∀ (bs : list (ballot)), 
-      existsT (vbs inbs :  
-        list (ballot))
-        (pt : Vector.t F n), count (finished bs vbs inbs pt).
+      existsT (vbs inbs : list (ballot)) (pt : Vector.t F n) (b : bool), 
+        count (finished bs vbs inbs pt b).
     Proof.
       intros * ha *.
       destruct (compute_final_tally x ha bs) as (vbs & inbs & ms & hb & hc).
@@ -307,16 +292,45 @@ Section Tally.
       set (pt := (map (fun hy => discrete_logarithm_search g hy) ds)).
       set (pf := @construct_decryption_proof_elgamal_real_vector F add mul G gpow 
           _ x g ms us cs).
-      exists vbs, inbs, pt.
-      refine(cfinish bs vbs inbs ms ds pf pt hb hc _ _).
-      intro f. eapply compute_final_count_aux;
-      unfold pt; reflexivity.
+      set (b := vector_forallb (fun u => u) 
+        (zip_with (fun u v => match Gdec (g ^ u) v with
+          | left _ => true 
+          | right _ => false 
+          end) pt ds)).
+      exists vbs, inbs, pt, b.
+      refine(cfinish bs vbs inbs ms ds pf pt b hb hc eq_refl _).
       eapply decryption_proof_accepting_conversations_vector_completeness;
       [exact ha | ].
       intro f.
       unfold ds.
       eapply compute_final_tally_aux2; exact ha.
     Defined.
+
+    (* A certificate whose final flag is true says that every plaintext 
+      count is the discrete logarithm of the corresponding entry of the 
+      decrypted tally, and that the decryption proofs are accepted. *)
+    Theorem finished_true_correct : 
+      forall (us vbs inbs : list ballot) (pt : Vector.t F n),
+      count (finished us vbs inbs pt true) ->
+      ∃ (ms : Vector.t (G * G) n) (ds : Vector.t G n) 
+        (pf : Vector.t (@sigma_proto F G 2 1 1) n),
+        Permutation us (vbs ++ inbs) ∧
+        (∀ (i : Fin.t n), g ^ (Vector.nth pt i) = Vector.nth ds i) ∧
+        @decryption_proof_accepting_conversations_vector F G ginv gop gpow 
+          Gdec _ g h ms ds pf = true.
+    Proof.
+      intros * hc.
+      inversion hc as [| | | us' vbs' inbs' ms ds pf pt' b hcount hperm hb hdec]; 
+      subst.
+      exists ms, ds, pf.
+      refine (conj hperm (conj _ hdec)).
+      intro i.
+      rewrite vector_forallb_correct in hb.
+      specialize (hb i).
+      rewrite nth_zip_with in hb.
+      destruct (Gdec (g ^ pt[@i]) ds[@i]) as [he | he]; 
+      [exact he | inversion hb].
+    Qed.
 
   End Defs.
 

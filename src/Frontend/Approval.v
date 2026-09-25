@@ -1101,5 +1101,69 @@ Section Approval.
           reflexivity.
       Qed.
 
+
+      (* ---------------------------------------------------------------- *)
+      (* Special soundness at the ballot level: instances of the special 
+        soundness of the disjunctive encryption proof 
+        (EncProof.generalised_accepting_elgamal_soundness_main). *)
+
+      (* Two accepting vote proofs with the same announcement and different 
+        challenges show that the ciphertext encrypts 0 or 1. *)
+      Theorem vote_proof_sound : forall (g h : G) (cp : G * G)
+        (a : Vector.t (G * G) 2) (c₁ c₂ : F) (cs₁ cs₂ rs₁ rs₂ : Vector.t F 2),
+        verify_encryption_vote_proof g h (cp, (a; c₁ :: cs₁; rs₁)) = true ->
+        verify_encryption_vote_proof g h (cp, (a; c₂ :: cs₂; rs₂)) = true ->
+        c₁ <> c₂ ->
+        ∃ (r : F), cp = (g ^ r, gop (g ^ zero) (h ^ r)) ∨ 
+          cp = (g ^ r, gop (g ^ one) (h ^ r)).
+      Proof.
+        intros * ha hb hc.
+        unfold verify_encryption_vote_proof in ha, hb.
+        destruct cp as (p₁, p₂).
+        destruct (generalised_accepting_elgamal_soundness_main (n := 0) g h 
+          [g ^ zero; g ^ one] p₁ p₂ a c₁ cs₁ rs₁ c₂ cs₂ rs₂ ha hb hc) as 
+          (y & hy & f & hf).
+        assert (hg : forall (p w v : G), v = gop p (ginv w) -> p = gop w v).
+        { intros * hv; rewrite hv, commutative, <-associative, 
+            group_is_left_inverse, monoid_is_right_identity; reflexivity. }
+        exists y.
+        destruct (fin_inv_S _ f) as [hf0 | (f' & hf1)]; subst.
+        + left. cbn in hf. f_equal; eapply hg; exact hf.
+        + destruct (fin_inv_S _ f') as [hf0 | (f'' & hf1)]; subst; 
+          [| refine match f'' with end].
+          right. cbn in hf. f_equal; eapply hg; exact hf.
+      Qed.
+
+      (* Two accepting overall proofs with the same announcement and 
+        different challenges show that the homomorphic product of the 
+        ballot encrypts g^m for some m between 0 and the number of 
+        candidates, i.e. the ballot carries at most that many approvals. *)
+      Theorem overall_proof_sound : forall (k : nat) (g h : G) 
+        (cps : Vector.t (G * G) (S k))
+        (a : Vector.t (G * G) (S (S k))) (c₁ c₂ : F) 
+        (cs₁ cs₂ rs₁ rs₂ : Vector.t F (S (S k))),
+        verify_overall_proof g h cps (a; c₁ :: cs₁; rs₁) = true ->
+        verify_overall_proof g h cps (a; c₂ :: cs₂; rs₂) = true ->
+        c₁ <> c₂ ->
+        ∃ (r : F) (m : nat), m <= S k ∧ 
+          ballot_product cps = (g ^ r, gop (g ^ of_nat m) (h ^ r)).
+      Proof.
+        intros * ha hb hc.
+        unfold verify_overall_proof in ha, hb.
+        destruct (ballot_product cps) as (p₁, p₂) eqn:hp.
+        destruct (generalised_accepting_elgamal_soundness_main (n := k) g h 
+          (powers g (S k)) p₁ p₂ a c₁ cs₁ rs₁ c₂ cs₂ rs₂ ha hb hc) as 
+          (y & hy & f & hf).
+        exists y, (proj1_sig (Fin.to_nat f)).
+        split.
+        + destruct (Fin.to_nat f) as (m & hm); cbn; lia.
+        + rewrite (powers_nth g (S k)) in hf.
+          f_equal; [symmetry; exact hy |].
+          assert (hg : forall (p w v : G), v = gop p (ginv w) -> p = gop w v).
+          { intros * hv; rewrite hv, commutative, <-associative, 
+              group_is_left_inverse, monoid_is_right_identity; reflexivity. }
+          eapply hg; exact hf.
+      Qed.
+
     End Proofs.
 End Approval.
