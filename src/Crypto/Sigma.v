@@ -671,14 +671,14 @@ Section DL.
         of the field, and it permutes the sample list lf whenever lf is
         closed under it; in particular whenever lf enumerates the field. *)
 
-      Lemma schnorr_protocol_simulator_shift (x : F) (g h : G) (R : h = g^x) : 
+      (* The real commitment for randomness u is the simulated commitment 
+        for randomness u + c * x. This single group identity is what every 
+        zero-knowledge bijection in the library reduces to. *)
+      Lemma schnorr_commitment_shift (x : F) (g h : G) (R : h = g^x) : 
         forall (u c : F), 
-        schnorr_protocol x g u c = schnorr_simulator g h (u + c * x) c.
+        g ^ u = gop (g ^ (u + c * x)) (h ^ (opp c)).
       Proof.
-        intros *.
-        unfold schnorr_protocol, schnorr_simulator, 
-          schnorr_protocol_commitment.
-        f_equal; f_equal; rewrite R.
+        intros *; rewrite R.
         assert (ha : (g ^ x) ^ opp c = g ^ (x * opp c)) by 
           (rewrite smul_pow_up; reflexivity).
         rewrite ha; clear ha.
@@ -687,6 +687,17 @@ Section DL.
         + assert (hb : u + c * x + x * opp c = u) by field.
           rewrite hb; reflexivity.
         + typeclasses eauto.
+      Qed.
+
+      Lemma schnorr_protocol_simulator_shift (x : F) (g h : G) (R : h = g^x) : 
+        forall (u c : F), 
+        schnorr_protocol x g u c = schnorr_simulator g h (u + c * x) c.
+      Proof.
+        intros *.
+        unfold schnorr_protocol, schnorr_simulator, 
+          schnorr_protocol_commitment.
+        f_equal; f_equal.
+        apply schnorr_commitment_shift; exact R.
       Qed.
 
       (* Equality of distributions, under closure of lf under the shift. *)

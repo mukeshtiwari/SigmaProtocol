@@ -1,7 +1,7 @@
 From Stdlib Require Import Setoid
   setoid_ring.Field Lia Vector Utf8
   Psatz Bool Pnat BinNatDef 
-  BinPos Arith Eqdep_dec.
+  BinPos Arith Eqdep_dec Permutation.
 From Algebra Require Import 
   Hierarchy Group Monoid
   Field Integral_domain
@@ -939,6 +939,259 @@ Section DL.
           exact Ha.
       Qed.
     
+
+      (* ---------------------------------------------------------------- *)
+      (* Special honest-verifier zero-knowledge as equality of distributions.
+        The bijection on the randomness is the prover's own response map: 
+        every coordinate is shifted by c times the corresponding witness 
+        (the witness itself for the And part, the derived Okamoto witnesses 
+        for every pair). Its inverse is the response map for the challenge 
+        opp c. *)
+
+      Lemma pair_unzip_zip_id : forall (m : nat) (vs : Vector.t F (m + m)), 
+        pair_unzip (pair_zip vs) = vs.
+      Proof.
+        induction m as [| m ih]; intros vs.
+        + rewrite (vector_inv_0 vs); reflexivity.
+        + cbn.
+          generalize (eq_trans eq_refl (f_equal S (eq_ind_r 
+            (λ n : nat, S (m + m) = n) eq_refl (add_succ_r m m)))) as e.
+          intros e.
+          set (vs' := rew <- [λ n : nat, t F n] e in vs).
+          assert (hvs : vs = rew [λ n : nat, t F n] e in vs') by 
+            (unfold vs'; symmetry; apply rew_opp_r).
+          clearbody vs'.
+          rewrite hvs; clear hvs.
+          destruct (vector_inv_S vs') as (a & vs'' & hv).
+          destruct (vector_inv_S vs'') as (b & w & hw).
+          subst; cbn.
+          rewrite rew_opp_l; cbn.
+          rewrite ih.
+          match goal with 
+          | |- eq_rect _ _ _ _ ?p = eq_rect _ _ _ _ ?q => 
+            rewrite (Peano_dec.UIP_nat _ _ p q); reflexivity 
+          end.
+      Qed.
+
+      (* Every pair of relations gives an Okamoto relation for the derived 
+        witnesses. This is the algebraic core of the completeness proof, 
+        factored out. *)
+      Lemma neq_pair_relation {n : nat} (gs hs : Vector.t G (2 + n)) 
+        (xs : Vector.t F (2 + n))
+        (ha : ∀ (i : Fin.t (2 + n)), gs[@i] ^ xs[@i] = hs[@i])
+        (hb : ∀ (i j : Fin.t (2 + n)), i ≠ j -> xs[@i] ≠ xs[@j]) :
+        forall (i : Fin.t ((2 + n) * (1 + n) / 2)) (g₁ g₂ h₁ h₂ : G) (x₁ x₂ : F),
+        (generate_pairs_of_vector gs)[@i] = (g₁, g₂) ->
+        (generate_pairs_of_vector hs)[@i] = (h₁, h₂) ->
+        (generate_pairs_of_vector xs)[@i] = (x₁, x₂) ->
+        g₂ = fold_right (λ '(g, x) acc, gop (g ^ x) acc) 
+          (zip_with pair [gop g₁ g₂; gop h₁ h₂] 
+            [x₁ * inv (x₁ - x₂); inv (x₂ - x₁)]) gid.
+      Proof.
+        intros * hc hd hf.
+        cbn. 
+        destruct (@generate_pairs_distinct_triple G F _ 
+          gs hs xs i g₁ g₂ h₁ h₂ x₁ x₂ hc hd hf) as 
+          (j & k & hg & hi & hj & hk & hl & hm & hn).
+        clear hc hd hf.
+        pose proof (ha j) as hc.
+        rewrite <- hi, <-hk, <-hm in hc.
+        rewrite <-hc.
+        clear hc.
+        pose proof (ha k) as hc.
+        rewrite <- hj, <-hl, <-hn in hc.
+        rewrite <-hc.
+        rewrite right_identity, !smul_distributive_vadd,
+        <-!smul_associative_fmul.
+        rewrite gop_simp.
+        rewrite <-!smul_distributive_fadd.
+        assert (hd : (x₁ * inv (x₁ - x₂) + x₁ * inv (x₂ - x₁)) = zero). 
+        { 
+          field.
+          pose proof (hb j k hg) as hd.
+          rewrite <-hm, <-hn in hd.
+          split; intro hw; eapply hd; 
+          [eapply eq_sym, ring_sub_zero_iff | eapply ring_sub_zero_iff]; exact hw.
+        }
+        rewrite !hd; clear hd.
+        rewrite field_zero, left_identity.
+        assert (hd : (x₁ * inv (x₁ - x₂) + x₂ * inv (x₂ - x₁)) = 
+          (x₂ - x₁) * inv (x₂ - x₁)). 
+        { 
+          field.
+          pose proof (hb j k hg) as hd.
+          rewrite <-hm, <-hn in hd.
+          split; intro hw; eapply hd; 
+          [eapply eq_sym, ring_sub_zero_iff | eapply ring_sub_zero_iff]; exact hw.
+        }
+        rewrite !hd; clear hd.
+        assert (hd : ((x₂ - x₁) * inv (x₂ - x₁)) = one).
+        {
+          field.
+          pose proof (hb j k hg) as hd.
+          rewrite <-hm, <-hn in hd.
+          intro hw; eapply hd; eapply eq_sym, ring_sub_zero_iff; exact hw.
+        }
+        rewrite hd, field_one.
+        reflexivity.
+      Qed.
+
+
+      Lemma construct_neq_shift {n : nat} (xs : Vector.t F (2 + n)) 
+        (gs hs : Vector.t G (2 + n)) (c : F)
+        (ha : ∀ (i : Fin.t (2 + n)), gs[@i] ^ xs[@i] = hs[@i])
+        (hb : ∀ (i j : Fin.t (2 + n)), i ≠ j -> xs[@i] ≠ xs[@j]) :
+        forall (us : Vector.t F ((2 + n) + ((2 + n) * (1 + n)))),
+        generalised_construct_neq_conversations_real_transcript xs gs hs us c =
+        generalised_construct_neq_conversations_simulator_transcript gs hs 
+          (generalised_construct_neq_response xs us c) c.
+      Proof.
+        intros us.
+        destruct (splitat (2 + n) us) as (usl & usr) eqn:he.
+        apply append_splitat in he; subst us.
+        unfold generalised_construct_neq_conversations_real_transcript,
+          generalised_construct_neq_conversations_simulator_transcript,
+          generalised_construct_neq_commitment, generalised_construct_neq_response.
+        rewrite !VectorSpec.splitat_append.
+        rewrite rew_opp_l, pair_zip_unzip_id.
+        f_equal; f_equal.
+        + apply construct_and_commitment_shift; exact ha.
+        + apply VectorSpec.eq_nth_iff; intros i ? <-.
+          rewrite !nth_zip_with, !map_fin.
+          destruct ((generate_pairs_of_vector gs)[@i]) as (g₁ & g₂) eqn:hc.
+          destruct ((generate_pairs_of_vector hs)[@i]) as (h₁ & h₂) eqn:hd.
+          destruct ((generate_pairs_of_vector xs)[@i]) as (x₁ & x₂) eqn:hf.
+          unfold okamoto_commitment, okamoto_simulator_protocol_commitment, 
+            okamoto_response, generalised_okamoto_simulator_protocol_commitment, 
+            generalised_okamoto_commitment, generalised_okamoto_response.
+          etransitivity; 
+          [apply (okamoto_commitment_shift c 2 [gop g₁ g₂; gop h₁ h₂] 
+            [x₁ * inv (x₁ - x₂); inv (x₂ - x₁)]) |].
+          f_equal; f_equal.
+          symmetry; apply (neq_pair_relation gs hs xs ha hb i g₁ g₂ h₁ h₂ x₁ x₂ hc hd hf).
+      Qed.
+
+      Lemma and_response_compose : 
+        forall (m : nat) (xs us : Vector.t F m) (c c' : F),
+        @construct_and_conversations_schnorr_response F add mul m xs 
+          (@construct_and_conversations_schnorr_response F add mul m xs us c) c' =
+        @construct_and_conversations_schnorr_response F add mul m xs us (c + c').
+      Proof.
+        induction m as [| m ih]; intros xs us c c'.
+        + rewrite (vector_inv_0 xs), (vector_inv_0 us); reflexivity.
+        + destruct (vector_inv_S xs) as (x & xs' & hx).
+          destruct (vector_inv_S us) as (u & us' & hu).
+          subst; specialize (ih xs' us' c c').
+          unfold construct_and_conversations_schnorr_response in *; cbn in *.
+          f_equal; [field | exact ih].
+      Qed.
+
+      Lemma and_response_zero : 
+        forall (m : nat) (xs us : Vector.t F m),
+        @construct_and_conversations_schnorr_response F add mul m xs us zero = us.
+      Proof.
+        induction m as [| m ih]; intros xs us.
+        + rewrite (vector_inv_0 us); reflexivity.
+        + destruct (vector_inv_S xs) as (x & xs' & hx).
+          destruct (vector_inv_S us) as (u & us' & hu).
+          subst; specialize (ih xs' us').
+          unfold construct_and_conversations_schnorr_response in *; cbn in *.
+          f_equal; [field | exact ih].
+      Qed.
+
+      (* The response map is a bijection of the randomness: composing two of 
+        them adds the challenges, and the challenge zero gives the identity. *)
+      Lemma neq_response_compose {n : nat} (xs : Vector.t F (2 + n)) :
+        forall (us : Vector.t F ((2 + n) + ((2 + n) * (1 + n)))) (c c' : F),
+        generalised_construct_neq_response xs 
+          (generalised_construct_neq_response xs us c) c' =
+        generalised_construct_neq_response xs us (c + c').
+      Proof.
+        intros us c c'.
+        destruct (splitat (2 + n) us) as (usl & usr) eqn:he.
+        apply append_splitat in he; subst us.
+        unfold generalised_construct_neq_response.
+        rewrite !VectorSpec.splitat_append, rew_opp_l, pair_zip_unzip_id.
+        f_equal; [apply and_response_compose |].
+        f_equal; f_equal.
+        apply VectorSpec.eq_nth_iff; intros i ? <-.
+        rewrite !nth_zip_with.
+        destruct ((generate_pairs_of_vector xs)[@i]) as (x₁ & x₂).
+        unfold okamoto_response, generalised_okamoto_response.
+        destruct (vector_inv_S 
+          ((pair_zip (rew <- [λ n0 : nat, t F n0] nat_div_2 n in usr))[@i])) 
+          as (a & v' & hv).
+        destruct (vector_inv_S v') as (b & v'' & hv').
+        rewrite (vector_inv_0 v'') in hv'; rewrite hv' in hv; rewrite hv; cbn.
+        f_equal; [ring | f_equal; ring].
+      Qed.
+
+      Lemma neq_response_zero {n : nat} (xs : Vector.t F (2 + n)) :
+        forall (us : Vector.t F ((2 + n) + ((2 + n) * (1 + n)))),
+        generalised_construct_neq_response xs us zero = us.
+      Proof.
+        intros us.
+        destruct (splitat (2 + n) us) as (usl & usr) eqn:he.
+        apply append_splitat in he; subst us.
+        unfold generalised_construct_neq_response.
+        rewrite !VectorSpec.splitat_append.
+        f_equal; [apply and_response_zero |].
+        assert (hz : zip_with (λ '(x₁, x₂) (us : t F 2),
+            @okamoto_response F add mul [x₁ * inv (x₁ - x₂); inv (x₂ - x₁)] us zero)
+           (generate_pairs_of_vector xs) 
+           (pair_zip (rew <- [λ n0 : nat, t F n0] nat_div_2 n in usr)) = 
+           pair_zip (rew <- [λ n0 : nat, t F n0] nat_div_2 n in usr)).
+        {
+          apply VectorSpec.eq_nth_iff; intros i ? <-.
+          rewrite !nth_zip_with.
+          destruct ((generate_pairs_of_vector xs)[@i]) as (x₁ & x₂).
+          unfold okamoto_response, generalised_okamoto_response.
+          destruct (vector_inv_S 
+            ((pair_zip (rew <- [λ n0 : nat, t F n0] nat_div_2 n in usr))[@i])) 
+            as (a & v' & hv).
+          destruct (vector_inv_S v') as (b & v'' & hv').
+          rewrite (vector_inv_0 v'') in hv'; rewrite hv' in hv; rewrite hv; cbn.
+          f_equal; [ring | f_equal; ring].
+        }
+        rewrite hz, pair_unzip_zip_id, rew_opp_r.
+        reflexivity.
+      Qed.
+
+      Theorem generalised_neq_special_honest_verifier_zkp_perm {n : nat} :
+        forall (lf : list F) (Hlfn : lf <> List.nil) 
+        (xs : Vector.t F (2 + n)) (gs hs : Vector.t G (2 + n)) (c : F),
+        (∀ (i : Fin.t (2 + n)), gs[@i] ^ xs[@i] = hs[@i]) ->
+        (∀ (i j : Fin.t (2 + n)), i ≠ j -> xs[@i] ≠ xs[@j]) ->
+        List.NoDup lf -> (forall x : F, List.In x lf) ->
+        Permutation 
+          (@generalised_neq_schnorr_distribution n lf Hlfn xs gs hs c)
+          (@generalised_neq_simulator_distribution n lf Hlfn gs hs c).
+      Proof.
+        intros * ha hb hnd hall.
+        change (Permutation
+          (Bind (repeat_dist_ntimes_vector (uniform_with_replacement lf Hlfn) 
+              ((2 + n) + ((2 + n) * (1 + n))))
+            (fun us => Ret (generalised_construct_neq_conversations_real_transcript 
+              xs gs hs us c)))
+          (Bind (repeat_dist_ntimes_vector (uniform_with_replacement lf Hlfn) 
+              ((2 + n) + ((2 + n) * (1 + n))))
+            (fun us => Ret (generalised_construct_neq_conversations_simulator_transcript 
+              gs hs us c)))).
+        eapply bind_ret_perm with 
+          (phi := fun us => generalised_construct_neq_response xs us c).
+        + apply (repeat_uniform_bijection_perm lf Hlfn _ _ 
+            (fun us => generalised_construct_neq_response xs us (opp c)) hnd hall).
+          * intros us. 
+            rewrite neq_response_compose.
+            assert (hc : c + opp c = zero) by field.
+            rewrite hc; apply neq_response_zero.
+          * intros us. 
+            rewrite neq_response_compose.
+            assert (hc : opp c + c = zero) by field.
+            rewrite hc; apply neq_response_zero.
+        + intros us p _. apply construct_neq_shift; assumption.
+      Qed.
+
     End Proofs. 
   End Neq.
 End DL.

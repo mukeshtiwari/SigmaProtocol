@@ -1,7 +1,7 @@
 From Stdlib Require Import Setoid
   setoid_ring.Field Lia Vector Utf8
   Psatz Bool Pnat BinNatDef 
-  BinPos. 
+  BinPos Permutation. 
 From Algebra Require Import 
   Hierarchy Group Monoid
   Field Integral_domain
@@ -336,7 +336,10 @@ Section DL.
 
         Context
           {Hvec: @vector_space F (@eq F) zero one add mul sub 
-            div opp inv G (@eq G) gid ginv gop gpow}. (* vector space *)
+            div opp inv G (@eq G) gid ginv gop gpow}.
+
+        Add Field field : (@field_theory_for_stdlib_tactic F
+          eq zero one opp add mul sub inv div vector_space_field). (* vector space *)
         (* 
           (x : F) (* secret witness *)
           (g h : G) (* public values *) 
@@ -774,6 +777,81 @@ Section DL.
             eapply generalised_parallel_special_honest_verifier_simulator_dist.
             exact Ha.
         Qed.
+
+
+        (* ---------------------------------------------------------------- *)
+        (* Special honest-verifier zero-knowledge as equality of distributions.
+
+          The real transcript for randomness us is the simulated transcript 
+          for the randomness obtained by shifting every coordinate: 
+          u_i ↦ u_i + c_i * x. The shift is a coordinatewise bijection, so 
+          the real distribution is a permutation of the simulated one as 
+          soon as lf is closed under every shift u ↦ u + c * x. *)
+
+        Lemma construct_parallel_shift (x : F) (g h : G) (R : h = g^x) :
+          forall (n : nat) (us cs : Vector.t F n),
+          construct_parallel_conversations_schnorr x g us cs =
+          construct_parallel_conversations_simulator g h
+            (vec_apply (Vector.map (fun c u => u + c * x) cs) us) cs.
+        Proof.
+          induction n as [| n ih]; intros us cs.
+          + rewrite (vector_inv_0 us), (vector_inv_0 cs); reflexivity.
+          + destruct (vector_inv_S us) as (u & us' & hu).
+            destruct (vector_inv_S cs) as (c & cs' & hc).
+            subst.
+            specialize (ih us' cs').
+            unfold construct_parallel_conversations_schnorr, 
+              construct_parallel_conversations_simulator,
+              construct_parallel_conversations_schnorr_commitment in *.
+            cbn in *.
+            inversion ih as [[ha hr]].
+            f_equal.
+            * f_equal; 
+              [apply (schnorr_commitment_shift x g (g ^ x) eq_refl) | exact ha].
+            * f_equal; exact hr.
+        Qed.
+
+        Theorem generalised_parallel_special_honest_verifier_zkp_perm 
+          (x : F) (g h : G) (R : h = g^x) :
+          forall (lf : list F) (Hlfn : lf <> List.nil) (n : nat) 
+          (cs : Vector.t F n),
+          (forall c : F, Permutation (List.map (fun u => u + c * x) lf) lf) ->
+          Permutation 
+            (@generalised_parallel_schnorr_distribution n lf Hlfn x g cs)
+            (@generalised_parallel_simulator_distribution n lf Hlfn g h cs).
+        Proof.
+          intros * hp.
+          change (Permutation
+            (Bind (repeat_dist_ntimes_vector (uniform_with_replacement lf Hlfn) n)
+              (fun us => Ret (construct_parallel_conversations_schnorr x g us cs)))
+            (Bind (repeat_dist_ntimes_vector (uniform_with_replacement lf Hlfn) n)
+              (fun us => Ret (construct_parallel_conversations_simulator g h us cs)))).
+          eapply bind_ret_perm with 
+            (phi := vec_apply (Vector.map (fun c u => u + c * x) cs)).
+          + apply repeat_uniform_perm; intros i.
+            rewrite (nth_map _ _ i i eq_refl).
+            apply hp.
+          + intros us p _. 
+            apply construct_parallel_shift; exact R.
+        Qed.
+
+        (* Equality of distributions when lf enumerates the field. *)
+        Theorem generalised_parallel_special_honest_verifier_zkp_enum 
+          (x : F) (g h : G) (R : h = g^x) :
+          forall (lf : list F) (Hlfn : lf <> List.nil) (n : nat) 
+          (cs : Vector.t F n),
+          List.NoDup lf -> (forall y : F, List.In y lf) ->
+          Permutation 
+            (@generalised_parallel_schnorr_distribution n lf Hlfn x g cs)
+            (@generalised_parallel_simulator_distribution n lf Hlfn g h cs).
+        Proof.
+          intros * hnd hall.
+          eapply generalised_parallel_special_honest_verifier_zkp_perm; [exact R |].
+          intro c.
+          eapply enumerates_perm_map with (psi := fun u => u - c * x);
+          [exact hnd | exact hall | intros u; field | intros u; field].
+        Qed.
+
 
     End Proofs. 
   End Parallel.

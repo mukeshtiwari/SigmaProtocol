@@ -1,14 +1,14 @@
 From Stdlib Require Import Setoid
   setoid_ring.Field Lia Vector Utf8
   Psatz Bool Pnat BinNatDef 
-  BinPos. 
+  BinPos Permutation Arith. 
 From Algebra Require Import 
   Hierarchy Group Monoid
   Field Integral_domain
   Ring Vector_space.
 From Probability Require Import 
   Prob Distr. 
-From Utility Require Import Util. 
+From Utility Require Import Util Insert. 
 From ExtLib Require Import Monad. 
 From Crypto Require Import Sigma.
   
@@ -2227,6 +2227,306 @@ Section DL.
             exact Ha.
         Qed.
     
+
+        (* ---------------------------------------------------------------- *)
+        (* Special honest-verifier zero-knowledge as equality of distributions.
+
+          The argument is the one of the OR composition (OrSigmaGen.v): the 
+          bijection on the randomness shifts the coordinate rindex by cb * x
+          and moves the derived sub-challenge from position rindex to the 
+          head. One extra step is needed here: the prover of this file is 
+          defined by rewriting inside its definition, which leaves dependent 
+          transports in its body. We first show it equal to a prover written 
+          with plain transports, then proceed as for OR. *)
+
+        Lemma eq_rew_r_dep_refl_nat : forall (x : nat) (P : forall y, y = x -> Type) 
+          (HC : P x eq_refl), eq_rew_r_dep P HC eq_refl = HC.
+        Proof.
+          intros x P HC.
+          unfold eq_rew_r_dep.
+          generalize (eq_sym_involutive (@eq_refl nat x)) as q; intros q.
+          assert (hq : q = eq_refl).
+          { apply Eqdep_dec.UIP_dec; intros a b; left; apply UIP_nat. }
+          rewrite hq; reflexivity.
+        Qed.
+
+        Definition enc_prover_alt {n : nat} (rindex : Fin.t (2 + n)) (x : F) 
+          (uscs : Vector.t F ((2 + n) + (1 + n))) (ms : Vector.t G (2 + n))
+          (g h : G) (cp : G * G) (c : F) : 
+          @sigma_proto F (G * G) (2 + n) (1 + (2 + n)) (2 + n).
+        Proof.
+          destruct (splitat (2 + n) uscs) as (us & cs).
+          destruct (@vector_fin_app_pred F (1 + n) rindex us cs) as 
+            (m₁ & m₂ & v₁ & v₃ & vm & v₂ & v₄ & pfaa & pfbb & _).
+          destruct pfaa as [pfa]; destruct pfbb as [pfb].
+          exact (rew <- [fun k => @sigma_proto F (G * G) k (S k) k] pfa in 
+            construct_encryption_proof_elgamal_real x 
+              ((rew [Vector.t F] pfa in us) ++ (rew [Vector.t F] pfb in cs)) 
+              (rew [Vector.t G] pfa in ms) g h cp c).
+        Defined.
+
+        Lemma enc_prover_alt_eq {n : nat} (rindex : Fin.t (2 + n)) (x : F) 
+          (uscs : Vector.t F ((2 + n) + (1 + n))) (ms : Vector.t G (2 + n))
+          (g h : G) (cp : G * G) (c : F) :
+          generalised_construct_encryption_proof_elgamal_real rindex x uscs ms g h cp c =
+          enc_prover_alt rindex x uscs ms g h cp c.
+        Proof.
+          unfold generalised_construct_encryption_proof_elgamal_real, enc_prover_alt.
+          destruct (splitat (2 + n) uscs) as (us & cs).
+          destruct (@vector_fin_app_pred F (1 + n) rindex us cs) as 
+            (m₁ & m₂ & v₁ & v₃ & vm & v₂ & v₄ & pfaa & pfbb & haa).
+          destruct pfaa as [pfa]; destruct pfbb as [pfb]; destruct haa as [ha].
+          destruct ha as (ha & hb & hc & hd).
+          subst us cs.
+          cbn [p] in *.
+          change ((2 + n)%nat) with ((1 + (1 + n))%nat) in *.
+          generalize dependent pfa; generalize dependent ms; generalize dependent rindex.
+          set (N := (1 + n)%nat) in *.
+          change (S n) with N.
+          clearbody N.
+          assert (pfb' : (m₁ + m₂)%nat = N) by (symmetry; exact pfb).
+          destruct pfb'.
+          rewrite (UIP_nat _ _ pfb eq_refl).
+          intros rindex hd ms pfa hb.
+          cbn [eq_rect_r eq_rect eq_sym].
+          rewrite eq_rew_r_dep_refl_nat.
+          set (Y := (1 + (m₁ + m₂))%nat) in *.
+          change (S (m₁ + m₂)) with Y.
+          clearbody Y.
+          assert (pfa' : (m₁ + (1 + m₂))%nat = Y) by (symmetry; exact pfa).
+          generalize dependent pfa; generalize dependent ms; generalize dependent rindex.
+          destruct pfa'.
+          intros rindex hd ms pfa hb.
+          assert (hpfa : pfa = eq_refl) by apply UIP_nat.
+          subst pfa.
+          rewrite eq_rew_r_dep_refl_nat.
+          cbn.
+          reflexivity.
+        Qed.
+
+        Definition enc_simulator_base {N : nat} (uscs : Vector.t F (S N + N)) 
+          (ms : Vector.t G (S N)) (g h : G) (cp : G * G) (c : F) : 
+          @sigma_proto F (G * G) (S N) (S (S N)) (S N) :=
+          let (us, cs) := splitat (S N) uscs in
+          let (c₁, c₂) := cp in
+          let cm := (c - Vector.fold_right add cs zero) :: cs in
+          let comm := zip_with (fun ui ci => (ui, ci)) us cm in
+          let commit := zip_with (fun mi '(ui, ci) => 
+            (gop (g^ui) (c₁^(opp ci)), gop (h^ui) (((gop c₂ (ginv mi))^(opp ci))))) ms comm in
+          (commit; c :: cm; us).
+
+        Lemma enc_simulator_base_eq {n : nat} (uscs : Vector.t F ((2 + n) + (1 + n))) 
+          (ms : Vector.t G (2 + n)) (g h : G) (cp : G * G) (c : F) :
+          generalised_construct_encryption_proof_elgamal_simulator uscs ms g h cp c = 
+          @enc_simulator_base (1 + n) uscs ms g h cp c.
+        Proof. reflexivity. Qed.
+
+        Definition or_shift {n : nat} (rindex : Fin.t (2 + n)) (x c : F) 
+          (uscs : Vector.t F ((2 + n) + (1 + n))) : Vector.t F ((2 + n) + (1 + n)) :=
+          let (us, cs) := splitat (2 + n) uscs in
+          let cb := c - Vector.fold_right add cs zero in
+          Vector.append (replace us rindex (us[@rindex] + cb * x))
+            (tl (insert_at (1 + n) cs rindex cb)).
+
+        Definition or_unshift {n : nat} (rindex : Fin.t (2 + n)) (x c : F)
+          (uscs : Vector.t F ((2 + n) + (1 + n))) : Vector.t F ((2 + n) + (1 + n)) :=
+          let (us, cs) := splitat (2 + n) uscs in
+          let cm := (c - Vector.fold_right add cs zero) :: cs in
+          let cb := cm[@rindex] in
+          Vector.append (replace us rindex (us[@rindex] - cb * x))
+            (remove_at (1 + n) cm rindex).
+
+        Lemma fold_insert_at : forall k (v : Vector.t F k) (i : Fin.t (S k)) (a : F),
+          Vector.fold_right add (insert_at k v i a) zero = 
+          a + Vector.fold_right add v zero.
+        Proof.
+          induction k as [| k ih]; intros v i a.
+          + destruct (fin_inv_S _ i) as [hi | (j & hi)]; subst; 
+            [rewrite (vector_inv_0 v); reflexivity | inversion j].
+          + destruct (fin_inv_S _ i) as [hi | (j & hi)]; subst; cbn; [reflexivity |].
+            destruct (vector_inv_S v) as (b & v' & hv); subst; cbn.
+            rewrite ih; field.
+        Qed.
+
+        Lemma fold_remove_at : forall k (v : Vector.t F (S k)) (i : Fin.t (S k)),
+          Vector.fold_right add v zero = 
+          v[@i] + Vector.fold_right add (remove_at k v i) zero.
+        Proof.
+          intros k v i.
+          set (w := remove_at k v i); set (a := v[@i]).
+          assert (hv : v = insert_at k w i a) by 
+            (unfold w, a; symmetry; apply insert_remove).
+          clearbody w a.
+          rewrite hv, fold_insert_at; reflexivity.
+        Qed.
+
+        Lemma insert_at_eta : forall k (cs : Vector.t F k) (i : Fin.t (S k)) (c : F),
+          (c - Vector.fold_right add 
+            (tl (insert_at k cs i (c - Vector.fold_right add cs zero))) zero) ::
+          tl (insert_at k cs i (c - Vector.fold_right add cs zero)) =
+          insert_at k cs i (c - Vector.fold_right add cs zero).
+        Proof.
+          intros k cs i c.
+          set (cb := c - Vector.fold_right add cs zero).
+          set (cm := insert_at k cs i cb).
+          assert (hsum : Vector.fold_right add cm zero = c).
+          { unfold cm; rewrite fold_insert_at; unfold cb; field. }
+          rewrite (VectorSpec.eta cm) at 3.
+          f_equal.
+          rewrite (VectorSpec.eta cm) in hsum at 1.
+          cbn [fold_right] in hsum.
+          rewrite <- hsum; field.
+        Qed.
+
+        Lemma or_unshift_shift {n : nat} (rindex : Fin.t (2 + n)) (x c : F) :
+          forall (uscs : Vector.t F ((2 + n) + (1 + n))),
+          or_unshift rindex x c (or_shift rindex x c uscs) = uscs.
+        Proof.
+          intros uscs.
+          destruct (splitat (2 + n) uscs) as (us & cs) eqn:he.
+          apply append_splitat in he; subst uscs.
+          unfold or_shift, or_unshift.
+          rewrite !VectorSpec.splitat_append.
+          rewrite insert_at_eta.
+          rewrite VectorSpec.nth_replace_eq, VectorSpec.replace_replace_eq.
+          rewrite nth_insert_at, remove_insert.
+          f_equal.
+          assert (hu : us[@rindex] + (c - Vector.fold_right add cs zero) * x - 
+            (c - Vector.fold_right add cs zero) * x = us[@rindex]) by field.
+          rewrite hu; apply VectorSpec.replace_id.
+        Qed.
+
+        Lemma or_shift_unshift {n : nat} (rindex : Fin.t (2 + n)) (x c : F) :
+          forall (uscs : Vector.t F ((2 + n) + (1 + n))),
+          or_shift rindex x c (or_unshift rindex x c uscs) = uscs.
+        Proof.
+          intros uscs.
+          destruct (splitat (2 + n) uscs) as (us & cs) eqn:he.
+          apply append_splitat in he; subst uscs.
+          unfold or_shift, or_unshift.
+          rewrite !VectorSpec.splitat_append.
+          set (cm := (c - Vector.fold_right add cs zero) :: cs).
+          set (cb := cm[@rindex]).
+          assert (hsum : Vector.fold_right add cm zero = c) by (unfold cm; cbn; field).
+          assert (hcb : c - Vector.fold_right add (remove_at (1 + n) cm rindex) zero = cb).
+          { 
+            rewrite (fold_remove_at (1 + n) cm rindex) in hsum.
+            unfold cb; rewrite <- hsum; field. 
+          }
+          rewrite hcb, VectorSpec.nth_replace_eq, VectorSpec.replace_replace_eq.
+          unfold cb; rewrite insert_remove.
+          unfold cm; cbn [tl].
+          f_equal.
+          assert (hu : us[@rindex] - ((c - Vector.fold_right add cs zero) :: cs)[@rindex] * x 
+            + ((c - Vector.fold_right add cs zero) :: cs)[@rindex] * x = us[@rindex]) by field.
+          rewrite hu; apply VectorSpec.replace_id.
+        Qed.
+
+        Lemma rew_sigma_proto_pair : forall (N M : nat) (e : N = M) 
+          (a : Vector.t (G * G) N) (cm : Vector.t F (S N)) (r : Vector.t F N),
+          rew [fun k => @sigma_proto F (G * G) k (S k) k] e in (a; cm; r) = 
+          (rew [Vector.t (G * G)] e in a; rew [fun k => Vector.t F (S k)] e in cm; 
+           rew [Vector.t F] e in r).
+        Proof. intros N M e a cm r; destruct e; reflexivity. Qed.
+
+        Lemma rew_cons_S {A : Type} : 
+          forall (N M : nat) (e : N = M) (a : A) (v : Vector.t A N),
+          rew [fun k => Vector.t A (S k)] e in (a :: v) = a :: rew [Vector.t A] e in v.
+        Proof. intros N M e a v; destruct e; reflexivity. Qed.
+
+        Lemma construct_enc_shift {n : nat} (rindex : Fin.t (2 + n)) (x : F) 
+          (g h c₁ c₂ : G) (ms : Vector.t G (2 + n)) 
+          (R : g^x = c₁ ∧ h^x = gop c₂ (ginv (Vector.nth ms rindex))) :
+          forall (uscs : Vector.t F ((2 + n) + (1 + n))) (c : F),
+          generalised_construct_encryption_proof_elgamal_real rindex x uscs ms g h (c₁, c₂) c =
+          generalised_construct_encryption_proof_elgamal_simulator 
+            (or_shift rindex x c uscs) ms g h (c₁, c₂) c.
+        Proof.
+          intros uscs c.
+          rewrite enc_prover_alt_eq, enc_simulator_base_eq.
+          destruct (splitat (2 + n) uscs) as (us & cs) eqn:hv.
+          apply append_splitat in hv; subst uscs.
+          unfold enc_prover_alt, or_shift.
+          rewrite !VectorSpec.splitat_append.
+          destruct (vector_fin_app_pred (1 + n) rindex us cs) as 
+            (m₁ & m₂ & v₁ & v₃ & vm & v₂ & v₄ & pfaa & pfbb & haa).
+          destruct pfaa as [pfa]; destruct pfbb as [pfb]; destruct haa as [ha].
+          destruct ha as (ha & hb & hc & hd).
+          subst us cs.
+          cbn [p] in hb |- *.
+          change ((2 + n)%nat) with ((1 + (1 + n))%nat) in *.
+          generalize dependent pfa; generalize dependent ms; generalize dependent rindex.
+          set (N := (1 + n)%nat) in *.
+          clearbody N.
+          assert (pfb' : (m₁ + m₂)%nat = N) by (symmetry; exact pfb).
+          destruct pfb'.
+          rewrite (UIP_nat _ _ pfb eq_refl); cbn [eq_rect_r eq_rect eq_sym].
+          intros rindex hd ms R pfa hb.
+          rewrite !rew_opp_r.
+          destruct (splitat m₁ (rew [t G] pfa in ms)) as (msl & msrr) eqn:hma.
+          apply append_splitat in hma.
+          destruct (vector_inv_S msrr) as (m & msr & hm); subst msrr.
+          pose proof (f_equal (fun v => rew <- [t G] pfa in v) hma) as hms.
+          cbn beta in hms.
+          rewrite rew_opp_l in hms.
+          rewrite hma.
+          subst ms.
+          assert (hri : rindex = rew <- [Fin.t] pfa in Fin.R m₁ (Fin.F1 : Fin.t (S m₂))).
+          { 
+            apply fin_eq_of_to_nat; rewrite <- hd.
+            unfold eq_rect_r; rewrite rew_to_nat, Fin.R_sanity; cbn; lia.
+          }
+          subst rindex.
+          cbn [append] in *.
+          unfold eq_rect_r in *.
+          set (i := rew [Fin.t] eq_sym pfa in Fin.R m₁ Fin.F1) in *.
+          rewrite !rew_app_cons in R.
+          rewrite !rew_app_cons.
+          rewrite nth_insert_at in R.
+          rewrite nth_insert_at.
+          unfold enc_simulator_base; rewrite VectorSpec.splitat_append; cbv beta iota zeta.
+          rewrite replace_insert_at, insert_at_eta, !zip_with_insert_at.
+          unfold construct_encryption_proof_elgamal_real, 
+            construct_encryption_proof_elgamal_commitment.
+          rewrite !VectorSpec.splitat_append; cbn.
+          change (rew [λ y : nat, Fin.t y] eq_sym pfa in Fin.R m₁ Fin.F1) with i in *.
+          rewrite rew_sigma_proto_pair, rew_cons_S, !rew_app_cons.
+          change (rew [Fin.t] eq_sym pfa in Fin.R m₁ Fin.F1) with i.
+          rewrite !zip_with_app.
+          f_equal; f_equal.
+          destruct R as (R1 & R2).
+          f_equal; apply schnorr_commitment_shift; symmetry; assumption.
+        Qed.
+
+        Theorem generalised_encryption_proof_elgamal_special_honest_verifier_zkp_perm 
+          {n : nat} (rindex : Fin.t (2 + n)) (x : F) (g h c₁ c₂ : G) 
+          (ms : Vector.t G (2 + n))
+          (R : g^x = c₁ ∧ h^x = gop c₂ (ginv (Vector.nth ms rindex))) :
+          forall (lf : list F) (Hlfn : lf <> List.nil) (c : F),
+          List.NoDup lf -> (forall y : F, List.In y lf) ->
+          Permutation 
+            (generalised_encryption_proof_elgamal_real_distribution 
+              lf Hlfn rindex x (c₁, c₂) g h ms c)
+            (generalised_encryption_proof_elgamal_simulator_distribution 
+              lf Hlfn g h (c₁, c₂) ms c).
+        Proof.
+          intros * hnd hall.
+          change (Permutation 
+            (Bind (repeat_dist_ntimes_vector (uniform_with_replacement lf Hlfn) 
+                ((2 + n) + (1 + n))) 
+              (fun uscs => Ret (generalised_construct_encryption_proof_elgamal_real 
+                rindex x uscs ms g h (c₁, c₂) c)))
+            (Bind (repeat_dist_ntimes_vector (uniform_with_replacement lf Hlfn) 
+                ((2 + n) + (1 + n))) 
+              (fun uscs => Ret (generalised_construct_encryption_proof_elgamal_simulator 
+                uscs ms g h (c₁, c₂) c)))).
+          eapply bind_ret_perm with (phi := or_shift rindex x c).
+          + apply (repeat_uniform_bijection_perm lf Hlfn _ _ 
+              (or_unshift rindex x c) hnd hall);
+            [apply or_unshift_shift | apply or_shift_unshift].
+          + intros uscs p _. apply construct_enc_shift; exact R.
+        Qed.
+
     End Proofs. 
   End EncProof.
 End DL.

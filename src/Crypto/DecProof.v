@@ -1,7 +1,7 @@
 From Stdlib Require Import Setoid
   setoid_ring.Field Lia Vector Utf8
   Psatz Bool Pnat BinNatDef 
-  BinPos. 
+  BinPos Permutation. 
 From Algebra Require Import 
   Hierarchy Group Monoid
   Field Integral_domain
@@ -478,6 +478,37 @@ Section DL.
           intro f. exact (hb (Fin.FS f)).
     Qed.
     
+
+      (* Special honest-verifier zero-knowledge as equality of distributions,
+        inherited from the Chaum-Pedersen protocol. *)
+      Theorem construct_decryption_proof_elgamal_special_honest_verifier_zkp_perm 
+        (x : F) (g h m c₁ c₂ : G) (R : g^x = h ∧ c₁^x = gop c₂ (ginv m)) : 
+        forall (lf : list F) (Hlfn : lf <> List.nil) (c : F),
+        Permutation (List.map (fun u => u + c * x) lf) lf ->
+        Permutation
+          (construct_decryption_proof_elgamal_real_distribution lf Hlfn x g c₁ c)
+          (construct_decryption_proof_elgama_simulator_distribution lf Hlfn g h c₁ c₂ m c).
+      Proof.
+        intros * hp.
+        eapply generalised_cp_special_honest_verifier_zkp_perm; [exact R | exact hp].
+      Qed.
+
+      (* Equality of distributions when lf enumerates the field. *)
+      Theorem construct_decryption_proof_elgamal_special_honest_verifier_zkp_enum 
+        (x : F) (g h m c₁ c₂ : G) (R : g^x = h ∧ c₁^x = gop c₂ (ginv m)) : 
+        forall (lf : list F) (Hlfn : lf <> List.nil) (c : F),
+        List.NoDup lf -> (forall y : F, List.In y lf) ->
+        Permutation
+          (construct_decryption_proof_elgamal_real_distribution lf Hlfn x g c₁ c)
+          (construct_decryption_proof_elgama_simulator_distribution lf Hlfn g h c₁ c₂ m c).
+      Proof.
+        intros * hnd hall.
+        eapply construct_decryption_proof_elgamal_special_honest_verifier_zkp_perm; [exact R |].
+        eapply enumerates_perm_map with (psi := fun u => u - c * x);
+        [exact hnd | exact hall | intros u; field | intros u; field].
+      Qed.
+
+
     End Proofs.
   End DecProof. 
 End DL.

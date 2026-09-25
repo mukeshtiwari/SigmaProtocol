@@ -1,7 +1,7 @@
 From Stdlib Require Import Setoid
   setoid_ring.Field Lia Vector Utf8
   Psatz Bool Pnat BinNatDef 
-  BinPos. 
+  BinPos Permutation. 
 From Algebra Require Import 
   Hierarchy Group Monoid
   Field Integral_domain
@@ -193,6 +193,9 @@ Section DL.
       Context
         {Hvec: @vector_space F (@eq F) zero one add mul sub 
           div opp inv G (@eq G) gid ginv gop gpow}.
+
+      Add Field field : (@field_theory_for_stdlib_tactic F
+        eq zero one opp add mul sub inv div vector_space_field).
         (* 
         (x : F) (* randomness used for encryption  *)
         (g h c₁ c₂ : G)
@@ -269,6 +272,43 @@ Section DL.
         subst; cbn. exact eq_refl.
         refine match (fin_inv_0 fii) with end.
       Qed.
+
+
+      (* Special honest-verifier zero-knowledge as equality of distributions,
+        inherited from the EQ composition. *)
+      Theorem generalised_cp_special_honest_verifier_zkp_perm 
+        (x : F) (g h c₁ c₂ : G) (R : g^x = c₁ ∧ h^x = c₂) :
+        forall (lf : list F) (Hlfn : lf <> List.nil) (c : F),
+        Permutation (List.map (fun u => u + c * x) lf) lf ->
+        Permutation
+          (@generalised_cp_schnorr_distribution lf Hlfn x g h c)
+          (@generalised_cp_simulator_distribution lf Hlfn g h c₁ c₂ c).
+      Proof.
+        intros * hp; destruct R as (Ra & Rb).
+        unfold generalised_cp_schnorr_distribution, 
+          generalised_cp_simulator_distribution.
+        eapply generalised_eq_special_honest_verifier_zkp_perm; [| exact hp].
+        intro f.
+        destruct (fin_inv_S _ f) as [ea | (fi & ea)]; subst; cbn; [reflexivity |].
+        destruct (fin_inv_S _ fi) as [eb | (fj & eb)]; subst; cbn; [reflexivity |].
+        refine (match fj with end).
+      Qed.
+
+      (* Equality of distributions when lf enumerates the field. *)
+      Theorem generalised_cp_special_honest_verifier_zkp_enum 
+        (x : F) (g h c₁ c₂ : G) (R : g^x = c₁ ∧ h^x = c₂) :
+        forall (lf : list F) (Hlfn : lf <> List.nil) (c : F),
+        List.NoDup lf -> (forall y : F, List.In y lf) ->
+        Permutation
+          (@generalised_cp_schnorr_distribution lf Hlfn x g h c)
+          (@generalised_cp_simulator_distribution lf Hlfn g h c₁ c₂ c).
+      Proof.
+        intros * hnd hall.
+        eapply generalised_cp_special_honest_verifier_zkp_perm; [exact R |].
+        eapply enumerates_perm_map with (psi := fun u => u - c * x);
+        [exact hnd | exact hall | intros u; field | intros u; field].
+      Qed.
+
 
     End Proofs.
   End CP.

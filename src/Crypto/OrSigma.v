@@ -1,14 +1,14 @@
 From Stdlib Require Import Setoid
   setoid_ring.Field Lia Vector Utf8
   Psatz Bool Pnat BinNatDef 
-  BinPos. 
+  BinPos Permutation Arith. 
 From Algebra Require Import 
   Hierarchy Group Monoid
   Field Integral_domain
   Ring Vector_space.
 From Probability Require Import 
   Prob Distr. 
-From Utility Require Import Util. 
+From Utility Require Import Util Insert. 
 From ExtLib Require Import Monad. 
 From Crypto Require Import Sigma.
   
@@ -1691,6 +1691,244 @@ Section DL.
             intros (aa, cc, rr) y Ha.
             eapply generalised_or_special_honest_verifier_simulator_dist.
             exact Ha.
+        Qed.
+
+        (* ---------------------------------------------------------------- *)
+        (* Special honest-verifier zero-knowledge as equality of distributions.
+
+          The prover knows the relation at index rindex. It draws fresh
+          randomness for every branch and a sub-challenge for every branch 
+          but rindex; the sub-challenge at rindex is derived so that all of
+          them sum to c. The simulator draws a sub-challenge for every 
+          branch but the first and derives the first. The bijection on the
+          randomness therefore (i) shifts the coordinate rindex of us by 
+          cb * x, where cb is the derived sub-challenge, and (ii) moves the
+          derived sub-challenge from position rindex to the head, which the
+          simulator then recomputes. Its inverse undoes both. *)
+
+        Definition or_shift {n : nat} (rindex : Fin.t (2 + n)) (x c : F) 
+          (uscs : Vector.t F ((2 + n) + (1 + n))) : Vector.t F ((2 + n) + (1 + n)) :=
+          let (us, cs) := splitat (2 + n) uscs in
+          let cb := c - Vector.fold_right add cs zero in
+          Vector.append (replace us rindex (us[@rindex] + cb * x))
+            (tl (insert_at (1 + n) cs rindex cb)).
+
+        Definition or_unshift {n : nat} (rindex : Fin.t (2 + n)) (x c : F)
+          (uscs : Vector.t F ((2 + n) + (1 + n))) : Vector.t F ((2 + n) + (1 + n)) :=
+          let (us, cs) := splitat (2 + n) uscs in
+          let cm := (c - Vector.fold_right add cs zero) :: cs in
+          let cb := cm[@rindex] in
+          Vector.append (replace us rindex (us[@rindex] - cb * x))
+            (remove_at (1 + n) cm rindex).
+
+        Lemma fold_insert_at : forall k (v : Vector.t F k) (i : Fin.t (S k)) (a : F),
+          Vector.fold_right add (insert_at k v i a) zero = 
+          a + Vector.fold_right add v zero.
+        Proof.
+          induction k as [| k ih]; intros v i a.
+          + destruct (fin_inv_S _ i) as [hi | (j & hi)]; subst; 
+            [rewrite (vector_inv_0 v); reflexivity | inversion j].
+          + destruct (fin_inv_S _ i) as [hi | (j & hi)]; subst; cbn; [reflexivity |].
+            destruct (vector_inv_S v) as (b & v' & hv); subst; cbn.
+            rewrite ih; field.
+        Qed.
+
+        Lemma fold_remove_at : forall k (v : Vector.t F (S k)) (i : Fin.t (S k)),
+          Vector.fold_right add v zero = 
+          v[@i] + Vector.fold_right add (remove_at k v i) zero.
+        Proof.
+          intros k v i.
+          set (w := remove_at k v i); set (a := v[@i]).
+          assert (hv : v = insert_at k w i a) by 
+            (unfold w, a; symmetry; apply insert_remove).
+          clearbody w a.
+          rewrite hv, fold_insert_at; reflexivity.
+        Qed.
+
+        (* The challenge vector built by the prover, read back by the simulator. *)
+        Lemma insert_at_eta : forall k (cs : Vector.t F k) (i : Fin.t (S k)) (c : F),
+          (c - Vector.fold_right add 
+            (tl (insert_at k cs i (c - Vector.fold_right add cs zero))) zero) ::
+          tl (insert_at k cs i (c - Vector.fold_right add cs zero)) =
+          insert_at k cs i (c - Vector.fold_right add cs zero).
+        Proof.
+          intros k cs i c.
+          set (cb := c - Vector.fold_right add cs zero).
+          set (cm := insert_at k cs i cb).
+          assert (hsum : Vector.fold_right add cm zero = c).
+          { unfold cm; rewrite fold_insert_at; unfold cb; field. }
+          rewrite (VectorSpec.eta cm) at 3.
+          f_equal.
+          rewrite (VectorSpec.eta cm) in hsum at 1.
+          cbn [fold_right] in hsum.
+          rewrite <- hsum; field.
+        Qed.
+
+        Lemma or_unshift_shift {n : nat} (rindex : Fin.t (2 + n)) (x c : F) :
+          forall (uscs : Vector.t F ((2 + n) + (1 + n))),
+          or_unshift rindex x c (or_shift rindex x c uscs) = uscs.
+        Proof.
+          intros uscs.
+          destruct (splitat (2 + n) uscs) as (us & cs) eqn:he.
+          apply append_splitat in he; subst uscs.
+          unfold or_shift, or_unshift.
+          rewrite !VectorSpec.splitat_append.
+          rewrite insert_at_eta.
+          rewrite VectorSpec.nth_replace_eq, VectorSpec.replace_replace_eq.
+          rewrite nth_insert_at, remove_insert.
+          f_equal.
+          assert (hu : us[@rindex] + (c - Vector.fold_right add cs zero) * x - 
+            (c - Vector.fold_right add cs zero) * x = us[@rindex]) by field.
+          rewrite hu; apply VectorSpec.replace_id.
+        Qed.
+
+        Lemma or_shift_unshift {n : nat} (rindex : Fin.t (2 + n)) (x c : F) :
+          forall (uscs : Vector.t F ((2 + n) + (1 + n))),
+          or_shift rindex x c (or_unshift rindex x c uscs) = uscs.
+        Proof.
+          intros uscs.
+          destruct (splitat (2 + n) uscs) as (us & cs) eqn:he.
+          apply append_splitat in he; subst uscs.
+          unfold or_shift, or_unshift.
+          rewrite !VectorSpec.splitat_append.
+          set (cm := (c - Vector.fold_right add cs zero) :: cs).
+          set (cb := cm[@rindex]).
+          assert (hsum : Vector.fold_right add cm zero = c) by (unfold cm; cbn; field).
+          assert (hcb : c - Vector.fold_right add (remove_at (1 + n) cm rindex) zero = cb).
+          { 
+            rewrite (fold_remove_at (1 + n) cm rindex) in hsum.
+            unfold cb; rewrite <- hsum; field. 
+          }
+          rewrite hcb, VectorSpec.nth_replace_eq, VectorSpec.replace_replace_eq.
+          unfold cb; rewrite insert_remove.
+          unfold cm; cbn [tl].
+          f_equal.
+          assert (hu : us[@rindex] - ((c - Vector.fold_right add cs zero) :: cs)[@rindex] * x 
+            + ((c - Vector.fold_right add cs zero) :: cs)[@rindex] * x = us[@rindex]) by field.
+          rewrite hu; apply VectorSpec.replace_id.
+        Qed.
+
+        (* The simulator with its length index made explicit; definitionally 
+          the same function. This lets the transport proof below abstract 
+          the length. *)
+        Definition or_simulator_base {N : nat} (g : G) (hs : Vector.t G (S N)) 
+          (uscs : Vector.t F (S N + N)) (c : F) : @sigma_proto F G (S N) (S (S N)) (S N) :=
+          let (us, cs) := splitat (S N) uscs in
+          let cm := (c - Vector.fold_right add cs zero) :: cs in
+          let comm := zip_with (fun ui ci => (ui, ci)) us cm in
+          let commitment := zip_with (fun hi '(ui, ci) => gop (g^ui) (hi^(opp ci))) hs comm in
+          (commitment; c :: cm; us).
+
+        Lemma or_simulator_base_eq {n : nat} (g : G) (hs : Vector.t G (2 + n)) 
+          (uscs : Vector.t F ((2 + n) + (1 + n))) (c : F) :
+          generalised_construct_or_conversations_simulator g hs uscs c = 
+          @or_simulator_base (1 + n) g hs uscs c.
+        Proof. reflexivity. Qed.
+
+        Lemma rew_sigma_proto : forall (N M : nat) (e : N = M) (a : Vector.t G N) 
+          (cm : Vector.t F (S N)) (r : Vector.t F N),
+          rew [fun k => @sigma_proto F G k (S k) k] e in (a; cm; r) = 
+          (rew [Vector.t G] e in a; rew [fun k => Vector.t F (S k)] e in cm; 
+           rew [Vector.t F] e in r).
+        Proof. intros N M e a cm r; destruct e; reflexivity. Qed.
+
+        Lemma rew_cons_S {A : Type} : 
+          forall (N M : nat) (e : N = M) (a : A) (v : Vector.t A N),
+          rew [fun k => Vector.t A (S k)] e in (a :: v) = a :: rew [Vector.t A] e in v.
+        Proof. intros N M e a v; destruct e; reflexivity. Qed.
+
+        (* The real transcript for randomness uscs is the simulated transcript
+          for randomness or_shift rindex x c uscs. The proof follows the 
+          completeness proof of the generalised prover: it eliminates the 
+          length casts of the definition, keeping a single transport along 
+          1 + (m₁ + m₂) = m₁ + (1 + m₂), and reads that transport as an 
+          insertion at the transported index. *)
+        Lemma construct_or_shift {n : nat} (rindex : Fin.t (2 + n)) (x : F) 
+          (g : G) (hs : Vector.t G (2 + n)) (R : hs[@rindex] = g ^ x) :
+          forall (uscs : Vector.t F ((2 + n) + (1 + n))) (c : F),
+          generalised_construct_or_conversations_schnorr rindex x g hs uscs c =
+          generalised_construct_or_conversations_simulator g hs 
+            (or_shift rindex x c uscs) c.
+        Proof.
+          intros uscs c.
+          rewrite or_simulator_base_eq.
+          destruct (splitat (2 + n) uscs) as (us & cs) eqn:hv.
+          apply append_splitat in hv; subst uscs.
+          unfold generalised_construct_or_conversations_schnorr, or_shift.
+          rewrite !VectorSpec.splitat_append.
+          destruct (vector_fin_app_pred (1 + n) rindex us cs) as 
+            (m₁ & m₂ & v₁ & v₃ & vm & v₂ & v₄ & pfaa & pfbb & haa).
+          destruct pfaa as [pfa]; destruct pfbb as [pfb]; destruct haa as [ha].
+          destruct ha as (ha & hb & hc & hd).
+          subst us cs.
+          cbn [p] in hb |- *.
+          change ((2 + n)%nat) with ((1 + (1 + n))%nat) in *.
+          generalize dependent pfa; generalize dependent hs; generalize dependent rindex.
+          set (N := (1 + n)%nat) in *.
+          clearbody N.
+          assert (pfb' : (m₁ + m₂)%nat = N) by (symmetry; exact pfb).
+          destruct pfb'.
+          rewrite (UIP_nat _ _ pfb eq_refl); cbn [eq_rect_r eq_rect eq_sym].
+          intros rindex hd hs R pfa hb.
+          rewrite !rew_opp_r.
+          destruct (splitat m₁ (rew [t G] pfa in hs)) as (hsl & hsrr) eqn:hha.
+          apply append_splitat in hha.
+          destruct (vector_inv_S hsrr) as (h & hsr & hh); subst hsrr.
+          pose proof (f_equal (fun v => rew <- [t G] pfa in v) hha) as hhs.
+          cbn beta in hhs.
+          rewrite rew_opp_l in hhs.
+          rewrite hha.
+          subst hs.
+          assert (hri : rindex = rew <- [Fin.t] pfa in Fin.R m₁ (Fin.F1 : Fin.t (S m₂))).
+          { 
+            apply fin_eq_of_to_nat; rewrite <- hd.
+            unfold eq_rect_r; rewrite rew_to_nat, Fin.R_sanity; cbn; lia.
+          }
+          subst rindex.
+          cbn [append] in *.
+          unfold eq_rect_r in *.
+          set (i := rew [Fin.t] eq_sym pfa in Fin.R m₁ Fin.F1) in *.
+          rewrite !rew_app_cons in R.
+          rewrite !rew_app_cons.
+          rewrite nth_insert_at in R.
+          rewrite nth_insert_at.
+          unfold or_simulator_base; rewrite VectorSpec.splitat_append; cbv beta iota zeta.
+          rewrite replace_insert_at, insert_at_eta, !zip_with_insert_at.
+          unfold construct_or_conversations_schnorr, 
+            construct_or_conversations_schnorr_commitment.
+          rewrite !VectorSpec.splitat_append; cbn.
+          change (rew [λ y : nat, Fin.t y] eq_sym pfa in Fin.R m₁ Fin.F1) with i in *.
+          rewrite rew_sigma_proto, rew_cons_S, !rew_app_cons.
+          change (rew [Fin.t] eq_sym pfa in Fin.R m₁ Fin.F1) with i.
+          rewrite !zip_with_app.
+          f_equal; f_equal.
+          apply schnorr_commitment_shift; exact R.
+        Qed.
+
+        Theorem generalised_or_special_honest_verifier_zkp_perm {n : nat} (x : F) 
+          (g : G) (hs : Vector.t G (2 + n)) (rindex : Fin.t (2 + n)) 
+          (R : hs[@rindex] = g ^ x) :
+          forall (lf : list F) (Hlfn : lf <> List.nil) (c : F),
+          List.NoDup lf -> (forall y : F, List.In y lf) ->
+          Permutation 
+            (generalised_or_schnorr_distribution lf Hlfn rindex x g hs c)
+            (generalised_or_simulator_distribution lf Hlfn g hs c).
+        Proof.
+          intros * hnd hall.
+          change (Permutation 
+            (Bind (repeat_dist_ntimes_vector (uniform_with_replacement lf Hlfn) 
+                ((2 + n) + (1 + n))) 
+              (fun uscs => Ret (generalised_construct_or_conversations_schnorr 
+                rindex x g hs uscs c)))
+            (Bind (repeat_dist_ntimes_vector (uniform_with_replacement lf Hlfn) 
+                ((2 + n) + (1 + n))) 
+              (fun uscs => Ret (generalised_construct_or_conversations_simulator 
+                g hs uscs c)))).
+          eapply bind_ret_perm with (phi := or_shift rindex x c).
+          + apply (repeat_uniform_bijection_perm lf Hlfn _ _ 
+              (or_unshift rindex x c) hnd hall);
+            [apply or_unshift_shift | apply or_shift_unshift].
+          + intros uscs p _. apply construct_or_shift; exact R.
         Qed.
 
     End Proofs. 

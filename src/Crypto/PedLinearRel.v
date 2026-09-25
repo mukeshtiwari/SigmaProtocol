@@ -1,7 +1,7 @@
 From Stdlib Require Import Setoid
   setoid_ring.Field Lia Vector Utf8
   Psatz Bool Pnat BinNatDef 
-  BinPos. 
+  BinPos Permutation. 
 From Algebra Require Import 
   Hierarchy Group Monoid
   Field Integral_domain
@@ -897,6 +897,131 @@ Section DL.
           exact Ha.
       Qed.
     
+
+      (* ---------------------------------------------------------------- *)
+      (* Special honest-verifier zero-knowledge as equality of distributions.
+        The randomness (us ++ ws) of the real prover is moved to 
+        (us + c vs) ++ (ws + c rs), the randomness the simulator would need 
+        to produce the same transcript. *)
+
+      Lemma pedersen_commitment_shift (g h : G) (c : F) :
+        forall (m : nat) (us ws vs rs : Vector.t F m),
+        zip_with (fun v r => gop (g^v) (h^r)) us ws =
+        zip_with (fun '(u, w) com => gop (gop (g^u) (h^w)) (com^(opp c)))
+          (zip_with pair (zip_with (fun u v => u + c * v) us vs) 
+            (zip_with (fun w r => w + c * r) ws rs))
+          (zip_with (fun v r => gop (g^v) (h^r)) vs rs).
+      Proof.
+        induction m as [| m ih]; intros us ws vs rs.
+        + rewrite (vector_inv_0 us), (vector_inv_0 ws), (vector_inv_0 vs), 
+            (vector_inv_0 rs); reflexivity.
+        + destruct (vector_inv_S us) as (u & us' & hu).
+          destruct (vector_inv_S ws) as (w & ws' & hw).
+          destruct (vector_inv_S vs) as (v & vs' & hv).
+          destruct (vector_inv_S rs) as (r & rs' & hr).
+          subst; cbn.
+          f_equal; [| apply ih].
+          pose proof (schnorr_commitment_shift v g (g ^ v) eq_refl u c) as ha.
+          pose proof (schnorr_commitment_shift r h (h ^ r) eq_refl w c) as hb.
+          rewrite smul_distributive_vadd, gop_simp, <-ha, <-hb.
+          reflexivity.
+      Qed.
+
+      Lemma pedersen_linear_shift {n : nat} (g h : G) (αs vs rs : Vector.t F (2 + n)) 
+        (cs : Vector.t G (2 + n)) (c z : F)
+        (hcs : cs = pedersen_commitment_vector g h vs rs)
+        (hz : z = fold_right (λ '(α, v) acc, α * v + acc) (zip_with pair αs vs) zero) :
+        forall (us ws : Vector.t F (2 + n)),
+        construct_pedersen_linear_relation_generalised_real_proof g h αs 
+          (Vector.append us ws) vs rs c =
+        construct_pedersen_linear_relation_generalised_simulator_proof g h αs cs z
+          (Vector.append (zip_with (fun u v => u + c * v) us vs) 
+            (zip_with (fun w r => w + c * r) ws rs)) c.
+      Proof.
+        intros us ws.
+        unfold construct_pedersen_linear_relation_generalised_real_proof,
+          construct_pedersen_linear_relation_generalised_simulator_proof,
+          construct_pedersen_linear_relation_commitment.
+        rewrite !VectorSpec.splitat_append.
+        cbv beta iota zeta.
+        subst; unfold pedersen_commitment_vector.
+        f_equal; f_equal.
+        + apply pedersen_commitment_shift.
+        + f_equal.
+          rewrite fold_right_zip, smul_pow_up, <-smul_distributive_fadd.
+          f_equal; field.
+      Qed.
+
+      Lemma pedersen_response_vec_apply (c : F) : 
+        forall (m : nat) (vs us : Vector.t F m),
+        vec_apply (Vector.map (fun v u => u + c * v) vs) us = 
+        zip_with (fun u v => u + c * v) us vs.
+      Proof. 
+        induction m as [|m ih]; intros vs us.
+        + rewrite (vector_inv_0 vs), (vector_inv_0 us); reflexivity.
+        + destruct (vector_inv_S vs) as (v & vs' & hv).
+          destruct (vector_inv_S us) as (u & us' & hu).
+          subst; cbn; f_equal; apply ih. 
+      Qed.
+
+      Theorem generalised_pedersen_special_honest_verifier_zkp_perm {n : nat} :
+        forall (lf : list F) (Hlfn : lf <> List.nil) 
+        (g h : G) (vs rs αs : Vector.t F (2 + n)) 
+        (cs : Vector.t G (2 + n)) (c z : F),
+        cs = pedersen_commitment_vector g h vs rs ->
+        z = fold_right (λ '(α, v) acc, α * v + acc) (zip_with pair αs vs) zero ->
+        (forall x : F, Permutation (List.map (fun u => u + c * x) lf) lf) ->
+        Permutation 
+          (generalised_pedersen_linear_relation_distribution lf Hlfn αs vs rs g h c)
+          (generalised_pedersen_linear_relation_simulator_distribution lf Hlfn g h αs cs z c).
+      Proof.
+        intros * hcs hz hp.
+        change (Permutation
+          (Bind (repeat_dist_ntimes_vector (uniform_with_replacement lf Hlfn) 
+              ((2 + n) + (2 + n)))
+            (fun usws => Ret (construct_pedersen_linear_relation_generalised_real_proof 
+              g h αs usws vs rs c)))
+          (Bind (repeat_dist_ntimes_vector (uniform_with_replacement lf Hlfn) 
+              ((2 + n) + (2 + n)))
+            (fun usws => Ret (construct_pedersen_linear_relation_generalised_simulator_proof 
+              g h αs cs z usws c)))).
+        eapply bind_ret_perm with 
+          (phi := vec_apply (Vector.append 
+            (Vector.map (fun v u => u + c * v) vs) 
+            (Vector.map (fun r w => w + c * r) rs))).
+        + apply repeat_uniform_perm.
+          apply (nth_append_forall (fun phi => Permutation (List.map phi lf) lf)).
+          * intros i; rewrite (nth_map _ _ i i eq_refl); apply hp.
+          * intros j; rewrite (nth_map _ _ j j eq_refl); apply hp.
+        + intros usws p _.
+          destruct (splitat (2 + n) usws) as (us & ws) eqn:hsplit.
+          apply VectorSpec.append_splitat in hsplit.
+          subst usws.
+          rewrite vec_apply_append, !pedersen_response_vec_apply.
+          apply pedersen_linear_shift; assumption.
+      Qed.
+
+      (* Equality of distributions when lf enumerates the field. *)
+      Theorem generalised_pedersen_special_honest_verifier_zkp_enum {n : nat} :
+        forall (lf : list F) (Hlfn : lf <> List.nil) 
+        (g h : G) (vs rs αs : Vector.t F (2 + n)) 
+        (cs : Vector.t G (2 + n)) (c z : F),
+        cs = pedersen_commitment_vector g h vs rs ->
+        z = fold_right (λ '(α, v) acc, α * v + acc) (zip_with pair αs vs) zero ->
+        List.NoDup lf -> (forall y : F, List.In y lf) ->
+        Permutation 
+          (generalised_pedersen_linear_relation_distribution lf Hlfn αs vs rs g h c)
+          (generalised_pedersen_linear_relation_simulator_distribution lf Hlfn g h αs cs z c).
+      Proof.
+        intros * hcs hz hnd hall.
+        eapply generalised_pedersen_special_honest_verifier_zkp_perm; 
+        [exact hcs | exact hz |].
+        intro x.
+        eapply enumerates_perm_map with (psi := fun u => u - c * x);
+        [exact hnd | exact hall | intros u; field | intros u; field].
+      Qed.
+
+
     End Proofs.
   End PedLinearRelation.
 End DL. 

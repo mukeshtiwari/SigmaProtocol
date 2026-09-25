@@ -1,7 +1,7 @@
 From Stdlib Require Import Setoid
   setoid_ring.Field Lia Vector Utf8
   Psatz Bool Pnat BinNatDef 
-  BinPos. 
+  BinPos Permutation. 
 From Algebra Require Import 
   Hierarchy Group Monoid
   Field Integral_domain
@@ -432,6 +432,9 @@ Section DL.
         Context
           {Hvec: @vector_space F (@eq F) zero one add mul sub 
             div opp inv G (@eq G) gid ginv gop gpow}.
+
+        Add Field field : (@field_theory_for_stdlib_tactic F
+          eq zero one opp add mul sub inv div vector_space_field).
         (* 
           {n : nat}
           (x : F) (* common witness for all relations *)
@@ -981,6 +984,80 @@ Section DL.
         exact ha.
       Qed.
       
+
+      (* ---------------------------------------------------------------- *)
+      (* Special honest-verifier zero-knowledge as equality of distributions.
+        The real transcript for randomness u is the simulated transcript for
+        randomness u + c * x, coordinatewise on the commitments. *)
+
+      Lemma eq_commitment_shift (x : F) :
+        forall (m : nat) (gs hs : Vector.t G m) (u c : F),
+        (forall f : Fin.t m, (Vector.nth gs f) ^ x = Vector.nth hs f) ->
+        Vector.map (fun g => gpow g u) gs =
+        Vector.map (fun '(g, h) => gop (gpow g (u + c * x)) (gpow h (opp c)))
+          (zip_with (fun g h => (g, h)) gs hs).
+      Proof.
+        induction m as [| m ih]; intros gs hs u c R.
+        + rewrite (vector_inv_0 gs), (vector_inv_0 hs); reflexivity.
+        + destruct (vector_inv_S gs) as (g & gs' & hg).
+          destruct (vector_inv_S hs) as (h & hs' & hh).
+          subst; cbn; f_equal.
+          * apply schnorr_commitment_shift. 
+            symmetry; exact (R Fin.F1).
+          * apply ih. intros f; exact (R (Fin.FS f)).
+      Qed.
+
+      Lemma construct_eq_shift {n : nat} (x : F) (gs hs : Vector.t G (2 + n)) 
+        (R : forall f : Fin.t (2 + n), (Vector.nth gs f) ^ x = Vector.nth hs f) :
+        forall (u c : F),
+        construct_eq_conversations_schnorr x gs u c =
+        construct_eq_conversations_simulator gs hs (u + c * x) c.
+      Proof.
+        intros *.
+        unfold construct_eq_conversations_schnorr, 
+          construct_eq_conversations_simulator,
+          construct_eq_conversations_schnorr_commitment; cbn.
+        f_equal.
+        apply eq_commitment_shift; exact R.
+      Qed.
+
+      Theorem generalised_eq_special_honest_verifier_zkp_perm {n : nat} (x : F)
+        (gs hs : Vector.t G (2 + n))
+        (R : forall f : Fin.t (2 + n), (Vector.nth gs f) ^ x = Vector.nth hs f) :
+        forall (lf : list F) (Hlfn : lf <> List.nil) (c : F),
+        Permutation (List.map (fun u => u + c * x) lf) lf ->
+        Permutation
+          (@generalised_eq_schnorr_distribution n lf Hlfn x gs c)
+          (@generalised_eq_simulator_distribution n lf Hlfn gs hs c).
+      Proof.
+        intros * hp.
+        change (Permutation
+          (Bind (uniform_with_replacement lf Hlfn)
+            (fun u => Ret (construct_eq_conversations_schnorr x gs u c)))
+          (Bind (uniform_with_replacement lf Hlfn)
+            (fun u => Ret (construct_eq_conversations_simulator gs hs u c)))).
+        eapply bind_ret_perm with (phi := fun u => u + c * x).
+        + apply uniform_perm; exact hp.
+        + intros u p _. apply construct_eq_shift; exact R.
+      Qed.
+
+      (* Equality of distributions when lf enumerates the field. *)
+      Theorem generalised_eq_special_honest_verifier_zkp_enum {n : nat} (x : F)
+        (gs hs : Vector.t G (2 + n))
+        (R : forall f : Fin.t (2 + n), (Vector.nth gs f) ^ x = Vector.nth hs f) :
+        forall (lf : list F) (Hlfn : lf <> List.nil) (c : F),
+        List.NoDup lf -> (forall y : F, List.In y lf) ->
+        Permutation
+          (@generalised_eq_schnorr_distribution n lf Hlfn x gs c)
+          (@generalised_eq_simulator_distribution n lf Hlfn gs hs c).
+      Proof.
+        intros * hnd hall.
+        eapply generalised_eq_special_honest_verifier_zkp_perm; [exact R |].
+        eapply enumerates_perm_map with (psi := fun u => u - c * x);
+        [exact hnd | exact hall | intros u; field | intros u; field].
+      Qed.
+
+
     End Proofs. 
   End EQ.
 End DL. 

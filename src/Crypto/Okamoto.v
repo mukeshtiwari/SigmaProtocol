@@ -1,7 +1,7 @@
 From Stdlib Require Import Setoid
   setoid_ring.Field Lia Vector Utf8
   Psatz Bool Pnat BinNatDef 
-  BinPos. 
+  BinPos Permutation. 
 From Algebra Require Import 
   Hierarchy Group Monoid
   Field Integral_domain
@@ -1203,6 +1203,113 @@ Section Okamoto.
             rewrite <-haal. field.
             eapply ihn. exact haar.
       Qed.
+
+
+      (* ---------------------------------------------------------------- *)
+      (* Special honest-verifier zero-knowledge as equality of distributions.
+        The real transcript for randomness us is the simulated transcript 
+        for the coordinatewise shifted randomness u_i ↦ u_i + c * x_i. *)
+
+      Lemma gid_pow : forall k : F, gid ^ k = gid.
+      Proof.
+        intros k.
+        assert (ha : gid ^ k = (gid ^ zero) ^ k) by 
+          (rewrite vector_space_field_zero; reflexivity).
+        rewrite ha, smul_pow_up.
+        assert (hb : zero * k = zero) by field.
+        rewrite hb; apply vector_space_field_zero.
+      Qed.
+
+      Lemma okamoto_commitment_shift (c : F) :
+        forall (m : nat) (gs : Vector.t G m) (xs us : Vector.t F m),
+        fold_right (fun '(g, u) acc => gop (g ^ u) acc) (zip_with pair gs us) gid =
+        gop (fold_right (fun '(g, u) acc => gop (g ^ u) acc) 
+               (zip_with pair gs (zip_with (fun x u => u + c * x) xs us)) gid)
+            ((fold_right (fun '(g, x) acc => gop (g ^ x) acc) 
+               (zip_with pair gs xs) gid) ^ (opp c)).
+      Proof.
+        induction m as [| m ih]; intros gs xs us.
+        + rewrite (vector_inv_0 gs), (vector_inv_0 xs), (vector_inv_0 us); cbn.
+          rewrite gid_pow, right_identity; reflexivity.
+        + destruct (vector_inv_S gs) as (g & gs' & hg).
+          destruct (vector_inv_S xs) as (x & xs' & hx).
+          destruct (vector_inv_S us) as (u & us' & hu).
+          subst; cbn.
+          rewrite (ih gs' xs' us').
+          rewrite smul_distributive_vadd, gop_simp.
+          f_equal.
+          apply (schnorr_commitment_shift x g (g ^ x) eq_refl).
+      Qed.
+
+      Lemma okamoto_response_vec_apply (c : F) : 
+        forall (m : nat) (xs us : Vector.t F m),
+        zip_with (fun x u => u + c * x) xs us = 
+        vec_apply (Vector.map (fun x u => u + c * x) xs) us.
+      Proof. 
+        induction m as [|m ih]; intros xs us.
+        + rewrite (vector_inv_0 xs), (vector_inv_0 us); reflexivity.
+        + destruct (vector_inv_S xs) as (x & xs' & hx).
+          destruct (vector_inv_S us) as (u & us' & hu).
+          subst; cbn; f_equal; apply ih. 
+      Qed.
+
+      Lemma construct_okamoto_shift {n : nat} (xs : Vector.t F (2 + n)) 
+        (gs : Vector.t G (2 + n)) (h : G) (c : F) 
+        (R : h = fold_right (λ '(g, x) acc, gop (g ^ x) acc) (zip_with pair gs xs) gid) :
+        forall (us : Vector.t F (2 + n)), 
+        generalised_okamoto_real_protocol xs gs h us c =
+        generalised_okamoto_simulator_protocol gs h 
+          (vec_apply (Vector.map (fun x u => u + c * x) xs) us) c.
+      Proof.
+        intros us.
+        unfold generalised_okamoto_real_protocol, 
+          generalised_okamoto_simulator_protocol,
+          generalised_okamoto_simulator_protocol_commitment, 
+          generalised_okamoto_commitment, generalised_okamoto_response.
+        rewrite <-okamoto_response_vec_apply, R.
+        f_equal; f_equal.
+        apply okamoto_commitment_shift.
+      Qed.
+
+      Theorem generalised_okamoto_special_honest_verifier_zkp_perm {n : nat} :
+        forall (lf : list F) (Hlfn : lf <> List.nil) 
+        (xs : Vector.t F (2 + n)) (gs : Vector.t G (2 + n)) (h : G) (c : F),
+        h = fold_right (λ '(g, x) acc, gop (g ^ x) acc) (zip_with pair gs xs) gid ->
+        (forall x : F, Permutation (List.map (fun u => u + c * x) lf) lf) ->
+        Permutation 
+          (@generalised_okamoto_real_distribution n lf Hlfn xs gs h c)
+          (@generalised_okamoto_simulator_distribution n lf Hlfn gs h c).
+      Proof.
+        intros * R hp.
+        change (Permutation 
+          (Bind (repeat_dist_ntimes_vector (uniform_with_replacement lf Hlfn) (2 + n)) 
+            (fun us => Ret (generalised_okamoto_real_protocol xs gs h us c)))
+          (Bind (repeat_dist_ntimes_vector (uniform_with_replacement lf Hlfn) (2 + n)) 
+            (fun us => Ret (generalised_okamoto_simulator_protocol gs h us c)))).
+        eapply bind_ret_perm with 
+          (phi := vec_apply (Vector.map (fun x u => u + c * x) xs)).
+        + apply repeat_uniform_perm; intros i. 
+          rewrite (nth_map _ _ i i eq_refl). apply hp.
+        + intros us p _. apply construct_okamoto_shift; exact R.
+      Qed.
+
+      (* Equality of distributions when lf enumerates the field. *)
+      Theorem generalised_okamoto_special_honest_verifier_zkp_enum {n : nat} :
+        forall (lf : list F) (Hlfn : lf <> List.nil) 
+        (xs : Vector.t F (2 + n)) (gs : Vector.t G (2 + n)) (h : G) (c : F),
+        h = fold_right (λ '(g, x) acc, gop (g ^ x) acc) (zip_with pair gs xs) gid ->
+        List.NoDup lf -> (forall y : F, List.In y lf) ->
+        Permutation 
+          (@generalised_okamoto_real_distribution n lf Hlfn xs gs h c)
+          (@generalised_okamoto_simulator_distribution n lf Hlfn gs h c).
+      Proof.
+        intros * R hnd hall.
+        eapply generalised_okamoto_special_honest_verifier_zkp_perm; [exact R |].
+        intro x.
+        eapply enumerates_perm_map with (psi := fun u => u - c * x);
+        [exact hnd | exact hall | intros u; field | intros u; field].
+      Qed.
+
 
     End Proofs.
   End WI.
