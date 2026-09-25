@@ -24,6 +24,15 @@ Benchmarks for the paper. We measure our certified OCaml code against the hand-w
    ```
    (Same-session jsbn numbers: 341.13 ms / 391.64 ms; certified OCaml: 62.09 ms / 48.94 ms.) So most of the jsbn gap is the big-integer library, and the fair headline is: our certified OCaml is on par with a native-`BigInt` reimplementation of the booth (62 vs 67 ms on proving) and still ~5x faster than the JavaScript Helios actually ships.
 
+4. The certified client also runs in a browser. [src/Executable/HeliosJscode](/src/Executable/HeliosJscode) compiles the same extracted `helios_nizk_encrypt_ballot_and_generate_enc_proof` and `helios_verify_encryption_ballot_proof` to JavaScript with js_of_ocaml (big integers through `zarith_stubs_js`, hashing through digestif's pure-OCaml SHA3-256, randomness from Web Crypto, timing from `performance.now`), so no native code is involved. `dune build` produces `_build/default/src/Executable/HeliosJscode/main.bc.js`; run it with a V8 runtime (`node main.bc.js 7 30`, or with Deno copy it to a `.cjs` file first: `cp main.bc.js client.cjs && deno run --allow-all client.cjs 7 30`) or load it from any web page and read the console. Same machine, Deno 2.9.6 (V8):
+   ```
+   candidates n = 7, iterations = 30, all ballots verified = true
+   ballot encryption + NIZK proofs: median 204.71 ms, mean 200.73 ms
+   ballot verification:             median 128.40 ms, mean 128.51 ms
+   p bits = 2048, q bits = 256
+   ```
+   So the certified code compiled to JavaScript proves a 7-candidate ballot in about 205 ms at the real 2048-bit parameters: slower than native OCaml (62 ms, GMP) and than the native-`BigInt` reimplementation (67 ms), but still faster than the jsbn-based JavaScript the Helios booth ships (334-341 ms), and, unlike the CertiRocq WebAssembly path, it runs at the real parameters.
+
 ## Helios's own Python verifier
 
 To put the certified verifier's 39 s / 51 s IACR runs in context, [verify_iacr_python.py](verify_iacr_python.py) runs the same end-to-end verification using Helios's own Python crypto code (`helios/crypto/algs.py` from the pinned submodule, imported verbatim; the script builds a stub package in a temp dir because `helios/__init__.py` needs Django settings). It performs the same checks as the certified verifier: every ballot's disjunctive 0/1 proofs, homomorphic aggregation, the trustees' Chaum-Pedersen decryption proofs and Schnorr proofs of knowledge, the public-key product, and the plaintext tally. Setup and run (needs the submodule from step 2 above; `hval2023`/`hval2024` are the election public keys from [HeliosTallyIns.v](/src/Examples/HeliosTallyIns.v)):

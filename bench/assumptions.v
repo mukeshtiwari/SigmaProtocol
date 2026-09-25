@@ -1,0 +1,155 @@
+(* Axiom audit for every theorem listed in THEOREMS.md.
+   Run with bench/assumptions.sh after `dune build`. Every line should
+   print "Closed under the global context"; the only expected exception
+   is compute_final_count_ins in Examples/TallyIns.v, which uses
+   proof_irrelevance. *)
+
+From Stdlib Require Import Utf8.
+From Probability Require Import Prob Distr.
+From Utility Require Import Zpstar Functions.
+From Crypto Require Import Sigma ParallelSigma AndSigma AndSigmaGen EqSigma
+  OrSigma OrSigmaGen ChaumPedersen EncProof DecProof Okamoto NeqSigma
+  PedLinearRel Elgamal.
+From Frontend Require Import Approval.
+From Backend Require Import Tally HeliosTally.
+From Examples Require Import ApprovalIns TallyIns HeliosTallyIns
+  HeliosFrontendIns PedLinearRelIns.
+
+(* Schnorr *)
+Print Assumptions Crypto.Sigma.schnorr_completeness.
+Print Assumptions Crypto.Sigma.simulator_completeness.
+Print Assumptions Crypto.Sigma.special_soundness_berry.
+Print Assumptions Crypto.Sigma.special_honest_verifier_zkp.
+Print Assumptions Crypto.Sigma.special_honest_verifier_zkp_perm.
+Print Assumptions Crypto.Sigma.special_honest_verifier_zkp_enum.
+Print Assumptions Crypto.Sigma.schnorr_protocol_simulator_shift.
+Print Assumptions Crypto.Sigma.soundness_error_bound.
+
+(* Distributions *)
+Print Assumptions Probability.Distr.bind_ret_left.
+Print Assumptions Probability.Distr.bind_ret_right.
+Print Assumptions Probability.Distr.bind_assoc.
+Print Assumptions Probability.Distr.uniform_with_replacement_adds_to_one.
+Print Assumptions Probability.Distr.uniform_probability.
+Print Assumptions Probability.Distr.uniform_probability_multidraw_prob.
+Print Assumptions Probability.Distr.event_uniform_prob.
+Print Assumptions Probability.Distr.list_of_events_uniform.
+Print Assumptions Probability.Distr.uniform_perm.
+Print Assumptions Probability.Distr.bind_ret_perm.
+Print Assumptions Probability.Distr.repeat_uniform_perm.
+Print Assumptions Probability.Distr.repeat_uniform_bijection_perm.
+
+(* Parallel *)
+Print Assumptions Crypto.ParallelSigma.construct_parallel_conversations_schnorr_completeness.
+Print Assumptions Crypto.ParallelSigma.construct_parallel_conversations_simulator_completeness.
+Print Assumptions Crypto.ParallelSigma.generalise_parallel_sigma_soundness.
+Print Assumptions Crypto.ParallelSigma.generalised_parallel_special_honest_verifier_zkp.
+Print Assumptions Crypto.ParallelSigma.generalised_parallel_special_honest_verifier_zkp_perm.
+Print Assumptions Crypto.ParallelSigma.generalised_parallel_special_honest_verifier_zkp_enum.
+
+(* And *)
+Print Assumptions Crypto.AndSigma.construct_and_conversations_schnorr_completeness.
+Print Assumptions Crypto.AndSigma.construct_and_conversations_simulator_completeness.
+Print Assumptions Crypto.AndSigma.generalise_and_sigma_soundness.
+Print Assumptions Crypto.AndSigma.generalised_and_special_honest_verifier_zkp.
+Print Assumptions Crypto.AndSigma.generalised_and_special_honest_verifier_zkp_perm.
+Print Assumptions Crypto.AndSigma.generalised_and_special_honest_verifier_zkp_enum.
+Print Assumptions Crypto.AndSigmaGen.construct_and_conversations_schnorr_completeness.
+Print Assumptions Crypto.AndSigmaGen.construct_and_conversations_simulator_completeness.
+Print Assumptions Crypto.AndSigmaGen.generalise_and_sigma_soundness.
+Print Assumptions Crypto.AndSigmaGen.generalise_and_sigma_soundness_neq.
+Print Assumptions Crypto.AndSigmaGen.generalised_and_special_honest_verifier_zkp.
+Print Assumptions Crypto.AndSigmaGen.generalised_and_special_honest_verifier_zkp_perm.
+Print Assumptions Crypto.AndSigmaGen.generalised_and_special_honest_verifier_zkp_enum.
+
+(* Or *)
+Print Assumptions Crypto.OrSigma.generalised_construct_or_conversations_schnorr_completeness.
+Print Assumptions Crypto.OrSigma.generalised_construct_or_conversations_simulator_completeness.
+Print Assumptions Crypto.OrSigma.generalised_or_sigma_soundness_main.
+Print Assumptions Crypto.OrSigma.generalised_or_special_honest_verifier_zkp.
+Print Assumptions Crypto.OrSigma.generalised_or_special_honest_verifier_zkp_perm.
+Print Assumptions Crypto.OrSigmaGen.generalised_construct_or_conversations_schnorr_completeness.
+Print Assumptions Crypto.OrSigmaGen.generalised_construct_or_conversations_simulator_completeness.
+Print Assumptions Crypto.OrSigmaGen.generalised_or_sigma_soundness_main.
+Print Assumptions Crypto.OrSigmaGen.generalised_or_special_honest_verifier_zkp.
+Print Assumptions Crypto.OrSigmaGen.generalised_or_special_honest_verifier_zkp_perm.
+
+(* Eq, Chaum-Pedersen *)
+Print Assumptions Crypto.EqSigma.construct_eq_conversations_schnorr_completeness.
+Print Assumptions Crypto.EqSigma.construct_eq_conversations_simulator_completeness.
+Print Assumptions Crypto.EqSigma.generalise_eq_sigma_soundness.
+Print Assumptions Crypto.EqSigma.generalised_eq_special_honest_verifier_zkp.
+Print Assumptions Crypto.EqSigma.generalised_eq_special_honest_verifier_zkp_perm.
+Print Assumptions Crypto.EqSigma.generalised_eq_special_honest_verifier_zkp_enum.
+Print Assumptions Crypto.ChaumPedersen.construct_cp_conversations_schnorr_completeness.
+Print Assumptions Crypto.ChaumPedersen.construct_cp_conversations_simulator_completeness.
+Print Assumptions Crypto.ChaumPedersen.generalise_cp_sigma_soundness.
+Print Assumptions Crypto.ChaumPedersen.generalised_cp_special_honest_verifier_zkp.
+Print Assumptions Crypto.ChaumPedersen.generalised_cp_special_honest_verifier_zkp_perm.
+Print Assumptions Crypto.ChaumPedersen.generalised_cp_special_honest_verifier_zkp_enum.
+
+(* ElGamal, encryption and decryption proofs *)
+Print Assumptions Crypto.Elgamal.dec_is_left_inv_of_enc.
+Print Assumptions Crypto.Elgamal.dec_re_enc_left_inv.
+Print Assumptions Crypto.Elgamal.additive_homomorphic_property.
+Print Assumptions Crypto.EncProof.generalised_construct_encryption_proof_elgamal_real_completeness.
+Print Assumptions Crypto.EncProof.generalised_construct_encryption_proof_elgamal_simulator_completeness.
+Print Assumptions Crypto.EncProof.generalised_accepting_elgamal_soundness_main.
+Print Assumptions Crypto.EncProof.generalised_encryption_proof_elgamal_special_honest_verifier_zkp.
+Print Assumptions Crypto.EncProof.generalised_encryption_proof_elgamal_special_honest_verifier_zkp_perm.
+Print Assumptions Crypto.DecProof.construct_decryption_proof_elgamal_real_completeness.
+Print Assumptions Crypto.DecProof.construct_decryption_proof_elgamal_simulator_completeness.
+Print Assumptions Crypto.DecProof.decryption_proof_accepting_conversations_vector_completeness.
+Print Assumptions Crypto.DecProof.special_soundness_construct_decryption_proof_elgamal.
+Print Assumptions Crypto.DecProof.construct_decryption_proof_elgamal_special_honest_verifier_zkp.
+Print Assumptions Crypto.DecProof.construct_decryption_proof_elgamal_special_honest_verifier_zkp_perm.
+Print Assumptions Crypto.DecProof.construct_decryption_proof_elgamal_special_honest_verifier_zkp_enum.
+
+(* Okamoto, Neq, Pedersen linear relations *)
+Print Assumptions Crypto.Okamoto.generalised_okamoto_real_accepting_conversation.
+Print Assumptions Crypto.Okamoto.generalised_okamoto_simulator_accepting_conversation.
+Print Assumptions Crypto.Okamoto.generalised_okamoto_real_special_soundenss.
+Print Assumptions Crypto.Okamoto.generalised_okamoto_special_honest_verifier_zkp.
+Print Assumptions Crypto.Okamoto.generalised_okamoto_special_honest_verifier_zkp_perm.
+Print Assumptions Crypto.Okamoto.generalised_okamoto_special_honest_verifier_zkp_enum.
+Print Assumptions Crypto.Okamoto.generalised_okamoto_witness_indistinguishable.
+Print Assumptions Crypto.NeqSigma.generalised_neq_real_transcript_accepting_conversations.
+Print Assumptions Crypto.NeqSigma.generalised_neq_simulator_transcript_accepting_conversations.
+Print Assumptions Crypto.NeqSigma.generalised_neq_accepting_conversations_soundenss.
+Print Assumptions Crypto.NeqSigma.generalised_neq_special_honest_verifier_zkp.
+Print Assumptions Crypto.NeqSigma.generalised_neq_special_honest_verifier_zkp_perm.
+Print Assumptions Crypto.PedLinearRel.pedersen_linear_relation_completeness.
+Print Assumptions Crypto.PedLinearRel.pedersen_linear_relation_simulator_completeness.
+Print Assumptions Crypto.PedLinearRel.pedersen_linear_relation_special_soundness.
+Print Assumptions Crypto.PedLinearRel.generalised_pedersen_special_honest_verifier_zkp.
+Print Assumptions Crypto.PedLinearRel.generalised_pedersen_special_honest_verifier_zkp_perm.
+Print Assumptions Crypto.PedLinearRel.generalised_pedersen_special_honest_verifier_zkp_enum.
+
+(* Modular arithmetic and the extractor *)
+Print Assumptions Utility.Zpstar.Zpgroup.zpstar_comm.
+Print Assumptions Utility.Zpstar.Zpfield.zp_field.
+Print Assumptions Utility.Zpstar.Schnorr.schnorr_comm.
+Print Assumptions Utility.Zpstar.Vspace.pow_vspace.
+Print Assumptions Utility.Functions.correct_complexity_repeat_op_ntimes_rec.
+
+(* Approval voting *)
+Print Assumptions Frontend.Approval.vote_proof_valid.
+Print Assumptions Frontend.Approval.vote_proof_invalid_reject.
+Print Assumptions Frontend.Approval.vote_proof_invalid_accept.
+Print Assumptions Frontend.Approval.ballot_proof_valid.
+Print Assumptions Frontend.Approval.overall_proof_valid.
+Print Assumptions Frontend.Approval.ballot_with_overall_proof_valid.
+Print Assumptions Frontend.Approval.generate_enc_proof_commitment_announcement.
+Print Assumptions Frontend.Approval.ballot_commitment_announcement.
+Print Assumptions Backend.Tally.compute_final_count.
+Print Assumptions Examples.ApprovalIns.nizk_encrypt_ballot_with_overall_proof_ins.
+Print Assumptions Examples.TallyIns.compute_final_count_ins.
+
+(* Helios *)
+Print Assumptions Backend.HeliosTally.compute_final_count.
+Print Assumptions Examples.HeliosTallyIns.prime_q.
+Print Assumptions Examples.HeliosTallyIns.prime_p.
+Print Assumptions Examples.HeliosTallyIns.compute_final_count_ins.
+Print Assumptions Examples.HeliosFrontendIns.helios_nizk_encrypt_ballot_and_generate_enc_proof.
+Print Assumptions Examples.HeliosFrontendIns.helios_verify_encryption_ballot_proof.
+Print Assumptions Examples.PedLinearRelIns.construct_pedersen_linear_relation_commitment_ins.
