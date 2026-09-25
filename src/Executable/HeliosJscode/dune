@@ -1,0 +1,11 @@
+; JavaScript build (js_of_ocaml) of the certified Helios ballot client at
+; the 2048-bit Helios parameters. Big integers come from zarith_stubs_js,
+; hashing from digestif's pure-OCaml implementation, so the whole program
+; runs in a browser or under Node.js: run
+;   node _build/default/src/Executable/HeliosJscode/main.bc.js 7 30
+(executable
+ (name main)
+ (modes js)
+ (libraries HeliosTallylib zarith_stubs_js digestif digestif.ocaml js_of_ocaml)
+ (js_of_ocaml
+  (flags (:standard))))

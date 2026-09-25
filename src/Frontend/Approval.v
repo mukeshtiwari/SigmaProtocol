@@ -1,5 +1,5 @@
 From Stdlib Require Import Setoid
-  setoid_ring.Field  Psatz Vector Utf8 Fin. 
+  setoid_ring.Field  Psatz Vector Utf8 Fin Lia. 
 From Algebra Require Import
   Hierarchy Group Monoid
   Field Integral_domain
@@ -66,6 +66,23 @@ Section Approval.
               goes to the second place (Fin.FS Fin.F1) *)
           end.
 
+      (* The announcement of generate_enc_proof, computed before the 
+        challenge is known. A non-interactive ballot derives its challenges 
+        from these announcements (nizk_encrypt_ballot_and_generate_enc_proof_ins 
+        in Examples/ApprovalIns.v); generate_enc_proof_commitment_announcement 
+        shows that they are exactly the announcements of the proofs. *)
+      Definition generate_enc_proof_commitment 
+        (g h : G) (m : F) (uscs : Vector.t F 3) (cp : G * G) : 
+        Vector.t (G * G) 2 :=
+          match Fdec m zero with 
+          | left _ => 
+            @construct_encryption_proof_elgamal_commitment F opp G ginv gop gpow 
+              0 1 uscs [g^m; g^one] g h cp
+          | right _ =>  
+            @construct_encryption_proof_elgamal_commitment F opp G ginv gop gpow 
+              1 0 uscs [g^zero; g^m] g h cp
+          end.
+
       
       (* wrap both of them *)
       (* In this function, when you pass a value of m that not 0 and 1, the 
@@ -124,6 +141,23 @@ Section Approval.
 
 
 
+      (* the announcements of the whole ballot, before the challenges *)
+      Fixpoint generate_ballot_commitment {n : nat}
+        (g h : G) (r : Vector.t F n) (m : Vector.t F n) 
+        (uscs : Vector.t (Vector.t F 3) n) : 
+        Vector.t (Vector.t (G * G) 2) n.
+      Proof.
+        destruct n as [| n].
+        +
+          exact [].
+        +
+          destruct (vector_inv_S r) as (rh & rt & _).
+          destruct (vector_inv_S m) as (mh & mt & _).
+          destruct (vector_inv_S uscs) as (uscsh & uscst & _).
+          exact (generate_enc_proof_commitment g h mh uscsh (encrypt_vote g h rh mh) :: 
+            generate_ballot_commitment _ g h rt mt uscst).
+      Defined.
+
       (* encrypts the whole ballot and generate proof *)
       Fixpoint encrypt_ballot_and_generate_enc_proof {n : nat}
         (g h : G) (r : Vector.t F n) (m : Vector.t F n) 
@@ -156,6 +190,87 @@ Section Approval.
             (verify_encryption_ballot_proof _ g h cppft))%bool.
       Defined.
 
+      (* ---------------------------------------------------------------- *)
+      (* Overall proof.
+
+        The individual proofs show that every vote encrypts 0 or 1. The 
+        overall proof shows, on the homomorphic product of the ballot's 
+        ciphertexts, that the number of approvals is between 0 and the 
+        number of candidates: it is the disjunctive encryption proof over 
+        the messages g^0, g^1, ..., g^n, proved at the index equal to the 
+        actual number of approvals. This is the proof Helios attaches to a 
+        ballot when the question has a maximum; here the maximum is the 
+        number of candidates. *)
+
+      (* the field element k = 1 + ... + 1 *)
+      Fixpoint of_nat (k : nat) : F :=
+        match k with
+        | 0 => zero
+        | S k' => one + of_nat k'
+        end.
+
+      (* [g^0; g^1; ...; g^k] *)
+      Fixpoint powers (g : G) (k : nat) : Vector.t G (S k) :=
+        match k with
+        | 0 => [g ^ zero]
+        | S k' => g ^ zero :: Vector.map (fun m => gop g m) (powers g k')
+        end.
+
+      (* the homomorphic product of a ballot's ciphertexts *)
+      Definition ballot_product {k : nat} (cps : Vector.t (G * G) k) : G * G :=
+        Vector.fold_right (fun '(a, b) '(c, d) => (gop a c, gop b d)) cps (gid, gid).
+
+      (* the number of approvals on a ballot *)
+      Definition count_ones {k : nat} (ms : Vector.t F k) : nat :=
+        Vector.fold_right (fun m acc => if Fdec m one then S acc else acc) ms 0.
+
+      Lemma count_ones_le : forall (k : nat) (ms : Vector.t F k), count_ones ms <= k.
+      Proof.
+        induction k as [| k ih]; intros ms.
+        + rewrite (vector_inv_0 ms); cbn; lia.
+        + destruct (vector_inv_S ms) as (m & ms' & hm); subst.
+          unfold count_ones in *; cbn.
+          destruct (Fdec m one); specialize (ih ms'); lia.
+      Qed.
+
+      (* the index of the message g^(number of approvals) *)
+      Definition overall_index {n : nat} (ms : Vector.t F (S n)) : Fin.t (2 + n) :=
+        Fin.of_nat_lt (le_n_S _ _ (count_ones_le _ ms)).
+
+      Definition generate_overall_proof {n : nat} (g h : G) 
+        (rs ms : Vector.t F (S n)) (uscs : Vector.t F ((2 + n) + (1 + n))) (c : F) : 
+        @Sigma.sigma_proto F (G * G) (2 + n) (1 + (2 + n)) (2 + n) :=
+        @generalised_construct_encryption_proof_elgamal_real F zero add mul sub opp 
+          G ginv gop gpow n (overall_index ms) (Vector.fold_right add rs zero) 
+          uscs (powers g (S n)) g h (ballot_product (encrypt_ballot g h rs ms)) c.
+
+      (* A ballot with no candidate has nothing to prove. *)
+      Definition verify_overall_proof {k : nat} (g h : G) (cps : Vector.t (G * G) k)
+        (pf : @Sigma.sigma_proto F (G * G) (S k) (S (S k)) (S k)) : bool :=
+        match k as k' return Vector.t (G * G) k' -> 
+          @Sigma.sigma_proto F (G * G) (S k') (S (S k')) (S k') -> bool 
+        with
+        | 0 => fun _ _ => true
+        | S k' => fun cps pf => 
+          @generalised_accepting_encryption_proof_elgamal F zero add Fdec 
+            G ginv gop gpow Gdec (S (S k')) (powers g (S k')) g h (ballot_product cps) pf
+        end cps pf.
+
+      (* the full ballot: one ciphertext and proof per candidate, and the 
+        overall proof *)
+      Definition encrypt_ballot_with_overall_proof {n : nat} (g h : G) 
+        (rs ms : Vector.t F (S n)) (uscs : Vector.t (Vector.t F 3) (S n)) 
+        (cs : Vector.t F (S n)) (uscs' : Vector.t F ((2 + n) + (1 + n))) (c : F) :
+        Vector.t (G * G * @Sigma.sigma_proto F (G * G) 2 3 2) (S n) * 
+        @Sigma.sigma_proto F (G * G) (2 + n) (1 + (2 + n)) (2 + n) :=
+        (encrypt_ballot_and_generate_enc_proof g h rs ms uscs cs, 
+         generate_overall_proof g h rs ms uscs' c).
+
+      Definition verify_ballot {k : nat} (g h : G)
+        (b : Vector.t (G * G * @Sigma.sigma_proto F (G * G) 2 3 2) k * 
+             @Sigma.sigma_proto F (G * G) (S k) (S (S k)) (S k)) : bool :=
+        (verify_encryption_ballot_proof g h (fst b) && 
+         verify_overall_proof g h (Vector.map fst (fst b)) (snd b))%bool.
 
     End Definitions.
 
@@ -819,5 +934,172 @@ Section Approval.
             intro f.
             exact (ha (Fin.FS f)).
       Qed.  
+
+      (* ---------------------------------------------------------------- *)
+      (* Completeness of the overall proof. *)
+
+      Lemma powers_nth : forall (g : G) (k : nat) (i : Fin.t (S k)), 
+        (powers g k)[@i] = g ^ of_nat (proj1_sig (Fin.to_nat i)).
+      Proof.
+        intros g; induction k as [| k ih]; intros i.
+        + destruct (fin_inv_S _ i) as [hi | (j & hi)]; subst; 
+          [reflexivity | inversion j].
+        + destruct (fin_inv_S _ i) as [hi | (j & hi)]; subst; cbn; [reflexivity |].
+          rewrite map_fin, ih.
+          destruct (Fin.to_nat j) as (a & ha); cbn.
+          rewrite (@vector_space_smul_distributive_fadd F (@eq F) 
+            zero one add mul sub div opp inv G (@eq G) gid ginv gop gpow).
+          rewrite field_one; reflexivity.
+          typeclasses eauto.
+      Qed.
+
+      Lemma gop_rearrange : forall (a b c d : G), 
+        gop (gop a b) (gop c d) = gop (gop a c) (gop b d).
+      Proof.
+        intros a b c d.
+        rewrite <- associative, (associative b c d), (commutative b c), 
+          <- (associative c b d), associative.
+        reflexivity.
+      Qed.
+
+      (* the product of a ballot's ciphertexts encrypts the sum of the votes 
+        under the sum of the randomness *)
+      Lemma ballot_product_enc : forall (k : nat) (g h : G) (rs ms : Vector.t F k),
+        ballot_product (encrypt_ballot g h rs ms) = 
+        (g ^ Vector.fold_right add rs zero, 
+         gop (g ^ Vector.fold_right add ms zero) (h ^ Vector.fold_right add rs zero)).
+      Proof.
+        induction k as [| k ih]; intros g h rs ms.
+        + rewrite (vector_inv_0 rs), (vector_inv_0 ms); cbn.
+          rewrite !vector_space_field_zero, left_identity; reflexivity.
+        + destruct (vector_inv_S rs) as (r & rs' & hr).
+          destruct (vector_inv_S ms) as (m & ms' & hm).
+          subst; cbn.
+          change (fold_right (λ '(a, b) '(c, d), (gop a c, gop b d)) 
+            (encrypt_ballot g h rs' ms') (gid, gid)) 
+            with (ballot_product (encrypt_ballot g h rs' ms')).
+          rewrite ih; cbn.
+          rewrite gop_rearrange.
+          rewrite <- !(@vector_space_smul_distributive_fadd F (@eq F) 
+            zero one add mul sub div opp inv G (@eq G) gid ginv gop gpow).
+          reflexivity.
+          all: typeclasses eauto.
+      Qed.
+
+      (* on a 0/1 ballot the sum of the votes is the number of approvals *)
+      Lemma sum_ballot_count : forall (k : nat) (ms : Vector.t F k),
+        (forall i : Fin.t k, ms[@i] = zero ∨ ms[@i] = one) ->
+        Vector.fold_right add ms zero = of_nat (count_ones ms).
+      Proof.
+        induction k as [| k ih]; intros ms hm.
+        + rewrite (vector_inv_0 ms); reflexivity.
+        + destruct (vector_inv_S ms) as (m & ms' & hms); subst.
+          unfold count_ones in *; cbn.
+          rewrite (ih ms' (fun i => hm (Fin.FS i))).
+          destruct (Fdec m one) as [hone | hnone].
+          * subst; cbn; reflexivity.
+          * destruct (hm Fin.F1) as [hz | ho]; 
+            [cbn in hz; subst; field | cbn in ho; contradiction].
+      Qed.
+
+      Theorem overall_proof_valid : forall (n : nat) (g h : G) 
+        (rs ms : Vector.t F (S n)) (uscs : Vector.t F ((2 + n) + (1 + n))) (c : F),
+        (forall i : Fin.t (S n), ms[@i] = zero ∨ ms[@i] = one) ->
+        verify_overall_proof g h (encrypt_ballot g h rs ms) 
+          (generate_overall_proof g h rs ms uscs c) = true.
+      Proof.
+        intros * hm.
+        unfold verify_overall_proof, generate_overall_proof.
+        rewrite ballot_product_enc.
+        apply generalised_construct_encryption_proof_elgamal_real_completeness.
+        split; [reflexivity |].
+        rewrite (powers_nth g (S n)).
+        unfold overall_index; rewrite Fin.to_nat_of_nat; cbn.
+        rewrite <- (sum_ballot_count _ ms hm).
+        rewrite (commutative (g ^ Vector.fold_right add ms zero)), <- associative, 
+          group_is_right_inverse, right_identity.
+        reflexivity.
+      Qed.
+
+      (* an honest 0/1 ballot with its overall proof is accepted *)
+      Theorem ballot_with_overall_proof_valid : forall (n : nat) (g h : G) 
+        (rs ms : Vector.t F (S n)) (uscs : Vector.t (Vector.t F 3) (S n)) 
+        (cs : Vector.t F (S n)) (uscs' : Vector.t F ((2 + n) + (1 + n))) (c : F),
+        (forall i : Fin.t (S n), ms[@i] = zero ∨ ms[@i] = one) ->
+        verify_ballot g h (encrypt_ballot_with_overall_proof g h rs ms uscs cs uscs' c) = true.
+      Proof.
+        intros * hm.
+        unfold verify_ballot, encrypt_ballot_with_overall_proof; cbn [fst snd].
+        rewrite ballot_proof_valid, first_project_ballot_encryption, overall_proof_valid;
+        [reflexivity | exact hm | exact hm].
+      Qed.
+
+
+      (* ---------------------------------------------------------------- *)
+      (* The commitments hashed by a non-interactive ballot are exactly 
+        the announcements of the proofs. *)
+
+      Lemma generate_enc_proof_commitment_announcement : 
+        forall (g h : G) (r m : F) (uscs : Vector.t F 3) (cp : G * G) (c : F),
+        Sigma.announcement (generate_enc_proof g h r m uscs cp c) = 
+        generate_enc_proof_commitment g h m uscs cp.
+      Proof.
+        intros *.
+        destruct (vector_inv_S uscs) as (u₁ & ust & ha).
+        destruct (vector_inv_S ust) as (u₂ & ust' & hb).
+        destruct (vector_inv_S ust') as (c₁ & ust'' & hc).
+        pose proof (vector_inv_0 ust'') as hd.
+        subst.
+        unfold generate_enc_proof, generate_enc_proof_commitment.
+        destruct (Fdec m zero) as [fa | fa].
+        - unfold generalised_construct_encryption_proof_elgamal_real; simpl.
+          destruct (vector_fin_app_pred 1 F1 [u₁; u₂] [c₁]) as 
+            (m₁ & m₂ & v₁ & v₃ & vm & v₂ & v₄ & pfaa & pfbb & haa).
+          destruct pfaa as [pfa]; destruct pfbb as [pfb]; 
+          destruct haa as [ha]; destruct ha as (ha & hb & hc & hd).
+          subst. cbn in * |- *.
+          assert (m₂ = 1) by (destruct m₂ as [|[|m₂]]; try nia; reflexivity). 
+          subst.
+          assert (hp : pfa = eq_refl) by apply Stdlib.Logic.Eqdep_dec.UIP_refl_nat. 
+          subst pfa. cbn in ha, hc. subst. 
+          rewrite !eq_rew_r_dep_refl_nat. 
+          destruct cp; cbn; reflexivity.
+        - unfold generalised_construct_encryption_proof_elgamal_real; simpl.
+          destruct (vector_fin_app_pred 1 (FS F1) [u₁; u₂] [c₁]) as 
+            (m₁ & m₂ & v₁ & v₃ & vm & v₂ & v₄ & pfaa & pfbb & haa).
+          destruct pfaa as [pfa]; destruct pfbb as [pfb]; 
+          destruct haa as [ha]; destruct ha as (ha & hb & hc & hd).
+          subst. cbn in * |- *.
+          assert (m₂ = 0) by (destruct m₂ as [|m₂]; try nia; reflexivity). 
+          subst.
+          assert (hp : pfa = eq_refl) by apply Stdlib.Logic.Eqdep_dec.UIP_refl_nat. 
+          subst pfa. cbn in ha, hc. subst. 
+          rewrite !eq_rew_r_dep_refl_nat. 
+          destruct cp; cbn.
+          assert (hq : pfb = eq_refl) by apply Stdlib.Logic.Eqdep_dec.UIP_refl_nat. 
+          subst pfb. cbn in hc. subst. 
+          rewrite !eq_rew_r_dep_refl_nat. 
+          cbn. reflexivity.
+      Qed.
+
+      Theorem ballot_commitment_announcement : 
+        ∀ (n : nat) (r : Vector.t F n) (g h : G) (m : Vector.t F n) 
+          (uscs : Vector.t (Vector.t F 3) n) (c : Vector.t F n),
+        Vector.map (fun '(_, pf) => Sigma.announcement pf) 
+          (encrypt_ballot_and_generate_enc_proof g h r m uscs c) = 
+        generate_ballot_commitment g h r m uscs.
+      Proof.
+        induction n as [|n ihn].
+        + intros *. reflexivity.
+        + intros *.
+          destruct (vector_inv_S r) as (rh & rt & ha).
+          destruct (vector_inv_S m) as (mh & mt & hb).
+          destruct (vector_inv_S uscs) as (uscsh & uscst & hc).
+          destruct (vector_inv_S c) as (ch & ct & hd).
+          subst. cbn. 
+          rewrite ihn, generate_enc_proof_commitment_announcement.
+          reflexivity.
+      Qed.
+
     End Proofs.
 End Approval.

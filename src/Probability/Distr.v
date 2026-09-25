@@ -1006,6 +1006,258 @@ Section Distr.
         exists (psi x); split; [apply hphi | apply hall].
   Qed.
 
+  (* Bind respects permutations, in both arguments. *)
+  Lemma bind_perm_left {A B : Type} (d d' : dist A) (f : A -> dist B) :
+    Permutation d d' -> Permutation (Bind d f) (Bind d' f).
+  Proof.
+    intros hp; induction hp as [| x d d' hp ih | x y d | d d' d'' hp1 ih1 hp2 ih2].
+    + apply Permutation_refl.
+    + destruct x as (a, p); cbn. 
+      apply Permutation_app_head; exact ih.
+    + destruct x as (a, p), y as (b, q); cbn.
+      rewrite !List.app_assoc.
+      apply Permutation_app_tail, Permutation_app_comm.
+    + eapply Permutation_trans; [exact ih1 | exact ih2].
+  Qed.
+
+  Lemma bind_perm_right {A B : Type} (d : dist A) (f g : A -> dist B) :
+    (forall a p, In (a, p) d -> Permutation (f a) (g a)) ->
+    Permutation (Bind d f) (Bind d g).
+  Proof.
+    induction d as [|(a, p) d ih]; intros hfg; cbn.
+    + apply Permutation_refl.
+    + apply Permutation_app.
+      * apply Permutation_map, (hfg a p); left; reflexivity.
+      * apply ih; intros b q hin; apply (hfg b q); right; exact hin.
+  Qed.
+
+  (* Reindexing the sampled values commutes with Bind. *)
+  Lemma bind_map_left {A B C : Type} (d : dist A) (k : A -> B) 
+    (f : B -> dist C) :
+    Bind (List.map (fun '(a, p) => (k a, p)) d) f = Bind d (fun a => f (k a)).
+  Proof.
+    induction d as [|(a, p) d ih]; cbn; 
+    [reflexivity | rewrite ih; reflexivity].
+  Qed.
+
+  Lemma map_bind {A B C : Type} (d : dist A) (f : A -> dist B) (k : B -> C) :
+    List.map (fun '(b, p) => (k b, p)) (Bind d f) = 
+    Bind d (fun a => List.map (fun '(b, p) => (k b, p)) (f a)).
+  Proof.
+    induction d as [|(a, p) d ih]; cbn; [reflexivity |].
+    rewrite List.map_app, ih, !List.map_map; f_equal.
+    apply List.map_ext; intros (b, q); reflexivity.
+  Qed.
+
+  (* Coordinatewise bijections of the n-fold product distribution.
+
+     [vec_apply phis v] applies the i-th function of phis to the i-th 
+     coordinate of v. If every phi_i permutes the support of d, then 
+     vec_apply phis permutes the support of the n-fold product of d. *)
+  Definition vec_apply {A : Type} {n : nat} (phis : Vector.t (A -> A) n) 
+    (v : Vector.t A n) : Vector.t A n :=
+    Vector.map2 (fun phi a => phi a) phis v.
+
+  Lemma vec_apply_append {A : Type} :
+    forall (m k : nat) (phis : Vector.t (A -> A) m) (psis : Vector.t (A -> A) k)
+    (v : Vector.t A m) (w : Vector.t A k),
+    vec_apply (Vector.append phis psis) (Vector.append v w) = 
+    Vector.append (vec_apply phis v) (vec_apply psis w).
+  Proof.
+    induction m as [| m ih]; intros k phis psis v w.
+    + rewrite (vector_inv_0 phis), (vector_inv_0 v); reflexivity.
+    + destruct (vector_inv_S phis) as (phi & phis' & hp).
+      destruct (vector_inv_S v) as (a & v' & hv).
+      subst; unfold vec_apply in *; cbn; f_equal.
+      apply ih.
+  Qed.
+
+  Lemma nth_append_forall {A : Type} (P : A -> Prop) :
+    forall (m k : nat) (v : Vector.t A m) (w : Vector.t A k),
+    (forall i : Fin.t m, P (Vector.nth v i)) ->
+    (forall j : Fin.t k, P (Vector.nth w j)) ->
+    forall l : Fin.t (m + k), P (Vector.nth (Vector.append v w) l).
+  Proof.
+    induction m as [| m ih]; intros k v w hv hw l.
+    + rewrite (vector_inv_0 v); cbn; apply hw.
+    + destruct (vector_inv_S v) as (a & v' & ha); subst.
+      destruct (fin_inv_S _ l) as [hl | (l' & hl)]; subst; cbn.
+      * exact (hv Fin.F1).
+      * apply ih; [intros i; exact (hv (Fin.FS i)) | exact hw].
+  Qed.
+
+  Lemma repeat_dist_perm {A : Type} (d : dist A) :
+    forall (n : nat) (phis : Vector.t (A -> A) n),
+    (forall i : Fin.t n, 
+      Permutation (List.map (fun '(a, p) => (Vector.nth phis i a, p)) d) d) ->
+    Permutation 
+      (List.map (fun '(v, p) => (vec_apply phis v, p)) 
+        (repeat_dist_ntimes_vector d n))
+      (repeat_dist_ntimes_vector d n).
+  Proof.
+    induction n as [| n ih]; intros phis hphi.
+    + rewrite (vector_inv_0 phis); cbn.
+      apply Permutation_refl.
+    + destruct (vector_inv_S phis) as (phi & phis' & hp); subst phis.
+      cbn [repeat_dist_ntimes_vector].
+      rewrite map_bind.
+      set (D := repeat_dist_ntimes_vector d n).
+      eapply Permutation_trans with 
+        (l' := Bind d (fun u => Bind D (fun v => Ret (Vector.cons _ (phi u) _ v)))).
+      * apply bind_perm_right; intros u p _.
+        rewrite map_bind.
+        eapply Permutation_trans with 
+          (l' := Bind (List.map (fun '(v, p) => (vec_apply phis' v, p)) D) 
+            (fun v => Ret (Vector.cons _ (phi u) _ v))).
+        - rewrite bind_map_left.
+          apply bind_perm_right; intros v q _.
+          unfold vec_apply; cbn.
+          apply Permutation_refl.
+        - apply bind_perm_left, ih.
+          intros i; exact (hphi (Fin.FS i)).
+      * eapply Permutation_trans with 
+          (l' := Bind (List.map (fun '(a, p) => (phi a, p)) d) 
+            (fun u => Bind D (fun v => Ret (Vector.cons _ u _ v)))).
+        - rewrite bind_map_left. 
+          apply Permutation_refl.
+        - apply bind_perm_left.
+          exact (hphi Fin.F1).
+  Qed.
+
+  Lemma repeat_uniform_perm {A : Type} (lf : list A) (Hlfn : lf <> []) :
+    forall (n : nat) (phis : Vector.t (A -> A) n),
+    (forall i : Fin.t n, Permutation (List.map (Vector.nth phis i) lf) lf) ->
+    Permutation 
+      (List.map (fun '(v, p) => (vec_apply phis v, p)) 
+        (repeat_dist_ntimes_vector (uniform_with_replacement lf Hlfn) n))
+      (repeat_dist_ntimes_vector (uniform_with_replacement lf Hlfn) n).
+  Proof.
+    intros n phis hphi.
+    apply repeat_dist_perm; intros i.
+    apply uniform_perm; exact (hphi i).
+  Qed.
+
+
+  (* ------------------------------------------------------------------ *)
+  (* Bijections of the whole randomness vector.
+
+     When the sample list enumerates the type, the n-fold product of the
+     uniform distribution enumerates the vectors, without duplicates and
+     with one probability. Any bijection of the vectors, given with its
+     inverse, then permutes the product distribution. This is the tool
+     for compositions whose simulator does not move the randomness
+     coordinatewise, such as the OR composition, where one challenge is
+     derived from the others. *)
+
+  Lemma dist_const_prob_map {A : Type} (d : dist A) (q : prob) :
+    (forall a p, In (a, p) d -> p = q) ->
+    d = List.map (fun a => (a, q)) (List.map fst d).
+  Proof.
+    induction d as [|(a, p) d ih]; intros hq; cbn; [reflexivity |].
+    rewrite (hq a p (or_introl eq_refl)); f_equal.
+    apply ih; intros b r hin; apply (hq b r); right; exact hin.
+  Qed.
+
+  Lemma support_bind {A B : Type} (d : dist A) (f : A -> dist B) :
+    List.map fst (Bind d f) = 
+    List.flat_map (fun a => List.map fst (f a)) (List.map fst d).
+  Proof.
+    induction d as [|(a, p) d ih]; cbn; [reflexivity |].
+    rewrite List.map_app, ih, List.map_map; f_equal.
+    apply List.map_ext; intros (b, q); reflexivity.
+  Qed.
+
+  Lemma support_repeat_S {A : Type} (d : dist A) (n : nat) :
+    List.map fst (repeat_dist_ntimes_vector d (S n)) = 
+    List.flat_map (fun a => List.map (fun v => Vector.cons _ a _ v) 
+      (List.map fst (repeat_dist_ntimes_vector d n))) (List.map fst d).
+  Proof.
+    cbn [repeat_dist_ntimes_vector].
+    rewrite support_bind.
+    apply List.flat_map_ext; intros a.
+    rewrite support_bind.
+    generalize (List.map fst (repeat_dist_ntimes_vector d n)) as S.
+    intros S; induction S as [|v S ih]; [reflexivity | cbn; f_equal; exact ih].
+  Qed.
+
+  Lemma NoDup_flat_map_cons {A : Type} (n : nat) (l : list A) 
+    (S : list (Vector.t A n)) :
+    NoDup l -> NoDup S ->
+    NoDup (List.flat_map (fun a => List.map (fun v => Vector.cons _ a _ v) S) l).
+  Proof.
+    intros hl hS; induction hl as [| a l hnin hl ih]; cbn; [constructor |].
+    apply NoDup_app.
+    + apply Injective_map_NoDup; [| exact hS].
+      intros v w hvw; exact (proj2 (VectorSpec.cons_inj hvw)).
+    + exact ih.
+    + intros v hv hv'.
+      apply List.in_map_iff in hv; destruct hv as (w & hw & _).
+      apply List.in_flat_map in hv'; destruct hv' as (b & hb & hb').
+      apply List.in_map_iff in hb'; destruct hb' as (w' & hw' & _).
+      subst v.
+      apply hnin; rewrite <-(proj1 (VectorSpec.cons_inj hw')); exact hb.
+  Qed.
+
+  Lemma support_repeat_nodup {A : Type} (d : dist A) :
+    NoDup (List.map fst d) -> 
+    forall n, NoDup (List.map fst (repeat_dist_ntimes_vector d n)).
+  Proof.
+    intros hd n; induction n as [| n ih].
+    + cbn; constructor; [intros h; inversion h | constructor].
+    + rewrite support_repeat_S; apply NoDup_flat_map_cons; assumption.
+  Qed.
+
+  Lemma support_repeat_complete {A : Type} (d : dist A) :
+    (forall x, In x (List.map fst d)) -> 
+    forall n (v : Vector.t A n), 
+    In v (List.map fst (repeat_dist_ntimes_vector d n)).
+  Proof.
+    intros hd n; induction n as [| n ih]; intros v.
+    + rewrite (vector_inv_0 v); cbn; left; reflexivity.
+    + rewrite support_repeat_S.
+      destruct (vector_inv_S v) as (a & w & hv); subst.
+      apply List.in_flat_map; exists a; split; [apply hd |].
+      apply List.in_map; apply ih.
+  Qed.
+
+  Lemma repeat_uniform_bijection_perm {A : Type} (lf : list A) (Hlfn : lf <> []) 
+    (n : nat) (Phi Psi : Vector.t A n -> Vector.t A n) :
+    NoDup lf -> (forall x, In x lf) ->
+    (forall v, Psi (Phi v) = v) -> (forall v, Phi (Psi v) = v) ->
+    Permutation 
+      (List.map (fun '(v, p) => (Phi v, p)) 
+        (repeat_dist_ntimes_vector (uniform_with_replacement lf Hlfn) n))
+      (repeat_dist_ntimes_vector (uniform_with_replacement lf Hlfn) n).
+  Proof.
+    intros hnd hall hpsi hphi.
+    set (D := repeat_dist_ntimes_vector (uniform_with_replacement lf Hlfn) n).
+    set (q := mk_prob 1 (Pos.of_nat (Nat.pow (List.length lf) n))).
+    set (S := List.map fst D).
+    assert (hD : D = List.map (fun v => (v, q)) S).
+    { 
+      apply dist_const_prob_map; intros v p hin. 
+      apply (uniform_probability_multidraw_prob n lf v p Hlfn hin). 
+    }
+    assert (hlf : List.map fst (uniform_with_replacement lf Hlfn) = lf).
+    {
+      rewrite uniform_with_replacement_unfold, List.map_map.
+      erewrite List.map_ext; [apply List.map_id | intros; reflexivity].
+    }
+    assert (hS : NoDup S).
+    { apply support_repeat_nodup; rewrite hlf; exact hnd. }
+    assert (hC : forall v, In v S).
+    { apply support_repeat_complete; rewrite hlf; exact hall. }
+    rewrite hD, List.map_map.
+    eapply Permutation_trans with 
+      (l' := List.map (fun v => (v, q)) (List.map Phi S)).
+    + apply Permutation_refl'.
+      change (List.map (fun v => (Phi v, q)) S = 
+        List.map (fun v => (v, q)) (List.map Phi S)).
+      rewrite List.map_map.
+      apply List.map_ext_in; intros v _; reflexivity.
+    + apply Permutation_map. 
+      apply (enumerates_perm_map S Phi Psi hS hC hpsi hphi).
+  Qed.
 
 End Distr.
 
