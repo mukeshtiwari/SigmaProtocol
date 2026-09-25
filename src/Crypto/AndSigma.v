@@ -1,7 +1,7 @@
 From Stdlib Require Import Setoid
   setoid_ring.Field Lia Vector Utf8
   Psatz Bool Pnat BinNatDef 
-  BinPos. 
+  BinPos Permutation. 
 From Algebra Require Import 
   Hierarchy Group Monoid
   Field Integral_domain
@@ -799,6 +799,76 @@ Section DL.
             eapply generalised_and_special_honest_verifier_simulator_dist.
             exact Ha.
         Qed. 
+
+
+        (* ---------------------------------------------------------------- *)
+        (* Special honest-verifier zero-knowledge as equality of distributions.
+          The real transcript for randomness us is the simulated transcript 
+          for the coordinatewise shifted randomness u_i ↦ u_i + c * x_i. *)
+
+        Lemma construct_and_shift (c : F) :
+          forall (m : nat) (xs us : Vector.t F m) (hs : Vector.t G m),
+          (forall f : Fin.t m, g ^ (Vector.nth xs f) = Vector.nth hs f) ->
+          construct_and_conversations_schnorr xs g us c =
+          construct_and_conversations_simulator g hs
+            (vec_apply (Vector.map (fun x u => u + c * x) xs) us) c.
+        Proof.
+          induction m as [| m ih]; intros ys vs ks Rm.
+          + rewrite (vector_inv_0 ys), (vector_inv_0 vs), (vector_inv_0 ks); 
+            reflexivity.
+          + destruct (vector_inv_S ys) as (y & ys' & hy).
+            destruct (vector_inv_S vs) as (v & vs' & hv).
+            destruct (vector_inv_S ks) as (k & ks' & hk).
+            subst.
+            specialize (ih ys' vs' ks' (fun f => Rm (Fin.FS f))).
+            unfold construct_and_conversations_schnorr, 
+              construct_and_conversations_simulator,
+              construct_and_conversations_schnorr_commitment in *.
+            cbn in *.
+            inversion ih as [[ha hr]].
+            f_equal.
+            * f_equal; 
+              [apply schnorr_commitment_shift; symmetry; exact (Rm Fin.F1) | exact ha].
+            * f_equal; exact hr.
+        Qed.
+
+        Theorem generalised_and_special_honest_verifier_zkp_perm :
+          forall (lf : list F) (Hlfn : lf <> List.nil) (c : F),
+          (forall x : F, Permutation (List.map (fun u => u + c * x) lf) lf) ->
+          Permutation
+            (@generalised_and_schnorr_distribution n lf Hlfn xs g c)
+            (@generalised_and_simulator_distribution n lf Hlfn g hs c).
+        Proof.
+          intros * hp.
+          change (Permutation
+            (Bind (repeat_dist_ntimes_vector (uniform_with_replacement lf Hlfn) n)
+              (fun us => Ret (construct_and_conversations_schnorr xs g us c)))
+            (Bind (repeat_dist_ntimes_vector (uniform_with_replacement lf Hlfn) n)
+              (fun us => Ret (construct_and_conversations_simulator g hs us c)))).
+          eapply bind_ret_perm with 
+            (phi := vec_apply (Vector.map (fun x u => u + c * x) xs)).
+          + apply repeat_uniform_perm; intros i.
+            rewrite (nth_map _ _ i i eq_refl).
+            apply hp.
+          + intros us p _. 
+            apply construct_and_shift; exact R.
+        Qed.
+
+        (* Equality of distributions when lf enumerates the field. *)
+        Theorem generalised_and_special_honest_verifier_zkp_enum :
+          forall (lf : list F) (Hlfn : lf <> List.nil) (c : F),
+          List.NoDup lf -> (forall y : F, List.In y lf) ->
+          Permutation
+            (@generalised_and_schnorr_distribution n lf Hlfn xs g c)
+            (@generalised_and_simulator_distribution n lf Hlfn g hs c).
+        Proof.
+          intros * hnd hall.
+          eapply generalised_and_special_honest_verifier_zkp_perm.
+          intro x.
+          eapply enumerates_perm_map with (psi := fun u => u - c * x);
+          [exact hnd | exact hall | intros u; field | intros u; field].
+        Qed.
+
 
     End Proofs. 
   End And. 
