@@ -2,7 +2,8 @@
    Run with bench/assumptions.sh after `dune build`. Every line should
    print "Closed under the global context"; the only expected exception
    is compute_final_count_ins in Examples/TallyIns.v, which uses
-   proof_irrelevance. *)
+   proof_irrelevance, and the Helios instantiations, which inherit the
+   primitive-integer axioms of the Coqprime certificates. *)
 
 From Stdlib Require Import Utf8.
 From Probability Require Import Prob Distr.
@@ -141,7 +142,10 @@ Print Assumptions Frontend.Approval.overall_proof_valid.
 Print Assumptions Frontend.Approval.ballot_with_overall_proof_valid.
 Print Assumptions Frontend.Approval.generate_enc_proof_commitment_announcement.
 Print Assumptions Frontend.Approval.ballot_commitment_announcement.
+Print Assumptions Frontend.Approval.vote_proof_sound.
+Print Assumptions Frontend.Approval.overall_proof_sound.
 Print Assumptions Backend.Tally.compute_final_count.
+Print Assumptions Backend.Tally.finished_true_correct.
 Print Assumptions Examples.ApprovalIns.nizk_encrypt_ballot_with_overall_proof_ins.
 Print Assumptions Examples.TallyIns.compute_final_count_ins.
 

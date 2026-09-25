@@ -117,8 +117,10 @@ zero-knowledge theorem of the same shape as
 | Whole ballot: ciphertexts and proofs, and their verification | `Frontend/Approval.v: encrypt_ballot_and_generate_enc_proof`, `verify_encryption_ballot_proof`, `ballot_proof_valid` |
 | Overall proof that the ballot has between 0 and `n` approvals (a disjunctive encryption proof on the homomorphic product of the ballot) | `Frontend/Approval.v: generate_overall_proof`, `verify_overall_proof`, `verify_ballot` |
 | The overall proof of a well-formed ballot is accepted, and so is the full ballot | `Frontend/Approval.v: overall_proof_valid`, `ballot_with_overall_proof_valid` |
+| Special soundness at the ballot level: two accepting vote proofs (resp. overall proofs) with the same announcement and different challenges show that the ciphertext encrypts 0 or 1 (resp. that the ballot product encrypts `g^m` with `m ≤ n`) | `Frontend/Approval.v: vote_proof_sound`, `overall_proof_sound` (instances of `Crypto/EncProof.v: generalised_accepting_elgamal_soundness_main`) |
 | The announcements hashed by the non-interactive client are exactly the announcements of the proofs it sends | `Frontend/Approval.v: generate_enc_proof_commitment`, `generate_ballot_commitment`, `generate_enc_proof_commitment_announcement`, `ballot_commitment_announcement` |
-| Tallying as an inductive state machine (`ax`, `cvalid`, `cinvalid`, `cfinish`) | `Backend/Tally.v: state`, `count` |
+| Tallying as an inductive state machine (`ax`, `cvalid`, `cinvalid`, `cfinish`); the final state records whether `g^pt_i = ds_i` was checked for every candidate | `Backend/Tally.v: state`, `count` |
+| A certificate whose flag is true gives, for every candidate, `g^pt_i = ds_i` and accepted decryption proofs | `Backend/Tally.v: finished_true_correct` |
 | Executable tally and the invariant `Permutation bs (vbs ++ inbs)` | `Backend/Tally.v: compute_final_tally`, `compute_final_count` |
 | Instantiation at concrete parameters and the non-interactive client | `Examples/TallyIns.v: compute_final_count_ins`; `Examples/ApprovalIns.v: nizk_encrypt_ballot_with_overall_proof_ins` |
 
@@ -162,12 +164,14 @@ rejects it.
 on every theorem named above (`bench/assumptions.v`). All security
 theorems of the library, the distribution toolkit, the modular arithmetic
 instances, the extractor complexity result and the approval-voting
-theorems in `Frontend/Approval.v` report `Closed under the global
-context`. The remaining entries report the following, expected,
+theorems in `Frontend/Approval.v` and `Backend/Tally.v` report `Closed
+under the global context`. (The discrete-logarithm search that the tally
+driver supplies is not trusted: `cfinish` checks `g ^ pt_i = ds_i` for
+every candidate and records the outcome in the final state, exactly as
+`Backend/HeliosTally.v` does, so no axiom about the search is needed.) The remaining entries report the following, expected,
 assumptions:
 
 | Theorem | Assumptions | Why |
 |---|---|---|
-| `Backend/Tally.v: compute_final_count`, `Examples/TallyIns.v: compute_final_count_ins` | `hdiscrete` | An `Axiom` in `Backend/Tally.v` stating that the discrete-logarithm search passed to the tally is correct (`discrete_logarithm_search hx hy = y → hx ^ y = hy`). The Helios verifier does not need it: `Backend/HeliosTally.v` checks `g ^ pt = ds` for the published tally instead. |
 | `Examples/TallyIns.v: compute_final_count_ins` | `proof_irrelevance` | Identifies two proofs of primality when instantiating the tally (`Stdlib.Logic.ProofIrrelevance`). |
 | `Examples/HeliosTallyIns.v: prime_q`, `prime_p`, `compute_final_count_ins`; `Examples/HeliosFrontendIns.v: helios_nizk_encrypt_ballot_and_generate_enc_proof`, `helios_verify_encryption_ballot_proof` | `Uint63Axioms.*`, `PrimInt63.*` | The Coqprime primality certificates for the 256-bit `q` and 2048-bit `p` compute with Rocq's primitive 63-bit integers, whose specification is axiomatised in the standard library (`Stdlib.Numbers.Cyclic.Int63.Uint63Axioms`). Everything instantiated at the Helios parameters inherits them. |
