@@ -11,6 +11,7 @@ rule token = parse
   | ['\n' '\r']+ {NEWLINE}
   | "ciphertext" { CIPHERTEXT }
   | "proof"      { PROOF }
+  | "overall"    { OVERALL }
   | "annoucement" { ANNOUNCEMENT }
   | "announcement" { ANNOUNCEMENT }
   | "challenge"  { CHALLENGE }

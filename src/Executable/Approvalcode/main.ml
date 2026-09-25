@@ -107,69 +107,49 @@ let random_oracle (n : int) (m : Z.t)
   construct_challenge_vector (n : int) out_msg 
   
   
-(* 
-let generate_valid_ballot_and_proof (n : int) : ((Z.t * Z.t) * (Z.t, Z.t * Z.t) sigma_proto) Approvallib.VectorDef.t = 
-  let ms = generate_valid_ballot n in 
+(* A single challenge for the overall proof: SHAKE-256 of the public 
+   parameters and the proof's announcement, reduced modulo q. *)
+let random_oracle_single (m : Z.t) 
+  (v : (Z.t, Z.t) Approvallib.Datatypes.sum Approvallib.VectorDef.t) : Z.t =
+  big_int_of_bytes_mod_q (shake256 ~msg:(vector_to_bytes m v) ~size:4) q
+
+type ballot = 
+  ((Z.t * Z.t) * (Z.t, Z.t * Z.t) sigma_proto) Approvallib.VectorDef.t * 
+  (Z.t, Z.t * Z.t) sigma_proto
+
+(* A ballot of n candidates: n ciphertexts with their 0/1 proofs and the 
+   overall proof that the number of approvals is between 0 and n. The 
+   overall proof draws (n + 1) + n random field elements. *)
+let generate_ballot_and_proofs (ms : Z.t Approvallib.VectorDef.t) (n : int) : ballot =
   let rs = rnd_list Approvallib.ApprovalIns.q n in 
   let uscs = rnd_list_list Approvallib.ApprovalIns.q 3 n in 
-  let cms = generate_ballot_commitment_ins (Big_int_Z.big_int_of_int n) rs ms uscs in
-  let com = Approvallib.Vector.map (fun x -> 
-      (vector_to_string (fun (u, v) -> "(" ^ Big_int_Z.string_of_big_int u ^ ", " ^ 
-      Big_int_Z.string_of_big_int v ^ ")") "," x)) 
-      (Big_int_Z.big_int_of_int n) cms in   
-  let cha = Approvallib.Vector.map (fun x -> 
-    big_int_of_bytes_mod_q (shake256 ~msg:(String.to_bytes  ("p = " ^ Big_int_Z.string_of_big_int Approvallib.ApprovalIns.p ^ ", q = " ^ 
-    Big_int_Z.string_of_big_int Approvallib.ApprovalIns.q  ^ ", g = " ^ 
-    Big_int_Z.string_of_big_int Approvallib.ApprovalIns.g ^ ", h  = " ^ 
-    Big_int_Z.string_of_big_int Approvallib.ApprovalIns.h ^ ", com = " ^ x)) ~size:4) Approvallib.ApprovalIns.q) 
-   (Big_int_Z.big_int_of_int n) com in 
-  encrypt_ballot_and_generate_enc_proof_ins (Big_int_Z.big_int_of_int n) rs ms uscs cha
-*)
+  let uscs' = rnd_list Approvallib.ApprovalIns.q ((n + 1) + n) in
+  nizk_encrypt_ballot_with_overall_proof_ins (Big_int_Z.big_int_of_int (n - 1))
+    (random_oracle n) random_oracle_single rs ms uscs uscs'
 
+let generate_valid_ballot_and_proof (n : int) : ballot = 
+  generate_ballot_and_proofs (generate_valid_ballot n) n
 
-let generate_valid_ballot_and_proof (n : int) : ((Z.t * Z.t) * (Z.t, Z.t * Z.t) sigma_proto) Approvallib.VectorDef.t = 
-  let ms = generate_valid_ballot n in 
-  let rs = rnd_list Approvallib.ApprovalIns.q n in 
-  let uscs = rnd_list_list Approvallib.ApprovalIns.q 3 n in 
-  nizk_encrypt_ballot_and_generate_enc_proof_ins (Big_int_Z.big_int_of_int n) 
-  (random_oracle n) rs ms uscs 
-
-  
 (* This would not pass the check *)
-(* 
-let generate_invalid_ballot_and_proof (n : int) : ((Z.t * Z.t) * (Z.t, Z.t * Z.t) sigma_proto) Approvallib.VectorDef.t = 
-  let ms = generate_invalid_ballot n in 
-  let rs = rnd_list Approvallib.ApprovalIns.q n in 
-  let uscs = rnd_list_list Approvallib.ApprovalIns.q 3 n in 
-  let cms = generate_ballot_commitment_ins (Big_int_Z.big_int_of_int n) rs ms uscs in
-  let com = Approvallib.Vector.map (fun x -> 
-      (vector_to_string (fun (u, v) -> "(" ^ Big_int_Z.string_of_big_int u ^ ", " ^ 
-      Big_int_Z.string_of_big_int v ^ ")") "," x)) 
-      (Big_int_Z.big_int_of_int 10) cms in   
-   let cha = Approvallib.Vector.map (fun x -> 
-    big_int_of_bytes_mod_q (shake256 ~msg:(String.to_bytes  
-    ("p = " ^ Big_int_Z.string_of_big_int Approvallib.ApprovalIns.p ^ ", q = " ^ 
-    Big_int_Z.string_of_big_int Approvallib.ApprovalIns.q  ^ ", g = " ^ 
-    Big_int_Z.string_of_big_int Approvallib.ApprovalIns.g ^ ", h  = " ^ 
-    Big_int_Z.string_of_big_int Approvallib.ApprovalIns.h ^ ", com = " ^ x)) ~size:4) Approvallib.ApprovalIns.q) 
-   (Big_int_Z.big_int_of_int n) com in 
-  encrypt_ballot_and_generate_enc_proof_ins (Big_int_Z.big_int_of_int n) rs ms uscs cha
-*)
+let generate_invalid_ballot_and_proof (n : int) : ballot = 
+  generate_ballot_and_proofs (generate_invalid_ballot n) n
 
-let generate_invalid_ballot_and_proof (n : int) : ((Z.t * Z.t) * (Z.t, Z.t * Z.t) sigma_proto) Approvallib.VectorDef.t = 
-  let ms = generate_invalid_ballot n in 
-  let rs = rnd_list Approvallib.ApprovalIns.q n in 
-  let uscs = rnd_list_list Approvallib.ApprovalIns.q 3 n in 
-  nizk_encrypt_ballot_and_generate_enc_proof_ins (Big_int_Z.big_int_of_int n) 
-  (random_oracle n) rs ms uscs 
+let overall_string (proof : (Z.t, Z.t * Z.t) Approvallib.Sigma.sigma_proto) : string = 
+  match proof with
+  | {announcement = a; challenge = c; response = r} -> 
+    "overall = {announcement = " ^ vector_string_pair "," a ^ "; challenge = " ^ 
+    vector_string "," c ^ "; response = " ^ vector_string "," r ^ "}"
+
+let ballot_string ((b, pf) : ballot) : string = 
+  vector_proof_and_enc_string b ^ " " ^ overall_string pf
 
 let generate_random_ballots (m : int) (n : int) : unit =
   for i = 1 to m do
     let valid_proof = generate_valid_ballot_and_proof n in
     let invalid_proof = generate_invalid_ballot_and_proof n in
-    print_string (vector_proof_and_enc_string valid_proof);
+    print_string (ballot_string valid_proof);
     print_string "\n";
-    print_string (vector_proof_and_enc_string invalid_proof);
+    print_string (ballot_string invalid_proof);
     (* Only print newline if not the last iteration *)
     if i <> m then print_newline ()
   done

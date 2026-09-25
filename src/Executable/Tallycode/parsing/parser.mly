@@ -4,7 +4,7 @@ open Ast
 
 
 %token <Big_int_Z.big_int> INT
-%token CIPHERTEXT PROOF ANNOUNCEMENT CHALLENGE RESPONSE
+%token CIPHERTEXT PROOF OVERALL ANNOUNCEMENT CHALLENGE RESPONSE
 %token EQ COMMA SEMI LPAR RPAR LBRACE RBRACE NEWLINE EOF
 
 
@@ -19,7 +19,7 @@ ballots:
   | bs = separated_nonempty_list(NEWLINE, ballot) {bs : ballot list}
   
 ballot:
-  | cpf = items { vector_of_list cpf :  ballot}
+  | cpf = items OVERALL EQ LBRACE fs = fields RBRACE { (vector_of_list cpf, fs) : ballot}
 
 
 items:
