@@ -157,23 +157,24 @@ Section Ins.
   Defined.
 
   
+  (* The announcements of the ballot, from which a non-interactive 
+    ballot derives its challenges. Approval.ballot_commitment_announcement 
+    proves that they are exactly the announcements of the proofs 
+    that encrypt_ballot_and_generate_enc_proof_ins produces. *)
   Definition generate_ballot_commitment_ins 
     {n : nat} (rs ms : Vector.t (@Zp q) n)
     (uscs : Vector.t (Vector.t (@Zp q) 3) n) :
     Vector.t (Vector.t (@Schnorr_group p q * @Schnorr_group p q) 2) n.
   Proof.
-    set (cp := encrypt_ballot_ins rs ms).
-    refine(Vector.map (fun '(uscs', cp') => 
-      @construct_encryption_proof_elgamal_commitment
-      (@Zp q) zp_opp (@Schnorr_group p q) 
+    refine(@generate_ballot_commitment (@Zp q) Zpfield.zero Zpfield.one 
+      zp_opp zp_dec (@Schnorr_group p q) 
       (@inv_schnorr_group 2 p q safe_prime prime_p prime_q)
       (@mul_schnorr_group p q prime_p prime_q)
-      pow 1 0 uscs' [pow g Zpfield.zero; pow g Zpfield.one] g h cp')
-      (zip_with (fun u v => (u, v)) uscs cp)).
+      pow n g h rs ms uscs).
     all: (try eapply prime_q).
     all: (try eapply prime_p).
     all: (try eapply safe_prime).
-  Qed.
+  Defined.
 
  
   Definition generate_ballot_enc_proof_ins {n : nat} 
@@ -193,7 +194,7 @@ Section Ins.
     all: (try eapply prime_q).
     all: (try eapply prime_p).
     all: (try eapply safe_prime).
-  Qed. 
+  Defined. 
 
 
   Definition encrypt_ballot_and_generate_enc_proof_ins {n : nat} 
@@ -265,6 +266,87 @@ Section Ins.
     all: (try eapply prime_q).
     exact safe_prime.
     eapply prime_p.
+  Defined.
+
+
+  (* ---------------------------------------------------------------- *)
+  (* Overall proof: the ballot carries between 0 and n + 1 approvals. *)
+
+  Definition generate_overall_proof_ins {n : nat} 
+    (rs ms : Vector.t (@Zp q) (S n)) 
+    (uscs : Vector.t (@Zp q) ((2 + n) + (1 + n))) (c : @Zp q) :
+    @Sigma.sigma_proto (@Zp q) (@Schnorr_group p q * @Schnorr_group p q) 
+      (2 + n) (1 + (2 + n)) (2 + n).
+  Proof.
+    refine(@generate_overall_proof (@Zp q) Zpfield.zero Zpfield.one 
+      zp_add zp_mul zp_sub zp_opp zp_dec (@Schnorr_group p q) 
+      (@Schnorr.one p q prime_p prime_q)
+      (@inv_schnorr_group 2 p q safe_prime prime_p prime_q)
+      (@mul_schnorr_group p q prime_p prime_q) pow n g h rs ms uscs c).
+    all: (try eapply prime_q).
+    all: (try eapply prime_p).
+    all: (try eapply safe_prime).
+  Defined.
+
+  Definition verify_overall_proof_ins {n : nat} 
+    (cps : Vector.t (@Schnorr_group p q * @Schnorr_group p q) n)
+    (pf : @Sigma.sigma_proto (@Zp q) (@Schnorr_group p q * @Schnorr_group p q) 
+      (S n) (S (S n)) (S n)) : bool.
+  Proof.
+    refine(@verify_overall_proof (@Zp q) Zpfield.zero zp_add zp_dec 
+      (@Schnorr_group p q) (@Schnorr.one p q prime_p prime_q)
+      (@inv_schnorr_group 2 p q safe_prime prime_p prime_q)
+      (@mul_schnorr_group p q prime_p prime_q) pow Schnorr.dec_zpstar 
+      n g h cps pf).
+    all: (try eapply prime_q).
+    all: (try eapply prime_p).
+    all: (try eapply safe_prime).
+  Defined.
+
+  Definition verify_ballot_ins {n : nat}
+    (b : Vector.t (@Schnorr_group p q * @Schnorr_group p q * 
+        @Sigma.sigma_proto (@Zp q) (@Schnorr_group p q * @Schnorr_group p q) 2 3 2) n * 
+        @Sigma.sigma_proto (@Zp q) (@Schnorr_group p q * @Schnorr_group p q) 
+        (S n) (S (S n)) (S n)) : bool.
+  Proof.
+    refine(@verify_ballot (@Zp q) Zpfield.zero Zpfield.one zp_add zp_dec 
+      (@Schnorr_group p q) (@Schnorr.one p q prime_p prime_q)
+      (@inv_schnorr_group 2 p q safe_prime prime_p prime_q)
+      (@mul_schnorr_group p q prime_p prime_q) pow Schnorr.dec_zpstar 
+      n g h b).
+    all: (try eapply prime_q).
+    all: (try eapply prime_p).
+    all: (try eapply safe_prime).
+  Defined.
+
+  (* the announcement of a proof, flattened for hashing *)
+  Definition announcement_to_list {k : nat} 
+    (a : Vector.t (@Schnorr_group p q * @Schnorr_group p q) k) : 
+    list (Z + @Schnorr_group p q) :=
+    Vector.fold_right (fun '(u, v) acc => (inr u :: inr v :: acc)%list) a List.nil.
+
+  (* Non-interactive ballot with overall proof. The challenges of the 
+    individual proofs come from fn, as before; the challenge of the overall 
+    proof comes from fo applied to the public parameters and the proof's 
+    announcement. The announcement of a disjunctive proof does not depend on 
+    the challenge, so it is computed with the challenge zero first. *)
+  Definition nizk_encrypt_ballot_with_overall_proof_ins {n : nat} 
+    (fn : ∀ {m : nat}, Vector.t (Z + (@Schnorr_group p q)) m -> Vector.t (@Zp q) (S n))
+    (fo : ∀ {m : nat}, Vector.t (Z + (@Schnorr_group p q)) m -> @Zp q)
+    (rs ms : Vector.t (@Zp q) (S n)) 
+    (uscs : Vector.t (Vector.t (@Zp q) 3) (S n)) 
+    (uscs' : Vector.t (@Zp q) ((2 + n) + (1 + n))) : 
+    Vector.t ((@Schnorr_group p q) * (@Schnorr_group p q) * 
+      @Sigma.sigma_proto (@Zp q) (@Schnorr_group p q * @Schnorr_group p q) 2 3 2) (S n) *
+    @Sigma.sigma_proto (@Zp q) (@Schnorr_group p q * @Schnorr_group p q) 
+      (2 + n) (1 + (2 + n)) (2 + n).
+  Proof.
+    set (b := nizk_encrypt_ballot_and_generate_enc_proof_ins (@fn) rs ms uscs).
+    set (pf0 := generate_overall_proof_ins rs ms uscs' (@Zpfield.zero q prime_q)).
+    set (c := fo _ (Vector.of_list 
+      ((inl p :: inl q :: inr g :: inr h :: 
+        announcement_to_list (Sigma.announcement pf0))%list))).
+    exact (b, generate_overall_proof_ins rs ms uscs' c).
   Defined.
 
 End Ins.

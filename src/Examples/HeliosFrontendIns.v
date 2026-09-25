@@ -44,22 +44,21 @@ Section HeliosFrontend.
     all: (try eapply safe_prime).
   Defined.
 
+  (* The announcements of the ballot, from which the non-interactive 
+     ballot derives its challenges. Approval.ballot_commitment_announcement 
+     proves that they are exactly the announcements of the proofs that 
+     helios_encrypt_ballot_and_generate_enc_proof produces. *)
   Definition helios_generate_ballot_commitment {n : nat}
     (h : @Schnorr_group p q)
     (rs ms : Vector.t (@Zp q) n)
     (uscs : Vector.t (Vector.t (@Zp q) 3) n) :
     Vector.t (Vector.t (@Schnorr_group p q * @Schnorr_group p q) 2) n.
   Proof.
-    set (cp := helios_encrypt_ballot h rs ms).
-    refine(Vector.map (fun '(uscs', cp') =>
-      @construct_encryption_proof_elgamal_commitment
-      (@Zp q) zp_opp (@Schnorr_group p q)
+    refine(@generate_ballot_commitment (@Zp q) Zpfield.zero Zpfield.one 
+      zp_opp zp_dec (@Schnorr_group p q)
       (@inv_schnorr_group k p q safe_prime prime_p prime_q)
       (@mul_schnorr_group p q prime_p prime_q)
-      (@pow k p q safe_prime prime_p prime_q) 1 0 uscs'
-      [(@pow k p q safe_prime prime_p prime_q) g Zpfield.zero;
-       (@pow k p q safe_prime prime_p prime_q) g Zpfield.one] g h cp')
-      (zip_with (fun u v => (u, v)) uscs cp)).
+      (@pow k p q safe_prime prime_p prime_q) n g h rs ms uscs).
     all: (try eapply prime_q).
     all: (try eapply prime_p).
     all: (try eapply safe_prime).

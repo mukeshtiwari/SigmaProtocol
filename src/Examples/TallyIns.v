@@ -68,11 +68,9 @@ Section Ins.
     (discrete_logarithm_search : @Schnorr_group p q -> @Schnorr_group p q ->
     (@Zp q))
     (us cs : Vector.t (@Zp q) n)
-    (bs :  list (Vector.t (@Schnorr_group p q * @Schnorr_group p q * 
-      @Sigma.sigma_proto (@Zp q) (@Schnorr_group p q * @Schnorr_group p q) 2 3 2) n)) : 
+    (bs :  list (@ballot (@Zp q) (@Schnorr_group p q) n)) : 
     existsT (vbs inbs : 
-      list (Vector.t (@Schnorr_group p q * @Schnorr_group p q * 
-      @Sigma.sigma_proto (@Zp q) (@Schnorr_group p q * @Schnorr_group p q) 2 3 2) n))
+      list (@ballot (@Zp q) (@Schnorr_group p q) n))
       (pt : Vector.t (@Zp q) n), 
       @count (@Zp q) (@Zpfield.zero q prime_q) 
       (@Zpfield.one q prime_q) zp_add zp_dec
