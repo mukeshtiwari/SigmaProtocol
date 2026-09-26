@@ -513,7 +513,7 @@ Section Okamoto.
 
 
       (* special soundness *)
-      Theorem generalised_okamoto_real_special_soundenss : 
+      Theorem generalised_okamoto_real_special_soundness : 
         ∀ (n : nat) (gs : Vector.t G (2 + n)) (h : G)
         (a : G) (c₁ c₂ : F) (rs₁ rs₂ : Vector.t F (2 + n)),
         c₁ <> c₂ -> 
