@@ -473,7 +473,7 @@ Section DL.
           
 
 
-      Theorem generalised_neq_accepting_conversations_soundenss :
+      Theorem generalised_neq_accepting_conversations_soundness :
         ∀ (n : nat) (a : Vector.t G (2 + n + (2 + n) * (1 + n) / 2)) 
         (c₁ c₂ : F) (rs₁ rs₂ : Vector.t F (2 + n + (2 + n) * (1 + n))) 
         (gs hs : Vector.t G (2 + n)), [c₁] <> [c₂] ->
@@ -521,7 +521,7 @@ Section DL.
           assert (hw : c₁ ≠ c₂).
           intro hw. eapply hn. 
           subst. reflexivity.
-          destruct (@generalised_okamoto_real_special_soundenss F zero 
+          destruct (@generalised_okamoto_real_special_soundness F zero 
           one add mul sub div opp inv G gid ginv gop gpow Gdec Hvec _ 
           [gop g₁ g₂; gop h₁ h₂]  g₂ ar[@kk] c₁ c₂ 
           (pair_zip (rew <- [λ n : nat, t F n] nat_div_2 n in rr₁))[@kk]
