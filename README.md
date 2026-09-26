@@ -136,6 +136,50 @@ generate OCaml code from it [_CoqProject file](/_CoqProject). It takes a while (
    proof = { announcement = 3298, 108, 1153, 1286; challenge = 1770; response = 221, 2850, 2090, 2194, 2864, 1479 }
    Proof verified successfully.
    ```
+16. Run `dune exec _build/default/src/Executable/Ed25519code/main.exe -- 7 30` to run the library on Ed25519: the field is `Z/lZ` and the group is the order-`l` subgroup of Curve25519, instantiated in [Ed25519.v](src/Curve/Ed25519.v) on top of the vendored specification layer of [fiat-crypto](https://github.com/mit-plv/fiat-crypto) ([src/Fiat](src/Fiat), MIT licence). [Ed25519Ins.v](src/Examples/Ed25519Ins.v) instantiates Schnorr and Chaum-Pedersen proofs and approval ballots with individual and overall proofs; the driver computes the challenges, verifies, rejects tampered proofs and a ballot encrypting 5, and benchmarks a ballot of the given number of candidates over the given number of iterations. You will see an output like this:
+    ```OCaml
+    schnorr verify: true
+    schnorr verify (tampered): false
+    chaum-pedersen verify: true
+    chaum-pedersen verify (tampered): false
+    ballot of 7 candidates: individual proofs verify: true
+    overall proof verify: true
+    full ballot verify: true
+    full ballot verify (overall proof tampered): false
+    ballot encrypting 5 verify: false
+    benchmark n = 7, iterations = 30, all verified = true
+    ballot encryption + proofs (individual + overall): median 129.70 ms
+    ballot verification (individual + overall):        median 58.04 ms
+    ```
+17. Run `dune exec _build/default/src/Executable/Beleniosverifier/main.exe -- src/Executable/Beleniosverifier/data/ve3KB6dyuh66fD.bel` to verify a [Belenios](https://www.belenios.org/) election (Belenios 3.x public-data archive, group Ed25519, homomorphic questions with or without blank votes, weighted credentials, "Single" trustees). The certified verifier is [BeleniosTally.v](src/Backend/BeleniosTally.v), instantiated at Ed25519 in [BeleniosIns.v](src/Examples/BeleniosIns.v); every proof of Belenios is checked as a Schnorr proof or an Or-composition of Schnorr proofs in the product group `G × G` (theorems `fs_verify_schnorr_accepting` and `fs_verify_or_accepting`). The driver checks the archive's hash chain, decodes and validates every point, computes Belenios's SHA-256 challenges and prints the certificate. You will see an output like this:
+    ```OCaml
+    valid ballot   credential=ee446aa0157c9e29c5889597b51330bab6420ee4590489b82e55b47af0dc7c25
+    ...
+    encrypted tally matches the published one: true
+    trustees' proofs of knowledge and decryption proofs: true
+    published result decrypts the tally: true
+    ballots: 8, tallied (last per credential): 5, valid: 8, invalid: 0
+    election ve3KB6dyuh66fD: verified = true (0.43 s)
+    ```
+    [bench/belenios_tamper.py](bench/belenios_tamper.py) produces archives with a validly re-signed ballot whose individual, overall or blank proof is wrong, or with a wrong decryption factor, result or credential weight; run the verifier on them with `BELENIOS_SKIP_HASH_CHECK=1` (the archive's own content hashes no longer match) to see each one rejected. The sample archives in [src/Executable/Beleniosverifier/data](src/Executable/Beleniosverifier/data) were generated with Belenios 3.2.0's `tests/tool/demo.sh`, `demo-n-voters.sh` (300 voters, `eyo1Ps3KrSKYJy.bel`) and `demo-complex.sh` (`JDMgPNJoVM6ZuT.bel`); any election archive from a Belenios 3.x server with these features can be verified the same way.
+18. Run `dune exec _build/default/src/Executable/Egverifier/main.exe -- src/Executable/Egverifier/data/allAvailableJson` to verify an [ElectionGuard](https://www.electionguard.vote/) 2.0 election record (the `allAvailableJson` test record of the reference implementation [electionguard-kotlin-multiplatform](https://github.com/JohnLCaron/electionguard-kotlin-multiplatform): three guardians, 20 contests of 5 options, 11 cast ballots). The certified verifier is [ElectionGuardTally.v](src/Backend/ElectionGuardTally.v), instantiated at the parameters of the specification (4096-bit `p`, `q = 2^256 − 189`, `g = 2^r`) in [ElectionGuardIns.v](src/Examples/ElectionGuardIns.v); the guardians' coefficient proofs, the range proofs of the options, the selection-limit proofs of the contests and the decryption proofs are checked as Schnorr proofs or Or-compositions of Schnorr proofs in `G × G` with the Fiat-Shamir layer of the Belenios verifier (theorems `verify_guardian_schnorr_accepting`, `verify_range_or_accepting`, `verify_decryption_schnorr_accepting`), and the encrypted tally of the cast ballots is recomputed. The driver checks the parameters and the base hashes, the contest hashes and confirmation codes, validates every element and scalar, computes the HMAC-SHA-256 challenges and prints the certificate. You will see an output like this:
+    ```
+    1.B-E constants are the parameters of the specification      true
+    1.A specification version v2.0.0                             true
+    1.F parameter base hash H_P = H(ver; 0x00, p, q, g)          true
+    1.G manifest hash H_M = H(H_P; 0x01, manifest)               true
+    1.H election base hash H_B = H(H_P; 0x02, H_M, n, k)         true
+    4.A extended base hash H_E = H(H_B; 0x12, K)                 true
+    ...
+    valid ballot   id-1 (cast)
+    ...
+    2,3 guardians' coefficient proofs and joint public key       true
+    8 encrypted tally of the cast ballots is the published one   true
+    9,10 decryption proofs and decrypted values of the tally     true
+    ballots: 11, valid: 11, invalid: 0, cast: 11
+    election 6569AF316FF87BA8: verified = true (certified verifier: 61.25 s)
+    ```
+    [bench/electionguard_tamper.py](bench/electionguard_tamper.py) runs the verifier on copies of the record with a wrong range proof, selection-limit proof, coefficient proof, encrypted tally, decryption proof or decrypted value, with two options swapped, with a cast ballot marked as challenged, or with a duplicated ballot; every copy is rejected. Records with challenged ballots (`challenged_ballots/dballot-*.json`, as in the `chainedJson` test record) have their decryptions checked as well.
 ## Theorems and axioms
 
 [THEOREMS.md](THEOREMS.md) lists, section by section of the paper, the Rocq theorem behind every claim, including the permutation-form zero-knowledge theorems (`*_special_honest_verifier_zkp_perm`), the soundness error bound (`soundness_error_bound` in [Sigma.v](src/Crypto/Sigma.v)) and the approval-voting overall proof ([Approval.v](src/Frontend/Approval.v)). Run `bash bench/assumptions.sh` after `dune build` to print the assumptions of every listed theorem.
