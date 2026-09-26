@@ -1,0 +1,6 @@
+(include_subdirs qualified)
+(rocq.theory
+ (name Curve)
+ (synopsis "Ed25519 instantiation of the vector-space class, on top of the vendored fiat-crypto specification")
+ (modules (:standard))
+ (theories Stdlib Algebra Fiat Coqprime))

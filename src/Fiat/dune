@@ -1,0 +1,14 @@
+; Specification layer of fiat-crypto (https://github.com/mit-plv/fiat-crypto,
+; commit f7f2d538, MIT/Apache-2.0/BSD-1), vendored under the logical root
+; Fiat because fiat-crypto's own root Crypto collides with this project's
+; Crypto theory. Only the dependency closure of Spec/Curve25519.v,
+; Curves/Edwards/AffineProofs.v, Curves/Edwards/XYZT/Basic.v,
+; Algebra/ScalarMult.v and Arithmetic/PrimeFieldTheorems.v is included;
+; Require lines were rewritten (Crypto. -> Fiat., Coq. -> Stdlib.), nothing else.
+(include_subdirs qualified)
+(rocq.theory
+ (name Fiat)
+ (synopsis "Vendored fiat-crypto specification of Curve25519 / Ed25519")
+ (modules (:standard))
+ (flags (:standard -w -all))
+ (theories Stdlib Coqprime))

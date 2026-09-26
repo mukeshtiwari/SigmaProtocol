@@ -1,0 +1,3 @@
+(executable
+ (name main)
+ (libraries Ed25519lib cryptokit hacl-star unix))
