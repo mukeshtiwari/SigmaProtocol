@@ -1,0 +1,3 @@
+(executable
+ (name main)
+ (libraries P256lib cryptokit hacl-star unix))
