@@ -8,7 +8,7 @@
 (include_subdirs qualified)
 (rocq.theory
  (name Fiat)
- (synopsis "Vendored fiat-crypto specification of Curve25519 / Ed25519")
+ (synopsis "Vendored fiat-crypto specification of Curve25519 / Ed25519 and of Weierstrass curves (P-256)")
  (modules (:standard))
  (flags (:standard -w -all))
  (theories Stdlib Coqprime))
