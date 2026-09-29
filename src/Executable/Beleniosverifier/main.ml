@@ -186,18 +186,78 @@ let () =
   let t1 = Unix.gettimeofday () in
   match cert with
   | Specif.Coq_existT (vbs, Specif.Coq_existT (inbs, Specif.Coq_existT (bfinal, count))) ->
-    let rec print_count (c : (scalar, point) count) = match c with
-      | Coq_ax -> ()
-      | Coq_cvalid (b, _, _, _, c') -> print_count c'; Printf.printf "valid ballot   credential=%s\n" (hex_of_point b.credential)
-      | Coq_cinvalid (b, _, _, _, c') -> print_count c'; Printf.printf "INVALID ballot credential=%s\n" (hex_of_point b.credential)
-      | Coq_cfinish (_, _, _, _, _, _, _, _, bt, btr, bres, c') -> print_count c';
-        Printf.printf "encrypted tally matches the published one: %b\n" bt;
-        Printf.printf "trustees' proofs of knowledge and decryption proofs: %b\n" btr;
-        Printf.printf "published result decrypts the tally: %b\n" bres in
-    print_count count;
-    Printf.printf "ballots: %d, tallied (last per credential): %d, valid: %d, invalid: %d\n"
-      (List.length ballots) (List.length (last_per_credential_ins (List.rev vbs))) (List.length vbs) (List.length inbs);
-    if !malformed > 0 then Printf.printf "malformed ballots: %d\n" !malformed;
+    (* the certificate, printed as the Helios verifier prints its own: every
+       ballot with its ciphertexts and proofs, the encrypted tally before and
+       after it, and the final state. Points are printed in their compressed
+       encoding, scalars in decimal, proofs as (challenge, response). The
+       tally shown after a ballot is the certified encrypted tally of the
+       valid ballots so far (the last one of each credential, weighted). *)
+    let line = String.make 150 '-' in
+    let list_string pr sep xs = String.concat sep (List.map pr xs) in
+    let scalar_string (x : scalar) : string = Big_int_Z.string_of_big_int (to_Z x) in
+    let cipher_string ((a, b) : BeleniosIns.ciphertext) : string = "(" ^ hex_of_point a ^ ", " ^ hex_of_point b ^ ")" in
+    let proof_string ((c, r) : BeleniosIns.proof) : string =
+      "{challenge = " ^ scalar_string c ^ "; response = " ^ scalar_string r ^ "}" in
+    let proofs_string (ps : BeleniosIns.proof list) : string = "[" ^ list_string proof_string ", " ps ^ "]" in
+    let answer_string (i : int) (a : BeleniosIns.answer) : string =
+      Printf.sprintf "question %d: {encrypted choices: [%s]; individual proofs of 0 or 1: [%s]; overall proof: %s%s}" i
+        (list_string cipher_string ", " a.choices)
+        (list_string proofs_string ", " a.individual_proofs)
+        (proofs_string a.overall_proof)
+        (match a.blank_proof with None -> "" | Some ps -> "; blank proof: " ^ proofs_string ps) in
+    let ballot_string (b : BeleniosIns.ballot) : string =
+      "credential: " ^ hex_of_point b.credential ^ "; answers: [" ^
+      String.concat "; " (List.mapi answer_string b.answers) ^ "]; signature: " ^ proof_string b.signature in
+    let tally_string (t : BeleniosIns.ciphertext list list) : string =
+      String.concat "; " (List.mapi (fun i cs -> Printf.sprintf "question %d: %s" i (list_string cipher_string " " cs)) t) in
+    (* The running tally. The certificate carries the encrypted tally only
+       in its final state, so the driver maintains it for display: the
+       contribution of one ballot is the certified tally of that ballot
+       alone (weighted), a valid ballot multiplies the tally by its
+       contribution and divides it by that of the ballot it replaces (same
+       credential). The final value is checked against the certificate's. *)
+    let module Ed = Ed25519.Ed25519.Ed in
+    let contribution (b : BeleniosIns.ballot) = encrypted_tally_ins election [b] in
+    let map_tally f t u = List.map2 (List.map2 (fun (a, b) (c, d) -> (f a c, f b d))) t u in
+    let mul_tally = map_tally Ed.gop in
+    let div_tally = map_tally (fun a c -> Ed.gop a (Ed.ginv c)) in
+    let current : (string, BeleniosIns.ciphertext list list) Hashtbl.t = Hashtbl.create 64 in
+    let running = ref (encrypted_tally_ins election []) in
+    let add_ballot (b : BeleniosIns.ballot) : string * string =
+      let previous = tally_string !running in
+      let cred = hex_of_point b.credential in
+      let cb = contribution b in
+      (match Hashtbl.find_opt current cred with
+       | Some old -> running := div_tally !running old
+       | None -> ());
+      Hashtbl.replace current cred cb;
+      running := mul_tally !running cb;
+      (previous, tally_string !running) in
+    let rec print_count (c : (scalar, point) count) : unit = match c with
+      | Coq_ax -> Printf.printf "Identity-tally : %s\n%s\n" (tally_string !running) line
+      | Coq_cvalid (b, _, _, _, c') -> print_count c';
+        let (previous, now) = add_ballot b in
+        Printf.printf "Valid ballot : %s\nPrevious tally : %s\nCurrent tally : %s\n%s\n" (ballot_string b) previous now line
+      | Coq_cinvalid (b, _, _, _, c') -> print_count c';
+        let t = tally_string !running in
+        Printf.printf "Invalid ballot : %s\nPrevious tally : %s\nCurrent tally : %s\n%s\n" (ballot_string b) t t line
+      | Coq_cfinish (_, _, _, _, trs, tally, published, result, bt, btr, bres, c') -> print_count c';
+        if tally_string !running <> tally_string tally then failwith "the displayed running tally differs from the certificate's tally";
+        Printf.printf "Final tally: [%s]\n" (tally_string tally);
+        Printf.printf "Published encrypted tally: [%s]\n" (tally_string published);
+        Printf.printf "Trustees' public keys: [%s]\n" (list_string (fun (tr : BeleniosIns.trustee) -> hex_of_point tr.public_key) " " trs);
+        Printf.printf "Final decrypted tally: [%s]\n"
+          (String.concat "; " (List.mapi (fun i rs -> Printf.sprintf "question %d: %s" i (list_string scalar_string " " rs)) result));
+        Printf.printf "Encrypted tally is equal to the published one : %b\n" bt;
+        Printf.printf "Trustees' pok, decryption factors and proofs are valid : %b\n" btr;
+        Printf.printf "Published result is correct decryption of the encrypted tally : %b\n%s\n" bres line in
+    print_string "Count : "; print_count count; print_newline ();
+    Printf.printf "Final tally: [%b]\n" bfinal;
+    Printf.printf "All votes : [%d]\n" (List.length ballots);
+    Printf.printf "Tallied votes (last per credential) : [%d]\n" (List.length (last_per_credential_ins (List.rev vbs)));
+    Printf.printf "Valid vote : [%d]\n" (List.length vbs);
+    Printf.printf "Invalid votes : [%d]\n" (List.length inbs);
+    if !malformed > 0 then Printf.printf "Malformed votes : [%d]\n" !malformed;
     (* Belenios only accepts valid ballots on the bulletin board, so an
        invalid or malformed ballot in the archive is a failure *)
     let verdict = bfinal && !malformed = 0 && inbs = [] in
