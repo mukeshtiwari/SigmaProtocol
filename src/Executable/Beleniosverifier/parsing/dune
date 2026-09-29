@@ -1,0 +1,10 @@
+(menhir
+ (modules parser)
+ (flags --inspection --table --dump))
+
+(ocamllex lexer)
+
+(library
+ (name belenios_parser)
+ (modules Ast lexer parser)
+ (libraries menhirLib Belenioslib))
