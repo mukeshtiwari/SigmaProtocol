@@ -4,6 +4,73 @@
    (Executable/Beleniosverifier) and passed in through the ballot_hashes
    and trustee_hashes records. *)
 
+(* How a Belenios election works, and what this verifier checks.
+
+   Belenios is the open-source voting system developed at Inria, a
+   descendant of Helios. All of its proofs are Schnorr proofs or
+   disjunctions of Schnorr proofs, so the whole verifier is an instance of
+   two protocols of the library.
+
+   Setting. G is a group of prime order q with generator g (here Ed25519),
+   and y = g^x is the election public key, the product of the trustees'
+   keys. A vote is encrypted with exponential ElGamal:
+
+     Enc(m; r) = (α, β) = (g^r, y^r · g^m).
+
+   The componentwise product of ciphertexts encrypts the sum of the votes,
+   so the tally is computed without opening any ballot.
+
+   Ballot. For every answer i of a question the voter encrypts a bit m_i
+   as (α_i, β_i) and attaches three kinds of proof. Each is a disjunction
+   in G × G with the common base (g, y), and each branch states that a
+   ciphertext encrypts a given value k:
+
+     (α, β / g^k) = (g, y)^r.
+
+   - individual proof: m_i ∈ {0, 1}, the two branches k = 0 and k = 1;
+   - overall proof: Σ m_i ∈ [min, max], on the product ciphertext
+     (∏ α_i, ∏ β_i), one branch per admissible total;
+   - with blank votes, a blank bit m_0 is added: the blank proof states
+     m_0 = 0 ∨ m_Σ = 0 and the overall proof m_0 = 1 ∨ m_Σ ∈ [min, max],
+     whose branches talk about different ciphertexts.
+
+   The ballot is signed with the voter's credential, a Schnorr proof of
+   knowledge of s with cred = g^s bound to the ballot, which is what
+   prevents the server from adding ballots.
+
+   Verification of a proof. Belenios stores (challenge, response) for
+   every branch. The verifier reconstructs the announcements
+
+     A_k = (g, y)^{response_k} · (α, β / g^k)^{challenge_k}
+
+   and accepts if the hash of the statement and of the A_k equals the sum
+   of the challenges. This is the Or composition of Cramer, Damgård and
+   Schoenmakers: the prover runs the real protocol on the true branch,
+   simulates the others, and the branch challenges are forced to add up
+   to the hash.
+
+   Tally. The valid ballots, the last one of each credential, are
+   multiplied, each raised to the weight w_b of its credential:
+
+     (α_Σ, β_Σ) = ∏_b (α_b, β_b)^{w_b}.
+
+   Decryption. Every trustee with key X = g^x publishes the factor
+   F = α_Σ^x with a Chaum–Pedersen proof, a Schnorr proof in G × G, of
+
+     (X, F) = (g, α_Σ)^x.
+
+   The result is g^v = β_Σ / ∏ F, and v is recovered by a search for the
+   discrete logarithm, which is small.
+
+   What is proved. Backend/BeleniosTally.v shows that a proof accepted by
+   this verifier is an accepting transcript of the library's Schnorr
+   protocol or Or composition (fs_verify_schnorr_accepting,
+   fs_verify_or_accepting), so completeness, special soundness and
+   honest-verifier zero knowledge are the library's theorems. Belenios
+   writes the response as w − x·c where the library writes u + c·x, hence
+   the negated challenges. What is trusted: the parser of the archive and
+   the SHA-256 hashes computed by the driver. *)
+
 From Stdlib Require Import Utf8 ZArith Zmod List.
 From Backend Require Import BeleniosTally.
 From Utility Require Import Util.

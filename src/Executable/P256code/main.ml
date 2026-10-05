@@ -81,6 +81,25 @@ let tamper (pf : ('f, 'g) Sigma.sigma_proto) : ('f, 'g) Sigma.sigma_proto =
       vector_of_list (P256.P256.Zn.add r P256.P256.Zn.one :: rest) }
   | [] -> pf
 
+(* a proof whose announcements are pairs of points (ballot proofs) *)
+let pair_proof_string (pf : (P256.P256.Zn.coq_F, P256.P256.Wp.coq_G * P256.P256.Wp.coq_G) Sigma.sigma_proto) : string =
+  "{ announcement = " ^ String.concat "," (List.map (fun (a, b) -> "(" ^ point_string a ^ "," ^ point_string b ^ ")")
+      (list_of_vector pf.Sigma.announcement)) ^
+  "; challenge = " ^ scalars_string pf.Sigma.challenge ^
+  "; response = " ^ scalars_string pf.Sigma.response ^ " }"
+
+let line = String.make 100 '-'
+
+(* the data the ballot verifier checks: for every candidate the ElGamal
+   ciphertext and its proof of encrypting 0 or 1, then the overall proof *)
+let print_ballot (title : string) (votes : P256.P256.Zn.coq_F VectorDef.t) (b, pf) : unit =
+  print_endline line;
+  print_endline (title ^ " (plaintext votes, known to the voter only: [" ^ scalars_string votes ^ "])");
+  List.iteri (fun i ((c1, c2), p) ->
+    Printf.printf "  candidate %d: ciphertext = (%s, %s)\n    proof of 0 or 1 = %s\n" i
+      (point_string c1) (point_string c2) (pair_proof_string p)) (list_of_vector b);
+  print_endline ("  overall proof = " ^ pair_proof_string pf)
+
 let time_it (f : unit -> 'a) : 'a * float =
   let t0 = Unix.gettimeofday () in
   let r = f () in
@@ -101,6 +120,8 @@ let () =
   let com = schnorr_protocol_commitment_ins u in
   let c = oracle_scalar ("schnorr|" ^ point_string g ^ point_string h ^ point_string com) in
   let pf = schnorr_protocol_construction_ins u c in
+  print_endline line;
+  print_endline "schnorr statement: knowledge of x with h = g^x";
   print_endline ("schnorr proof " ^ proof_string pf);
   print_endline ("schnorr verify: " ^ string_of_bool (schnorr_protocol_verification_ins pf));
   print_endline ("schnorr verify (tampered): " ^ string_of_bool (schnorr_protocol_verification_ins (tamper pf)));
@@ -111,6 +132,10 @@ let () =
   let c = oracle_scalar ("cp|" ^ point_string g ^ point_string h ^ point_string c_UU2081_ ^
                           point_string c_UU2082_ ^ points_string com) in
   let pf = construct_cp_conversations_schnorr_ins u c in
+  print_endline line;
+  print_endline "chaum-pedersen statement: knowledge of x with h = g^x and c2 = c1^x";
+  print_endline ("c1 = " ^ point_string c_UU2081_);
+  print_endline ("c2 = " ^ point_string c_UU2082_);
   print_endline ("chaum-pedersen proof " ^ proof_string pf);
   print_endline ("chaum-pedersen verify: " ^ string_of_bool (generalised_cp_accepting_conversations_ins pf));
   print_endline ("chaum-pedersen verify (tampered): " ^ string_of_bool (generalised_cp_accepting_conversations_ins (tamper pf)));
@@ -123,14 +148,16 @@ let () =
     vector_of_list (oracle_scalars ("ballot|" ^ points_string v) n) in
   let fo _ (v : P256.P256.Wp.coq_G VectorDef.t) : P256.P256.Zn.coq_F =
     oracle_scalar ("overall|" ^ points_string v) in
-  let make_ballot () =
+  let make_ballot_with_votes () =
     let rs = rnd_vector n in
     let ms = vector_of_list (List.init n (fun _ -> of_Z (Big_int_Z.big_int_of_int (Random.int 2)))) in
     let uscs = rnd_vector_vector n 3 in
     let uscs' = rnd_vector ((n + 1) + n) in
-    nizk_encrypt_ballot_with_overall_proof_ins nz fn fo rs ms uscs uscs' in
+    (ms, nizk_encrypt_ballot_with_overall_proof_ins nz fn fo rs ms uscs uscs') in
+  let make_ballot () = snd (make_ballot_with_votes ()) in
   Random.self_init ();
-  let (b, pf) = make_ballot () in
+  let (votes, (b, pf)) = make_ballot_with_votes () in
+  print_ballot ("ballot of " ^ string_of_int n ^ " candidates, public key h") votes (b, pf);
   print_endline ("ballot of " ^ string_of_int n ^ " candidates: individual proofs verify: " ^
     string_of_bool (verify_encryption_ballot_proof_ins (Big_int_Z.big_int_of_int n) b));
   print_endline ("overall proof verify: " ^
@@ -142,7 +169,10 @@ let () =
   let rs = rnd_vector n in
   let ms = vector_of_list (of_Z (Big_int_Z.big_int_of_int 5) :: List.init (n - 1) (fun _ -> of_Z Big_int_Z.zero_big_int)) in
   let (b5, pf5) = nizk_encrypt_ballot_with_overall_proof_ins nz fn fo rs ms (rnd_vector_vector n 3) (rnd_vector ((n + 1) + n)) in
+  print_ballot "ballot encrypting 5 for candidate 0" ms (b5, pf5);
   print_endline ("ballot encrypting 5 verify: " ^ string_of_bool (verify_ballot_ins (Big_int_Z.big_int_of_int n) (b5, pf5)));
+
+  print_endline line;
 
   (* ---- benchmark ---- *)
   let enc = ref [] and ver = ref [] and ok = ref true in
