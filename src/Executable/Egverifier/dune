@@ -1,0 +1,3 @@
+(executable
+ (name main)
+ (libraries Electionguardlib eg_parser cryptokit unix))
