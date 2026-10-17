@@ -1,8 +1,8 @@
 From Stdlib Require Import Setoid
   setoid_ring.Field Lia Vector Utf8
   Psatz Bool Pnat BinNatDef 
-  BinPos Permutation. 
 From Algebra Require Import 
+  BinPos Permutation. 
   Hierarchy Group Monoid
   Field Integral_domain
   Ring Vector_space.
