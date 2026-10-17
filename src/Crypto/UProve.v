@@ -1,6 +1,7 @@
 (* U-Prove (Brands' credentials; Microsoft, "U-Prove Cryptographic
-   Specification V1.1 Revision 3".
+   Specification V1.1 Revision 3". 
 
+  https://www.credentica.com/the_mit_pressbook.html Dr. Stefan Brands 
   https://www.microsoft.com/en-us/research/publication/u-prove-cryptographic-specification-v1-1-revision-3/
 
    A U-Prove token has public key h = γ^α with
