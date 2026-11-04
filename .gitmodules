@@ -1,3 +1,6 @@
 [submodule "bench/helios-server"]
 	path = bench/helios-server
 	url = https://github.com/benadida/helios-server.git
+[submodule "bench/crypto-primitives"]
+	path = bench/crypto-primitives
+	url = https://gitlab.com/swisspost-evoting/crypto-primitives/crypto-primitives.git
