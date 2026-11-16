@@ -1,0 +1,6 @@
+From Stdlib Require Import Extraction 
+ExtrOcamlBasic ExtrOcamlNativeString
+ExtrOcamlZBigInt ExtrOcamlNatBigInt.
+From Examples Require Import IvxvGroupIns VerificatumIvxvIns BayerGrothIvxvIns SwissPostZkpIvxvIns BayerGrothIvxvGoIns SwissPostZkpIvxvGoIns.
+Set Extraction Output Directory ".". 
+Separate Extraction IvxvGroupIns VerificatumIvxvIns BayerGrothIvxvIns SwissPostZkpIvxvIns BayerGrothIvxvGoIns SwissPostZkpIvxvGoIns.
