@@ -9,13 +9,20 @@
      element read from the bulletin board and refuse to proceed otherwise. *)
   let helios_p = HeliosTallylib.HeliosTallyIns.p
   let helios_q = HeliosTallylib.HeliosTallyIns.q
+  (* Helios writes integers as decimal strings (str of a Python int);
+     big_int_of_string also reads a sign, '_' separators and 0x/0o/0b
+     prefixes, which would accept other encodings of the same value
+     (found by bench/helios-diff), so only decimal digits are read *)
+  let decimal (s : string) : big_int =
+    if s = "" || not (String.for_all (fun c -> c >= '0' && c <= '9') s)
+    then failwith ("not a decimal integer: " ^ s) else big_int_of_string s
   let group_elt (s : string) : big_int =
-    let v = big_int_of_string s in
+    let v = decimal s in
     if sign_big_int v > 0 && lt_big_int v helios_p 
        && eq_big_int (Z.powm v helios_q helios_p) unit_big_int
     then v else failwith ("group element outside the order-q subgroup: " ^ s)
   let field_elt (s : string) : big_int =
-    let v = big_int_of_string s in
+    let v = decimal s in
     if sign_big_int v >= 0 && lt_big_int v helios_q then v
     else failwith ("field element out of range: " ^ s)
 %}
@@ -170,7 +177,11 @@ proofs:
     RBRACE
      { 
       let a, b = group_elt aone, group_elt atwo in
-      let _ = field_elt c in
+      (* the recorded challenge must be the one Helios checks, SHA-1(A, B)
+         (EGZKProof.verify); it was read and discarded before
+         bench/helios-diff found that a changed one was accepted *)
+      if not (eq_big_int (field_elt c) (helios_challenge [a; b])) then
+        failwith "decryption proof: challenge is not SHA-1(A, B)";
       {
         HeliosTallylib.Sigma.announcement = vector_of_list ([a; b]);
         (* Helios checks a decryption proof's challenge against SHA-1(A, B).
@@ -189,7 +200,9 @@ pok_fields:
     RESPONSE COLON r = STRING
     { 
       let a = group_elt a in
-      let _ = field_elt c in
+      (* as for decryption proofs: Helios checks challenge = SHA-1(commitment) *)
+      if not (eq_big_int (field_elt c) (helios_challenge [a])) then
+        failwith "proof of knowledge: challenge is not SHA-1(commitment)";
       {
         HeliosTallylib.Sigma.announcement =  vector_of_list ([a]);
         (* Helios checks a proof of knowledge against SHA-1(commitment). *)
@@ -204,7 +217,7 @@ key_fields:
     P COLON p = STRING COMMA
     Q COLON q = STRING COMMA
     Y COLON y = STRING
-    { (((group_elt g, big_int_of_string p), big_int_of_string q), group_elt y) }
+    { (((group_elt g, decimal p), decimal q), group_elt y) }
   
 
 result :

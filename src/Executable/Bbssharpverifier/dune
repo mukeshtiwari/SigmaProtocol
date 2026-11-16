@@ -1,0 +1,3 @@
+(executable
+ (name main)
+ (libraries BBSSharplib cryptokit zarith unix))

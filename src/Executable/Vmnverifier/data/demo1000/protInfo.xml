@@ -1,0 +1,209 @@
+
+<!-- ATTENTION! WE STRONGLY ADVICE AGAINST EDITING THIS FILE!
+     
+     This is a protocol information file. It contains all the parameters 
+     of a protocol session as agreed by all parties.
+     
+     Each party must hold an identical copy of this file. WE RECOMMEND 
+     YOU TO NOT EDIT THIS FILE UNLESS YOU KNOW EXACTLY WHAT YOU ARE 
+     DOING.
+     
+     Many XML features are disabled and throw errors, so parsing is more 
+     restrictive than the schema implies. -->
+
+<protocol>
+
+   <!-- Version of Verificatum Software for which this info is intended. -->
+   <version>3.1.0</version>
+
+   <!-- Session identifier of this protocol execution. This must be 
+        globally unique and satisfy the regular expression [A-Za-z][A-Za-z0-
+        9]{1,1023}. -->
+   <sid>MyDemo</sid>
+
+   <!-- Name of this protocol execution. This is a short descriptive name 
+        that is NOT necessarily unique, but satisfies the regular 
+        expression [A-Za-z][A-Za-z0-9_ \-]{1,255}. -->
+   <name>Swedish Election</name>
+
+   <!-- Description of this protocol execution. This is merely a longer 
+        description than the name of the protocol execution. It must 
+        satisfy the regular expression |[A-Za-z][A-Za-z0-9:;?!.()\[\] ]
+        {0,4000}. -->
+   <descr></descr>
+
+   <!-- Number of parties taking part in the protocol execution. This must 
+        be a positive integer that is at most 25. -->
+   <nopart>3</nopart>
+
+   <!-- Statistical distance from uniform of objects sampled in protocols 
+        or in proofs of security. This must be a non-negative integer at 
+        most 256. -->
+   <statdist>100</statdist>
+
+   <!-- Name of bulletin board implementation used, i.e., a subclass of com.
+        verificatum.protocol.com.BullBoardBasic. WARNING! This field is not 
+        validated syntactically. -->
+   <bullboard>com.verificatum.protocol.com.BullBoardBasicHTTPW</bullboard>
+
+   <!-- Threshold number of parties needed to violate the privacy of the 
+        protocol, i.e., this is the number of parties needed to decrypt. 
+        This must be positive, but at most equal to the number of parties. 
+        -->
+   <thres>2</thres>
+
+   <!-- Group over which the protocol is executed. An instance of a 
+        subclass of com.verificatum.arithm.PGroup. -->
+   <pgroup>ModPGroup(random encoding, )::00000000020100000020636f6d2e766572696669636174756d2e61726974686d2e4d6f645047726f75700000000004010000010100815901aa6d3ced6a0bd488c617351e322c8aef8f9f90adf331a2583d8082ac46f74345a1e1cf561facbdf3239bc3f0ee71618b5d016266caafd48439b034a38f6560cd6b671e3a80248b46809ad8de7a4cc7250469611d59dae8d8af5c6d0f9f3665f9857e04e1134dc94b270e93341449ea503617447ecb83b2c01602878c070d080da464c974d9951c35c1a553407345ee31ebc4a29a3488d5a54702a971ee0a1ea4da93fcf64105040893ff4bec23ca11e8cffa279e899a46891137c28e85f5a2fc9c637af6d26f6b5deba3d60580df41c334ea123331f8b0adeb43ea64a037e0c5ac168c47ce421bc9718ba8357099a0221f778599acd917607f3e3024d701000000210087974deb793421ce3891540d906ac0806b85a2b95adc211a82ef8b659f8d9d2501000001010075ee80f0a161dd0c025ac818db8d52d193a46655fe0ebd3c289a949f42185f58f2f88f825dcdb3e3e98c0598af87599728f4f0719a8f68b133e82eb1bc4e3b6b8a377a5c6b812d656efcde578fdf515ac6ef628f1564ac907745d53bc6213b74f0cc303bbe68f3ab2220dcacd0ceece7aac3a675aaa0604885a1fb1374e6c08f2dcf503e58ac6487be73b8ab2a10fa62a79522cbc777b6321fd346e0d36ee5a7291955117d8bb4284901eb26804bd2286a14af52f5301c489c80dfeafb7ce496af58479a4c6f57f29ec8c9e4f6b88deb06f5d120859d2d4de06e57b0476f8263f7a4a35f67ed21a4a927109fa89a6b7f4976e98e3ddb3cd232c516b1da5cc555010000000400000000</pgroup>
+
+   <!-- Width of El Gamal keys. If equal to one the standard El Gamal 
+        cryptosystem is used, but if it is greater than one, then the 
+        natural generalization over a product group of the given width is 
+        used. This corresponds to letting each party holding multiple 
+        standard public keys. -->
+   <keywidth>1</keywidth>
+
+   <!-- Bit length of challenges in interactive proofs. -->
+   <vbitlen>128</vbitlen>
+
+   <!-- Bit length of challenges in non-interactive random-oracle proofs. 
+        -->
+   <vbitlenro>256</vbitlenro>
+
+   <!-- Bit length of each component in random vectors used for batching. 
+        -->
+   <ebitlen>128</ebitlen>
+
+   <!-- Bit length of each component in random vectors used for batching in 
+        non-interactive random-oracle proofs. -->
+   <ebitlenro>256</ebitlenro>
+
+   <!-- Pseudo random generator used to derive random vectors for 
+        batchingfrom jointly generated seeds. This can be "SHA-256", "SHA-
+        384", or "SHA-512", in which case com.verificatum.crypto.
+        PRGHeuristic is instantiated based on this hashfunction, or it can 
+        be an instance of com.verificatum.crypto.PRG. WARNING! This field 
+        is not validated syntactically. -->
+   <prg>SHA-256</prg>
+
+   <!-- Hashfunction used to implement random oracles. It can be one of the 
+        strings "SHA-256", "SHA-384", or "SHA-512", in which case com.
+        verificatum.crypto.HashfunctionHeuristic is instantiated, or an 
+        instance of com.verificatum.crypto.Hashfunction. Random oracles 
+        with various output lengths are then implemented, using the given 
+        hashfunction, in com.verificatum.crypto.RandomOracle.
+        WARNING! Do not change the default unless you know exactly what you 
+        are doing. This field is not validated syntactically. -->
+   <rohash>SHA-256</rohash>
+
+   <!-- Determines if the proofs of correctness of an execution are 
+        interactive or non-interactive. Legal valus are "interactive" or 
+        "noninteractive". -->
+   <corr>noninteractive</corr>
+
+   <!-- Default width of ciphertexts processed by the mix-net. A different 
+        width can still be forced for a given session by using the "-width" 
+        option. -->
+   <width>1</width>
+
+   <!-- Maximal number of ciphertexts for which precomputation is 
+        performed. Pre-computation can still be forced for a different 
+        number of ciphertexts for a given session using the "-maxciph" 
+        option during pre-computation. -->
+   <maxciph>0</maxciph>
+
+   <party>
+
+      <!-- Name of party. This must satisfy the regular expression [A-Za-z][A-
+           Za-z0-9_ \-]{1,255}. -->
+      <name>Party01</name>
+
+      <!-- Sorting attribute used to sort parties with respect to their roles 
+           in the protocol. This is used to assign roles in protocols where 
+           different parties play different roles. -->
+      <srtbyrole>anyrole</srtbyrole>
+
+      <!-- Description of this party. This is merely a longer description 
+           than the name of the party. It must satisfy the regular expression 
+           |[A-Za-z][A-Za-z0-9:;?!.()\[\] ]{0,4000}. -->
+      <descr></descr>
+
+      <!-- Public signature key (instance of subclasses of com.verificatum.
+           crypto.SignaturePKey). WARNING! This field is not validated 
+           syntactically. -->
+      <pkey>SignaturePKeyHeuristic(RSA, bitlength=2048)::0000000002010000002d636f6d2e766572696669636174756d2e63727970746f2e5369676e6174757265504b65794865757269737469630000000002010000012630820122300d06092a864886f70d01010105000382010f003082010a0282010100ee67f75c5fa66dcdd2b7262c476602123d7aba297b609be1e06f7bc41832ec2d806bda666f0b973ece80ec5ecdc80254e2a2d45e9d7a357e18dd7625a0cb81d253ebccb6d3669eca8e5cb87b74d70a29362dcc3af12571871fd4af9528f37accefba4ecb189190ec7c859879bd540cf5e5bf4da3c1a47f111b35df209fe483b36925e5b4c38242c99dde2f7c5e5efc0907578f3e129cdfff137c4856c48fe5d0d7b3750669c6d2c95a57f41cbb56627d6931e18df593116bef3494c20d5d62a9f8dd02c098c3149bb4dea5c8d42ea1b569f5b0aa5ef4989d271576732f9ff7157d5c4114db26552375a7b799e59cdd4af355edc41cf738e1a19c2e0d520065470203010001010000000400000800</pkey>
+
+      <!-- URL to the HTTP server of this party. -->
+      <http>http://localhost:8041</http>
+
+      <!-- Socket address given as <hostname>:<port> or <ip address>:<port> 
+           to our hint server. A hint server is a simple UDP server that 
+           reduces latency and traffic on the HTTP servers. -->
+      <hint>localhost:4041</hint>
+
+   </party>
+
+   <party>
+
+      <!-- Name of party. This must satisfy the regular expression [A-Za-z][A-
+           Za-z0-9_ \-]{1,255}. -->
+      <name>Party02</name>
+
+      <!-- Sorting attribute used to sort parties with respect to their roles 
+           in the protocol. This is used to assign roles in protocols where 
+           different parties play different roles. -->
+      <srtbyrole>anyrole</srtbyrole>
+
+      <!-- Description of this party. This is merely a longer description 
+           than the name of the party. It must satisfy the regular expression 
+           |[A-Za-z][A-Za-z0-9:;?!.()\[\] ]{0,4000}. -->
+      <descr></descr>
+
+      <!-- Public signature key (instance of subclasses of com.verificatum.
+           crypto.SignaturePKey). WARNING! This field is not validated 
+           syntactically. -->
+      <pkey>SignaturePKeyHeuristic(RSA, bitlength=2048)::0000000002010000002d636f6d2e766572696669636174756d2e63727970746f2e5369676e6174757265504b65794865757269737469630000000002010000012630820122300d06092a864886f70d01010105000382010f003082010a0282010100de5fe8e9cd9b6a4f29ccab71e2526ee0baeffc31025173f7c2d05cdfc6d50e88367233f5bc7fedf25b4de487bfcf0d68565d5e20984236ed3acad7d8a4f07e8ca137098caabca6cf9805244f40038918316ba352c676de9192627536ef646df296fec0b7185b9653bda60a1b20da36cc1567ee20b31dcc4c3f3110a27ce50f6bc0244a5e2435c9b392a4a39a6284e367adb55de72e310ad9d1e8d70acba1abbc107f8f7414f2cbf16469818151f580b725c20e620c0d9de55587e7baaac188857cd5fde6de75c996043a397195bc768bb95bc31fbf492e90028d6659eca8042b6ae4cf0d1143ef84241b5035dc12cd9fd1a1c3412dbbbfca7b31ef08e524eefb0203010001010000000400000800</pkey>
+
+      <!-- URL to the HTTP server of this party. -->
+      <http>http://localhost:8042</http>
+
+      <!-- Socket address given as <hostname>:<port> or <ip address>:<port> 
+           to our hint server. A hint server is a simple UDP server that 
+           reduces latency and traffic on the HTTP servers. -->
+      <hint>localhost:4042</hint>
+
+   </party>
+
+   <party>
+
+      <!-- Name of party. This must satisfy the regular expression [A-Za-z][A-
+           Za-z0-9_ \-]{1,255}. -->
+      <name>Party03</name>
+
+      <!-- Sorting attribute used to sort parties with respect to their roles 
+           in the protocol. This is used to assign roles in protocols where 
+           different parties play different roles. -->
+      <srtbyrole>anyrole</srtbyrole>
+
+      <!-- Description of this party. This is merely a longer description 
+           than the name of the party. It must satisfy the regular expression 
+           |[A-Za-z][A-Za-z0-9:;?!.()\[\] ]{0,4000}. -->
+      <descr></descr>
+
+      <!-- Public signature key (instance of subclasses of com.verificatum.
+           crypto.SignaturePKey). WARNING! This field is not validated 
+           syntactically. -->
+      <pkey>SignaturePKeyHeuristic(RSA, bitlength=2048)::0000000002010000002d636f6d2e766572696669636174756d2e63727970746f2e5369676e6174757265504b65794865757269737469630000000002010000012630820122300d06092a864886f70d01010105000382010f003082010a0282010100c52e2588bb6e3ea724ee6e3d5f70de3d96b2e83f657ef1b2f53f7c2d8db26045106ce6c9c2e3b4d05adf6b137b557fae57a1c1baf48ef7d96a22ce4c75b634cc661993274b1557b74e68ae91b0ea8ced07942faed849a1f5646d04cb04c9cbd8d2a24fca147e0fae74158b59396e55708faa375d1cb7b8e9c116920c0c26cf81f47e31c246d4dcbf74c8651aec2f057aba6ab5da760dd8899bdf70a4bb6487ea4b7027ba02d550540e50c9c3e5b57b36a85113ea4f57e84385b247e35ba8e8fd0709ab88190ce5ed36e19c65305f36db83ca67b516c53073bcc58cfba29ff5c62005dbf0fc19f8a0feeaa7d514b9fb1c5c7d1dc930185abbdb6d6b6a8c565a8d0203010001010000000400000800</pkey>
+
+      <!-- URL to the HTTP server of this party. -->
+      <http>http://localhost:8043</http>
+
+      <!-- Socket address given as <hostname>:<port> or <ip address>:<port> 
+           to our hint server. A hint server is a simple UDP server that 
+           reduces latency and traffic on the HTTP servers. -->
+      <hint>localhost:4043</hint>
+
+   </party>
+
+</protocol>
+

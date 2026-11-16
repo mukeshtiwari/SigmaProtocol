@@ -1,3 +1,10 @@
 (executable
  (name main)
+ (modules main)
  (libraries HeliosTallylib cryptokit helios_parser))
+
+; bench/helios-diff: the differential-testing verifier and the certified prover
+(executables
+ (names diff prove)
+ (modules diff prove)
+ (libraries HeliosTallylib cryptokit helios_parser yojson))

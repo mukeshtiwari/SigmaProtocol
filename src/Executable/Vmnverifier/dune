@@ -1,0 +1,3 @@
+(executable
+ (name main)
+ (libraries Verificatumlib cryptokit unix str))

@@ -1,0 +1,3 @@
+(executable
+ (name main)
+ (libraries SwissPostE2Elib cryptokit yojson zarith unix))

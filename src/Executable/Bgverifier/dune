@@ -1,0 +1,3 @@
+(executable
+ (name main)
+ (libraries BayerGrothlib bg_parser cryptokit zarith unix))

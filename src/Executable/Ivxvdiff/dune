@@ -1,0 +1,3 @@
+(executable
+ (name main)
+ (libraries Ivxvlib cryptokit yojson zarith unix str))

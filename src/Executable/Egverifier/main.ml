@@ -218,6 +218,60 @@ let main () =
     | Some (_, h, _) -> h | None -> failwith "unknown ballot" in
   let id_of (b : ElectionGuardIns.ballot) = match List.find_opt (fun (b', _, _) -> b' == b) parsed with
     | Some (_, _, id) -> id | None -> "?" in
+  (* ---- verification 7: the confirmation chain, when the configuration
+     chains the codes (7.D–7.G). Each device's ballot_chain.json lists its
+     ballots in order; the first has B_aux = H_0 = H(H_E; 0x24, B_aux,0), each
+     next one B_aux = H(B_{j-1}) ∥ B_aux,0, and the closing hash is
+     H(H_E; 0x24, H(B_ℓ) ∥ B_aux,0 ∥ "CLOSE"). The chain must also list
+     exactly the device's published ballots: a published ballot outside it
+     would be covered by no check of the chain (found by
+     bench/electionguard-diff, where the reference verifier accepts such a
+     ballot left out of the tally). Read with Yojson: the grammar of parsing/
+     skips these fields. ---- *)
+  let config_json = Yojson.Safe.from_file (path "election_config.json") in
+  let jmember k j = match j with `Assoc kvs -> List.assoc_opt k kvs | _ -> None in
+  if jmember "chain_confirmation_codes" config_json = Some (`Bool true) then begin
+    let baux0 = match jmember "baux0" config_json with
+      | Some (`List l) -> String.concat "" (List.map (function `Int b -> String.make 1 (Char.chr (b land 255)) | _ -> failwith "baux0") l)
+      | _ -> failwith "baux0" in
+    let sub = path "encrypted_ballots" in
+    let devices = if Sys.file_exists sub then List.filter (fun d -> Sys.is_directory (Filename.concat sub d)) (Array.to_list (Sys.readdir sub)) else [] in
+    List.iter (fun dev ->
+      let dd = Filename.concat sub dev in
+      let cf = Filename.concat dd "ballot_chain.json" in
+      if not (Sys.file_exists cf) then check (Printf.sprintf "7 device %s: ballot_chain.json present" dev) false else begin
+        let chain = Yojson.Safe.from_file cf in
+        let str = function Some (`String s) -> s | _ -> failwith "ballot_chain.json" in
+        let ids = match jmember "ballot_ids" chain with Some (`List l) -> List.map (fun x -> str (Some x)) l | _ -> failwith "ballot_ids" in
+        let published = List.filter_map (fun f ->
+          if String.length f > 8 && String.sub f 0 8 = "eballot-" && Filename.check_suffix f ".json" then
+            Some (str (jmember "ballot_id" (Yojson.Safe.from_file (Filename.concat dd f))))
+          else None) (Array.to_list (Sys.readdir dd)) in
+        check (Printf.sprintf "7 device %s: the chain lists exactly its published ballots" dev)
+          (List.sort compare ids = List.sort compare published && List.length (List.sort_uniq compare ids) = List.length ids);
+        let ballot_of id = Yojson.Safe.from_file (Filename.concat dd ("eballot-" ^ id ^ ".json")) in
+        let h0 = hmac he_key ["\x24"; baux0] in
+        let links_ok, last = List.fold_left (fun (ok, prev) id ->
+          if not (Sys.file_exists (Filename.concat dd ("eballot-" ^ id ^ ".json"))) then (false, prev) else
+          let b = ballot_of id in
+          let expected = match prev with None -> h0 | Some code -> code ^ baux0 in
+          let baux = hex_decode (str (jmember "code_baux" b)) in
+          (ok && baux = expected, Some (hex_decode (str (jmember "confirmation_code" b))))) (true, None) ids in
+        check (Printf.sprintf "7.D-E device %s: B_aux of each ballot chains the previous code" dev) links_ok;
+        let closing = match last with
+          | None -> hmac he_key ["\x24"; h0 ^ baux0 ^ "CLOSE"]
+          | Some code -> hmac he_key ["\x24"; code ^ baux0 ^ "CLOSE"] in
+        check (Printf.sprintf "7.F-G device %s: closing hash" dev)
+          (hex_encode closing = str (jmember "closing_hash" chain)
+           && (match last with Some code -> hex_encode code = str (jmember "last_confirmation_code" chain) | None -> true))
+      end) (List.sort compare devices)
+  end;
+  (* pre-encrypted ballots (verifications 17, 18) are not supported: a ballot
+     that says it is one fails, instead of being verified as an ordinary one *)
+  List.iter (fun f ->
+    let pre = match Yojson.Safe.from_file f with
+      | `Assoc kvs -> List.assoc_opt "is_preencrypt" kvs = Some (`Bool true) | _ -> false in
+    if pre then check (Printf.sprintf "ballot %s is not pre-encrypted (unsupported)" (Filename.basename f)) false) ballot_files;
   (* ---- the published encrypted tally ---- *)
   let etally = parse (path "encrypted_tally.json") Parser.encrypted_tally in
   check "8 encrypted tally names the extended base hash" (etally.et_election_id = he_stored);
@@ -335,8 +389,34 @@ let main () =
             let i = try Hashtbl.find contest_index cj.dc_id with Not_found -> failwith ("unknown contest " ^ cj.dc_id) in
             let l = idx (limits.(i)).option_limit in
             List.for_all (fun (s : decryption) -> 0 <= s.d_tally && s.d_tally <= l) cj.dc_selections) dj.dec_contests in
-          Printf.printf "challenged ballot %s: decryption proofs %b, values in range %b\n" id ok in_range;
-          if not (ok && in_range && not b.cast) then challenged_ok := false
+          (* 12 the decryption names this election *)
+          let same_election = dj.dec_election_id = Some he_stored in
+          (* 14 the decryption of each contest's encrypted contest data: v ∈ Z_q, β ∈ Z_p^r,
+             and c = H(H_E; 0x31, K, C0, C1, C2, a, b, β) with a = g^v K^c, b = C0^v β^c. As
+             the reference implementation (and its records), C1 is hashed as the text of its
+             hex encoding. Read with Yojson: the grammar skips these fields. Not certified. *)
+          let contest_data_ok =
+            let j = Yojson.Safe.from_file (Filename.concat challenged_dir f) in
+            let mem k = function `Assoc kvs -> List.assoc_opt k kvs | _ -> None in
+            let str k o = match mem k o with Some (`String s) -> s | _ -> failwith ("contest data: " ^ k) in
+            let hx k o = Z.of_string_base 16 (str k o) in
+            let in_group x = Z.sign x > 0 && Z.lt x p && Z.equal (Z.powm x q p) Z.one in
+            match mem "contests" j with
+            | Some (`List cs) -> List.for_all (fun c ->
+                match mem "decrypted_contest_data" c with
+                | None | Some `Null -> true
+                | Some dc ->
+                  let cd = match mem "encrypted_contest_data" dc with Some o -> o | None -> failwith "encrypted_contest_data" in
+                  let pr = match mem "proof" dc with Some o -> o | None -> failwith "contest data proof" in
+                  let c0 = hx "c0" cd and c1 = str "c1" cd and c2 = hex_decode (str "c2" cd) in
+                  let beta = hx "beta" dc and ch = hx "challenge" pr and v = hx "response" pr in
+                  Z.lt v q && Z.lt ch q && in_group beta && in_group c0 &&
+                  (let a = mulp (Z.powm gval v p) (Z.powm kz ch p) and bb = mulp (Z.powm c0 v p) (Z.powm beta ch p) in
+                   Z.equal (hash_q he_key ["\x31"; enc_p kz; enc_p c0; String.uppercase_ascii c1; c2; enc_p a; enc_p bb; enc_p beta]) ch)) cs
+            | _ -> false in
+          Printf.printf "challenged ballot %s: decryption proofs %b, values in range %b, election id %b, contest data %b\n"
+            id ok in_range same_election contest_data_ok;
+          if not (ok && in_range && same_election && contest_data_ok && not b.cast) then challenged_ok := false
       end) (List.sort compare (Array.to_list (Sys.readdir challenged_dir)))
   end;
   let verdict = bfinal && !malformed = 0 && inbs = [] && !failures = [] && !challenged_ok in
