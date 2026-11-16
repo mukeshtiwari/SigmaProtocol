@@ -35,3 +35,7 @@ _build/
 *.wasm
 .DS_Store
 bench/helios-server/
+
+# encrypted Gentoo bulletin boards (hundreds of MB each; regenerate with SchulzeGentoocode/encrypt.exe)
+bench/gentoo-board/
+bench/gentoo-board3/
