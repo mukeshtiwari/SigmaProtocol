@@ -2,7 +2,7 @@
 A certified library of Σ-protocols (Schnorr, Okamoto, Chaum-Pedersen, ElGamal encryption and decryption proofs, Pedersen linear relations, and generic Parallel, And, Or, Eq and Neq compositions) in [Rocq](https://rocq-prover.org/), with machine-checked completeness, special soundness and special honest-verifier zero-knowledge for every construction, extracted to OCaml (and compiled to WebAssembly and CakeML) and used for an approval-voting client and tally and for a verifier of the IACR 2023 and 2024 Helios elections. [THEOREMS.md](THEOREMS.md) maps every claim of the paper to the Rocq theorem that proves it.
 
 Run `dune build` (ignore the warinings) in this directory to compile the project. It will compile the Rocq code and 
-generate OCaml code from it [_CoqProject file](/_CoqProject). It takes a while (3 hours) because it verifies the primality and generator order in Rocq [HeliosTallyIns.v](/src/Examples/HeliosTallyIns.v) used in [Helios](https://github.com/benadida/js-voting-crypto/blob/master/test/elgamal-test.js#L14). `dune build  6554.20s user 15.53s system 57% cpu 3:08:53.70 total`. If you want to compile it quickly, admit --`Proof. Admitted.`--[prime_q](src/Examples/HeliosTallyIns.v#L33) and [prime_p](src/Examples/HeliosTallyIns.v#L33), and comment out [import](src/Examples/HeliosTallyIns.v#L6) in [HeliosTallyIns.v](/src/Examples/HeliosTallyIns.v),  [primeP.v](/src/Examples/primeP.v), and [primeQ.v](/src/Examples/primeQ.v). 
+generate OCaml code from it [_CoqProject file](/_CoqProject). It takes a while because it verifies primality certificates in Rocq: about 3 hours of CPU for the Helios group ([HeliosTallyIns.v](/src/Examples/HeliosTallyIns.v), used in [Helios](https://github.com/benadida/js-voting-crypto/blob/master/test/elgamal-test.js#L14); `dune build  6554.20s user 15.53s system 57% cpu 3:08:53.70 total` before the other case studies were added), 2.5 hours for the elliptic-curve certificate of the 3071-bit Swiss Post `q` ([primeQSP.v](/src/Examples/primeQSP.v)) and 7.8 hours for that of the 4096-bit ElectionGuard `p` ([primePEG.v](/src/Examples/primePEG.v)); dune checks them in parallel, so a full build from scratch takes about 8 hours of wall-clock on a 10-core laptop. See [bench/README.md](bench/README.md#primality-certificates) for how the certificates were generated. Use the same `DUNE_CACHE` setting for every `dune build` and `dune exec` invocation: switching it between runs makes dune recompile the Rocq theories, certificates included. If you want to compile it quickly, admit --`Proof. Admitted.`--[prime_q](src/Examples/HeliosTallyIns.v#L33) and [prime_p](src/Examples/HeliosTallyIns.v#L33), and comment out [import](src/Examples/HeliosTallyIns.v#L6) in [HeliosTallyIns.v](/src/Examples/HeliosTallyIns.v),  [primeP.v](/src/Examples/primeP.v), and [primeQ.v](/src/Examples/primeQ.v); likewise `prime_q` in [BayerGrothIns.v](/src/Examples/BayerGrothIns.v) with the `primeQSP` import and `prime_p` in [ElectionGuardIns.v](/src/Examples/ElectionGuardIns.v) with the `primePEG` import. 
 
 1. Run `dune exec _build/default/src/Executable/Sigmacode/main.exe` to run the sigma protocol. You will see an output like this:
    ```OCaml
@@ -138,31 +138,60 @@ generate OCaml code from it [_CoqProject file](/_CoqProject). It takes a while (
    ```
 16. Run `dune exec _build/default/src/Executable/Ed25519code/main.exe -- 7 30` to run the library on Ed25519: the field is `Z/lZ` and the group is the order-`l` subgroup of Curve25519, instantiated in [Ed25519.v](src/Curve/Ed25519.v) on top of the vendored specification layer of [fiat-crypto](https://github.com/mit-plv/fiat-crypto) ([src/Fiat](src/Fiat), MIT licence). [Ed25519Ins.v](src/Examples/Ed25519Ins.v) instantiates Schnorr and Chaum-Pedersen proofs and approval ballots with individual and overall proofs; the driver computes the challenges, verifies, rejects tampered proofs and a ballot encrypting 5, and benchmarks a ballot of the given number of candidates over the given number of iterations. You will see an output like this:
     ```OCaml
+    schnorr statement: knowledge of x with h = g^x
+    schnorr proof { announcement = (...); challenge = ...; response = ... }
     schnorr verify: true
     schnorr verify (tampered): false
+    chaum-pedersen statement: knowledge of x with h = g^x and c2 = c1^x
+    c1 = (...)
+    c2 = (...)
+    chaum-pedersen proof { announcement = (...),(...); challenge = ...; response = ... }
     chaum-pedersen verify: true
     chaum-pedersen verify (tampered): false
+    ballot of 7 candidates, public key h (plaintext votes, known to the voter only: [0,1,1,0,1,0,0])
+      candidate 0: ciphertext = ((...), (...))
+        proof of 0 or 1 = { announcement = ((...),(...)),((...),(...)); challenge = ...; response = ... }
+      ...
+      overall proof = { announcement = ...; challenge = ...; response = ... }
     ballot of 7 candidates: individual proofs verify: true
     overall proof verify: true
     full ballot verify: true
     full ballot verify (overall proof tampered): false
+    ballot encrypting 5 for candidate 0 (plaintext votes, known to the voter only: [5,0,0,0,0,0,0])
+      ...
     ballot encrypting 5 verify: false
     benchmark n = 7, iterations = 30, all verified = true
     ballot encryption + proofs (individual + overall): median 129.70 ms
     ballot verification (individual + overall):        median 58.04 ms
     ```
-17. Run `dune exec _build/default/src/Executable/Beleniosverifier/main.exe -- src/Executable/Beleniosverifier/data/ve3KB6dyuh66fD.bel` to verify a [Belenios](https://www.belenios.org/) election (Belenios 3.x public-data archive, group Ed25519, homomorphic questions with or without blank votes, weighted credentials, "Single" trustees). The certified verifier is [BeleniosTally.v](src/Backend/BeleniosTally.v), instantiated at Ed25519 in [BeleniosIns.v](src/Examples/BeleniosIns.v); every proof of Belenios is checked as a Schnorr proof or an Or-composition of Schnorr proofs in the product group `G × G` (theorems `fs_verify_schnorr_accepting` and `fs_verify_or_accepting`). The driver checks the archive's hash chain, decodes and validates every point, computes Belenios's SHA-256 challenges and prints the certificate. You will see an output like this:
+17. Run `dune exec _build/default/src/Executable/Beleniosverifier/main.exe -- src/Executable/Beleniosverifier/data/ve3KB6dyuh66fD.bel` to verify a [Belenios](https://www.belenios.org/) election (Belenios 3.x public-data archive, group Ed25519, homomorphic questions with or without blank votes, weighted credentials, "Single" trustees). The certified verifier is [BeleniosTally.v](src/Backend/BeleniosTally.v), instantiated at Ed25519 in [BeleniosIns.v](src/Examples/BeleniosIns.v); every proof of Belenios is checked as a Schnorr proof or an Or-composition of Schnorr proofs in the product group `G × G` (theorems `fs_verify_schnorr_accepting` and `fs_verify_or_accepting`). The driver parses the archive's documents with an ocamllex/menhir grammar of Belenios 3.x's serialisation ([parser.mly](src/Executable/Beleniosverifier/parsing/parser.mly), [ast.ml](src/Executable/Beleniosverifier/parsing/ast.ml)); as for Helios, the parser is the trusted boundary: it decodes every compressed point and checks that it lies on the curve, is canonically encoded and has order `l`, checks the range of every scalar, and refuses other groups, non-homomorphic questions and non-"Single" trustees. The driver then checks the archive's hash chain, computes Belenios's SHA-256 challenges and prints the certificate. You will see an output like this:
     ```OCaml
-    valid ballot   credential=ee446aa0157c9e29c5889597b51330bab6420ee4590489b82e55b47af0dc7c25
+    Count : Identity-tally : question 0: (00...01, 00...01) (00...01, 00...01); question 1: ...
+    ------------------------------------------------------------------------------------------
+    Valid ballot : credential: ee446aa0157c9e29c5889597b51330bab6420ee4590489b82e55b47af0dc7c25; answers: [question 0: {encrypted choices: [(8ae7...1a85, e231...3c51), ...]; individual proofs of 0 or 1: [...]; overall proof: [...]}; question 1: {...; blank proof: [...]}]; signature: {challenge = ...; response = ...}
+    Previous tally : question 0: (00...01, 00...01) ...
+    Current tally : question 0: (e72b...5067, 4c9c...7645) ...
+    ------------------------------------------------------------------------------------------
     ...
-    encrypted tally matches the published one: true
-    trustees' proofs of knowledge and decryption proofs: true
-    published result decrypts the tally: true
-    ballots: 8, tallied (last per credential): 5, valid: 8, invalid: 0
-    election ve3KB6dyuh66fD: verified = true (0.43 s)
+    Final tally: [question 0: (12ef...2f78, f5b3...94b0) (f967...13c3, dbcc...bb53); question 1: ...]
+    Published encrypted tally: [question 0: (12ef...2f78, f5b3...94b0) (f967...13c3, dbcc...bb53); question 1: ...]
+    Trustees' public keys: [0f49...8961 c6bc...7a20 7613...7e55]
+    Final decrypted tally: [question 0: 7000000000 3000000000; question 1: 5000000000 92000000000 3000000000]
+    Encrypted tally is equal to the published one : true
+    Trustees' pok, decryption factors and proofs are valid : true
+    Published result is correct decryption of the encrypted tally : true
+    ------------------------------------------------------------------------------------------
+
+    Final tally: [true]
+    All votes : [8]
+    Tallied votes (last per credential) : [5]
+    Valid vote : [8]
+    Invalid votes : [0]
+    election ve3KB6dyuh66fD: verified = true (0.42 s)
     ```
+    The certificate is printed as the Helios verifier prints its own (points in their compressed encoding, abbreviated here; proofs as challenge and response); the tally after each ballot is the certified encrypted tally of the valid ballots so far, the last one of each credential, weighted.
     [bench/belenios_tamper.py](bench/belenios_tamper.py) produces archives with a validly re-signed ballot whose individual, overall or blank proof is wrong, or with a wrong decryption factor, result or credential weight; run the verifier on them with `BELENIOS_SKIP_HASH_CHECK=1` (the archive's own content hashes no longer match) to see each one rejected. The sample archives in [src/Executable/Beleniosverifier/data](src/Executable/Beleniosverifier/data) were generated with Belenios 3.2.0's `tests/tool/demo.sh`, `demo-n-voters.sh` (300 voters, `eyo1Ps3KrSKYJy.bel`) and `demo-complex.sh` (`JDMgPNJoVM6ZuT.bel`); any election archive from a Belenios 3.x server with these features can be verified the same way.
-18. Run `dune exec _build/default/src/Executable/Egverifier/main.exe -- src/Executable/Egverifier/data/allAvailableJson` to verify an [ElectionGuard](https://www.electionguard.vote/) 2.0 election record (the `allAvailableJson` test record of the reference implementation [electionguard-kotlin-multiplatform](https://github.com/JohnLCaron/electionguard-kotlin-multiplatform): three guardians, 20 contests of 5 options, 11 cast ballots). The certified verifier is [ElectionGuardTally.v](src/Backend/ElectionGuardTally.v), instantiated at the parameters of the specification (4096-bit `p`, `q = 2^256 − 189`, `g = 2^r`) in [ElectionGuardIns.v](src/Examples/ElectionGuardIns.v); the guardians' coefficient proofs, the range proofs of the options, the selection-limit proofs of the contests and the decryption proofs are checked as Schnorr proofs or Or-compositions of Schnorr proofs in `G × G` with the Fiat-Shamir layer of the Belenios verifier (theorems `verify_guardian_schnorr_accepting`, `verify_range_or_accepting`, `verify_decryption_schnorr_accepting`), and the encrypted tally of the cast ballots is recomputed. The driver checks the parameters and the base hashes, the contest hashes and confirmation codes, validates every element and scalar, computes the HMAC-SHA-256 challenges and prints the certificate. You will see an output like this:
+18. Run `dune exec _build/default/src/Executable/Egverifier/main.exe -- src/Executable/Egverifier/data/allAvailableJson` to verify an [ElectionGuard](https://www.electionguard.vote/) 2.0 election record (the `allAvailableJson` test record of the reference implementation [electionguard-kotlin-multiplatform](https://github.com/JohnLCaron/electionguard-kotlin-multiplatform): three guardians, 20 contests of 5 options, 11 cast ballots). The certified verifier is [ElectionGuardTally.v](src/Backend/ElectionGuardTally.v), instantiated at the parameters of the specification (4096-bit `p`, `q = 2^256 − 189`, `g = 2^r`) in [ElectionGuardIns.v](src/Examples/ElectionGuardIns.v) (both primes are certified: `q` by the Pocklington certificate [primeQEG.v](src/Examples/primeQEG.v), `p` by the elliptic-curve certificate [primePEG.v](src/Examples/primePEG.v), whose check in the kernel takes about 7.8 hours (about 27,900 s of CPU on an Apple M-series laptop)); the guardians' coefficient proofs, the range proofs of the options, the selection-limit proofs of the contests and the decryption proofs are checked as Schnorr proofs or Or-compositions of Schnorr proofs in `G × G` with the Fiat-Shamir layer of the Belenios verifier (theorems `verify_guardian_schnorr_accepting`, `verify_range_or_accepting`, `verify_decryption_schnorr_accepting`), and the encrypted tally of the cast ballots is recomputed. The record's JSON files are parsed with an ocamllex/menhir grammar ([parser.mly](src/Executable/Egverifier/parsing/parser.mly), [ast.ml](src/Executable/Egverifier/parsing/ast.ml)) whose objects are order-insensitive lists of fields, since the reference implementation's serializer fixes no order; the parser is the trusted boundary, validating every element and scalar as it is read. The driver checks the parameters and the base hashes, the contest hashes and confirmation codes, computes the HMAC-SHA-256 challenges and prints the certificate. You will see an output like this:
     ```
     1.B-E constants are the parameters of the specification      true
     1.A specification version v2.0.0                             true
@@ -170,16 +199,105 @@ generate OCaml code from it [_CoqProject file](/_CoqProject). It takes a while (
     1.G manifest hash H_M = H(H_P; 0x01, manifest)               true
     1.H election base hash H_B = H(H_P; 0x02, H_M, n, k)         true
     4.A extended base hash H_E = H(H_B; 0x12, K)                 true
+    8 encrypted tally names the extended base hash               true
+    9 decrypted tally names the extended base hash               true
+    Count : Identity-tally : contest contest1: (1, 1) (1, 1) (1, 1) (1, 1) (1, 1); contest contest2: ...
+    ------------------------------------------------------------------------------------------
+    Valid ballot : ballot_id: id-1; state: cast; contests: [contest contest1: {encrypted selections: [(1013...3047, 4250...1779), ...]; range proofs: [[{challenge = 4299...9897; response = 7035...1575}, ...], ...]; selection limit proof: [...]}; contest contest2: ...]
+    Previous tally : contest contest1: (1, 1) (1, 1) (1, 1) (1, 1) (1, 1); contest contest2: ...
+    Current tally : contest contest1: (1013...3047, 4250...1779) ...; contest contest2: ...
+    ------------------------------------------------------------------------------------------
     ...
-    valid ballot   id-1 (cast)
-    ...
-    2,3 guardians' coefficient proofs and joint public key       true
-    8 encrypted tally of the cast ballots is the published one   true
-    9,10 decryption proofs and decrypted values of the tally     true
-    ballots: 11, valid: 11, invalid: 0, cast: 11
+    Final tally: [contest contest1: (4912...0728, 2553...0982) ...; contest contest2: ...]
+    Published encrypted tally: [contest contest1: (4912...0728, 2553...0982) ...; contest contest2: ...]
+    Guardians' coefficient commitments: [guardian 1: 7681...4087 ...; guardian 2: ...; guardian 3: ...]
+    Final decrypted tally: [contest contest1: 2 1 2 1 3; contest contest2: 2 1 3 2 0; contest contest3: 1 1 3 1 1; ...]
+    Guardians' coefficient proofs and joint public key are valid : true
+    Encrypted tally of the cast ballots is equal to the published one : true
+    Decryption proofs and decrypted values of the tally are valid : true
+    ------------------------------------------------------------------------------------------
+
+    Final tally: [true]
+    All votes : [11]
+    Cast votes : [11]
+    Valid vote : [11]
+    Invalid votes : [0]
     election 6569AF316FF87BA8: verified = true (certified verifier: 61.25 s)
     ```
+    The certificate is printed as the Helios verifier prints its own (elements and scalars in decimal, abbreviated here; proofs as challenge and response); the tally after each ballot is the certified encrypted tally of the valid cast ballots so far.
     [bench/electionguard_tamper.py](bench/electionguard_tamper.py) runs the verifier on copies of the record with a wrong range proof, selection-limit proof, coefficient proof, encrypted tally, decryption proof or decrypted value, with two options swapped, with a cast ballot marked as challenged, or with a duplicated ballot; every copy is rejected. Records with challenged ballots (`challenged_ballots/dballot-*.json`, as in the `chainedJson` test record) have their decryptions checked as well.
+19. Run `dune exec _build/default/src/Executable/P256code/main.exe -- 7 30` to run the library on P-256 (secp256r1): the field is `Z/nZ` and the group is the P-256 curve group, instantiated in [P256.v](src/Curve/P256.v) on top of the vendored Weierstrass-curve specification of fiat-crypto, with the primes certified in [P256Primes.v](src/Curve/P256Primes.v). [P256Ins.v](src/Examples/P256Ins.v) mirrors the Ed25519 instantiation (step 16); the output has the same shape:
+    ```
+    P-256: n = 115792089210356248762697446949407573529996955224135760342422259061068512044369
+    ...
+    ballot of 7 candidates, public key h (plaintext votes, known to the voter only: [0,0,0,0,0,1,0])
+      candidate 0: ciphertext = ((...), (...))
+        proof of 0 or 1 = { announcement = ((...),(...)),((...),(...)); challenge = ...; response = ... }
+      ...
+      overall proof = { announcement = ...; challenge = ...; response = ... }
+    ...
+    full ballot verify: true
+    full ballot verify (overall proof tampered): false
+    ballot encrypting 5 for candidate 0 (plaintext votes, known to the voter only: [5,0,0,0,0,0,0])
+      ...
+    ballot encrypting 5 verify: false
+    benchmark n = 7, iterations = 30, all verified = true
+    ballot encryption + proofs (individual + overall): median 255.07 ms
+    ballot verification (individual + overall):        median 112.37 ms
+    ```
+20. Run `dune exec _build/default/src/Executable/Vmnverifier/main.exe -- src/Executable/Vmnverifier/data/demo/protInfo.xml src/Executable/Vmnverifier/data/demo/default` to verify a mixing session of the [Verificatum](https://www.verificatum.org/) mix-net (VMN 3.1.0: proofs of a shuffle of Terelius–Wikström for every mix-server, joint decryption with Lagrange-combined Chaum–Pedersen proofs, and the plaintexts). The round-2 protocol of the shuffle is the library's generalised Okamoto protocol at the product space of the five equations ([ShuffleTW.v](src/Crypto/ShuffleTW.v), theorem `tw_relation_iff`), and the certified verifier is [VerificatumVerifier.v](src/Backend/VerificatumVerifier.v) instantiated at the Helios group in [VerificatumIns.v](src/Examples/VerificatumIns.v). The driver implements Verificatum's byte trees, random oracles and generator derivation. You will see an output like this:
+    ```
+    proofs of a shuffle of the mix-servers (Algorithm 25)   true
+    joint decryption and plaintexts (Algorithms 22, 27)     true
+    ciphertexts: 10, mix-servers: 3 (active threshold 2), decrypting parties: 1,2,3
+    session MyDemo.default: verified = true (certified verifier: 0.37 s)
+    ```
+    [bench/verificatum_tamper.py](bench/verificatum_tamper.py) changes one byte-tree leaf at a time (a response, an announcement, an output ciphertext, two swapped outputs, the permutation commitment, a decryption factor or reply, a plaintext, the public key) and checks that every copy is rejected. The proofs in [src/Executable/Vmnverifier/data](src/Executable/Vmnverifier/data) were produced by Verificatum's own demo scripts over the certified Helios group and accepted by its verifier `vmnv`.
+21. Run `dune exec _build/default/src/Executable/Uproveverifier/main.exe -- --tamper` to verify the official test vectors of Microsoft's [U-Prove](https://www.microsoft.com/en-us/research/project/u-prove/) anonymous credentials (Cryptographic Specification V1.1 Revision 3, whose algorithms are unchanged in the current [Revision 5](https://github.com/microsoft/uprove-node-reference/blob/main/doc/U-Prove%20Cryptographic%20Specification%20V1.1%20Revision%205.pdf) of March 2023; elliptic-curve construction at P-256 with SHA-256, the only construction Revision 5 keeps; twelve complete protocol runs from the U-Prove C# SDK in [data/](src/Executable/Uproveverifier/data): zero, two or five disclosed attributes, with and without Device protection, with a scope-exclusive pseudonym and two attribute commitments). The token public key is `h = (g_0 g_1^{x_1} … g_n^{x_n} g_t^{x_t} [g_d^{x_d}])^α`; a presentation proof is the generalised Okamoto protocol with bases `(h, g_i for i ∉ D, [g_d])` and witness `(α⁻¹, −x_i, [−x_d])`, the Issuer's signature is a Chaum–Pedersen proof of `g_0 = g^{y_0} ∧ σ_z' = h^{y_0}`, and the pseudonym and the commitments are further components of one Okamoto statement in the product space `G^m` ([UProve.v](src/Crypto/UProve.v)). The certified verifier is [UProveVerifier.v](src/Backend/UProveVerifier.v), instantiated at P-256 in [UProveIns.v](src/Examples/UProveIns.v); the driver implements the hash formatting of the spec, recomputes the Issuer-parameter digest, `x_t`, the `x_i`, the token identifier and the challenge, and hands the hash functions to the extracted code as oracles. You will see an output like this:
+    ```
+    testvectors_EC_D0_doc.txt                signature true  presentation true   (D= U=1,2,3,4,5 C=1,4 p=1 device=false)
+    testvectors_EC_D0_lite_doc.txt           signature true  presentation true   (D= U=1,2,3,4,5 C=- p=- device=false)
+    ...
+    testvectors_EC_Device_D5_lite_doc.txt    signature true  presentation true   (D=1,2,3,4,5 U= C=- p=- device=true)
+    12 files, all accepted: true, 349 ms
+    --- tampered inputs (every line must show false) ---
+    response r0 + 1: ...                     signature true  presentation false ...
+    disclosed attribute x_D + 1: ...         signature true  presentation false ...
+    signature sigma_r' + 1: ...              signature false presentation false ...
+    commitment c~ replaced by g0: ...        signature true  presentation false ...
+    all tampered inputs rejected: true
+    ```
+
+22. Run `dune exec _build/default/src/Executable/Bbssharpverifier/main.exe -- 10 1 50` to run [BBS#](https://eprint.iacr.org/2025/619) (Orange Innovation's pairing-free variant of BBS proposed for the EU Digital Identity Wallet) at P-256: the Issuer issues a MAC_BBS credential `(A = (g_0 pk ∏ g_i^{m_i})^{1/(x+e)}, e)` on 10 attributes and proves `B = A^x` with a Chaum–Pedersen proof; the holder blinds the key and randomises the credential into `(Ā, B̄, D)` and presents 1 attribute with the holder-binding Schnorr proof and the validity proof (one Okamoto statement in `G²`, [BBSSharp.v](src/Crypto/BBSSharp.v), [OkamotoRows.v](src/Crypto/OkamotoRows.v)); the Issuer's discrete-logarithm-equality proof on `(Ā, B̄)` replaces the pairing check. Prover and verifier are the extracted Rocq code ([BBSSharpIns.v](src/Examples/BBSSharpIns.v), [BBSSharpVerifier.v](src/Backend/BBSSharpVerifier.v)); the driver draws the randomness, derives the generators and computes the challenges with RFC 9380's `hash_to_scalar` (there is no published BBS# wire format or test vectors, so the encoding is the driver's). You will see an output like this:
+    ```
+    BBS# at P-256 / SHA-256: 10 attributes, 1 disclosed
+    issuance: MAC_BBS credential (A, e) issued; Issuer's DLEQ proof B = A^x verified: true
+    presentation: generated in 55.7 ms, certified verification: true in 30.9 ms
+    --- tampered presentations (every line must show false) ---
+    validity response rho_1 + 1        false
+    ...
+    other Issuer key                   false
+    all tampered presentations rejected: true
+    benchmark over 50 iterations (median): presentation 53.9 ms, verification 30.8 ms
+    ```
+
+23. Run `dune exec _build/default/src/Executable/Bgverifier/main.exe -- src/Executable/Bgverifier/data` to verify the mix-net test vectors of the [Swiss Post e-voting system](https://gitlab.com/swisspost-evoting/crypto-primitives/crypto-primitives): the Bayer–Groth shuffle argument (crypto-primitives specification 1.6.0, Section 9) and its five sub-arguments (product, Hadamard, zero, single value product, multi-exponentiation) at the 3072-bit group `p = 2q + 1`, for m·n ∈ {2, 6, 64} ciphertexts with 1, 2 or 4 message components. The arguments are built from the library's algebra in [BayerGroth.v](src/Crypto/BayerGroth.v) (Pedersen commitments, polynomial evaluation in a vector space, the product space of ciphertexts) with completeness theorems for every argument and, from the k-special soundness algebra of [SigmaK.v](src/Crypto/SigmaK.v) and the polynomial lemmas of [PolyPerm.v](src/Crypto/PolyPerm.v), the soundness of every argument, composed into the shuffle argument's soundness theorem `shuffle_soundness` ([BayerGrothSound.v](src/Crypto/BayerGrothSound.v)); the certified Fiat–Shamir verifier is [BayerGrothVerifier.v](src/Backend/BayerGrothVerifier.v), by definition the interactive verifier at the RecursiveHash challenges, with the random-oracle step in the rewinding form (`shuffle_fs_soundness`) and the one-query soundness bounds of the single-challenge arguments, instantiated in [BayerGrothIns.v](src/Examples/BayerGrothIns.v) (q is proved prime by the elliptic-curve certificate of [primeQSP.v](src/Examples/primeQSP.v), generated with PARI/GP and [ecpp2coq.py](bench/ecpp2coq.py), and p = 2q + 1 by Pocklington's criterion from q). The honest-verifier zero-knowledge simulators of every sub-argument and of the shuffle are in [BayerGrothZK.v](src/Crypto/BayerGrothZK.v): perfect SHVZK as an equality of the honest and simulated transcript distributions, proved from an explicit bijection of the prover's coins, for single-message ElGamal. The fixtures are parsed with an ocamllex/menhir grammar ([parser.mly](src/Executable/Bgverifier/parsing/parser.mly), [ast.ml](src/Executable/Bgverifier/parsing/ast.ml); one start symbol per fixture file, order-insensitive objects, every Base64 value decoded and checked for subgroup membership or range as it is read); the driver computes RecursiveHash (SHA3-256) as the Java library does, checks the recomputed challenges against the fixtures, verifies every case, rejects tampered arguments, and runs the extracted honest prover on fresh shuffles. You will see an output like this:
+    ```
+    Bayer–Groth shuffle argument, Swiss Post crypto-primitives fixtures, 3072-bit group
+    verify-shuffle-argument.json (Algorithm 9.12)
+      3072-bits, m=1, n=2, l=1: recomputed challenges x, y, z match the fixture: true true true
+      3072-bits, m=1, n=2, l=1                                 accepted (expected true )    253.6 ms
+        tamper: two shuffled ciphertexts swapped               rejected (expected false)     93.7 ms
+      ...
+      3072-bits, m=8, n=8, l=4                                 accepted (expected true )  12417.4 ms
+    ...
+    extracted honest prover (Fiat–Shamir) and certified verifier on fresh shuffles
+      m=2, n=3, l=2: extracted prover 5205.9 ms, certified verifier accepted in 790.5 ms
+      tamper: argument replayed on a different shuffle: rejected
+    ...
+    84 checks, 0 unexpected
+    ```
+
 ## Theorems and axioms
 
 [THEOREMS.md](THEOREMS.md) lists, section by section of the paper, the Rocq theorem behind every claim, including the permutation-form zero-knowledge theorems (`*_special_honest_verifier_zkp_perm`), the soundness error bound (`soundness_error_bound` in [Sigma.v](src/Crypto/Sigma.v)) and the approval-voting overall proof ([Approval.v](src/Frontend/Approval.v)). Run `bash bench/assumptions.sh` after `dune build` to print the assumptions of every listed theorem.

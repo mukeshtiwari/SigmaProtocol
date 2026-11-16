@@ -2339,3 +2339,89 @@ End Modutil.
 
 
 
+
+
+(* Enumeration of Fin.t, iteration over it, and the field element of a
+  natural number. Used by Frontend/Schulze.v and Backend/SchulzeTally.v. *)
+Section FinEnum.
+
+  Local Open Scope nat_scope.
+
+  (* [F1; FS F1; ...; FS^(n-1) F1] : every element of Fin.t n, in order *)
+  Fixpoint fin_enum (n : nat) : Vector.t (Fin.t n) n :=
+    match n with
+    | 0 => []
+    | S n' => Fin.F1 :: Vector.map Fin.FS (fin_enum n')
+    end.
+
+  Lemma fin_enum_nth : ∀ (n : nat) (i : Fin.t n), 
+    Vector.nth (fin_enum n) i = i.
+  Proof.
+    induction n as [| n ihn]; intro i.
+    + inversion i.
+    + apply (Fin.caseS' i); cbn; [reflexivity | intro j].
+      rewrite (Vector.nth_map _ _ j j eq_refl), ihn; reflexivity.
+  Qed.
+
+  (* the natural number below i *)
+  Definition fin_idx {n : nat} (i : Fin.t n) : nat := proj1_sig (Fin.to_nat i).
+
+  (* the i-th element of Fin.t n, or F1 when i is out of range; 
+    the callers only use it in range *)
+  Definition fin_of_nat_default (i n : nat) : Fin.t (S n) :=
+    match Fin.of_nat i (S n) with
+    | inleft f => f
+    | inright _ => Fin.F1
+    end.
+
+  Lemma of_nat_idx : ∀ (n i : nat) (f : Fin.t n), 
+    Fin.of_nat i n = inleft f -> fin_idx f = i.
+  Proof.
+    induction n as [| n ihn]; intros i f h.
+    + inversion f.
+    + destruct i as [| i]; cbn in h.
+      - inversion h; subst; reflexivity.
+      - destruct (Fin.of_nat i n) as [f' | arg] eqn:he; [| inversion h].
+        inversion h; subst. specialize (ihn _ _ he). 
+        unfold fin_idx in *; cbn.
+        destruct (Fin.to_nat f') as [j hj]; cbn in *; lia.
+  Qed.
+
+  Lemma fin_of_nat_default_idx : ∀ (i n : nat), i <= n ->
+    fin_idx (fin_of_nat_default i n) = i.
+  Proof.
+    intros i n hi; unfold fin_of_nat_default.
+    destruct (Fin.of_nat i (S n)) as [f | [k hk]] eqn:he.
+    + exact (of_nat_idx _ _ _ he).
+    + lia.
+  Qed.
+
+  (* conjunction / sum / fold of a boolean or value-valued function over Fin.t n *)
+  Definition forall_fin (n : nat) (f : Fin.t n -> bool) : bool :=
+    Vector.fold_right andb (Vector.map f (fin_enum n)) true.
+
+  Lemma forall_fin_true : ∀ (n : nat) (f : Fin.t n -> bool),
+    forall_fin n f = true <-> (∀ i : Fin.t n, f i = true).
+  Proof.
+    induction n as [| n ihn]; intro f; split; intro h.
+    + intro i; inversion i.
+    + reflexivity.
+    + intro i; cbn in h; apply andb_true_iff in h; destruct h as [h1 h2].
+      rewrite Vector.map_map in h2.
+      apply (Fin.caseS' i); [exact h1 | intro j].
+      exact (proj1 (ihn (fun j => f (Fin.FS j))) h2 j).
+    + cbn; apply andb_true_iff; split; [exact (h Fin.F1) |].
+      rewrite Vector.map_map.
+      apply (proj2 (ihn (fun j => f (Fin.FS j)))); intro j; exact (h (Fin.FS j)).
+  Qed.
+
+  Context {F : Type} (zero one : F) (add : F -> F -> F).
+
+  (* the field element 1 + 1 + ... + 1 (k times) *)
+  Fixpoint nat_to_F (k : nat) : F :=
+    match k with
+    | 0 => zero
+    | S k' => add one (nat_to_F k')
+    end.
+
+End FinEnum.
