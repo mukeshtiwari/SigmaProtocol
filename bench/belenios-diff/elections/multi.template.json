@@ -1,0 +1,1 @@
+{"description":"Differential testing: interval and blank constraints.","name":"multi","questions":[{"answers":["A","B","C","D"],"min":1,"max":3,"question":"Pick one to three"},{"answers":["X","Y","Z"],"blank":true,"min":2,"max":2,"question":"Pick exactly two, or vote blank"},{"answers":["P","Q"],"min":0,"max":2,"question":"Pick any"}]}

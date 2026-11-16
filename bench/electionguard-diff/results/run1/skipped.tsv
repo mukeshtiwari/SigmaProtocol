@@ -1,0 +1,2 @@
+forgery egk-chainedJson tally: a cast ballot's decryption published as a challenged ballot	egk RunTrustedBallotDecryption: Exception= -1 java.lang.NegativeArraySizeException: -1
+forgery egk-chainedJson tally: a challenged ballot's published decryption is that of another ciphertext (other choices) | forgery	egk wrote no decryption

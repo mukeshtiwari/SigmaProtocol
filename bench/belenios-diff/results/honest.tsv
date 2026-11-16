@@ -1,0 +1,10 @@
+name	expected	belenios-tool	certified	comparison	description	belenios-tool message	certified message
+complex	accept	accept	accept	agree	belenios-tool election	I: all checks passed	election Z1iVMP5hDUCzjS: verified = true
+demo	accept	accept	accept	agree	belenios-tool election	I: all checks passed	election j33c91QEazQ9zY: verified = true
+demo-python-prover	accept	accept	accept	agree	ballots, tally, decryptions and result of our Python prover	I: all checks passed	election j33c91QEazQ9zY: verified = true
+empty	accept	accept	accept	agree	belenios-tool election	I: all checks passed	election TDPpcna46GRKy4: verified = true
+multi	accept	accept	accept	agree	belenios-tool election	I: all checks passed	election YXPaYPxQq8vZw5: verified = true
+multi-edge-votes	accept	accept	accept	agree	minimum, maximum and blank votes	I: all checks passed	election YXPaYPxQq8vZw5: verified = true
+multi-python-prover	accept	accept	accept	agree	ballots, tally, decryptions and result of our Python prover	I: all checks passed	election YXPaYPxQq8vZw5: verified = true
+single	accept	accept	accept	agree	belenios-tool election	I: all checks passed	election YiUQBMV2UusWcq: verified = true
+single-python-prover	accept	accept	accept	agree	ballots, tally, decryptions and result of our Python prover	I: all checks passed	election YiUQBMV2UusWcq: verified = true

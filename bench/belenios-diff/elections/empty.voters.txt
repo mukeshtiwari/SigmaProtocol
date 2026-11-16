@@ -1,0 +1,2 @@
+voter1@example.com,voter1
+voter2@example.com,voter2

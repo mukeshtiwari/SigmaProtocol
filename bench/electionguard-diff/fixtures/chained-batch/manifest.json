@@ -1,0 +1,126 @@
+{
+    "election_scope_id": "TestManifest",
+    "spec_version": "v2.0.0",
+    "type": "general",
+    "start_date": "start",
+    "end_date": "end",
+    "geopolitical_units": [
+        {
+            "object_id": "district9",
+            "name": "districtName",
+            "type": "precinct"
+        }
+    ],
+    "parties": [
+        {
+            "object_id": "dog",
+            "name": ""
+        },
+        {
+            "object_id": "cat",
+            "name": ""
+        }
+    ],
+    "candidates": [
+        {
+            "object_id": "candidate4",
+            "is_write_in": false
+        },
+        {
+            "object_id": "candidate3",
+            "is_write_in": false
+        },
+        {
+            "object_id": "candidate6",
+            "is_write_in": false
+        },
+        {
+            "object_id": "candidate5",
+            "is_write_in": false
+        },
+        {
+            "object_id": "candidate2",
+            "is_write_in": false
+        },
+        {
+            "object_id": "candidate1",
+            "is_write_in": false
+        }
+    ],
+    "contests": [
+        {
+            "object_id": "contest1",
+            "sequence_order": 1,
+            "electoral_district_id": "district9",
+            "vote_variation": "one_of_m",
+            "number_elected": 1,
+            "votes_allowed": 1,
+            "name": "contest1",
+            "ballot_selections": [
+                {
+                    "object_id": "selection1",
+                    "sequence_order": 1,
+                    "candidate_id": "candidate1"
+                },
+                {
+                    "object_id": "selection2",
+                    "sequence_order": 2,
+                    "candidate_id": "candidate2"
+                },
+                {
+                    "object_id": "selection3",
+                    "sequence_order": 3,
+                    "candidate_id": "candidate3"
+                }
+            ],
+            "ballot_title": "title",
+            "ballot_subtitle": "subtitle"
+        },
+        {
+            "object_id": "contest2",
+            "sequence_order": 2,
+            "electoral_district_id": "district9",
+            "vote_variation": "one_of_m",
+            "number_elected": 1,
+            "votes_allowed": 1,
+            "name": "contest2",
+            "ballot_selections": [
+                {
+                    "object_id": "selection4",
+                    "sequence_order": 1,
+                    "candidate_id": "candidate4"
+                },
+                {
+                    "object_id": "selection5",
+                    "sequence_order": 2,
+                    "candidate_id": "candidate5"
+                },
+                {
+                    "object_id": "selection6",
+                    "sequence_order": 3,
+                    "candidate_id": "candidate6"
+                }
+            ],
+            "ballot_title": "title",
+            "ballot_subtitle": "subtitle"
+        }
+    ],
+    "ballot_styles": [
+        {
+            "object_id": "ballotStyle",
+            "geopolitical_unit_ids": [
+                "district9"
+            ],
+            "party_ids": [
+            ]
+        }
+    ],
+    "name": [
+    ],
+    "contact_information": {
+        "address_line": [
+        ],
+        "phone": "911",
+        "name": "contact"
+    }
+}

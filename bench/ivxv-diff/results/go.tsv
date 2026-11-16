@@ -1,0 +1,185 @@
+component	name	source	expected	vmnv	ivxv	ivxv_threaded	ours	vmnv_exit	desc	vmnv_msg	ivxv_msg	ours_msg
+go	g0-honest	honest	accept		accept		accept		Go Prove, salt -			
+go	g0-ours	control	accept		accept		accept		our prover			
+go	g0-false-salt	false	reject		reject		reject		verified with another salt		recreated challenge on verifier side doesn't match the one generated on a prover side: math/group: different scalar valu	
+go	g0-false-plaintext	false	reject		reject		reject		plaintext d*g		recreated challenge on verifier side doesn't match the one generated on a prover side: math/group: different scalar valu	
+go	g0-false-key	false	reject		reject		reject		decrypted under another key		recreated challenge on verifier side doesn't match the one generated on a prover side: math/group: different scalar valu	
+go	g0-m-y-timesg	field	reject		reject		reject		y: times g		recreated challenge on verifier side doesn't match the one generated on a prover side: math/group: different scalar valu	
+go	g0-m-y-one	field	reject		reject		reject		y: one		recreated challenge on verifier side doesn't match the one generated on a prover side: math/group: different scalar valu	
+go	g0-m-y-inverse	field	reject		reject		reject		y: inverse		recreated challenge on verifier side doesn't match the one generated on a prover side: math/group: different scalar valu	
+go	g0-m-y-random	field	reject		reject		reject		y: random		recreated challenge on verifier side doesn't match the one generated on a prover side: math/group: different scalar valu	
+go	g0-m-c1-timesg	field	reject		reject		reject		c1: times g		recreated challenge on verifier side doesn't match the one generated on a prover side: math/group: different scalar valu	
+go	g0-m-c1-one	field	reject		reject		reject		c1: one		recreated challenge on verifier side doesn't match the one generated on a prover side: math/group: different scalar valu	
+go	g0-m-c1-inverse	field	reject		reject		reject		c1: inverse		recreated challenge on verifier side doesn't match the one generated on a prover side: math/group: different scalar valu	
+go	g0-m-c1-random	field	reject		reject		reject		c1: random		recreated challenge on verifier side doesn't match the one generated on a prover side: math/group: different scalar valu	
+go	g0-m-c2-timesg	field	reject		reject		reject		c2: times g		recreated challenge on verifier side doesn't match the one generated on a prover side: math/group: different scalar valu	
+go	g0-m-c2-one	field	reject		reject		reject		c2: one		recreated challenge on verifier side doesn't match the one generated on a prover side: math/group: different scalar valu	
+go	g0-m-c2-inverse	field	reject		reject		reject		c2: inverse		recreated challenge on verifier side doesn't match the one generated on a prover side: math/group: different scalar valu	
+go	g0-m-c2-random	field	reject		reject		reject		c2: random		recreated challenge on verifier side doesn't match the one generated on a prover side: math/group: different scalar valu	
+go	g0-m-d-timesg	field	reject		reject		reject		d: times g		recreated challenge on verifier side doesn't match the one generated on a prover side: math/group: different scalar valu	
+go	g0-m-d-one	field	reject		reject		reject		d: one		recreated challenge on verifier side doesn't match the one generated on a prover side: math/group: different scalar valu	
+go	g0-m-d-inverse	field	reject		reject		reject		d: inverse		recreated challenge on verifier side doesn't match the one generated on a prover side: math/group: different scalar valu	
+go	g0-m-d-random	field	reject		reject		reject		d: random		recreated challenge on verifier side doesn't match the one generated on a prover side: math/group: different scalar valu	
+go	g0-m-e-+1	field	reject		reject		reject		e: +1		recreated challenge on verifier side doesn't match the one generated on a prover side: math/group: different scalar valu	
+go	g0-m-e-zero	field	reject		reject		reject		e: zero		recreated challenge on verifier side doesn't match the one generated on a prover side: math/group: different scalar valu	
+go	g0-m-e-negated	field	reject		reject		reject		e: negated		recreated challenge on verifier side doesn't match the one generated on a prover side: math/group: different scalar valu	
+go	g0-m-e-random	field	reject		reject		reject		e: random		recreated challenge on verifier side doesn't match the one generated on a prover side: math/group: different scalar valu	
+go	g0-m-s-+1	field	reject		reject		reject		s: +1		recreated challenge on verifier side doesn't match the one generated on a prover side: math/group: different scalar valu	
+go	g0-m-s-zero	field	reject		reject		reject		s: zero		recreated challenge on verifier side doesn't match the one generated on a prover side: math/group: different scalar valu	
+go	g0-m-s-negated	field	reject		reject		reject		s: negated		recreated challenge on verifier side doesn't match the one generated on a prover side: math/group: different scalar valu	
+go	g0-m-s-random	field	reject		reject		reject		s: random		recreated challenge on verifier side doesn't match the one generated on a prover side: math/group: different scalar valu	
+go	g0-e-y-plus-p	structural	either		accept		reject		public key y + p (non-reduced)			parser: element not in the group
+go	g0-e-c1-plus-p	structural	either		accept		reject		ciphertext c1 + p (non-reduced)			parser: element not in the group
+go	g0-e-d-plus-p	structural	either		accept		reject		decryption d + p (non-reduced)			parser: element not in the group
+go	g0-e-c1-negative	structural	either		accept		reject		c1 - p (negative, same residue)			parser: element not in the group
+go	g0-e-s-plus-q	structural	either		reject		reject		response s + q		failed to ASN.1 unmarshal ElGamal decryption proof: cannot create ElGamal transcript from ASN.1 unmarshalled ElGamal pro	parser: scalar out of range
+go	g0-e-e-plus-q	structural	either		reject		reject		challenge e + q		failed to ASN.1 unmarshal ElGamal decryption proof: cannot create ElGamal transcript from ASN.1 unmarshalled ElGamal pro	parser: scalar out of range
+go	g0-e-d-nonsquare	structural	either		reject		reject		decryption p - d (not in G_q)		failed to ASN.1 unmarshal ElGamal decryption proof: cannot create ElGamal decryption from ASN.1 unmarshalled ElGamal pro	parser: element not in the group
+go	g0-e-d-zero	structural	either		reject		reject		decryption 0		failed to ASN.1 unmarshal ElGamal decryption proof: cannot create ElGamal decryption from ASN.1 unmarshalled ElGamal pro	parser: element not in the group
+go	g0-e-d-p	structural	either		reject		reject		decryption p		failed to ASN.1 unmarshal ElGamal decryption proof: cannot create ElGamal decryption from ASN.1 unmarshalled ElGamal pro	parser: element not in the group
+go	g0-e-trailing	structural	reject		reject		reject		trailing byte after the proof		failed to ASN.1 unmarshal ElGamal decryption proof: trailing bytes while ASN.1 unmarshalling ElGamal proof	parser: DER
+go	g1-honest	honest	accept		accept		accept		Go Prove, salt 			
+go	g1-ours	control	accept		accept		accept		our prover			
+go	g1-false-salt	false	reject		reject		reject		verified with another salt		recreated challenge on verifier side doesn't match the one generated on a prover side: math/group: different scalar valu	
+go	g1-false-plaintext	false	reject		reject		reject		plaintext d*g		recreated challenge on verifier side doesn't match the one generated on a prover side: math/group: different scalar valu	
+go	g1-false-key	false	reject		reject		reject		decrypted under another key		recreated challenge on verifier side doesn't match the one generated on a prover side: math/group: different scalar valu	
+go	g1-m-y-timesg	field	reject		reject		reject		y: times g		recreated challenge on verifier side doesn't match the one generated on a prover side: math/group: different scalar valu	
+go	g1-m-y-one	field	reject		reject		reject		y: one		recreated challenge on verifier side doesn't match the one generated on a prover side: math/group: different scalar valu	
+go	g1-m-y-inverse	field	reject		reject		reject		y: inverse		recreated challenge on verifier side doesn't match the one generated on a prover side: math/group: different scalar valu	
+go	g1-m-y-random	field	reject		reject		reject		y: random		recreated challenge on verifier side doesn't match the one generated on a prover side: math/group: different scalar valu	
+go	g1-m-c1-timesg	field	reject		reject		reject		c1: times g		recreated challenge on verifier side doesn't match the one generated on a prover side: math/group: different scalar valu	
+go	g1-m-c1-one	field	reject		reject		reject		c1: one		recreated challenge on verifier side doesn't match the one generated on a prover side: math/group: different scalar valu	
+go	g1-m-c1-inverse	field	reject		reject		reject		c1: inverse		recreated challenge on verifier side doesn't match the one generated on a prover side: math/group: different scalar valu	
+go	g1-m-c1-random	field	reject		reject		reject		c1: random		recreated challenge on verifier side doesn't match the one generated on a prover side: math/group: different scalar valu	
+go	g1-m-c2-timesg	field	reject		reject		reject		c2: times g		recreated challenge on verifier side doesn't match the one generated on a prover side: math/group: different scalar valu	
+go	g1-m-c2-one	field	reject		reject		reject		c2: one		recreated challenge on verifier side doesn't match the one generated on a prover side: math/group: different scalar valu	
+go	g1-m-c2-inverse	field	reject		reject		reject		c2: inverse		recreated challenge on verifier side doesn't match the one generated on a prover side: math/group: different scalar valu	
+go	g1-m-c2-random	field	reject		reject		reject		c2: random		recreated challenge on verifier side doesn't match the one generated on a prover side: math/group: different scalar valu	
+go	g1-m-d-timesg	field	reject		reject		reject		d: times g		recreated challenge on verifier side doesn't match the one generated on a prover side: math/group: different scalar valu	
+go	g1-m-d-one	field	reject		reject		reject		d: one		recreated challenge on verifier side doesn't match the one generated on a prover side: math/group: different scalar valu	
+go	g1-m-d-inverse	field	reject		reject		reject		d: inverse		recreated challenge on verifier side doesn't match the one generated on a prover side: math/group: different scalar valu	
+go	g1-m-d-random	field	reject		reject		reject		d: random		recreated challenge on verifier side doesn't match the one generated on a prover side: math/group: different scalar valu	
+go	g1-m-e-+1	field	reject		reject		reject		e: +1		recreated challenge on verifier side doesn't match the one generated on a prover side: math/group: different scalar valu	
+go	g1-m-e-zero	field	reject		reject		reject		e: zero		recreated challenge on verifier side doesn't match the one generated on a prover side: math/group: different scalar valu	
+go	g1-m-e-negated	field	reject		reject		reject		e: negated		recreated challenge on verifier side doesn't match the one generated on a prover side: math/group: different scalar valu	
+go	g1-m-e-random	field	reject		reject		reject		e: random		recreated challenge on verifier side doesn't match the one generated on a prover side: math/group: different scalar valu	
+go	g1-m-s-+1	field	reject		reject		reject		s: +1		recreated challenge on verifier side doesn't match the one generated on a prover side: math/group: different scalar valu	
+go	g1-m-s-zero	field	reject		reject		reject		s: zero		recreated challenge on verifier side doesn't match the one generated on a prover side: math/group: different scalar valu	
+go	g1-m-s-negated	field	reject		reject		reject		s: negated		recreated challenge on verifier side doesn't match the one generated on a prover side: math/group: different scalar valu	
+go	g1-m-s-random	field	reject		reject		reject		s: random		recreated challenge on verifier side doesn't match the one generated on a prover side: math/group: different scalar valu	
+go	g2-honest	honest	accept		accept		accept		Go Prove, salt 010203			
+go	g2-ours	control	accept		accept		accept		our prover			
+go	g2-false-salt	false	reject		reject		reject		verified with another salt		recreated challenge on verifier side doesn't match the one generated on a prover side: math/group: different scalar valu	
+go	g2-false-plaintext	false	reject		reject		reject		plaintext d*g		recreated challenge on verifier side doesn't match the one generated on a prover side: math/group: different scalar valu	
+go	g2-false-key	false	reject		reject		reject		decrypted under another key		recreated challenge on verifier side doesn't match the one generated on a prover side: math/group: different scalar valu	
+go	g2-m-y-timesg	field	reject		reject		reject		y: times g		recreated challenge on verifier side doesn't match the one generated on a prover side: math/group: different scalar valu	
+go	g2-m-y-one	field	reject		reject		reject		y: one		recreated challenge on verifier side doesn't match the one generated on a prover side: math/group: different scalar valu	
+go	g2-m-y-inverse	field	reject		reject		reject		y: inverse		recreated challenge on verifier side doesn't match the one generated on a prover side: math/group: different scalar valu	
+go	g2-m-y-random	field	reject		reject		reject		y: random		recreated challenge on verifier side doesn't match the one generated on a prover side: math/group: different scalar valu	
+go	g2-m-c1-timesg	field	reject		reject		reject		c1: times g		recreated challenge on verifier side doesn't match the one generated on a prover side: math/group: different scalar valu	
+go	g2-m-c1-one	field	reject		reject		reject		c1: one		recreated challenge on verifier side doesn't match the one generated on a prover side: math/group: different scalar valu	
+go	g2-m-c1-inverse	field	reject		reject		reject		c1: inverse		recreated challenge on verifier side doesn't match the one generated on a prover side: math/group: different scalar valu	
+go	g2-m-c1-random	field	reject		reject		reject		c1: random		recreated challenge on verifier side doesn't match the one generated on a prover side: math/group: different scalar valu	
+go	g2-m-c2-timesg	field	reject		reject		reject		c2: times g		recreated challenge on verifier side doesn't match the one generated on a prover side: math/group: different scalar valu	
+go	g2-m-c2-one	field	reject		reject		reject		c2: one		recreated challenge on verifier side doesn't match the one generated on a prover side: math/group: different scalar valu	
+go	g2-m-c2-inverse	field	reject		reject		reject		c2: inverse		recreated challenge on verifier side doesn't match the one generated on a prover side: math/group: different scalar valu	
+go	g2-m-c2-random	field	reject		reject		reject		c2: random		recreated challenge on verifier side doesn't match the one generated on a prover side: math/group: different scalar valu	
+go	g2-m-d-timesg	field	reject		reject		reject		d: times g		recreated challenge on verifier side doesn't match the one generated on a prover side: math/group: different scalar valu	
+go	g2-m-d-one	field	reject		reject		reject		d: one		recreated challenge on verifier side doesn't match the one generated on a prover side: math/group: different scalar valu	
+go	g2-m-d-inverse	field	reject		reject		reject		d: inverse		recreated challenge on verifier side doesn't match the one generated on a prover side: math/group: different scalar valu	
+go	g2-m-d-random	field	reject		reject		reject		d: random		recreated challenge on verifier side doesn't match the one generated on a prover side: math/group: different scalar valu	
+go	g2-m-e-+1	field	reject		reject		reject		e: +1		recreated challenge on verifier side doesn't match the one generated on a prover side: math/group: different scalar valu	
+go	g2-m-e-zero	field	reject		reject		reject		e: zero		recreated challenge on verifier side doesn't match the one generated on a prover side: math/group: different scalar valu	
+go	g2-m-e-negated	field	reject		reject		reject		e: negated		recreated challenge on verifier side doesn't match the one generated on a prover side: math/group: different scalar valu	
+go	g2-m-e-random	field	reject		reject		reject		e: random		recreated challenge on verifier side doesn't match the one generated on a prover side: math/group: different scalar valu	
+go	g2-m-s-+1	field	reject		reject		reject		s: +1		recreated challenge on verifier side doesn't match the one generated on a prover side: math/group: different scalar valu	
+go	g2-m-s-zero	field	reject		reject		reject		s: zero		recreated challenge on verifier side doesn't match the one generated on a prover side: math/group: different scalar valu	
+go	g2-m-s-negated	field	reject		reject		reject		s: negated		recreated challenge on verifier side doesn't match the one generated on a prover side: math/group: different scalar valu	
+go	g2-m-s-random	field	reject		reject		reject		s: random		recreated challenge on verifier side doesn't match the one generated on a prover side: math/group: different scalar valu	
+go	g3-honest	honest	accept		accept		accept		Go Prove, salt 697678762d64			
+go	g3-ours	control	accept		accept		accept		our prover			
+go	g3-false-salt	false	reject		reject		reject		verified with another salt		recreated challenge on verifier side doesn't match the one generated on a prover side: math/group: different scalar valu	
+go	g3-false-plaintext	false	reject		reject		reject		plaintext d*g		recreated challenge on verifier side doesn't match the one generated on a prover side: math/group: different scalar valu	
+go	g3-false-key	false	reject		reject		reject		decrypted under another key		recreated challenge on verifier side doesn't match the one generated on a prover side: math/group: different scalar valu	
+go	g3-m-y-timesg	field	reject		reject		reject		y: times g		recreated challenge on verifier side doesn't match the one generated on a prover side: math/group: different scalar valu	
+go	g3-m-y-one	field	reject		reject		reject		y: one		recreated challenge on verifier side doesn't match the one generated on a prover side: math/group: different scalar valu	
+go	g3-m-y-inverse	field	reject		reject		reject		y: inverse		recreated challenge on verifier side doesn't match the one generated on a prover side: math/group: different scalar valu	
+go	g3-m-y-random	field	reject		reject		reject		y: random		recreated challenge on verifier side doesn't match the one generated on a prover side: math/group: different scalar valu	
+go	g3-m-c1-timesg	field	reject		reject		reject		c1: times g		recreated challenge on verifier side doesn't match the one generated on a prover side: math/group: different scalar valu	
+go	g3-m-c1-one	field	reject		reject		reject		c1: one		recreated challenge on verifier side doesn't match the one generated on a prover side: math/group: different scalar valu	
+go	g3-m-c1-inverse	field	reject		reject		reject		c1: inverse		recreated challenge on verifier side doesn't match the one generated on a prover side: math/group: different scalar valu	
+go	g3-m-c1-random	field	reject		reject		reject		c1: random		recreated challenge on verifier side doesn't match the one generated on a prover side: math/group: different scalar valu	
+go	g3-m-c2-timesg	field	reject		reject		reject		c2: times g		recreated challenge on verifier side doesn't match the one generated on a prover side: math/group: different scalar valu	
+go	g3-m-c2-one	field	reject		reject		reject		c2: one		recreated challenge on verifier side doesn't match the one generated on a prover side: math/group: different scalar valu	
+go	g3-m-c2-inverse	field	reject		reject		reject		c2: inverse		recreated challenge on verifier side doesn't match the one generated on a prover side: math/group: different scalar valu	
+go	g3-m-c2-random	field	reject		reject		reject		c2: random		recreated challenge on verifier side doesn't match the one generated on a prover side: math/group: different scalar valu	
+go	g3-m-d-timesg	field	reject		reject		reject		d: times g		recreated challenge on verifier side doesn't match the one generated on a prover side: math/group: different scalar valu	
+go	g3-m-d-one	field	reject		reject		reject		d: one		recreated challenge on verifier side doesn't match the one generated on a prover side: math/group: different scalar valu	
+go	g3-m-d-inverse	field	reject		reject		reject		d: inverse		recreated challenge on verifier side doesn't match the one generated on a prover side: math/group: different scalar valu	
+go	g3-m-d-random	field	reject		reject		reject		d: random		recreated challenge on verifier side doesn't match the one generated on a prover side: math/group: different scalar valu	
+go	g3-m-e-+1	field	reject		reject		reject		e: +1		recreated challenge on verifier side doesn't match the one generated on a prover side: math/group: different scalar valu	
+go	g3-m-e-zero	field	reject		reject		reject		e: zero		recreated challenge on verifier side doesn't match the one generated on a prover side: math/group: different scalar valu	
+go	g3-m-e-negated	field	reject		reject		reject		e: negated		recreated challenge on verifier side doesn't match the one generated on a prover side: math/group: different scalar valu	
+go	g3-m-e-random	field	reject		reject		reject		e: random		recreated challenge on verifier side doesn't match the one generated on a prover side: math/group: different scalar valu	
+go	g3-m-s-+1	field	reject		reject		reject		s: +1		recreated challenge on verifier side doesn't match the one generated on a prover side: math/group: different scalar valu	
+go	g3-m-s-zero	field	reject		reject		reject		s: zero		recreated challenge on verifier side doesn't match the one generated on a prover side: math/group: different scalar valu	
+go	g3-m-s-negated	field	reject		reject		reject		s: negated		recreated challenge on verifier side doesn't match the one generated on a prover side: math/group: different scalar valu	
+go	g3-m-s-random	field	reject		reject		reject		s: random		recreated challenge on verifier side doesn't match the one generated on a prover side: math/group: different scalar valu	
+go	g4-honest	honest	accept		accept		accept		Go Prove, salt -			
+go	g4-ours	control	accept		accept		accept		our prover			
+go	g4-false-salt	false	reject		reject		reject		verified with another salt		recreated challenge on verifier side doesn't match the one generated on a prover side: math/group: different scalar valu	
+go	g4-false-plaintext	false	reject		reject		reject		plaintext d*g		recreated challenge on verifier side doesn't match the one generated on a prover side: math/group: different scalar valu	
+go	g4-false-key	false	reject		reject		reject		decrypted under another key		recreated challenge on verifier side doesn't match the one generated on a prover side: math/group: different scalar valu	
+go	g4-m-y-timesg	field	reject		reject		reject		y: times g		recreated challenge on verifier side doesn't match the one generated on a prover side: math/group: different scalar valu	
+go	g4-m-y-one	field	reject		reject		reject		y: one		recreated challenge on verifier side doesn't match the one generated on a prover side: math/group: different scalar valu	
+go	g4-m-y-inverse	field	reject		reject		reject		y: inverse		recreated challenge on verifier side doesn't match the one generated on a prover side: math/group: different scalar valu	
+go	g4-m-y-random	field	reject		reject		reject		y: random		recreated challenge on verifier side doesn't match the one generated on a prover side: math/group: different scalar valu	
+go	g4-m-c1-timesg	field	reject		reject		reject		c1: times g		recreated challenge on verifier side doesn't match the one generated on a prover side: math/group: different scalar valu	
+go	g4-m-c1-one	field	reject		reject		reject		c1: one		recreated challenge on verifier side doesn't match the one generated on a prover side: math/group: different scalar valu	
+go	g4-m-c1-inverse	field	reject		reject		reject		c1: inverse		recreated challenge on verifier side doesn't match the one generated on a prover side: math/group: different scalar valu	
+go	g4-m-c1-random	field	reject		reject		reject		c1: random		recreated challenge on verifier side doesn't match the one generated on a prover side: math/group: different scalar valu	
+go	g4-m-c2-timesg	field	reject		reject		reject		c2: times g		recreated challenge on verifier side doesn't match the one generated on a prover side: math/group: different scalar valu	
+go	g4-m-c2-one	field	reject		reject		reject		c2: one		recreated challenge on verifier side doesn't match the one generated on a prover side: math/group: different scalar valu	
+go	g4-m-c2-inverse	field	reject		reject		reject		c2: inverse		recreated challenge on verifier side doesn't match the one generated on a prover side: math/group: different scalar valu	
+go	g4-m-c2-random	field	reject		reject		reject		c2: random		recreated challenge on verifier side doesn't match the one generated on a prover side: math/group: different scalar valu	
+go	g4-m-d-timesg	field	reject		reject		reject		d: times g		recreated challenge on verifier side doesn't match the one generated on a prover side: math/group: different scalar valu	
+go	g4-m-d-one	field	reject		reject		reject		d: one		recreated challenge on verifier side doesn't match the one generated on a prover side: math/group: different scalar valu	
+go	g4-m-d-inverse	field	reject		reject		reject		d: inverse		recreated challenge on verifier side doesn't match the one generated on a prover side: math/group: different scalar valu	
+go	g4-m-d-random	field	reject		reject		reject		d: random		recreated challenge on verifier side doesn't match the one generated on a prover side: math/group: different scalar valu	
+go	g4-m-e-+1	field	reject		reject		reject		e: +1		recreated challenge on verifier side doesn't match the one generated on a prover side: math/group: different scalar valu	
+go	g4-m-e-zero	field	reject		reject		reject		e: zero		recreated challenge on verifier side doesn't match the one generated on a prover side: math/group: different scalar valu	
+go	g4-m-e-negated	field	reject		reject		reject		e: negated		recreated challenge on verifier side doesn't match the one generated on a prover side: math/group: different scalar valu	
+go	g4-m-e-random	field	reject		reject		reject		e: random		recreated challenge on verifier side doesn't match the one generated on a prover side: math/group: different scalar valu	
+go	g4-m-s-+1	field	reject		reject		reject		s: +1		recreated challenge on verifier side doesn't match the one generated on a prover side: math/group: different scalar valu	
+go	g4-m-s-zero	field	reject		reject		reject		s: zero		recreated challenge on verifier side doesn't match the one generated on a prover side: math/group: different scalar valu	
+go	g4-m-s-negated	field	reject		reject		reject		s: negated		recreated challenge on verifier side doesn't match the one generated on a prover side: math/group: different scalar valu	
+go	g4-m-s-random	field	reject		reject		reject		s: random		recreated challenge on verifier side doesn't match the one generated on a prover side: math/group: different scalar valu	
+go	g5-honest	honest	accept		accept		accept		Go Prove, salt 73			
+go	g5-ours	control	accept		accept		accept		our prover			
+go	g5-false-salt	false	reject		reject		reject		verified with another salt		recreated challenge on verifier side doesn't match the one generated on a prover side: math/group: different scalar valu	
+go	g5-false-plaintext	false	reject		reject		reject		plaintext d*g		recreated challenge on verifier side doesn't match the one generated on a prover side: math/group: different scalar valu	
+go	g5-false-key	false	reject		reject		reject		decrypted under another key		recreated challenge on verifier side doesn't match the one generated on a prover side: math/group: different scalar valu	
+go	g5-m-y-timesg	field	reject		reject		reject		y: times g		recreated challenge on verifier side doesn't match the one generated on a prover side: math/group: different scalar valu	
+go	g5-m-y-one	field	reject		reject		reject		y: one		recreated challenge on verifier side doesn't match the one generated on a prover side: math/group: different scalar valu	
+go	g5-m-y-inverse	field	reject		reject		reject		y: inverse		recreated challenge on verifier side doesn't match the one generated on a prover side: math/group: different scalar valu	
+go	g5-m-y-random	field	reject		reject		reject		y: random		recreated challenge on verifier side doesn't match the one generated on a prover side: math/group: different scalar valu	
+go	g5-m-c1-timesg	field	reject		reject		reject		c1: times g		recreated challenge on verifier side doesn't match the one generated on a prover side: math/group: different scalar valu	
+go	g5-m-c1-one	field	reject		reject		reject		c1: one		recreated challenge on verifier side doesn't match the one generated on a prover side: math/group: different scalar valu	
+go	g5-m-c1-inverse	field	reject		reject		reject		c1: inverse		recreated challenge on verifier side doesn't match the one generated on a prover side: math/group: different scalar valu	
+go	g5-m-c1-random	field	reject		reject		reject		c1: random		recreated challenge on verifier side doesn't match the one generated on a prover side: math/group: different scalar valu	
+go	g5-m-c2-timesg	field	reject		reject		reject		c2: times g		recreated challenge on verifier side doesn't match the one generated on a prover side: math/group: different scalar valu	
+go	g5-m-c2-one	field	reject		reject		reject		c2: one		recreated challenge on verifier side doesn't match the one generated on a prover side: math/group: different scalar valu	
+go	g5-m-c2-inverse	field	reject		reject		reject		c2: inverse		recreated challenge on verifier side doesn't match the one generated on a prover side: math/group: different scalar valu	
+go	g5-m-c2-random	field	reject		reject		reject		c2: random		recreated challenge on verifier side doesn't match the one generated on a prover side: math/group: different scalar valu	
+go	g5-m-d-timesg	field	reject		reject		reject		d: times g		recreated challenge on verifier side doesn't match the one generated on a prover side: math/group: different scalar valu	
+go	g5-m-d-one	field	reject		reject		reject		d: one		recreated challenge on verifier side doesn't match the one generated on a prover side: math/group: different scalar valu	
+go	g5-m-d-inverse	field	reject		reject		reject		d: inverse		recreated challenge on verifier side doesn't match the one generated on a prover side: math/group: different scalar valu	
+go	g5-m-d-random	field	reject		reject		reject		d: random		recreated challenge on verifier side doesn't match the one generated on a prover side: math/group: different scalar valu	
+go	g5-m-e-+1	field	reject		reject		reject		e: +1		recreated challenge on verifier side doesn't match the one generated on a prover side: math/group: different scalar valu	
+go	g5-m-e-zero	field	reject		reject		reject		e: zero		recreated challenge on verifier side doesn't match the one generated on a prover side: math/group: different scalar valu	
+go	g5-m-e-negated	field	reject		reject		reject		e: negated		recreated challenge on verifier side doesn't match the one generated on a prover side: math/group: different scalar valu	
+go	g5-m-e-random	field	reject		reject		reject		e: random		recreated challenge on verifier side doesn't match the one generated on a prover side: math/group: different scalar valu	
+go	g5-m-s-+1	field	reject		reject		reject		s: +1		recreated challenge on verifier side doesn't match the one generated on a prover side: math/group: different scalar valu	
+go	g5-m-s-zero	field	reject		reject		reject		s: zero		recreated challenge on verifier side doesn't match the one generated on a prover side: math/group: different scalar valu	
+go	g5-m-s-negated	field	reject		reject		reject		s: negated		recreated challenge on verifier side doesn't match the one generated on a prover side: math/group: different scalar valu	
+go	g5-m-s-random	field	reject		reject		reject		s: random		recreated challenge on verifier side doesn't match the one generated on a prover side: math/group: different scalar valu	

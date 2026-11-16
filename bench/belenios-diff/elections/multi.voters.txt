@@ -1,0 +1,12 @@
+voter01@example.com,voter01
+voter02@example.com,voter02
+voter03@example.com,voter03
+voter04@example.com,voter04
+voter05@example.com,voter05
+voter06@example.com,voter06
+voter07@example.com,voter07
+voter08@example.com,voter08
+voter09@example.com,voter09
+voter10@example.com,voter10
+voter11@example.com,voter11
+voter12@example.com,voter12

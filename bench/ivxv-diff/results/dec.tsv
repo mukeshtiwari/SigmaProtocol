@@ -1,0 +1,425 @@
+component	name	source	expected	vmnv	ivxv	ivxv_threaded	ours	vmnv_exit	desc	vmnv_msg	ivxv_msg	ours_msg
+dec	d0-honest	honest	accept		accept		accept		IVXV provableDecrypt, eid len 0			
+dec	d0-ours	control	accept		accept		accept		our prover			
+dec	d0-ours-one-blind	control	accept		accept		accept		c1 = 1 (randomness 0)			
+dec	d0-ours-plain-one	control	accept		accept		accept		plaintext 1			
+dec	d0-ours-x-one	control	accept		accept		accept		secret key 1			
+dec	d0-false-plaintext	false	reject		reject		reject		plaintext d*g (only c1^s = a (c2/d)^k fails)		verifyProof returned false	
+dec	d0-false-key	false	reject		reject		reject		decrypted under another key (only g^s = b y^k fails)		verifyProof returned false	
+dec	d0-ns-d-neg	false	either		reject		reject		plaintext p - d (not in G_q), proof with its challenge		verifyProof returned false	parser: element not in the group
+dec	d0-ns-d-plus-p	false	either		accept		reject		plaintext d + p (non-reduced), proof with its challenge			parser: element not in the group
+dec	d0-ns-a-plus-p	false	either		accept		reject		announcement a + p (non-reduced), proof with its challenge			parser: element not in the group
+dec	d0-m-y-timesg	field	reject		reject		reject		y: times g		verifyProof returned false	
+dec	d0-m-y-one	field	reject		reject		reject		y: one		verifyProof returned false	
+dec	d0-m-y-inverse	field	reject		reject		reject		y: inverse		verifyProof returned false	
+dec	d0-m-y-random	field	reject		reject		reject		y: random		verifyProof returned false	
+dec	d0-m-c1-timesg	field	reject		reject		reject		c1: times g		verifyProof returned false	
+dec	d0-m-c1-one	field	reject		reject		reject		c1: one		verifyProof returned false	
+dec	d0-m-c1-inverse	field	reject		reject		reject		c1: inverse		verifyProof returned false	
+dec	d0-m-c1-random	field	reject		reject		reject		c1: random		verifyProof returned false	
+dec	d0-m-c2-timesg	field	reject		reject		reject		c2: times g		verifyProof returned false	
+dec	d0-m-c2-one	field	reject		reject		reject		c2: one		verifyProof returned false	
+dec	d0-m-c2-inverse	field	reject		reject		reject		c2: inverse		verifyProof returned false	
+dec	d0-m-c2-random	field	reject		reject		reject		c2: random		verifyProof returned false	
+dec	d0-m-d-timesg	field	reject		reject		reject		d: times g		verifyProof returned false	
+dec	d0-m-d-one	field	reject		reject		reject		d: one		verifyProof returned false	
+dec	d0-m-d-inverse	field	reject		reject		reject		d: inverse		verifyProof returned false	
+dec	d0-m-d-random	field	reject		reject		reject		d: random		verifyProof returned false	
+dec	d0-m-a-timesg	field	reject		reject		reject		a: times g		verifyProof returned false	
+dec	d0-m-a-one	field	reject		reject		reject		a: one		verifyProof returned false	
+dec	d0-m-a-inverse	field	reject		reject		reject		a: inverse		verifyProof returned false	
+dec	d0-m-a-random	field	reject		reject		reject		a: random		verifyProof returned false	
+dec	d0-m-b-timesg	field	reject		reject		reject		b: times g		verifyProof returned false	
+dec	d0-m-b-one	field	reject		reject		reject		b: one		verifyProof returned false	
+dec	d0-m-b-inverse	field	reject		reject		reject		b: inverse		verifyProof returned false	
+dec	d0-m-b-random	field	reject		reject		reject		b: random		verifyProof returned false	
+dec	d0-m-s-+1	field	reject		reject		reject		s: +1		verifyProof returned false	
+dec	d0-m-s-zero	field	reject		reject		reject		s: zero		verifyProof returned false	
+dec	d0-m-s-negated	field	reject		reject		reject		s: negated		verifyProof returned false	
+dec	d0-m-s-random	field	reject		reject		reject		s: random		verifyProof returned false	
+dec	d0-m-eid	field	reject		reject		reject		election identifier changed		verifyProof returned false	
+dec	d0-m-swap-ab	field	reject		reject		reject		a and b swapped		verifyProof returned false	
+dec	d0-e-trailing	structural	reject		accept		reject		trailing byte after the proof			parser: DER
+dec	d0-e-s-plus-q	structural	either		accept		reject		s + q (same residue)			parser: scalar out of range
+dec	d0-e-s-neg	structural	either		accept		reject		s - q (same residue)			parser: scalar out of range
+dec	d0-e-msg-nonminimal	structural	either		reject		reject		plaintext INTEGER with an extra leading zero byte		IllegalArgumentException: Parsing byte array failed: ee.ivxv.common.asn1.ASN1DecodingException: Reading from byte array 	parser: DER
+dec	d0-e-wrong-oid	structural	reject		reject		reject		ciphertext OID of the EC scheme		IllegalArgumentException: Invalid key parameters.	parser: DER
+dec	d0-e-d-zero	structural	reject		reject		reject		plaintext 0		ArithmeticException: BigInteger not invertible.	parser: element not in the group
+dec	d0-e-d-p	structural	reject		reject		reject		plaintext p		ArithmeticException: BigInteger not invertible.	parser: element not in the group
+dec	d1-honest	honest	accept		accept		accept		IVXV provableDecrypt, eid len 7			
+dec	d1-ours	control	accept		accept		accept		our prover			
+dec	d1-false-plaintext	false	reject		reject		reject		plaintext d*g (only c1^s = a (c2/d)^k fails)		verifyProof returned false	
+dec	d1-false-key	false	reject		reject		reject		decrypted under another key (only g^s = b y^k fails)		verifyProof returned false	
+dec	d1-ns-d-neg	false	either		reject		reject		plaintext p - d (not in G_q), proof with its challenge		verifyProof returned false	parser: element not in the group
+dec	d1-ns-d-plus-p	false	either		accept		reject		plaintext d + p (non-reduced), proof with its challenge			parser: element not in the group
+dec	d1-ns-a-plus-p	false	either		accept		reject		announcement a + p (non-reduced), proof with its challenge			parser: element not in the group
+dec	d1-m-y-timesg	field	reject		reject		reject		y: times g		verifyProof returned false	
+dec	d1-m-y-one	field	reject		reject		reject		y: one		verifyProof returned false	
+dec	d1-m-y-inverse	field	reject		reject		reject		y: inverse		verifyProof returned false	
+dec	d1-m-y-random	field	reject		reject		reject		y: random		verifyProof returned false	
+dec	d1-m-c1-timesg	field	reject		reject		reject		c1: times g		verifyProof returned false	
+dec	d1-m-c1-one	field	reject		reject		reject		c1: one		verifyProof returned false	
+dec	d1-m-c1-inverse	field	reject		reject		reject		c1: inverse		verifyProof returned false	
+dec	d1-m-c1-random	field	reject		reject		reject		c1: random		verifyProof returned false	
+dec	d1-m-c2-timesg	field	reject		reject		reject		c2: times g		verifyProof returned false	
+dec	d1-m-c2-one	field	reject		reject		reject		c2: one		verifyProof returned false	
+dec	d1-m-c2-inverse	field	reject		reject		reject		c2: inverse		verifyProof returned false	
+dec	d1-m-c2-random	field	reject		reject		reject		c2: random		verifyProof returned false	
+dec	d1-m-d-timesg	field	reject		reject		reject		d: times g		verifyProof returned false	
+dec	d1-m-d-one	field	reject		reject		reject		d: one		verifyProof returned false	
+dec	d1-m-d-inverse	field	reject		reject		reject		d: inverse		verifyProof returned false	
+dec	d1-m-d-random	field	reject		reject		reject		d: random		verifyProof returned false	
+dec	d1-m-a-timesg	field	reject		reject		reject		a: times g		verifyProof returned false	
+dec	d1-m-a-one	field	reject		reject		reject		a: one		verifyProof returned false	
+dec	d1-m-a-inverse	field	reject		reject		reject		a: inverse		verifyProof returned false	
+dec	d1-m-a-random	field	reject		reject		reject		a: random		verifyProof returned false	
+dec	d1-m-b-timesg	field	reject		reject		reject		b: times g		verifyProof returned false	
+dec	d1-m-b-one	field	reject		reject		reject		b: one		verifyProof returned false	
+dec	d1-m-b-inverse	field	reject		reject		reject		b: inverse		verifyProof returned false	
+dec	d1-m-b-random	field	reject		reject		reject		b: random		verifyProof returned false	
+dec	d1-m-s-+1	field	reject		reject		reject		s: +1		verifyProof returned false	
+dec	d1-m-s-zero	field	reject		reject		reject		s: zero		verifyProof returned false	
+dec	d1-m-s-negated	field	reject		reject		reject		s: negated		verifyProof returned false	
+dec	d1-m-s-random	field	reject		reject		reject		s: random		verifyProof returned false	
+dec	d1-m-eid	field	reject		reject		reject		election identifier changed		verifyProof returned false	
+dec	d1-m-swap-ab	field	reject		reject		reject		a and b swapped		verifyProof returned false	
+dec	d2-honest	honest	accept		accept		accept		IVXV provableDecrypt, eid len 300			
+dec	d2-ours	control	accept		accept		accept		our prover			
+dec	d2-false-plaintext	false	reject		reject		reject		plaintext d*g (only c1^s = a (c2/d)^k fails)		verifyProof returned false	
+dec	d2-false-key	false	reject		reject		reject		decrypted under another key (only g^s = b y^k fails)		verifyProof returned false	
+dec	d2-m-y-timesg	field	reject		reject		reject		y: times g		verifyProof returned false	
+dec	d2-m-y-one	field	reject		reject		reject		y: one		verifyProof returned false	
+dec	d2-m-y-inverse	field	reject		reject		reject		y: inverse		verifyProof returned false	
+dec	d2-m-y-random	field	reject		reject		reject		y: random		verifyProof returned false	
+dec	d2-m-c1-timesg	field	reject		reject		reject		c1: times g		verifyProof returned false	
+dec	d2-m-c1-one	field	reject		reject		reject		c1: one		verifyProof returned false	
+dec	d2-m-c1-inverse	field	reject		reject		reject		c1: inverse		verifyProof returned false	
+dec	d2-m-c1-random	field	reject		reject		reject		c1: random		verifyProof returned false	
+dec	d2-m-c2-timesg	field	reject		reject		reject		c2: times g		verifyProof returned false	
+dec	d2-m-c2-one	field	reject		reject		reject		c2: one		verifyProof returned false	
+dec	d2-m-c2-inverse	field	reject		reject		reject		c2: inverse		verifyProof returned false	
+dec	d2-m-c2-random	field	reject		reject		reject		c2: random		verifyProof returned false	
+dec	d2-m-d-timesg	field	reject		reject		reject		d: times g		verifyProof returned false	
+dec	d2-m-d-one	field	reject		reject		reject		d: one		verifyProof returned false	
+dec	d2-m-d-inverse	field	reject		reject		reject		d: inverse		verifyProof returned false	
+dec	d2-m-d-random	field	reject		reject		reject		d: random		verifyProof returned false	
+dec	d2-m-a-timesg	field	reject		reject		reject		a: times g		verifyProof returned false	
+dec	d2-m-a-one	field	reject		reject		reject		a: one		verifyProof returned false	
+dec	d2-m-a-inverse	field	reject		reject		reject		a: inverse		verifyProof returned false	
+dec	d2-m-a-random	field	reject		reject		reject		a: random		verifyProof returned false	
+dec	d2-m-b-timesg	field	reject		reject		reject		b: times g		verifyProof returned false	
+dec	d2-m-b-one	field	reject		reject		reject		b: one		verifyProof returned false	
+dec	d2-m-b-inverse	field	reject		reject		reject		b: inverse		verifyProof returned false	
+dec	d2-m-b-random	field	reject		reject		reject		b: random		verifyProof returned false	
+dec	d2-m-s-+1	field	reject		reject		reject		s: +1		verifyProof returned false	
+dec	d2-m-s-zero	field	reject		reject		reject		s: zero		verifyProof returned false	
+dec	d2-m-s-negated	field	reject		reject		reject		s: negated		verifyProof returned false	
+dec	d2-m-s-random	field	reject		reject		reject		s: random		verifyProof returned false	
+dec	d2-m-eid	field	reject		reject		reject		election identifier changed		verifyProof returned false	
+dec	d2-m-swap-ab	field	reject		reject		reject		a and b swapped		verifyProof returned false	
+dec	d3-honest	honest	accept		accept		accept		IVXV provableDecrypt, eid len 0			
+dec	d3-ours	control	accept		accept		accept		our prover			
+dec	d3-false-plaintext	false	reject		reject		reject		plaintext d*g (only c1^s = a (c2/d)^k fails)		verifyProof returned false	
+dec	d3-false-key	false	reject		reject		reject		decrypted under another key (only g^s = b y^k fails)		verifyProof returned false	
+dec	d3-m-y-timesg	field	reject		reject		reject		y: times g		verifyProof returned false	
+dec	d3-m-y-one	field	reject		reject		reject		y: one		verifyProof returned false	
+dec	d3-m-y-inverse	field	reject		reject		reject		y: inverse		verifyProof returned false	
+dec	d3-m-y-random	field	reject		reject		reject		y: random		verifyProof returned false	
+dec	d3-m-c1-timesg	field	reject		reject		reject		c1: times g		verifyProof returned false	
+dec	d3-m-c1-one	field	reject		reject		reject		c1: one		verifyProof returned false	
+dec	d3-m-c1-inverse	field	reject		reject		reject		c1: inverse		verifyProof returned false	
+dec	d3-m-c1-random	field	reject		reject		reject		c1: random		verifyProof returned false	
+dec	d3-m-c2-timesg	field	reject		reject		reject		c2: times g		verifyProof returned false	
+dec	d3-m-c2-one	field	reject		reject		reject		c2: one		verifyProof returned false	
+dec	d3-m-c2-inverse	field	reject		reject		reject		c2: inverse		verifyProof returned false	
+dec	d3-m-c2-random	field	reject		reject		reject		c2: random		verifyProof returned false	
+dec	d3-m-d-timesg	field	reject		reject		reject		d: times g		verifyProof returned false	
+dec	d3-m-d-one	field	reject		reject		reject		d: one		verifyProof returned false	
+dec	d3-m-d-inverse	field	reject		reject		reject		d: inverse		verifyProof returned false	
+dec	d3-m-d-random	field	reject		reject		reject		d: random		verifyProof returned false	
+dec	d3-m-a-timesg	field	reject		reject		reject		a: times g		verifyProof returned false	
+dec	d3-m-a-one	field	reject		reject		reject		a: one		verifyProof returned false	
+dec	d3-m-a-inverse	field	reject		reject		reject		a: inverse		verifyProof returned false	
+dec	d3-m-a-random	field	reject		reject		reject		a: random		verifyProof returned false	
+dec	d3-m-b-timesg	field	reject		reject		reject		b: times g		verifyProof returned false	
+dec	d3-m-b-one	field	reject		reject		reject		b: one		verifyProof returned false	
+dec	d3-m-b-inverse	field	reject		reject		reject		b: inverse		verifyProof returned false	
+dec	d3-m-b-random	field	reject		reject		reject		b: random		verifyProof returned false	
+dec	d3-m-s-+1	field	reject		reject		reject		s: +1		verifyProof returned false	
+dec	d3-m-s-zero	field	reject		reject		reject		s: zero		verifyProof returned false	
+dec	d3-m-s-negated	field	reject		reject		reject		s: negated		verifyProof returned false	
+dec	d3-m-s-random	field	reject		reject		reject		s: random		verifyProof returned false	
+dec	d3-m-eid	field	reject		reject		reject		election identifier changed		verifyProof returned false	
+dec	d3-m-swap-ab	field	reject		reject		reject		a and b swapped		verifyProof returned false	
+dec	d4-honest	honest	accept		accept		accept		IVXV provableDecrypt, eid len 7			
+dec	d4-ours	control	accept		accept		accept		our prover			
+dec	d4-false-plaintext	false	reject		reject		reject		plaintext d*g (only c1^s = a (c2/d)^k fails)		verifyProof returned false	
+dec	d4-false-key	false	reject		reject		reject		decrypted under another key (only g^s = b y^k fails)		verifyProof returned false	
+dec	d4-m-y-timesg	field	reject		reject		reject		y: times g		verifyProof returned false	
+dec	d4-m-y-one	field	reject		reject		reject		y: one		verifyProof returned false	
+dec	d4-m-y-inverse	field	reject		reject		reject		y: inverse		verifyProof returned false	
+dec	d4-m-y-random	field	reject		reject		reject		y: random		verifyProof returned false	
+dec	d4-m-c1-timesg	field	reject		reject		reject		c1: times g		verifyProof returned false	
+dec	d4-m-c1-one	field	reject		reject		reject		c1: one		verifyProof returned false	
+dec	d4-m-c1-inverse	field	reject		reject		reject		c1: inverse		verifyProof returned false	
+dec	d4-m-c1-random	field	reject		reject		reject		c1: random		verifyProof returned false	
+dec	d4-m-c2-timesg	field	reject		reject		reject		c2: times g		verifyProof returned false	
+dec	d4-m-c2-one	field	reject		reject		reject		c2: one		verifyProof returned false	
+dec	d4-m-c2-inverse	field	reject		reject		reject		c2: inverse		verifyProof returned false	
+dec	d4-m-c2-random	field	reject		reject		reject		c2: random		verifyProof returned false	
+dec	d4-m-d-timesg	field	reject		reject		reject		d: times g		verifyProof returned false	
+dec	d4-m-d-one	field	reject		reject		reject		d: one		verifyProof returned false	
+dec	d4-m-d-inverse	field	reject		reject		reject		d: inverse		verifyProof returned false	
+dec	d4-m-d-random	field	reject		reject		reject		d: random		verifyProof returned false	
+dec	d4-m-a-timesg	field	reject		reject		reject		a: times g		verifyProof returned false	
+dec	d4-m-a-one	field	reject		reject		reject		a: one		verifyProof returned false	
+dec	d4-m-a-inverse	field	reject		reject		reject		a: inverse		verifyProof returned false	
+dec	d4-m-a-random	field	reject		reject		reject		a: random		verifyProof returned false	
+dec	d4-m-b-timesg	field	reject		reject		reject		b: times g		verifyProof returned false	
+dec	d4-m-b-one	field	reject		reject		reject		b: one		verifyProof returned false	
+dec	d4-m-b-inverse	field	reject		reject		reject		b: inverse		verifyProof returned false	
+dec	d4-m-b-random	field	reject		reject		reject		b: random		verifyProof returned false	
+dec	d4-m-s-+1	field	reject		reject		reject		s: +1		verifyProof returned false	
+dec	d4-m-s-zero	field	reject		reject		reject		s: zero		verifyProof returned false	
+dec	d4-m-s-negated	field	reject		reject		reject		s: negated		verifyProof returned false	
+dec	d4-m-s-random	field	reject		reject		reject		s: random		verifyProof returned false	
+dec	d4-m-eid	field	reject		reject		reject		election identifier changed		verifyProof returned false	
+dec	d4-m-swap-ab	field	reject		reject		reject		a and b swapped		verifyProof returned false	
+dec	d5-honest	honest	accept		accept		accept		IVXV provableDecrypt, eid len 300			
+dec	d5-ours	control	accept		accept		accept		our prover			
+dec	d5-false-plaintext	false	reject		reject		reject		plaintext d*g (only c1^s = a (c2/d)^k fails)		verifyProof returned false	
+dec	d5-false-key	false	reject		reject		reject		decrypted under another key (only g^s = b y^k fails)		verifyProof returned false	
+dec	d5-m-y-timesg	field	reject		reject		reject		y: times g		verifyProof returned false	
+dec	d5-m-y-one	field	reject		reject		reject		y: one		verifyProof returned false	
+dec	d5-m-y-inverse	field	reject		reject		reject		y: inverse		verifyProof returned false	
+dec	d5-m-y-random	field	reject		reject		reject		y: random		verifyProof returned false	
+dec	d5-m-c1-timesg	field	reject		reject		reject		c1: times g		verifyProof returned false	
+dec	d5-m-c1-one	field	reject		reject		reject		c1: one		verifyProof returned false	
+dec	d5-m-c1-inverse	field	reject		reject		reject		c1: inverse		verifyProof returned false	
+dec	d5-m-c1-random	field	reject		reject		reject		c1: random		verifyProof returned false	
+dec	d5-m-c2-timesg	field	reject		reject		reject		c2: times g		verifyProof returned false	
+dec	d5-m-c2-one	field	reject		reject		reject		c2: one		verifyProof returned false	
+dec	d5-m-c2-inverse	field	reject		reject		reject		c2: inverse		verifyProof returned false	
+dec	d5-m-c2-random	field	reject		reject		reject		c2: random		verifyProof returned false	
+dec	d5-m-d-timesg	field	reject		reject		reject		d: times g		verifyProof returned false	
+dec	d5-m-d-one	field	reject		reject		reject		d: one		verifyProof returned false	
+dec	d5-m-d-inverse	field	reject		reject		reject		d: inverse		verifyProof returned false	
+dec	d5-m-d-random	field	reject		reject		reject		d: random		verifyProof returned false	
+dec	d5-m-a-timesg	field	reject		reject		reject		a: times g		verifyProof returned false	
+dec	d5-m-a-one	field	reject		reject		reject		a: one		verifyProof returned false	
+dec	d5-m-a-inverse	field	reject		reject		reject		a: inverse		verifyProof returned false	
+dec	d5-m-a-random	field	reject		reject		reject		a: random		verifyProof returned false	
+dec	d5-m-b-timesg	field	reject		reject		reject		b: times g		verifyProof returned false	
+dec	d5-m-b-one	field	reject		reject		reject		b: one		verifyProof returned false	
+dec	d5-m-b-inverse	field	reject		reject		reject		b: inverse		verifyProof returned false	
+dec	d5-m-b-random	field	reject		reject		reject		b: random		verifyProof returned false	
+dec	d5-m-s-+1	field	reject		reject		reject		s: +1		verifyProof returned false	
+dec	d5-m-s-zero	field	reject		reject		reject		s: zero		verifyProof returned false	
+dec	d5-m-s-negated	field	reject		reject		reject		s: negated		verifyProof returned false	
+dec	d5-m-s-random	field	reject		reject		reject		s: random		verifyProof returned false	
+dec	d5-m-eid	field	reject		reject		reject		election identifier changed		verifyProof returned false	
+dec	d5-m-swap-ab	field	reject		reject		reject		a and b swapped		verifyProof returned false	
+dec	d6-honest	honest	accept		accept		accept		IVXV provableDecrypt, eid len 0			
+dec	d6-ours	control	accept		accept		accept		our prover			
+dec	d6-false-plaintext	false	reject		reject		reject		plaintext d*g (only c1^s = a (c2/d)^k fails)		verifyProof returned false	
+dec	d6-false-key	false	reject		reject		reject		decrypted under another key (only g^s = b y^k fails)		verifyProof returned false	
+dec	d6-m-y-timesg	field	reject		reject		reject		y: times g		verifyProof returned false	
+dec	d6-m-y-one	field	reject		reject		reject		y: one		verifyProof returned false	
+dec	d6-m-y-inverse	field	reject		reject		reject		y: inverse		verifyProof returned false	
+dec	d6-m-y-random	field	reject		reject		reject		y: random		verifyProof returned false	
+dec	d6-m-c1-timesg	field	reject		reject		reject		c1: times g		verifyProof returned false	
+dec	d6-m-c1-one	field	reject		reject		reject		c1: one		verifyProof returned false	
+dec	d6-m-c1-inverse	field	reject		reject		reject		c1: inverse		verifyProof returned false	
+dec	d6-m-c1-random	field	reject		reject		reject		c1: random		verifyProof returned false	
+dec	d6-m-c2-timesg	field	reject		reject		reject		c2: times g		verifyProof returned false	
+dec	d6-m-c2-one	field	reject		reject		reject		c2: one		verifyProof returned false	
+dec	d6-m-c2-inverse	field	reject		reject		reject		c2: inverse		verifyProof returned false	
+dec	d6-m-c2-random	field	reject		reject		reject		c2: random		verifyProof returned false	
+dec	d6-m-d-timesg	field	reject		reject		reject		d: times g		verifyProof returned false	
+dec	d6-m-d-one	field	reject		reject		reject		d: one		verifyProof returned false	
+dec	d6-m-d-inverse	field	reject		reject		reject		d: inverse		verifyProof returned false	
+dec	d6-m-d-random	field	reject		reject		reject		d: random		verifyProof returned false	
+dec	d6-m-a-timesg	field	reject		reject		reject		a: times g		verifyProof returned false	
+dec	d6-m-a-one	field	reject		reject		reject		a: one		verifyProof returned false	
+dec	d6-m-a-inverse	field	reject		reject		reject		a: inverse		verifyProof returned false	
+dec	d6-m-a-random	field	reject		reject		reject		a: random		verifyProof returned false	
+dec	d6-m-b-timesg	field	reject		reject		reject		b: times g		verifyProof returned false	
+dec	d6-m-b-one	field	reject		reject		reject		b: one		verifyProof returned false	
+dec	d6-m-b-inverse	field	reject		reject		reject		b: inverse		verifyProof returned false	
+dec	d6-m-b-random	field	reject		reject		reject		b: random		verifyProof returned false	
+dec	d6-m-s-+1	field	reject		reject		reject		s: +1		verifyProof returned false	
+dec	d6-m-s-zero	field	reject		reject		reject		s: zero		verifyProof returned false	
+dec	d6-m-s-negated	field	reject		reject		reject		s: negated		verifyProof returned false	
+dec	d6-m-s-random	field	reject		reject		reject		s: random		verifyProof returned false	
+dec	d6-m-eid	field	reject		reject		reject		election identifier changed		verifyProof returned false	
+dec	d6-m-swap-ab	field	reject		reject		reject		a and b swapped		verifyProof returned false	
+dec	d7-honest	honest	accept		accept		accept		IVXV provableDecrypt, eid len 7			
+dec	d7-ours	control	accept		accept		accept		our prover			
+dec	d7-false-plaintext	false	reject		reject		reject		plaintext d*g (only c1^s = a (c2/d)^k fails)		verifyProof returned false	
+dec	d7-false-key	false	reject		reject		reject		decrypted under another key (only g^s = b y^k fails)		verifyProof returned false	
+dec	d7-m-y-timesg	field	reject		reject		reject		y: times g		verifyProof returned false	
+dec	d7-m-y-one	field	reject		reject		reject		y: one		verifyProof returned false	
+dec	d7-m-y-inverse	field	reject		reject		reject		y: inverse		verifyProof returned false	
+dec	d7-m-y-random	field	reject		reject		reject		y: random		verifyProof returned false	
+dec	d7-m-c1-timesg	field	reject		reject		reject		c1: times g		verifyProof returned false	
+dec	d7-m-c1-one	field	reject		reject		reject		c1: one		verifyProof returned false	
+dec	d7-m-c1-inverse	field	reject		reject		reject		c1: inverse		verifyProof returned false	
+dec	d7-m-c1-random	field	reject		reject		reject		c1: random		verifyProof returned false	
+dec	d7-m-c2-timesg	field	reject		reject		reject		c2: times g		verifyProof returned false	
+dec	d7-m-c2-one	field	reject		reject		reject		c2: one		verifyProof returned false	
+dec	d7-m-c2-inverse	field	reject		reject		reject		c2: inverse		verifyProof returned false	
+dec	d7-m-c2-random	field	reject		reject		reject		c2: random		verifyProof returned false	
+dec	d7-m-d-timesg	field	reject		reject		reject		d: times g		verifyProof returned false	
+dec	d7-m-d-one	field	reject		reject		reject		d: one		verifyProof returned false	
+dec	d7-m-d-inverse	field	reject		reject		reject		d: inverse		verifyProof returned false	
+dec	d7-m-d-random	field	reject		reject		reject		d: random		verifyProof returned false	
+dec	d7-m-a-timesg	field	reject		reject		reject		a: times g		verifyProof returned false	
+dec	d7-m-a-one	field	reject		reject		reject		a: one		verifyProof returned false	
+dec	d7-m-a-inverse	field	reject		reject		reject		a: inverse		verifyProof returned false	
+dec	d7-m-a-random	field	reject		reject		reject		a: random		verifyProof returned false	
+dec	d7-m-b-timesg	field	reject		reject		reject		b: times g		verifyProof returned false	
+dec	d7-m-b-one	field	reject		reject		reject		b: one		verifyProof returned false	
+dec	d7-m-b-inverse	field	reject		reject		reject		b: inverse		verifyProof returned false	
+dec	d7-m-b-random	field	reject		reject		reject		b: random		verifyProof returned false	
+dec	d7-m-s-+1	field	reject		reject		reject		s: +1		verifyProof returned false	
+dec	d7-m-s-zero	field	reject		reject		reject		s: zero		verifyProof returned false	
+dec	d7-m-s-negated	field	reject		reject		reject		s: negated		verifyProof returned false	
+dec	d7-m-s-random	field	reject		reject		reject		s: random		verifyProof returned false	
+dec	d7-m-eid	field	reject		reject		reject		election identifier changed		verifyProof returned false	
+dec	d7-m-swap-ab	field	reject		reject		reject		a and b swapped		verifyProof returned false	
+dec	d8-honest	honest	accept		accept		accept		IVXV provableDecrypt, eid len 300			
+dec	d8-ours	control	accept		accept		accept		our prover			
+dec	d8-false-plaintext	false	reject		reject		reject		plaintext d*g (only c1^s = a (c2/d)^k fails)		verifyProof returned false	
+dec	d8-false-key	false	reject		reject		reject		decrypted under another key (only g^s = b y^k fails)		verifyProof returned false	
+dec	d8-m-y-timesg	field	reject		reject		reject		y: times g		verifyProof returned false	
+dec	d8-m-y-one	field	reject		reject		reject		y: one		verifyProof returned false	
+dec	d8-m-y-inverse	field	reject		reject		reject		y: inverse		verifyProof returned false	
+dec	d8-m-y-random	field	reject		reject		reject		y: random		verifyProof returned false	
+dec	d8-m-c1-timesg	field	reject		reject		reject		c1: times g		verifyProof returned false	
+dec	d8-m-c1-one	field	reject		reject		reject		c1: one		verifyProof returned false	
+dec	d8-m-c1-inverse	field	reject		reject		reject		c1: inverse		verifyProof returned false	
+dec	d8-m-c1-random	field	reject		reject		reject		c1: random		verifyProof returned false	
+dec	d8-m-c2-timesg	field	reject		reject		reject		c2: times g		verifyProof returned false	
+dec	d8-m-c2-one	field	reject		reject		reject		c2: one		verifyProof returned false	
+dec	d8-m-c2-inverse	field	reject		reject		reject		c2: inverse		verifyProof returned false	
+dec	d8-m-c2-random	field	reject		reject		reject		c2: random		verifyProof returned false	
+dec	d8-m-d-timesg	field	reject		reject		reject		d: times g		verifyProof returned false	
+dec	d8-m-d-one	field	reject		reject		reject		d: one		verifyProof returned false	
+dec	d8-m-d-inverse	field	reject		reject		reject		d: inverse		verifyProof returned false	
+dec	d8-m-d-random	field	reject		reject		reject		d: random		verifyProof returned false	
+dec	d8-m-a-timesg	field	reject		reject		reject		a: times g		verifyProof returned false	
+dec	d8-m-a-one	field	reject		reject		reject		a: one		verifyProof returned false	
+dec	d8-m-a-inverse	field	reject		reject		reject		a: inverse		verifyProof returned false	
+dec	d8-m-a-random	field	reject		reject		reject		a: random		verifyProof returned false	
+dec	d8-m-b-timesg	field	reject		reject		reject		b: times g		verifyProof returned false	
+dec	d8-m-b-one	field	reject		reject		reject		b: one		verifyProof returned false	
+dec	d8-m-b-inverse	field	reject		reject		reject		b: inverse		verifyProof returned false	
+dec	d8-m-b-random	field	reject		reject		reject		b: random		verifyProof returned false	
+dec	d8-m-s-+1	field	reject		reject		reject		s: +1		verifyProof returned false	
+dec	d8-m-s-zero	field	reject		reject		reject		s: zero		verifyProof returned false	
+dec	d8-m-s-negated	field	reject		reject		reject		s: negated		verifyProof returned false	
+dec	d8-m-s-random	field	reject		reject		reject		s: random		verifyProof returned false	
+dec	d8-m-eid	field	reject		reject		reject		election identifier changed		verifyProof returned false	
+dec	d8-m-swap-ab	field	reject		reject		reject		a and b swapped		verifyProof returned false	
+dec	d9-honest	honest	accept		accept		accept		IVXV provableDecrypt, eid len 0			
+dec	d9-ours	control	accept		accept		accept		our prover			
+dec	d9-false-plaintext	false	reject		reject		reject		plaintext d*g (only c1^s = a (c2/d)^k fails)		verifyProof returned false	
+dec	d9-false-key	false	reject		reject		reject		decrypted under another key (only g^s = b y^k fails)		verifyProof returned false	
+dec	d9-m-y-timesg	field	reject		reject		reject		y: times g		verifyProof returned false	
+dec	d9-m-y-one	field	reject		reject		reject		y: one		verifyProof returned false	
+dec	d9-m-y-inverse	field	reject		reject		reject		y: inverse		verifyProof returned false	
+dec	d9-m-y-random	field	reject		reject		reject		y: random		verifyProof returned false	
+dec	d9-m-c1-timesg	field	reject		reject		reject		c1: times g		verifyProof returned false	
+dec	d9-m-c1-one	field	reject		reject		reject		c1: one		verifyProof returned false	
+dec	d9-m-c1-inverse	field	reject		reject		reject		c1: inverse		verifyProof returned false	
+dec	d9-m-c1-random	field	reject		reject		reject		c1: random		verifyProof returned false	
+dec	d9-m-c2-timesg	field	reject		reject		reject		c2: times g		verifyProof returned false	
+dec	d9-m-c2-one	field	reject		reject		reject		c2: one		verifyProof returned false	
+dec	d9-m-c2-inverse	field	reject		reject		reject		c2: inverse		verifyProof returned false	
+dec	d9-m-c2-random	field	reject		reject		reject		c2: random		verifyProof returned false	
+dec	d9-m-d-timesg	field	reject		reject		reject		d: times g		verifyProof returned false	
+dec	d9-m-d-one	field	reject		reject		reject		d: one		verifyProof returned false	
+dec	d9-m-d-inverse	field	reject		reject		reject		d: inverse		verifyProof returned false	
+dec	d9-m-d-random	field	reject		reject		reject		d: random		verifyProof returned false	
+dec	d9-m-a-timesg	field	reject		reject		reject		a: times g		verifyProof returned false	
+dec	d9-m-a-one	field	reject		reject		reject		a: one		verifyProof returned false	
+dec	d9-m-a-inverse	field	reject		reject		reject		a: inverse		verifyProof returned false	
+dec	d9-m-a-random	field	reject		reject		reject		a: random		verifyProof returned false	
+dec	d9-m-b-timesg	field	reject		reject		reject		b: times g		verifyProof returned false	
+dec	d9-m-b-one	field	reject		reject		reject		b: one		verifyProof returned false	
+dec	d9-m-b-inverse	field	reject		reject		reject		b: inverse		verifyProof returned false	
+dec	d9-m-b-random	field	reject		reject		reject		b: random		verifyProof returned false	
+dec	d9-m-s-+1	field	reject		reject		reject		s: +1		verifyProof returned false	
+dec	d9-m-s-zero	field	reject		reject		reject		s: zero		verifyProof returned false	
+dec	d9-m-s-negated	field	reject		reject		reject		s: negated		verifyProof returned false	
+dec	d9-m-s-random	field	reject		reject		reject		s: random		verifyProof returned false	
+dec	d9-m-eid	field	reject		reject		reject		election identifier changed		verifyProof returned false	
+dec	d9-m-swap-ab	field	reject		reject		reject		a and b swapped		verifyProof returned false	
+dec	d10-honest	honest	accept		accept		accept		IVXV provableDecrypt, eid len 7			
+dec	d10-ours	control	accept		accept		accept		our prover			
+dec	d10-false-plaintext	false	reject		reject		reject		plaintext d*g (only c1^s = a (c2/d)^k fails)		verifyProof returned false	
+dec	d10-false-key	false	reject		reject		reject		decrypted under another key (only g^s = b y^k fails)		verifyProof returned false	
+dec	d10-m-y-timesg	field	reject		reject		reject		y: times g		verifyProof returned false	
+dec	d10-m-y-one	field	reject		reject		reject		y: one		verifyProof returned false	
+dec	d10-m-y-inverse	field	reject		reject		reject		y: inverse		verifyProof returned false	
+dec	d10-m-y-random	field	reject		reject		reject		y: random		verifyProof returned false	
+dec	d10-m-c1-timesg	field	reject		reject		reject		c1: times g		verifyProof returned false	
+dec	d10-m-c1-one	field	reject		reject		reject		c1: one		verifyProof returned false	
+dec	d10-m-c1-inverse	field	reject		reject		reject		c1: inverse		verifyProof returned false	
+dec	d10-m-c1-random	field	reject		reject		reject		c1: random		verifyProof returned false	
+dec	d10-m-c2-timesg	field	reject		reject		reject		c2: times g		verifyProof returned false	
+dec	d10-m-c2-one	field	reject		reject		reject		c2: one		verifyProof returned false	
+dec	d10-m-c2-inverse	field	reject		reject		reject		c2: inverse		verifyProof returned false	
+dec	d10-m-c2-random	field	reject		reject		reject		c2: random		verifyProof returned false	
+dec	d10-m-d-timesg	field	reject		reject		reject		d: times g		verifyProof returned false	
+dec	d10-m-d-one	field	reject		reject		reject		d: one		verifyProof returned false	
+dec	d10-m-d-inverse	field	reject		reject		reject		d: inverse		verifyProof returned false	
+dec	d10-m-d-random	field	reject		reject		reject		d: random		verifyProof returned false	
+dec	d10-m-a-timesg	field	reject		reject		reject		a: times g		verifyProof returned false	
+dec	d10-m-a-one	field	reject		reject		reject		a: one		verifyProof returned false	
+dec	d10-m-a-inverse	field	reject		reject		reject		a: inverse		verifyProof returned false	
+dec	d10-m-a-random	field	reject		reject		reject		a: random		verifyProof returned false	
+dec	d10-m-b-timesg	field	reject		reject		reject		b: times g		verifyProof returned false	
+dec	d10-m-b-one	field	reject		reject		reject		b: one		verifyProof returned false	
+dec	d10-m-b-inverse	field	reject		reject		reject		b: inverse		verifyProof returned false	
+dec	d10-m-b-random	field	reject		reject		reject		b: random		verifyProof returned false	
+dec	d10-m-s-+1	field	reject		reject		reject		s: +1		verifyProof returned false	
+dec	d10-m-s-zero	field	reject		reject		reject		s: zero		verifyProof returned false	
+dec	d10-m-s-negated	field	reject		reject		reject		s: negated		verifyProof returned false	
+dec	d10-m-s-random	field	reject		reject		reject		s: random		verifyProof returned false	
+dec	d10-m-eid	field	reject		reject		reject		election identifier changed		verifyProof returned false	
+dec	d10-m-swap-ab	field	reject		reject		reject		a and b swapped		verifyProof returned false	
+dec	d11-honest	honest	accept		accept		accept		IVXV provableDecrypt, eid len 300			
+dec	d11-ours	control	accept		accept		accept		our prover			
+dec	d11-false-plaintext	false	reject		reject		reject		plaintext d*g (only c1^s = a (c2/d)^k fails)		verifyProof returned false	
+dec	d11-false-key	false	reject		reject		reject		decrypted under another key (only g^s = b y^k fails)		verifyProof returned false	
+dec	d11-m-y-timesg	field	reject		reject		reject		y: times g		verifyProof returned false	
+dec	d11-m-y-one	field	reject		reject		reject		y: one		verifyProof returned false	
+dec	d11-m-y-inverse	field	reject		reject		reject		y: inverse		verifyProof returned false	
+dec	d11-m-y-random	field	reject		reject		reject		y: random		verifyProof returned false	
+dec	d11-m-c1-timesg	field	reject		reject		reject		c1: times g		verifyProof returned false	
+dec	d11-m-c1-one	field	reject		reject		reject		c1: one		verifyProof returned false	
+dec	d11-m-c1-inverse	field	reject		reject		reject		c1: inverse		verifyProof returned false	
+dec	d11-m-c1-random	field	reject		reject		reject		c1: random		verifyProof returned false	
+dec	d11-m-c2-timesg	field	reject		reject		reject		c2: times g		verifyProof returned false	
+dec	d11-m-c2-one	field	reject		reject		reject		c2: one		verifyProof returned false	
+dec	d11-m-c2-inverse	field	reject		reject		reject		c2: inverse		verifyProof returned false	
+dec	d11-m-c2-random	field	reject		reject		reject		c2: random		verifyProof returned false	
+dec	d11-m-d-timesg	field	reject		reject		reject		d: times g		verifyProof returned false	
+dec	d11-m-d-one	field	reject		reject		reject		d: one		verifyProof returned false	
+dec	d11-m-d-inverse	field	reject		reject		reject		d: inverse		verifyProof returned false	
+dec	d11-m-d-random	field	reject		reject		reject		d: random		verifyProof returned false	
+dec	d11-m-a-timesg	field	reject		reject		reject		a: times g		verifyProof returned false	
+dec	d11-m-a-one	field	reject		reject		reject		a: one		verifyProof returned false	
+dec	d11-m-a-inverse	field	reject		reject		reject		a: inverse		verifyProof returned false	
+dec	d11-m-a-random	field	reject		reject		reject		a: random		verifyProof returned false	
+dec	d11-m-b-timesg	field	reject		reject		reject		b: times g		verifyProof returned false	
+dec	d11-m-b-one	field	reject		reject		reject		b: one		verifyProof returned false	
+dec	d11-m-b-inverse	field	reject		reject		reject		b: inverse		verifyProof returned false	
+dec	d11-m-b-random	field	reject		reject		reject		b: random		verifyProof returned false	
+dec	d11-m-s-+1	field	reject		reject		reject		s: +1		verifyProof returned false	
+dec	d11-m-s-zero	field	reject		reject		reject		s: zero		verifyProof returned false	
+dec	d11-m-s-negated	field	reject		reject		reject		s: negated		verifyProof returned false	
+dec	d11-m-s-random	field	reject		reject		reject		s: random		verifyProof returned false	
+dec	d11-m-eid	field	reject		reject		reject		election identifier changed		verifyProof returned false	
+dec	d11-m-swap-ab	field	reject		reject		reject		a and b swapped		verifyProof returned false	

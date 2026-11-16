@@ -1,0 +1,8 @@
+egk 194b9c788ccaecda8719c227bd41ce57a3b857be
+egklib-all.jar sha256 0d291bf7d59b6f8f52b0410a039dbaa7821e2ba8d58f5c75daf05e5c0088c628
+java: openjdk version "17.0.21" 2026-10-20
+gradle 8.6 sha256 9631d53cf3e74bfa726893aee1f8994fee4e060c401335946dba2156f440f24c
+python: Python 3.15.0
+ocaml: 5.4.1
+certified verifier: 3264b1241a505b9cf0743c6bc13f18f647258a21 + working tree; main.exe sha256 510629338abe437dba7b55d56a5fe1098c83bef77b70f97009ce7fae6ef118b2
+seed 1

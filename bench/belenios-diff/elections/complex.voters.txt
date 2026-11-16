@@ -1,0 +1,10 @@
+voter00001@example.com,voter00001
+voter00002@example.com,voter00002
+voter00003@example.com,voter00003
+voter00004@example.com,voter00004
+voter00005@example.com,voter00005
+voter00006@example.com,voter00006
+voter00007@example.com,voter00007
+voter00008@example.com,voter00008
+voter00009@example.com,voter00009
+voter00010@example.com,voter00010

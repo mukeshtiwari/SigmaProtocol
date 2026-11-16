@@ -1,0 +1,23 @@
+{
+    "config_version": "v2.0.0",
+    "number_of_guardians": 3,
+    "quorum": 3,
+    "parameter_base_hash": "2B3B025E50E09C119CBA7E9448ACD1CABC9447EF39BF06327D81C665CDD86296",
+    "manifest_hash": "3ABBDA9F505A3BB687C7EF0C2BB280DF9AC4E15D7FFED08D7801B5F5D8B903B7",
+    "election_base_hash": "673EDCA51FF413598A357161AA1E6F26BD632E83BE8949ECAD104C1AD37FB6DA",
+    "chain_confirmation_codes": false,
+    "baux0": [
+        100,
+        101,
+        118,
+        105,
+        99,
+        101,
+        52,
+        50
+    ],
+    "metadata": {
+        "CreatedBy": "RunCreateElectionConfig",
+        "CreatedOn": "2026-10-21T08:35:03.434225"
+    }
+}

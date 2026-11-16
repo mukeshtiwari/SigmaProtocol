@@ -1,0 +1,780 @@
+case	source	base	expected	egk	certified	comparison	expectation
+field multi dballot:contests/[]/contest_id changed	2-field	multi	reject	reject	error	agree	as expected
+field multi dballot:contests/[]/decrypted_contest_data/beta 1	2-field	multi	reject	reject	reject	agree	as expected
+field multi dballot:contests/[]/decrypted_contest_data/beta inverse	2-field	multi	reject	reject	reject	agree	as expected
+field multi dballot:contests/[]/decrypted_contest_data/beta random	2-field	multi	reject	reject	reject	agree	as expected
+field multi dballot:contests/[]/decrypted_contest_data/beta times g	2-field	multi	reject	reject	reject	agree	as expected
+field multi dballot:contests/[]/decrypted_contest_data/contest_data/status changed	2-field	multi	either	error	accept	DISAGREE	as expected
+field multi dballot:contests/[]/decrypted_contest_data/encrypted_contest_data/c0 1	2-field	multi	reject	reject	reject	agree	as expected
+field multi dballot:contests/[]/decrypted_contest_data/encrypted_contest_data/c0 inverse	2-field	multi	reject	reject	reject	agree	as expected
+field multi dballot:contests/[]/decrypted_contest_data/encrypted_contest_data/c0 random	2-field	multi	reject	reject	reject	agree	as expected
+field multi dballot:contests/[]/decrypted_contest_data/encrypted_contest_data/c0 times g	2-field	multi	reject	reject	reject	agree	as expected
+field multi dballot:contests/[]/decrypted_contest_data/encrypted_contest_data/c1 last digit changed	2-field	multi	reject	reject	reject	agree	as expected
+field multi dballot:contests/[]/decrypted_contest_data/encrypted_contest_data/c1 zero	2-field	multi	reject	reject	reject	agree	as expected
+field multi dballot:contests/[]/decrypted_contest_data/encrypted_contest_data/c2 last digit changed	2-field	multi	reject	reject	reject	agree	as expected
+field multi dballot:contests/[]/decrypted_contest_data/encrypted_contest_data/c2 zero	2-field	multi	reject	reject	reject	agree	as expected
+field multi dballot:contests/[]/decrypted_contest_data/encrypted_contest_data/numBytes +1	2-field	multi	either	accept	accept	agree	as expected
+field multi dballot:contests/[]/decrypted_contest_data/encrypted_contest_data/numBytes 0	2-field	multi	either	accept	accept	agree	as expected
+field multi dballot:contests/[]/decrypted_contest_data/proof/challenge +1	2-field	multi	reject	reject	reject	agree	as expected
+field multi dballot:contests/[]/decrypted_contest_data/proof/challenge 0	2-field	multi	reject	reject	reject	agree	as expected
+field multi dballot:contests/[]/decrypted_contest_data/proof/challenge negated	2-field	multi	reject	reject	reject	agree	as expected
+field multi dballot:contests/[]/decrypted_contest_data/proof/challenge random	2-field	multi	reject	reject	reject	agree	as expected
+field multi dballot:contests/[]/decrypted_contest_data/proof/response +1	2-field	multi	reject	reject	reject	agree	as expected
+field multi dballot:contests/[]/decrypted_contest_data/proof/response 0	2-field	multi	reject	reject	reject	agree	as expected
+field multi dballot:contests/[]/decrypted_contest_data/proof/response negated	2-field	multi	reject	reject	reject	agree	as expected
+field multi dballot:contests/[]/decrypted_contest_data/proof/response random	2-field	multi	reject	reject	reject	agree	as expected
+field multi dballot:contests/[]/selections/[]/b_over_m 1	2-field	multi	reject	reject	reject	agree	as expected
+field multi dballot:contests/[]/selections/[]/b_over_m inverse	2-field	multi	reject	reject	reject	agree	as expected
+field multi dballot:contests/[]/selections/[]/b_over_m random	2-field	multi	reject	reject	reject	agree	as expected
+field multi dballot:contests/[]/selections/[]/b_over_m times g	2-field	multi	reject	reject	reject	agree	as expected
+field multi dballot:contests/[]/selections/[]/encrypted_vote/data 1	2-field	multi	reject	reject	reject	agree	as expected
+field multi dballot:contests/[]/selections/[]/encrypted_vote/data inverse	2-field	multi	reject	reject	reject	agree	as expected
+field multi dballot:contests/[]/selections/[]/encrypted_vote/data random	2-field	multi	reject	reject	reject	agree	as expected
+field multi dballot:contests/[]/selections/[]/encrypted_vote/data times g	2-field	multi	reject	reject	reject	agree	as expected
+field multi dballot:contests/[]/selections/[]/encrypted_vote/pad 1	2-field	multi	reject	reject	reject	agree	as expected
+field multi dballot:contests/[]/selections/[]/encrypted_vote/pad inverse	2-field	multi	reject	reject	reject	agree	as expected
+field multi dballot:contests/[]/selections/[]/encrypted_vote/pad random	2-field	multi	reject	reject	reject	agree	as expected
+field multi dballot:contests/[]/selections/[]/encrypted_vote/pad times g	2-field	multi	reject	reject	reject	agree	as expected
+field multi dballot:contests/[]/selections/[]/proof/challenge +1	2-field	multi	reject	reject	reject	agree	as expected
+field multi dballot:contests/[]/selections/[]/proof/challenge 0	2-field	multi	reject	reject	reject	agree	as expected
+field multi dballot:contests/[]/selections/[]/proof/challenge negated	2-field	multi	reject	reject	reject	agree	as expected
+field multi dballot:contests/[]/selections/[]/proof/challenge random	2-field	multi	reject	reject	reject	agree	as expected
+field multi dballot:contests/[]/selections/[]/proof/response +1	2-field	multi	reject	reject	reject	agree	as expected
+field multi dballot:contests/[]/selections/[]/proof/response 0	2-field	multi	reject	reject	reject	agree	as expected
+field multi dballot:contests/[]/selections/[]/proof/response negated	2-field	multi	reject	reject	reject	agree	as expected
+field multi dballot:contests/[]/selections/[]/proof/response random	2-field	multi	reject	reject	reject	agree	as expected
+field multi dballot:contests/[]/selections/[]/selection_id changed	2-field	multi	reject	reject	error	agree	as expected
+field multi dballot:contests/[]/selections/[]/tally +1	2-field	multi	reject	reject	reject	agree	as expected
+field multi dballot:election_id last digit changed	2-field	multi	reject	reject	reject	agree	as expected
+field multi dballot:election_id zero	2-field	multi	reject	reject	reject	agree	as expected
+field multi dballot:id changed	2-field	multi	reject	accept	reject	DISAGREE	UNEXPECTED
+field multi eballot:ballot_id changed	2-field	multi	either	accept	accept	agree	as expected
+field multi eballot:ballot_style_id changed	2-field	multi	either	accept	accept	agree	as expected
+field multi eballot:code_baux last digit changed	2-field	multi	reject	reject	reject	agree	as expected
+field multi eballot:code_baux zero	2-field	multi	reject	reject	reject	agree	as expected
+field multi eballot:confirmation_code last digit changed	2-field	multi	reject	reject	reject	agree	as expected
+field multi eballot:confirmation_code zero	2-field	multi	reject	reject	reject	agree	as expected
+field multi eballot:contests/[]/contest_hash last digit changed	2-field	multi	reject	reject	reject	agree	as expected
+field multi eballot:contests/[]/contest_hash zero	2-field	multi	reject	reject	reject	agree	as expected
+field multi eballot:contests/[]/contest_id changed	2-field	multi	reject	reject	reject	agree	as expected
+field multi eballot:contests/[]/encrypted_contest_data/c0 1	2-field	multi	either	accept	accept	agree	as expected
+field multi eballot:contests/[]/encrypted_contest_data/c0 inverse	2-field	multi	either	accept	accept	agree	as expected
+field multi eballot:contests/[]/encrypted_contest_data/c0 random	2-field	multi	either	accept	accept	agree	as expected
+field multi eballot:contests/[]/encrypted_contest_data/c0 times g	2-field	multi	either	accept	accept	agree	as expected
+field multi eballot:contests/[]/encrypted_contest_data/c1 last digit changed	2-field	multi	either	accept	accept	agree	as expected
+field multi eballot:contests/[]/encrypted_contest_data/c1 zero	2-field	multi	either	accept	accept	agree	as expected
+field multi eballot:contests/[]/encrypted_contest_data/c2 last digit changed	2-field	multi	either	accept	accept	agree	as expected
+field multi eballot:contests/[]/encrypted_contest_data/c2 zero	2-field	multi	either	accept	accept	agree	as expected
+field multi eballot:contests/[]/encrypted_contest_data/numBytes +1	2-field	multi	either	accept	accept	agree	as expected
+field multi eballot:contests/[]/encrypted_contest_data/numBytes 0	2-field	multi	either	accept	accept	agree	as expected
+field multi eballot:contests/[]/proof/proofs/[]/challenge +1	2-field	multi	reject	reject	reject	agree	as expected
+field multi eballot:contests/[]/proof/proofs/[]/challenge 0	2-field	multi	reject	reject	reject	agree	as expected
+field multi eballot:contests/[]/proof/proofs/[]/challenge negated	2-field	multi	reject	reject	reject	agree	as expected
+field multi eballot:contests/[]/proof/proofs/[]/challenge random	2-field	multi	reject	reject	reject	agree	as expected
+field multi eballot:contests/[]/proof/proofs/[]/response +1	2-field	multi	reject	reject	reject	agree	as expected
+field multi eballot:contests/[]/proof/proofs/[]/response 0	2-field	multi	reject	reject	reject	agree	as expected
+field multi eballot:contests/[]/proof/proofs/[]/response negated	2-field	multi	reject	reject	reject	agree	as expected
+field multi eballot:contests/[]/proof/proofs/[]/response random	2-field	multi	reject	reject	reject	agree	as expected
+field multi eballot:contests/[]/selections/[]/encrypted_vote/data 1	2-field	multi	reject	reject	reject	agree	as expected
+field multi eballot:contests/[]/selections/[]/encrypted_vote/data inverse	2-field	multi	reject	reject	reject	agree	as expected
+field multi eballot:contests/[]/selections/[]/encrypted_vote/data random	2-field	multi	reject	reject	reject	agree	as expected
+field multi eballot:contests/[]/selections/[]/encrypted_vote/data times g	2-field	multi	reject	reject	reject	agree	as expected
+field multi eballot:contests/[]/selections/[]/encrypted_vote/pad 1	2-field	multi	reject	reject	reject	agree	as expected
+field multi eballot:contests/[]/selections/[]/encrypted_vote/pad inverse	2-field	multi	reject	reject	reject	agree	as expected
+field multi eballot:contests/[]/selections/[]/encrypted_vote/pad random	2-field	multi	reject	reject	reject	agree	as expected
+field multi eballot:contests/[]/selections/[]/encrypted_vote/pad times g	2-field	multi	reject	reject	reject	agree	as expected
+field multi eballot:contests/[]/selections/[]/proof/proofs/[]/challenge +1	2-field	multi	reject	reject	reject	agree	as expected
+field multi eballot:contests/[]/selections/[]/proof/proofs/[]/challenge 0	2-field	multi	reject	reject	reject	agree	as expected
+field multi eballot:contests/[]/selections/[]/proof/proofs/[]/challenge negated	2-field	multi	reject	reject	reject	agree	as expected
+field multi eballot:contests/[]/selections/[]/proof/proofs/[]/challenge random	2-field	multi	reject	reject	reject	agree	as expected
+field multi eballot:contests/[]/selections/[]/proof/proofs/[]/response +1	2-field	multi	reject	reject	reject	agree	as expected
+field multi eballot:contests/[]/selections/[]/proof/proofs/[]/response 0	2-field	multi	reject	reject	reject	agree	as expected
+field multi eballot:contests/[]/selections/[]/proof/proofs/[]/response negated	2-field	multi	reject	reject	reject	agree	as expected
+field multi eballot:contests/[]/selections/[]/proof/proofs/[]/response random	2-field	multi	reject	reject	reject	agree	as expected
+field multi eballot:contests/[]/selections/[]/selection_id changed	2-field	multi	reject	reject	reject	agree	as expected
+field multi eballot:contests/[]/selections/[]/sequence_order +1	2-field	multi	either	accept	accept	agree	as expected
+field multi eballot:contests/[]/selections/[]/sequence_order 0	2-field	multi	either	accept	reject	DISAGREE	as expected
+field multi eballot:contests/[]/sequence_order +1	2-field	multi	either	reject	reject	agree	as expected
+field multi eballot:contests/[]/sequence_order 0	2-field	multi	either	reject	reject	agree	as expected
+field multi eballot:contests/[]/votes_allowed +1	2-field	multi	either	accept	accept	agree	as expected
+field multi eballot:contests/[]/votes_allowed 0	2-field	multi	either	accept	accept	agree	as expected
+field multi eballot:election_id last digit changed	2-field	multi	reject	reject	reject	agree	as expected
+field multi eballot:election_id zero	2-field	multi	reject	reject	reject	agree	as expected
+field multi eballot:encrypted_sn/data 1	2-field	multi	either	accept	accept	agree	as expected
+field multi eballot:encrypted_sn/data inverse	2-field	multi	either	accept	accept	agree	as expected
+field multi eballot:encrypted_sn/data random	2-field	multi	either	accept	accept	agree	as expected
+field multi eballot:encrypted_sn/data times g	2-field	multi	either	accept	accept	agree	as expected
+field multi eballot:encrypted_sn/pad 1	2-field	multi	either	accept	accept	agree	as expected
+field multi eballot:encrypted_sn/pad inverse	2-field	multi	either	accept	accept	agree	as expected
+field multi eballot:encrypted_sn/pad random	2-field	multi	either	accept	accept	agree	as expected
+field multi eballot:encrypted_sn/pad times g	2-field	multi	either	accept	accept	agree	as expected
+field multi eballot:encrypting_device changed	2-field	multi	either	accept	accept	agree	as expected
+field multi eballot:is_preencrypt flipped	2-field	multi	reject	reject	reject	agree	as expected
+field multi eballot:state changed	2-field	multi	reject	reject	reject	agree	as expected
+field multi eballot:timestamp +1	2-field	multi	either	accept	accept	agree	as expected
+field multi eballot:timestamp 0	2-field	multi	either	accept	accept	agree	as expected
+field multi election_config:baux0 first byte +1	2-field	multi	either	accept	accept	agree	as expected
+field multi election_config:chain_confirmation_codes flipped	2-field	multi	reject	reject	reject	agree	as expected
+field multi election_config:config_version changed	2-field	multi	reject	reject	reject	agree	as expected
+field multi election_config:election_base_hash last digit changed	2-field	multi	reject	reject	reject	agree	as expected
+field multi election_config:election_base_hash zero	2-field	multi	reject	reject	reject	agree	as expected
+field multi election_config:manifest_hash last digit changed	2-field	multi	reject	error	reject	agree	as expected
+field multi election_config:manifest_hash zero	2-field	multi	reject	error	reject	agree	as expected
+field multi election_config:metadata/CreatedBy changed	2-field	multi	either	accept	accept	agree	as expected
+field multi election_config:metadata/CreatedOn changed	2-field	multi	either	accept	accept	agree	as expected
+field multi election_config:number_of_guardians +1	2-field	multi	reject	error	reject	agree	as expected
+field multi election_config:number_of_guardians 0	2-field	multi	reject	error	reject	agree	as expected
+field multi election_config:parameter_base_hash last digit changed	2-field	multi	reject	error	reject	agree	as expected
+field multi election_config:parameter_base_hash zero	2-field	multi	reject	error	reject	agree	as expected
+field multi election_config:quorum +1	2-field	multi	reject	error	reject	agree	as expected
+field multi election_config:quorum 0	2-field	multi	reject	error	reject	agree	as expected
+field multi election_initialized:extended_base_hash last digit changed	2-field	multi	reject	reject	reject	agree	as expected
+field multi election_initialized:extended_base_hash zero	2-field	multi	reject	reject	reject	agree	as expected
+field multi election_initialized:guardians/[]/coefficient_proofs/[]/challenge +1	2-field	multi	reject	reject	reject	agree	as expected
+field multi election_initialized:guardians/[]/coefficient_proofs/[]/challenge 0	2-field	multi	reject	reject	reject	agree	as expected
+field multi election_initialized:guardians/[]/coefficient_proofs/[]/challenge negated	2-field	multi	reject	reject	reject	agree	as expected
+field multi election_initialized:guardians/[]/coefficient_proofs/[]/challenge random	2-field	multi	reject	reject	reject	agree	as expected
+field multi election_initialized:guardians/[]/coefficient_proofs/[]/public_key 1	2-field	multi	reject	reject	reject	agree	as expected
+field multi election_initialized:guardians/[]/coefficient_proofs/[]/public_key inverse	2-field	multi	reject	reject	reject	agree	as expected
+field multi election_initialized:guardians/[]/coefficient_proofs/[]/public_key random	2-field	multi	reject	reject	reject	agree	as expected
+field multi election_initialized:guardians/[]/coefficient_proofs/[]/public_key times g	2-field	multi	reject	reject	reject	agree	as expected
+field multi election_initialized:guardians/[]/coefficient_proofs/[]/response +1	2-field	multi	reject	reject	reject	agree	as expected
+field multi election_initialized:guardians/[]/coefficient_proofs/[]/response 0	2-field	multi	reject	reject	reject	agree	as expected
+field multi election_initialized:guardians/[]/coefficient_proofs/[]/response negated	2-field	multi	reject	reject	reject	agree	as expected
+field multi election_initialized:guardians/[]/coefficient_proofs/[]/response random	2-field	multi	reject	reject	reject	agree	as expected
+field multi election_initialized:guardians/[]/guardian_id changed	2-field	multi	either	accept	accept	agree	as expected
+field multi election_initialized:guardians/[]/x_coordinate +1	2-field	multi	reject	reject	reject	agree	as expected
+field multi election_initialized:guardians/[]/x_coordinate 0	2-field	multi	reject	error	reject	agree	as expected
+field multi election_initialized:joint_public_key 1	2-field	multi	reject	reject	reject	agree	as expected
+field multi election_initialized:joint_public_key inverse	2-field	multi	reject	reject	reject	agree	as expected
+field multi election_initialized:joint_public_key random	2-field	multi	reject	reject	reject	agree	as expected
+field multi election_initialized:joint_public_key times g	2-field	multi	reject	reject	reject	agree	as expected
+field multi encrypted_tally:cast_ballot_ids/[] changed	2-field	multi	either	accept	accept	agree	as expected
+field multi encrypted_tally:contests/[]/contest_id changed	2-field	multi	reject	reject	error	agree	as expected
+field multi encrypted_tally:contests/[]/selections/[]/encrypted_vote/data 1	2-field	multi	reject	reject	reject	agree	as expected
+field multi encrypted_tally:contests/[]/selections/[]/encrypted_vote/data inverse	2-field	multi	reject	reject	reject	agree	as expected
+field multi encrypted_tally:contests/[]/selections/[]/encrypted_vote/data random	2-field	multi	reject	reject	reject	agree	as expected
+field multi encrypted_tally:contests/[]/selections/[]/encrypted_vote/data times g	2-field	multi	reject	reject	reject	agree	as expected
+field multi encrypted_tally:contests/[]/selections/[]/encrypted_vote/pad 1	2-field	multi	reject	reject	reject	agree	as expected
+field multi encrypted_tally:contests/[]/selections/[]/encrypted_vote/pad inverse	2-field	multi	reject	reject	reject	agree	as expected
+field multi encrypted_tally:contests/[]/selections/[]/encrypted_vote/pad random	2-field	multi	reject	reject	reject	agree	as expected
+field multi encrypted_tally:contests/[]/selections/[]/encrypted_vote/pad times g	2-field	multi	reject	reject	reject	agree	as expected
+field multi encrypted_tally:contests/[]/selections/[]/selection_id changed	2-field	multi	reject	accept	error	DISAGREE	UNEXPECTED
+field multi encrypted_tally:contests/[]/selections/[]/sequence_order +1	2-field	multi	either	accept	accept	agree	as expected
+field multi encrypted_tally:contests/[]/selections/[]/sequence_order 0	2-field	multi	either	accept	error	DISAGREE	as expected
+field multi encrypted_tally:contests/[]/sequence_order +1	2-field	multi	either	accept	accept	agree	as expected
+field multi encrypted_tally:contests/[]/sequence_order 0	2-field	multi	either	accept	accept	agree	as expected
+field multi encrypted_tally:election_id last digit changed	2-field	multi	reject	accept	reject	DISAGREE	UNEXPECTED
+field multi encrypted_tally:election_id zero	2-field	multi	reject	accept	reject	DISAGREE	UNEXPECTED
+field multi encrypted_tally:tally_id changed	2-field	multi	either	accept	accept	agree	as expected
+field multi manifest:ballot_styles/[]/geopolitical_unit_ids/[] changed	2-field	multi	either	error	reject	agree	as expected
+field multi manifest:ballot_styles/[]/object_id changed	2-field	multi	either	error	reject	agree	as expected
+field multi manifest:candidates/[]/is_write_in flipped	2-field	multi	either	error	reject	agree	as expected
+field multi manifest:candidates/[]/object_id changed	2-field	multi	either	error	reject	agree	as expected
+field multi manifest:contact_information/name changed	2-field	multi	either	error	reject	agree	as expected
+field multi manifest:contact_information/phone changed	2-field	multi	either	error	reject	agree	as expected
+field multi manifest:contests/[]/ballot_selections/[]/candidate_id changed	2-field	multi	reject	error	reject	agree	as expected
+field multi manifest:contests/[]/ballot_selections/[]/object_id changed	2-field	multi	reject	error	error	agree	as expected
+field multi manifest:contests/[]/ballot_selections/[]/sequence_order +1	2-field	multi	either	error	reject	agree	as expected
+field multi manifest:contests/[]/ballot_selections/[]/sequence_order 0	2-field	multi	either	error	error	agree	as expected
+field multi manifest:contests/[]/ballot_subtitle changed	2-field	multi	either	error	reject	agree	as expected
+field multi manifest:contests/[]/ballot_title changed	2-field	multi	either	error	reject	agree	as expected
+field multi manifest:contests/[]/electoral_district_id changed	2-field	multi	either	error	reject	agree	as expected
+field multi manifest:contests/[]/name changed	2-field	multi	either	error	reject	agree	as expected
+field multi manifest:contests/[]/number_elected +1	2-field	multi	either	error	reject	agree	as expected
+field multi manifest:contests/[]/number_elected 0	2-field	multi	either	error	reject	agree	as expected
+field multi manifest:contests/[]/object_id changed	2-field	multi	reject	error	error	agree	as expected
+field multi manifest:contests/[]/sequence_order +1	2-field	multi	either	error	reject	agree	as expected
+field multi manifest:contests/[]/sequence_order 0	2-field	multi	either	error	reject	agree	as expected
+field multi manifest:contests/[]/vote_variation changed	2-field	multi	either	error	reject	agree	as expected
+field multi manifest:contests/[]/votes_allowed +1	2-field	multi	reject	error	reject	agree	as expected
+field multi manifest:contests/[]/votes_allowed 0	2-field	multi	reject	error	reject	agree	as expected
+field multi manifest:election_scope_id changed	2-field	multi	either	error	reject	agree	as expected
+field multi manifest:end_date changed	2-field	multi	either	error	reject	agree	as expected
+field multi manifest:geopolitical_units/[]/name changed	2-field	multi	either	error	reject	agree	as expected
+field multi manifest:geopolitical_units/[]/object_id changed	2-field	multi	either	error	reject	agree	as expected
+field multi manifest:geopolitical_units/[]/type changed	2-field	multi	either	error	reject	agree	as expected
+field multi manifest:parties/[]/name changed	2-field	multi	either	error	reject	agree	as expected
+field multi manifest:parties/[]/object_id changed	2-field	multi	either	error	reject	agree	as expected
+field multi manifest:spec_version changed	2-field	multi	either	error	reject	agree	as expected
+field multi manifest:start_date changed	2-field	multi	either	error	reject	agree	as expected
+field multi manifest:type changed	2-field	multi	either	error	reject	agree	as expected
+field multi tally:contests/[]/contest_id changed	2-field	multi	reject	reject	reject	agree	as expected
+field multi tally:contests/[]/selections/[]/b_over_m random	2-field	multi	reject	reject	reject	agree	as expected
+field multi tally:contests/[]/selections/[]/b_over_m times g	2-field	multi	reject	reject	reject	agree	as expected
+field multi tally:contests/[]/selections/[]/encrypted_vote/data 1	2-field	multi	reject	reject	reject	agree	as expected
+field multi tally:contests/[]/selections/[]/encrypted_vote/data inverse	2-field	multi	reject	reject	reject	agree	as expected
+field multi tally:contests/[]/selections/[]/encrypted_vote/data random	2-field	multi	reject	reject	reject	agree	as expected
+field multi tally:contests/[]/selections/[]/encrypted_vote/data times g	2-field	multi	reject	reject	reject	agree	as expected
+field multi tally:contests/[]/selections/[]/encrypted_vote/pad 1	2-field	multi	reject	reject	reject	agree	as expected
+field multi tally:contests/[]/selections/[]/encrypted_vote/pad inverse	2-field	multi	reject	reject	reject	agree	as expected
+field multi tally:contests/[]/selections/[]/encrypted_vote/pad random	2-field	multi	reject	reject	reject	agree	as expected
+field multi tally:contests/[]/selections/[]/encrypted_vote/pad times g	2-field	multi	reject	reject	reject	agree	as expected
+field multi tally:contests/[]/selections/[]/proof/challenge +1	2-field	multi	reject	reject	reject	agree	as expected
+field multi tally:contests/[]/selections/[]/proof/challenge 0	2-field	multi	reject	reject	reject	agree	as expected
+field multi tally:contests/[]/selections/[]/proof/challenge negated	2-field	multi	reject	reject	reject	agree	as expected
+field multi tally:contests/[]/selections/[]/proof/challenge random	2-field	multi	reject	reject	reject	agree	as expected
+field multi tally:contests/[]/selections/[]/proof/response +1	2-field	multi	reject	reject	reject	agree	as expected
+field multi tally:contests/[]/selections/[]/proof/response 0	2-field	multi	reject	reject	reject	agree	as expected
+field multi tally:contests/[]/selections/[]/proof/response negated	2-field	multi	reject	reject	reject	agree	as expected
+field multi tally:contests/[]/selections/[]/proof/response random	2-field	multi	reject	reject	reject	agree	as expected
+field multi tally:contests/[]/selections/[]/selection_id changed	2-field	multi	reject	reject	error	agree	as expected
+field multi tally:contests/[]/selections/[]/tally +1	2-field	multi	reject	reject	reject	agree	as expected
+field multi tally:contests/[]/selections/[]/tally 0	2-field	multi	reject	reject	reject	agree	as expected
+field multi tally:election_id last digit changed	2-field	multi	reject	reject	reject	agree	as expected
+field multi tally:election_id zero	2-field	multi	reject	reject	reject	agree	as expected
+field multi tally:id changed	2-field	multi	either	accept	accept	agree	as expected
+field quorum dballot:contests/[]/contest_id changed	2-field	quorum	reject	reject	error	agree	as expected
+field quorum dballot:contests/[]/decrypted_contest_data/beta 1	2-field	quorum	reject	reject	reject	agree	as expected
+field quorum dballot:contests/[]/decrypted_contest_data/beta inverse	2-field	quorum	reject	reject	reject	agree	as expected
+field quorum dballot:contests/[]/decrypted_contest_data/beta random	2-field	quorum	reject	reject	reject	agree	as expected
+field quorum dballot:contests/[]/decrypted_contest_data/beta times g	2-field	quorum	reject	reject	reject	agree	as expected
+field quorum dballot:contests/[]/decrypted_contest_data/contest_data/status changed	2-field	quorum	either	error	accept	DISAGREE	as expected
+field quorum dballot:contests/[]/decrypted_contest_data/encrypted_contest_data/c0 1	2-field	quorum	reject	reject	reject	agree	as expected
+field quorum dballot:contests/[]/decrypted_contest_data/encrypted_contest_data/c0 inverse	2-field	quorum	reject	reject	reject	agree	as expected
+field quorum dballot:contests/[]/decrypted_contest_data/encrypted_contest_data/c0 random	2-field	quorum	reject	reject	reject	agree	as expected
+field quorum dballot:contests/[]/decrypted_contest_data/encrypted_contest_data/c0 times g	2-field	quorum	reject	reject	reject	agree	as expected
+field quorum dballot:contests/[]/decrypted_contest_data/encrypted_contest_data/c1 last digit changed	2-field	quorum	reject	reject	reject	agree	as expected
+field quorum dballot:contests/[]/decrypted_contest_data/encrypted_contest_data/c1 zero	2-field	quorum	reject	reject	reject	agree	as expected
+field quorum dballot:contests/[]/decrypted_contest_data/encrypted_contest_data/c2 last digit changed	2-field	quorum	reject	reject	reject	agree	as expected
+field quorum dballot:contests/[]/decrypted_contest_data/encrypted_contest_data/c2 zero	2-field	quorum	reject	reject	reject	agree	as expected
+field quorum dballot:contests/[]/decrypted_contest_data/encrypted_contest_data/numBytes +1	2-field	quorum	either	accept	accept	agree	as expected
+field quorum dballot:contests/[]/decrypted_contest_data/encrypted_contest_data/numBytes 0	2-field	quorum	either	accept	accept	agree	as expected
+field quorum dballot:contests/[]/decrypted_contest_data/proof/challenge +1	2-field	quorum	reject	reject	reject	agree	as expected
+field quorum dballot:contests/[]/decrypted_contest_data/proof/challenge 0	2-field	quorum	reject	reject	reject	agree	as expected
+field quorum dballot:contests/[]/decrypted_contest_data/proof/challenge negated	2-field	quorum	reject	reject	reject	agree	as expected
+field quorum dballot:contests/[]/decrypted_contest_data/proof/challenge random	2-field	quorum	reject	reject	reject	agree	as expected
+field quorum dballot:contests/[]/decrypted_contest_data/proof/response +1	2-field	quorum	reject	reject	reject	agree	as expected
+field quorum dballot:contests/[]/decrypted_contest_data/proof/response 0	2-field	quorum	reject	reject	reject	agree	as expected
+field quorum dballot:contests/[]/decrypted_contest_data/proof/response negated	2-field	quorum	reject	reject	reject	agree	as expected
+field quorum dballot:contests/[]/decrypted_contest_data/proof/response random	2-field	quorum	reject	reject	reject	agree	as expected
+field quorum dballot:contests/[]/selections/[]/b_over_m random	2-field	quorum	reject	reject	reject	agree	as expected
+field quorum dballot:contests/[]/selections/[]/b_over_m times g	2-field	quorum	reject	reject	reject	agree	as expected
+field quorum dballot:contests/[]/selections/[]/encrypted_vote/data 1	2-field	quorum	reject	reject	reject	agree	as expected
+field quorum dballot:contests/[]/selections/[]/encrypted_vote/data inverse	2-field	quorum	reject	reject	reject	agree	as expected
+field quorum dballot:contests/[]/selections/[]/encrypted_vote/data random	2-field	quorum	reject	reject	reject	agree	as expected
+field quorum dballot:contests/[]/selections/[]/encrypted_vote/data times g	2-field	quorum	reject	reject	reject	agree	as expected
+field quorum dballot:contests/[]/selections/[]/encrypted_vote/pad 1	2-field	quorum	reject	reject	reject	agree	as expected
+field quorum dballot:contests/[]/selections/[]/encrypted_vote/pad inverse	2-field	quorum	reject	reject	reject	agree	as expected
+field quorum dballot:contests/[]/selections/[]/encrypted_vote/pad random	2-field	quorum	reject	reject	reject	agree	as expected
+field quorum dballot:contests/[]/selections/[]/encrypted_vote/pad times g	2-field	quorum	reject	reject	reject	agree	as expected
+field quorum dballot:contests/[]/selections/[]/proof/challenge +1	2-field	quorum	reject	reject	reject	agree	as expected
+field quorum dballot:contests/[]/selections/[]/proof/challenge 0	2-field	quorum	reject	reject	reject	agree	as expected
+field quorum dballot:contests/[]/selections/[]/proof/challenge negated	2-field	quorum	reject	reject	reject	agree	as expected
+field quorum dballot:contests/[]/selections/[]/proof/challenge random	2-field	quorum	reject	reject	reject	agree	as expected
+field quorum dballot:contests/[]/selections/[]/proof/response +1	2-field	quorum	reject	reject	reject	agree	as expected
+field quorum dballot:contests/[]/selections/[]/proof/response 0	2-field	quorum	reject	reject	reject	agree	as expected
+field quorum dballot:contests/[]/selections/[]/proof/response negated	2-field	quorum	reject	reject	reject	agree	as expected
+field quorum dballot:contests/[]/selections/[]/proof/response random	2-field	quorum	reject	reject	reject	agree	as expected
+field quorum dballot:contests/[]/selections/[]/selection_id changed	2-field	quorum	reject	reject	error	agree	as expected
+field quorum dballot:contests/[]/selections/[]/tally +1	2-field	quorum	reject	reject	reject	agree	as expected
+field quorum dballot:election_id last digit changed	2-field	quorum	reject	reject	reject	agree	as expected
+field quorum dballot:election_id zero	2-field	quorum	reject	reject	reject	agree	as expected
+field quorum dballot:id changed	2-field	quorum	reject	accept	reject	DISAGREE	UNEXPECTED
+field quorum eballot:ballot_id changed	2-field	quorum	either	accept	accept	agree	as expected
+field quorum eballot:ballot_style_id changed	2-field	quorum	either	accept	accept	agree	as expected
+field quorum eballot:code_baux last digit changed	2-field	quorum	reject	reject	reject	agree	as expected
+field quorum eballot:code_baux zero	2-field	quorum	reject	reject	reject	agree	as expected
+field quorum eballot:confirmation_code last digit changed	2-field	quorum	reject	reject	reject	agree	as expected
+field quorum eballot:confirmation_code zero	2-field	quorum	reject	reject	reject	agree	as expected
+field quorum eballot:contests/[]/contest_hash last digit changed	2-field	quorum	reject	reject	reject	agree	as expected
+field quorum eballot:contests/[]/contest_hash zero	2-field	quorum	reject	reject	reject	agree	as expected
+field quorum eballot:contests/[]/contest_id changed	2-field	quorum	reject	accept	reject	DISAGREE	UNEXPECTED
+field quorum eballot:contests/[]/encrypted_contest_data/c0 1	2-field	quorum	either	accept	accept	agree	as expected
+field quorum eballot:contests/[]/encrypted_contest_data/c0 inverse	2-field	quorum	either	accept	accept	agree	as expected
+field quorum eballot:contests/[]/encrypted_contest_data/c0 random	2-field	quorum	either	accept	accept	agree	as expected
+field quorum eballot:contests/[]/encrypted_contest_data/c0 times g	2-field	quorum	either	accept	accept	agree	as expected
+field quorum eballot:contests/[]/encrypted_contest_data/c1 last digit changed	2-field	quorum	either	accept	accept	agree	as expected
+field quorum eballot:contests/[]/encrypted_contest_data/c1 zero	2-field	quorum	either	accept	accept	agree	as expected
+field quorum eballot:contests/[]/encrypted_contest_data/c2 last digit changed	2-field	quorum	either	accept	accept	agree	as expected
+field quorum eballot:contests/[]/encrypted_contest_data/c2 zero	2-field	quorum	either	accept	accept	agree	as expected
+field quorum eballot:contests/[]/encrypted_contest_data/numBytes +1	2-field	quorum	either	accept	accept	agree	as expected
+field quorum eballot:contests/[]/encrypted_contest_data/numBytes 0	2-field	quorum	either	accept	accept	agree	as expected
+field quorum eballot:contests/[]/proof/proofs/[]/challenge +1	2-field	quorum	reject	reject	reject	agree	as expected
+field quorum eballot:contests/[]/proof/proofs/[]/challenge 0	2-field	quorum	reject	reject	reject	agree	as expected
+field quorum eballot:contests/[]/proof/proofs/[]/challenge negated	2-field	quorum	reject	reject	reject	agree	as expected
+field quorum eballot:contests/[]/proof/proofs/[]/challenge random	2-field	quorum	reject	reject	reject	agree	as expected
+field quorum eballot:contests/[]/proof/proofs/[]/response +1	2-field	quorum	reject	reject	reject	agree	as expected
+field quorum eballot:contests/[]/proof/proofs/[]/response 0	2-field	quorum	reject	reject	reject	agree	as expected
+field quorum eballot:contests/[]/proof/proofs/[]/response negated	2-field	quorum	reject	reject	reject	agree	as expected
+field quorum eballot:contests/[]/proof/proofs/[]/response random	2-field	quorum	reject	reject	reject	agree	as expected
+field quorum eballot:contests/[]/selections/[]/encrypted_vote/data 1	2-field	quorum	reject	reject	reject	agree	as expected
+field quorum eballot:contests/[]/selections/[]/encrypted_vote/data inverse	2-field	quorum	reject	reject	reject	agree	as expected
+field quorum eballot:contests/[]/selections/[]/encrypted_vote/data random	2-field	quorum	reject	reject	reject	agree	as expected
+field quorum eballot:contests/[]/selections/[]/encrypted_vote/data times g	2-field	quorum	reject	reject	reject	agree	as expected
+field quorum eballot:contests/[]/selections/[]/encrypted_vote/pad 1	2-field	quorum	reject	reject	reject	agree	as expected
+field quorum eballot:contests/[]/selections/[]/encrypted_vote/pad inverse	2-field	quorum	reject	reject	reject	agree	as expected
+field quorum eballot:contests/[]/selections/[]/encrypted_vote/pad random	2-field	quorum	reject	reject	reject	agree	as expected
+field quorum eballot:contests/[]/selections/[]/encrypted_vote/pad times g	2-field	quorum	reject	reject	reject	agree	as expected
+field quorum eballot:contests/[]/selections/[]/proof/proofs/[]/challenge +1	2-field	quorum	reject	reject	reject	agree	as expected
+field quorum eballot:contests/[]/selections/[]/proof/proofs/[]/challenge 0	2-field	quorum	reject	reject	reject	agree	as expected
+field quorum eballot:contests/[]/selections/[]/proof/proofs/[]/challenge negated	2-field	quorum	reject	reject	reject	agree	as expected
+field quorum eballot:contests/[]/selections/[]/proof/proofs/[]/challenge random	2-field	quorum	reject	reject	reject	agree	as expected
+field quorum eballot:contests/[]/selections/[]/proof/proofs/[]/response +1	2-field	quorum	reject	reject	reject	agree	as expected
+field quorum eballot:contests/[]/selections/[]/proof/proofs/[]/response 0	2-field	quorum	reject	reject	reject	agree	as expected
+field quorum eballot:contests/[]/selections/[]/proof/proofs/[]/response negated	2-field	quorum	reject	reject	reject	agree	as expected
+field quorum eballot:contests/[]/selections/[]/proof/proofs/[]/response random	2-field	quorum	reject	reject	reject	agree	as expected
+field quorum eballot:contests/[]/selections/[]/selection_id changed	2-field	quorum	reject	accept	reject	DISAGREE	UNEXPECTED
+field quorum eballot:contests/[]/selections/[]/sequence_order +1	2-field	quorum	either	accept	accept	agree	as expected
+field quorum eballot:contests/[]/selections/[]/sequence_order 0	2-field	quorum	either	accept	accept	agree	as expected
+field quorum eballot:contests/[]/sequence_order +1	2-field	quorum	either	reject	reject	agree	as expected
+field quorum eballot:contests/[]/sequence_order 0	2-field	quorum	either	reject	reject	agree	as expected
+field quorum eballot:contests/[]/votes_allowed +1	2-field	quorum	either	accept	accept	agree	as expected
+field quorum eballot:contests/[]/votes_allowed 0	2-field	quorum	either	accept	accept	agree	as expected
+field quorum eballot:election_id last digit changed	2-field	quorum	reject	reject	reject	agree	as expected
+field quorum eballot:election_id zero	2-field	quorum	reject	reject	reject	agree	as expected
+field quorum eballot:encrypted_sn/data 1	2-field	quorum	either	accept	accept	agree	as expected
+field quorum eballot:encrypted_sn/data inverse	2-field	quorum	either	accept	accept	agree	as expected
+field quorum eballot:encrypted_sn/data random	2-field	quorum	either	accept	accept	agree	as expected
+field quorum eballot:encrypted_sn/data times g	2-field	quorum	either	accept	accept	agree	as expected
+field quorum eballot:encrypted_sn/pad 1	2-field	quorum	either	accept	accept	agree	as expected
+field quorum eballot:encrypted_sn/pad inverse	2-field	quorum	either	accept	accept	agree	as expected
+field quorum eballot:encrypted_sn/pad random	2-field	quorum	either	accept	accept	agree	as expected
+field quorum eballot:encrypted_sn/pad times g	2-field	quorum	either	accept	accept	agree	as expected
+field quorum eballot:encrypting_device changed	2-field	quorum	either	accept	accept	agree	as expected
+field quorum eballot:is_preencrypt flipped	2-field	quorum	reject	reject	reject	agree	as expected
+field quorum eballot:state changed	2-field	quorum	reject	reject	reject	agree	as expected
+field quorum eballot:timestamp +1	2-field	quorum	either	accept	accept	agree	as expected
+field quorum eballot:timestamp 0	2-field	quorum	either	accept	accept	agree	as expected
+field quorum election_config:baux0 first byte +1	2-field	quorum	either	accept	accept	agree	as expected
+field quorum election_config:chain_confirmation_codes flipped	2-field	quorum	reject	reject	reject	agree	as expected
+field quorum election_config:config_version changed	2-field	quorum	reject	reject	reject	agree	as expected
+field quorum election_config:election_base_hash last digit changed	2-field	quorum	reject	reject	reject	agree	as expected
+field quorum election_config:election_base_hash zero	2-field	quorum	reject	reject	reject	agree	as expected
+field quorum election_config:manifest_hash last digit changed	2-field	quorum	reject	error	reject	agree	as expected
+field quorum election_config:manifest_hash zero	2-field	quorum	reject	error	reject	agree	as expected
+field quorum election_config:metadata/CreatedBy changed	2-field	quorum	either	accept	accept	agree	as expected
+field quorum election_config:metadata/CreatedOn changed	2-field	quorum	either	accept	accept	agree	as expected
+field quorum election_config:number_of_guardians +1	2-field	quorum	reject	error	reject	agree	as expected
+field quorum election_config:number_of_guardians 0	2-field	quorum	reject	error	reject	agree	as expected
+field quorum election_config:parameter_base_hash last digit changed	2-field	quorum	reject	error	reject	agree	as expected
+field quorum election_config:parameter_base_hash zero	2-field	quorum	reject	error	reject	agree	as expected
+field quorum election_config:quorum +1	2-field	quorum	reject	error	reject	agree	as expected
+field quorum election_config:quorum 0	2-field	quorum	reject	error	reject	agree	as expected
+field quorum election_initialized:extended_base_hash last digit changed	2-field	quorum	reject	reject	reject	agree	as expected
+field quorum election_initialized:extended_base_hash zero	2-field	quorum	reject	reject	reject	agree	as expected
+field quorum election_initialized:guardians/[]/coefficient_proofs/[]/challenge +1	2-field	quorum	reject	reject	reject	agree	as expected
+field quorum election_initialized:guardians/[]/coefficient_proofs/[]/challenge 0	2-field	quorum	reject	reject	reject	agree	as expected
+field quorum election_initialized:guardians/[]/coefficient_proofs/[]/challenge negated	2-field	quorum	reject	reject	reject	agree	as expected
+field quorum election_initialized:guardians/[]/coefficient_proofs/[]/challenge random	2-field	quorum	reject	reject	reject	agree	as expected
+field quorum election_initialized:guardians/[]/coefficient_proofs/[]/public_key 1	2-field	quorum	reject	reject	reject	agree	as expected
+field quorum election_initialized:guardians/[]/coefficient_proofs/[]/public_key inverse	2-field	quorum	reject	reject	reject	agree	as expected
+field quorum election_initialized:guardians/[]/coefficient_proofs/[]/public_key random	2-field	quorum	reject	reject	reject	agree	as expected
+field quorum election_initialized:guardians/[]/coefficient_proofs/[]/public_key times g	2-field	quorum	reject	reject	reject	agree	as expected
+field quorum election_initialized:guardians/[]/coefficient_proofs/[]/response +1	2-field	quorum	reject	reject	reject	agree	as expected
+field quorum election_initialized:guardians/[]/coefficient_proofs/[]/response 0	2-field	quorum	reject	reject	reject	agree	as expected
+field quorum election_initialized:guardians/[]/coefficient_proofs/[]/response negated	2-field	quorum	reject	reject	reject	agree	as expected
+field quorum election_initialized:guardians/[]/coefficient_proofs/[]/response random	2-field	quorum	reject	reject	reject	agree	as expected
+field quorum election_initialized:guardians/[]/guardian_id changed	2-field	quorum	either	accept	accept	agree	as expected
+field quorum election_initialized:guardians/[]/x_coordinate +1	2-field	quorum	reject	reject	reject	agree	as expected
+field quorum election_initialized:guardians/[]/x_coordinate 0	2-field	quorum	reject	error	reject	agree	as expected
+field quorum election_initialized:joint_public_key 1	2-field	quorum	reject	reject	reject	agree	as expected
+field quorum election_initialized:joint_public_key inverse	2-field	quorum	reject	reject	reject	agree	as expected
+field quorum election_initialized:joint_public_key random	2-field	quorum	reject	reject	reject	agree	as expected
+field quorum election_initialized:joint_public_key times g	2-field	quorum	reject	reject	reject	agree	as expected
+field quorum encrypted_tally:cast_ballot_ids/[] changed	2-field	quorum	either	accept	accept	agree	as expected
+field quorum encrypted_tally:contests/[]/contest_id changed	2-field	quorum	reject	reject	error	agree	as expected
+field quorum encrypted_tally:contests/[]/selections/[]/encrypted_vote/data 1	2-field	quorum	reject	reject	reject	agree	as expected
+field quorum encrypted_tally:contests/[]/selections/[]/encrypted_vote/data inverse	2-field	quorum	reject	reject	reject	agree	as expected
+field quorum encrypted_tally:contests/[]/selections/[]/encrypted_vote/data random	2-field	quorum	reject	reject	reject	agree	as expected
+field quorum encrypted_tally:contests/[]/selections/[]/encrypted_vote/data times g	2-field	quorum	reject	reject	reject	agree	as expected
+field quorum encrypted_tally:contests/[]/selections/[]/encrypted_vote/pad 1	2-field	quorum	reject	reject	reject	agree	as expected
+field quorum encrypted_tally:contests/[]/selections/[]/encrypted_vote/pad inverse	2-field	quorum	reject	reject	reject	agree	as expected
+field quorum encrypted_tally:contests/[]/selections/[]/encrypted_vote/pad random	2-field	quorum	reject	reject	reject	agree	as expected
+field quorum encrypted_tally:contests/[]/selections/[]/encrypted_vote/pad times g	2-field	quorum	reject	reject	reject	agree	as expected
+field quorum encrypted_tally:contests/[]/selections/[]/selection_id changed	2-field	quorum	reject	accept	error	DISAGREE	UNEXPECTED
+field quorum encrypted_tally:contests/[]/selections/[]/sequence_order +1	2-field	quorum	either	accept	accept	agree	as expected
+field quorum encrypted_tally:contests/[]/selections/[]/sequence_order 0	2-field	quorum	either	accept	accept	agree	as expected
+field quorum encrypted_tally:contests/[]/sequence_order +1	2-field	quorum	either	accept	accept	agree	as expected
+field quorum encrypted_tally:contests/[]/sequence_order 0	2-field	quorum	either	accept	accept	agree	as expected
+field quorum encrypted_tally:election_id last digit changed	2-field	quorum	reject	accept	reject	DISAGREE	UNEXPECTED
+field quorum encrypted_tally:election_id zero	2-field	quorum	reject	accept	reject	DISAGREE	UNEXPECTED
+field quorum encrypted_tally:tally_id changed	2-field	quorum	either	accept	accept	agree	as expected
+field quorum manifest:ballot_styles/[]/geopolitical_unit_ids/[] changed	2-field	quorum	either	error	reject	agree	as expected
+field quorum manifest:ballot_styles/[]/object_id changed	2-field	quorum	either	error	reject	agree	as expected
+field quorum manifest:candidates/[]/is_write_in flipped	2-field	quorum	either	error	reject	agree	as expected
+field quorum manifest:candidates/[]/object_id changed	2-field	quorum	either	error	reject	agree	as expected
+field quorum manifest:contact_information/name changed	2-field	quorum	either	error	reject	agree	as expected
+field quorum manifest:contact_information/phone changed	2-field	quorum	either	error	reject	agree	as expected
+field quorum manifest:contests/[]/ballot_selections/[]/candidate_id changed	2-field	quorum	reject	error	reject	agree	as expected
+field quorum manifest:contests/[]/ballot_selections/[]/object_id changed	2-field	quorum	reject	error	error	agree	as expected
+field quorum manifest:contests/[]/ballot_selections/[]/sequence_order +1	2-field	quorum	either	error	reject	agree	as expected
+field quorum manifest:contests/[]/ballot_selections/[]/sequence_order 0	2-field	quorum	either	error	reject	agree	as expected
+field quorum manifest:contests/[]/ballot_subtitle changed	2-field	quorum	either	error	reject	agree	as expected
+field quorum manifest:contests/[]/ballot_title changed	2-field	quorum	either	error	reject	agree	as expected
+field quorum manifest:contests/[]/electoral_district_id changed	2-field	quorum	either	error	reject	agree	as expected
+field quorum manifest:contests/[]/name changed	2-field	quorum	either	error	reject	agree	as expected
+field quorum manifest:contests/[]/number_elected +1	2-field	quorum	either	error	reject	agree	as expected
+field quorum manifest:contests/[]/number_elected 0	2-field	quorum	either	error	reject	agree	as expected
+field quorum manifest:contests/[]/object_id changed	2-field	quorum	reject	error	error	agree	as expected
+field quorum manifest:contests/[]/sequence_order +1	2-field	quorum	either	error	reject	agree	as expected
+field quorum manifest:contests/[]/sequence_order 0	2-field	quorum	either	error	reject	agree	as expected
+field quorum manifest:contests/[]/vote_variation changed	2-field	quorum	either	error	reject	agree	as expected
+field quorum manifest:contests/[]/votes_allowed +1	2-field	quorum	reject	error	reject	agree	as expected
+field quorum manifest:contests/[]/votes_allowed 0	2-field	quorum	reject	error	reject	agree	as expected
+field quorum manifest:election_scope_id changed	2-field	quorum	either	error	reject	agree	as expected
+field quorum manifest:end_date changed	2-field	quorum	either	error	reject	agree	as expected
+field quorum manifest:geopolitical_units/[]/name changed	2-field	quorum	either	error	reject	agree	as expected
+field quorum manifest:geopolitical_units/[]/object_id changed	2-field	quorum	either	error	reject	agree	as expected
+field quorum manifest:geopolitical_units/[]/type changed	2-field	quorum	either	error	reject	agree	as expected
+field quorum manifest:parties/[]/name changed	2-field	quorum	either	error	reject	agree	as expected
+field quorum manifest:parties/[]/object_id changed	2-field	quorum	either	error	reject	agree	as expected
+field quorum manifest:spec_version changed	2-field	quorum	either	error	reject	agree	as expected
+field quorum manifest:start_date changed	2-field	quorum	either	error	reject	agree	as expected
+field quorum manifest:type changed	2-field	quorum	either	error	reject	agree	as expected
+field quorum tally:contests/[]/contest_id changed	2-field	quorum	reject	reject	reject	agree	as expected
+field quorum tally:contests/[]/selections/[]/b_over_m 1	2-field	quorum	reject	reject	reject	agree	as expected
+field quorum tally:contests/[]/selections/[]/b_over_m inverse	2-field	quorum	reject	reject	reject	agree	as expected
+field quorum tally:contests/[]/selections/[]/b_over_m random	2-field	quorum	reject	reject	reject	agree	as expected
+field quorum tally:contests/[]/selections/[]/b_over_m times g	2-field	quorum	reject	reject	reject	agree	as expected
+field quorum tally:contests/[]/selections/[]/encrypted_vote/data 1	2-field	quorum	reject	reject	reject	agree	as expected
+field quorum tally:contests/[]/selections/[]/encrypted_vote/data inverse	2-field	quorum	reject	reject	reject	agree	as expected
+field quorum tally:contests/[]/selections/[]/encrypted_vote/data random	2-field	quorum	reject	reject	reject	agree	as expected
+field quorum tally:contests/[]/selections/[]/encrypted_vote/data times g	2-field	quorum	reject	reject	reject	agree	as expected
+field quorum tally:contests/[]/selections/[]/encrypted_vote/pad 1	2-field	quorum	reject	reject	reject	agree	as expected
+field quorum tally:contests/[]/selections/[]/encrypted_vote/pad inverse	2-field	quorum	reject	reject	reject	agree	as expected
+field quorum tally:contests/[]/selections/[]/encrypted_vote/pad random	2-field	quorum	reject	reject	reject	agree	as expected
+field quorum tally:contests/[]/selections/[]/encrypted_vote/pad times g	2-field	quorum	reject	reject	reject	agree	as expected
+field quorum tally:contests/[]/selections/[]/proof/challenge +1	2-field	quorum	reject	reject	reject	agree	as expected
+field quorum tally:contests/[]/selections/[]/proof/challenge 0	2-field	quorum	reject	reject	reject	agree	as expected
+field quorum tally:contests/[]/selections/[]/proof/challenge negated	2-field	quorum	reject	reject	reject	agree	as expected
+field quorum tally:contests/[]/selections/[]/proof/challenge random	2-field	quorum	reject	reject	reject	agree	as expected
+field quorum tally:contests/[]/selections/[]/proof/response +1	2-field	quorum	reject	reject	reject	agree	as expected
+field quorum tally:contests/[]/selections/[]/proof/response 0	2-field	quorum	reject	reject	reject	agree	as expected
+field quorum tally:contests/[]/selections/[]/proof/response negated	2-field	quorum	reject	reject	reject	agree	as expected
+field quorum tally:contests/[]/selections/[]/proof/response random	2-field	quorum	reject	reject	reject	agree	as expected
+field quorum tally:contests/[]/selections/[]/selection_id changed	2-field	quorum	reject	reject	error	agree	as expected
+field quorum tally:contests/[]/selections/[]/tally +1	2-field	quorum	reject	reject	reject	agree	as expected
+field quorum tally:contests/[]/selections/[]/tally 0	2-field	quorum	reject	reject	reject	agree	as expected
+field quorum tally:election_id last digit changed	2-field	quorum	reject	reject	reject	agree	as expected
+field quorum tally:election_id zero	2-field	quorum	reject	reject	reject	agree	as expected
+field quorum tally:id changed	2-field	quorum	either	accept	accept	agree	as expected
+field small dballot:contests/[]/contest_id changed	2-field	small	reject	reject	error	agree	as expected
+field small dballot:contests/[]/decrypted_contest_data/beta 1	2-field	small	reject	reject	reject	agree	as expected
+field small dballot:contests/[]/decrypted_contest_data/beta inverse	2-field	small	reject	reject	reject	agree	as expected
+field small dballot:contests/[]/decrypted_contest_data/beta random	2-field	small	reject	reject	reject	agree	as expected
+field small dballot:contests/[]/decrypted_contest_data/beta times g	2-field	small	reject	reject	reject	agree	as expected
+field small dballot:contests/[]/decrypted_contest_data/contest_data/status changed	2-field	small	either	error	accept	DISAGREE	as expected
+field small dballot:contests/[]/decrypted_contest_data/encrypted_contest_data/c0 1	2-field	small	reject	reject	reject	agree	as expected
+field small dballot:contests/[]/decrypted_contest_data/encrypted_contest_data/c0 inverse	2-field	small	reject	reject	reject	agree	as expected
+field small dballot:contests/[]/decrypted_contest_data/encrypted_contest_data/c0 random	2-field	small	reject	reject	reject	agree	as expected
+field small dballot:contests/[]/decrypted_contest_data/encrypted_contest_data/c0 times g	2-field	small	reject	reject	reject	agree	as expected
+field small dballot:contests/[]/decrypted_contest_data/encrypted_contest_data/c1 last digit changed	2-field	small	reject	reject	reject	agree	as expected
+field small dballot:contests/[]/decrypted_contest_data/encrypted_contest_data/c1 zero	2-field	small	reject	reject	reject	agree	as expected
+field small dballot:contests/[]/decrypted_contest_data/encrypted_contest_data/c2 last digit changed	2-field	small	reject	reject	reject	agree	as expected
+field small dballot:contests/[]/decrypted_contest_data/encrypted_contest_data/c2 zero	2-field	small	reject	reject	reject	agree	as expected
+field small dballot:contests/[]/decrypted_contest_data/encrypted_contest_data/numBytes +1	2-field	small	either	accept	accept	agree	as expected
+field small dballot:contests/[]/decrypted_contest_data/encrypted_contest_data/numBytes 0	2-field	small	either	accept	accept	agree	as expected
+field small dballot:contests/[]/decrypted_contest_data/proof/challenge +1	2-field	small	reject	reject	reject	agree	as expected
+field small dballot:contests/[]/decrypted_contest_data/proof/challenge 0	2-field	small	reject	reject	reject	agree	as expected
+field small dballot:contests/[]/decrypted_contest_data/proof/challenge negated	2-field	small	reject	reject	reject	agree	as expected
+field small dballot:contests/[]/decrypted_contest_data/proof/challenge random	2-field	small	reject	reject	reject	agree	as expected
+field small dballot:contests/[]/decrypted_contest_data/proof/response +1	2-field	small	reject	reject	reject	agree	as expected
+field small dballot:contests/[]/decrypted_contest_data/proof/response 0	2-field	small	reject	reject	reject	agree	as expected
+field small dballot:contests/[]/decrypted_contest_data/proof/response negated	2-field	small	reject	reject	reject	agree	as expected
+field small dballot:contests/[]/decrypted_contest_data/proof/response random	2-field	small	reject	reject	reject	agree	as expected
+field small dballot:contests/[]/selections/[]/b_over_m 1	2-field	small	reject	reject	reject	agree	as expected
+field small dballot:contests/[]/selections/[]/b_over_m inverse	2-field	small	reject	reject	reject	agree	as expected
+field small dballot:contests/[]/selections/[]/b_over_m random	2-field	small	reject	reject	reject	agree	as expected
+field small dballot:contests/[]/selections/[]/b_over_m times g	2-field	small	reject	reject	reject	agree	as expected
+field small dballot:contests/[]/selections/[]/encrypted_vote/data 1	2-field	small	reject	reject	reject	agree	as expected
+field small dballot:contests/[]/selections/[]/encrypted_vote/data inverse	2-field	small	reject	reject	reject	agree	as expected
+field small dballot:contests/[]/selections/[]/encrypted_vote/data random	2-field	small	reject	reject	reject	agree	as expected
+field small dballot:contests/[]/selections/[]/encrypted_vote/data times g	2-field	small	reject	reject	reject	agree	as expected
+field small dballot:contests/[]/selections/[]/encrypted_vote/pad 1	2-field	small	reject	reject	reject	agree	as expected
+field small dballot:contests/[]/selections/[]/encrypted_vote/pad inverse	2-field	small	reject	reject	reject	agree	as expected
+field small dballot:contests/[]/selections/[]/encrypted_vote/pad random	2-field	small	reject	reject	reject	agree	as expected
+field small dballot:contests/[]/selections/[]/encrypted_vote/pad times g	2-field	small	reject	reject	reject	agree	as expected
+field small dballot:contests/[]/selections/[]/proof/challenge +1	2-field	small	reject	reject	reject	agree	as expected
+field small dballot:contests/[]/selections/[]/proof/challenge 0	2-field	small	reject	reject	reject	agree	as expected
+field small dballot:contests/[]/selections/[]/proof/challenge negated	2-field	small	reject	reject	reject	agree	as expected
+field small dballot:contests/[]/selections/[]/proof/challenge random	2-field	small	reject	reject	reject	agree	as expected
+field small dballot:contests/[]/selections/[]/proof/response +1	2-field	small	reject	reject	reject	agree	as expected
+field small dballot:contests/[]/selections/[]/proof/response 0	2-field	small	reject	reject	reject	agree	as expected
+field small dballot:contests/[]/selections/[]/proof/response negated	2-field	small	reject	reject	reject	agree	as expected
+field small dballot:contests/[]/selections/[]/proof/response random	2-field	small	reject	reject	reject	agree	as expected
+field small dballot:contests/[]/selections/[]/selection_id changed	2-field	small	reject	reject	error	agree	as expected
+field small dballot:contests/[]/selections/[]/tally +1	2-field	small	reject	reject	reject	agree	as expected
+field small dballot:election_id last digit changed	2-field	small	reject	reject	reject	agree	as expected
+field small dballot:election_id zero	2-field	small	reject	reject	reject	agree	as expected
+field small dballot:id changed	2-field	small	reject	accept	reject	DISAGREE	UNEXPECTED
+field small eballot:ballot_id changed	2-field	small	either	accept	accept	agree	as expected
+field small eballot:ballot_style_id changed	2-field	small	either	accept	accept	agree	as expected
+field small eballot:code_baux last digit changed	2-field	small	reject	reject	reject	agree	as expected
+field small eballot:code_baux zero	2-field	small	reject	reject	reject	agree	as expected
+field small eballot:confirmation_code last digit changed	2-field	small	reject	reject	reject	agree	as expected
+field small eballot:confirmation_code zero	2-field	small	reject	reject	reject	agree	as expected
+field small eballot:contests/[]/contest_hash last digit changed	2-field	small	reject	reject	reject	agree	as expected
+field small eballot:contests/[]/contest_hash zero	2-field	small	reject	reject	reject	agree	as expected
+field small eballot:contests/[]/contest_id changed	2-field	small	reject	reject	reject	agree	as expected
+field small eballot:contests/[]/encrypted_contest_data/c0 1	2-field	small	either	accept	accept	agree	as expected
+field small eballot:contests/[]/encrypted_contest_data/c0 inverse	2-field	small	either	accept	accept	agree	as expected
+field small eballot:contests/[]/encrypted_contest_data/c0 random	2-field	small	either	accept	accept	agree	as expected
+field small eballot:contests/[]/encrypted_contest_data/c0 times g	2-field	small	either	accept	accept	agree	as expected
+field small eballot:contests/[]/encrypted_contest_data/c1 last digit changed	2-field	small	either	accept	accept	agree	as expected
+field small eballot:contests/[]/encrypted_contest_data/c1 zero	2-field	small	either	accept	accept	agree	as expected
+field small eballot:contests/[]/encrypted_contest_data/c2 last digit changed	2-field	small	either	accept	accept	agree	as expected
+field small eballot:contests/[]/encrypted_contest_data/c2 zero	2-field	small	either	accept	accept	agree	as expected
+field small eballot:contests/[]/encrypted_contest_data/numBytes +1	2-field	small	either	accept	accept	agree	as expected
+field small eballot:contests/[]/encrypted_contest_data/numBytes 0	2-field	small	either	accept	accept	agree	as expected
+field small eballot:contests/[]/proof/proofs/[]/challenge +1	2-field	small	reject	reject	reject	agree	as expected
+field small eballot:contests/[]/proof/proofs/[]/challenge 0	2-field	small	reject	reject	reject	agree	as expected
+field small eballot:contests/[]/proof/proofs/[]/challenge negated	2-field	small	reject	reject	reject	agree	as expected
+field small eballot:contests/[]/proof/proofs/[]/challenge random	2-field	small	reject	reject	reject	agree	as expected
+field small eballot:contests/[]/proof/proofs/[]/response +1	2-field	small	reject	reject	reject	agree	as expected
+field small eballot:contests/[]/proof/proofs/[]/response 0	2-field	small	reject	reject	reject	agree	as expected
+field small eballot:contests/[]/proof/proofs/[]/response negated	2-field	small	reject	reject	reject	agree	as expected
+field small eballot:contests/[]/proof/proofs/[]/response random	2-field	small	reject	reject	reject	agree	as expected
+field small eballot:contests/[]/selections/[]/encrypted_vote/data 1	2-field	small	reject	reject	reject	agree	as expected
+field small eballot:contests/[]/selections/[]/encrypted_vote/data inverse	2-field	small	reject	reject	reject	agree	as expected
+field small eballot:contests/[]/selections/[]/encrypted_vote/data random	2-field	small	reject	reject	reject	agree	as expected
+field small eballot:contests/[]/selections/[]/encrypted_vote/data times g	2-field	small	reject	reject	reject	agree	as expected
+field small eballot:contests/[]/selections/[]/encrypted_vote/pad 1	2-field	small	reject	reject	reject	agree	as expected
+field small eballot:contests/[]/selections/[]/encrypted_vote/pad inverse	2-field	small	reject	reject	reject	agree	as expected
+field small eballot:contests/[]/selections/[]/encrypted_vote/pad random	2-field	small	reject	reject	reject	agree	as expected
+field small eballot:contests/[]/selections/[]/encrypted_vote/pad times g	2-field	small	reject	reject	reject	agree	as expected
+field small eballot:contests/[]/selections/[]/proof/proofs/[]/challenge +1	2-field	small	reject	reject	reject	agree	as expected
+field small eballot:contests/[]/selections/[]/proof/proofs/[]/challenge 0	2-field	small	reject	reject	reject	agree	as expected
+field small eballot:contests/[]/selections/[]/proof/proofs/[]/challenge negated	2-field	small	reject	reject	reject	agree	as expected
+field small eballot:contests/[]/selections/[]/proof/proofs/[]/challenge random	2-field	small	reject	reject	reject	agree	as expected
+field small eballot:contests/[]/selections/[]/proof/proofs/[]/response +1	2-field	small	reject	reject	reject	agree	as expected
+field small eballot:contests/[]/selections/[]/proof/proofs/[]/response 0	2-field	small	reject	reject	reject	agree	as expected
+field small eballot:contests/[]/selections/[]/proof/proofs/[]/response negated	2-field	small	reject	reject	reject	agree	as expected
+field small eballot:contests/[]/selections/[]/proof/proofs/[]/response random	2-field	small	reject	reject	reject	agree	as expected
+field small eballot:contests/[]/selections/[]/selection_id changed	2-field	small	reject	reject	reject	agree	as expected
+field small eballot:contests/[]/selections/[]/sequence_order +1	2-field	small	either	accept	accept	agree	as expected
+field small eballot:contests/[]/selections/[]/sequence_order 0	2-field	small	either	accept	reject	DISAGREE	as expected
+field small eballot:contests/[]/sequence_order +1	2-field	small	either	reject	reject	agree	as expected
+field small eballot:contests/[]/sequence_order 0	2-field	small	either	reject	reject	agree	as expected
+field small eballot:contests/[]/votes_allowed +1	2-field	small	either	accept	accept	agree	as expected
+field small eballot:contests/[]/votes_allowed 0	2-field	small	either	accept	accept	agree	as expected
+field small eballot:election_id last digit changed	2-field	small	reject	reject	reject	agree	as expected
+field small eballot:election_id zero	2-field	small	reject	reject	reject	agree	as expected
+field small eballot:encrypted_sn/data 1	2-field	small	either	accept	accept	agree	as expected
+field small eballot:encrypted_sn/data inverse	2-field	small	either	accept	accept	agree	as expected
+field small eballot:encrypted_sn/data random	2-field	small	either	accept	accept	agree	as expected
+field small eballot:encrypted_sn/data times g	2-field	small	either	accept	accept	agree	as expected
+field small eballot:encrypted_sn/pad 1	2-field	small	either	accept	accept	agree	as expected
+field small eballot:encrypted_sn/pad inverse	2-field	small	either	accept	accept	agree	as expected
+field small eballot:encrypted_sn/pad random	2-field	small	either	accept	accept	agree	as expected
+field small eballot:encrypted_sn/pad times g	2-field	small	either	accept	accept	agree	as expected
+field small eballot:encrypting_device changed	2-field	small	either	accept	accept	agree	as expected
+field small eballot:is_preencrypt flipped	2-field	small	reject	reject	reject	agree	as expected
+field small eballot:state changed	2-field	small	reject	reject	reject	agree	as expected
+field small eballot:timestamp +1	2-field	small	either	accept	accept	agree	as expected
+field small eballot:timestamp 0	2-field	small	either	accept	accept	agree	as expected
+field small election_config:baux0 first byte +1	2-field	small	either	accept	accept	agree	as expected
+field small election_config:chain_confirmation_codes flipped	2-field	small	reject	reject	reject	agree	as expected
+field small election_config:config_version changed	2-field	small	reject	reject	reject	agree	as expected
+field small election_config:election_base_hash last digit changed	2-field	small	reject	reject	reject	agree	as expected
+field small election_config:election_base_hash zero	2-field	small	reject	reject	reject	agree	as expected
+field small election_config:manifest_hash last digit changed	2-field	small	reject	error	reject	agree	as expected
+field small election_config:manifest_hash zero	2-field	small	reject	error	reject	agree	as expected
+field small election_config:metadata/CreatedBy changed	2-field	small	either	accept	accept	agree	as expected
+field small election_config:metadata/CreatedOn changed	2-field	small	either	accept	accept	agree	as expected
+field small election_config:number_of_guardians +1	2-field	small	reject	error	reject	agree	as expected
+field small election_config:number_of_guardians 0	2-field	small	reject	error	reject	agree	as expected
+field small election_config:parameter_base_hash last digit changed	2-field	small	reject	error	reject	agree	as expected
+field small election_config:parameter_base_hash zero	2-field	small	reject	error	reject	agree	as expected
+field small election_config:quorum +1	2-field	small	reject	error	reject	agree	as expected
+field small election_config:quorum 0	2-field	small	reject	error	reject	agree	as expected
+field small election_initialized:extended_base_hash last digit changed	2-field	small	reject	reject	reject	agree	as expected
+field small election_initialized:extended_base_hash zero	2-field	small	reject	reject	reject	agree	as expected
+field small election_initialized:guardians/[]/coefficient_proofs/[]/challenge +1	2-field	small	reject	reject	reject	agree	as expected
+field small election_initialized:guardians/[]/coefficient_proofs/[]/challenge 0	2-field	small	reject	reject	reject	agree	as expected
+field small election_initialized:guardians/[]/coefficient_proofs/[]/challenge negated	2-field	small	reject	reject	reject	agree	as expected
+field small election_initialized:guardians/[]/coefficient_proofs/[]/challenge random	2-field	small	reject	reject	reject	agree	as expected
+field small election_initialized:guardians/[]/coefficient_proofs/[]/public_key 1	2-field	small	reject	reject	reject	agree	as expected
+field small election_initialized:guardians/[]/coefficient_proofs/[]/public_key inverse	2-field	small	reject	reject	reject	agree	as expected
+field small election_initialized:guardians/[]/coefficient_proofs/[]/public_key random	2-field	small	reject	reject	reject	agree	as expected
+field small election_initialized:guardians/[]/coefficient_proofs/[]/public_key times g	2-field	small	reject	reject	reject	agree	as expected
+field small election_initialized:guardians/[]/coefficient_proofs/[]/response +1	2-field	small	reject	reject	reject	agree	as expected
+field small election_initialized:guardians/[]/coefficient_proofs/[]/response 0	2-field	small	reject	reject	reject	agree	as expected
+field small election_initialized:guardians/[]/coefficient_proofs/[]/response negated	2-field	small	reject	reject	reject	agree	as expected
+field small election_initialized:guardians/[]/coefficient_proofs/[]/response random	2-field	small	reject	reject	reject	agree	as expected
+field small election_initialized:guardians/[]/guardian_id changed	2-field	small	either	accept	accept	agree	as expected
+field small election_initialized:guardians/[]/x_coordinate +1	2-field	small	reject	reject	reject	agree	as expected
+field small election_initialized:guardians/[]/x_coordinate 0	2-field	small	reject	error	reject	agree	as expected
+field small election_initialized:joint_public_key 1	2-field	small	reject	reject	reject	agree	as expected
+field small election_initialized:joint_public_key inverse	2-field	small	reject	reject	reject	agree	as expected
+field small election_initialized:joint_public_key random	2-field	small	reject	reject	reject	agree	as expected
+field small election_initialized:joint_public_key times g	2-field	small	reject	reject	reject	agree	as expected
+field small encrypted_tally:cast_ballot_ids/[] changed	2-field	small	either	accept	accept	agree	as expected
+field small encrypted_tally:contests/[]/contest_id changed	2-field	small	reject	reject	error	agree	as expected
+field small encrypted_tally:contests/[]/selections/[]/encrypted_vote/data 1	2-field	small	reject	reject	reject	agree	as expected
+field small encrypted_tally:contests/[]/selections/[]/encrypted_vote/data inverse	2-field	small	reject	reject	reject	agree	as expected
+field small encrypted_tally:contests/[]/selections/[]/encrypted_vote/data random	2-field	small	reject	reject	reject	agree	as expected
+field small encrypted_tally:contests/[]/selections/[]/encrypted_vote/data times g	2-field	small	reject	reject	reject	agree	as expected
+field small encrypted_tally:contests/[]/selections/[]/encrypted_vote/pad 1	2-field	small	reject	reject	reject	agree	as expected
+field small encrypted_tally:contests/[]/selections/[]/encrypted_vote/pad inverse	2-field	small	reject	reject	reject	agree	as expected
+field small encrypted_tally:contests/[]/selections/[]/encrypted_vote/pad random	2-field	small	reject	reject	reject	agree	as expected
+field small encrypted_tally:contests/[]/selections/[]/encrypted_vote/pad times g	2-field	small	reject	reject	reject	agree	as expected
+field small encrypted_tally:contests/[]/selections/[]/selection_id changed	2-field	small	reject	accept	error	DISAGREE	UNEXPECTED
+field small encrypted_tally:contests/[]/selections/[]/sequence_order +1	2-field	small	either	accept	accept	agree	as expected
+field small encrypted_tally:contests/[]/selections/[]/sequence_order 0	2-field	small	either	accept	error	DISAGREE	as expected
+field small encrypted_tally:contests/[]/sequence_order +1	2-field	small	either	accept	accept	agree	as expected
+field small encrypted_tally:contests/[]/sequence_order 0	2-field	small	either	accept	accept	agree	as expected
+field small encrypted_tally:election_id last digit changed	2-field	small	reject	accept	reject	DISAGREE	UNEXPECTED
+field small encrypted_tally:election_id zero	2-field	small	reject	accept	reject	DISAGREE	UNEXPECTED
+field small encrypted_tally:tally_id changed	2-field	small	either	accept	accept	agree	as expected
+field small manifest:ballot_styles/[]/geopolitical_unit_ids/[] changed	2-field	small	either	error	reject	agree	as expected
+field small manifest:ballot_styles/[]/object_id changed	2-field	small	either	error	reject	agree	as expected
+field small manifest:candidates/[]/is_write_in flipped	2-field	small	either	error	reject	agree	as expected
+field small manifest:candidates/[]/object_id changed	2-field	small	either	error	reject	agree	as expected
+field small manifest:contact_information/name changed	2-field	small	either	error	reject	agree	as expected
+field small manifest:contact_information/phone changed	2-field	small	either	error	reject	agree	as expected
+field small manifest:contests/[]/ballot_selections/[]/candidate_id changed	2-field	small	reject	error	reject	agree	as expected
+field small manifest:contests/[]/ballot_selections/[]/object_id changed	2-field	small	reject	error	error	agree	as expected
+field small manifest:contests/[]/ballot_selections/[]/sequence_order +1	2-field	small	either	error	reject	agree	as expected
+field small manifest:contests/[]/ballot_selections/[]/sequence_order 0	2-field	small	either	error	error	agree	as expected
+field small manifest:contests/[]/ballot_subtitle changed	2-field	small	either	error	reject	agree	as expected
+field small manifest:contests/[]/ballot_title changed	2-field	small	either	error	reject	agree	as expected
+field small manifest:contests/[]/electoral_district_id changed	2-field	small	either	error	reject	agree	as expected
+field small manifest:contests/[]/name changed	2-field	small	either	error	reject	agree	as expected
+field small manifest:contests/[]/number_elected +1	2-field	small	either	error	reject	agree	as expected
+field small manifest:contests/[]/number_elected 0	2-field	small	either	error	reject	agree	as expected
+field small manifest:contests/[]/object_id changed	2-field	small	reject	error	error	agree	as expected
+field small manifest:contests/[]/sequence_order +1	2-field	small	either	error	reject	agree	as expected
+field small manifest:contests/[]/sequence_order 0	2-field	small	either	error	reject	agree	as expected
+field small manifest:contests/[]/vote_variation changed	2-field	small	either	error	reject	agree	as expected
+field small manifest:contests/[]/votes_allowed +1	2-field	small	reject	error	reject	agree	as expected
+field small manifest:contests/[]/votes_allowed 0	2-field	small	reject	error	reject	agree	as expected
+field small manifest:election_scope_id changed	2-field	small	either	error	reject	agree	as expected
+field small manifest:end_date changed	2-field	small	either	error	reject	agree	as expected
+field small manifest:geopolitical_units/[]/name changed	2-field	small	either	error	reject	agree	as expected
+field small manifest:geopolitical_units/[]/object_id changed	2-field	small	either	error	reject	agree	as expected
+field small manifest:geopolitical_units/[]/type changed	2-field	small	either	error	reject	agree	as expected
+field small manifest:parties/[]/name changed	2-field	small	either	error	reject	agree	as expected
+field small manifest:parties/[]/object_id changed	2-field	small	either	error	reject	agree	as expected
+field small manifest:spec_version changed	2-field	small	either	error	reject	agree	as expected
+field small manifest:start_date changed	2-field	small	either	error	reject	agree	as expected
+field small manifest:type changed	2-field	small	either	error	reject	agree	as expected
+field small tally:contests/[]/contest_id changed	2-field	small	reject	reject	reject	agree	as expected
+field small tally:contests/[]/selections/[]/b_over_m random	2-field	small	reject	reject	reject	agree	as expected
+field small tally:contests/[]/selections/[]/b_over_m times g	2-field	small	reject	reject	reject	agree	as expected
+field small tally:contests/[]/selections/[]/encrypted_vote/data 1	2-field	small	reject	reject	reject	agree	as expected
+field small tally:contests/[]/selections/[]/encrypted_vote/data inverse	2-field	small	reject	reject	reject	agree	as expected
+field small tally:contests/[]/selections/[]/encrypted_vote/data random	2-field	small	reject	reject	reject	agree	as expected
+field small tally:contests/[]/selections/[]/encrypted_vote/data times g	2-field	small	reject	reject	reject	agree	as expected
+field small tally:contests/[]/selections/[]/encrypted_vote/pad 1	2-field	small	reject	reject	reject	agree	as expected
+field small tally:contests/[]/selections/[]/encrypted_vote/pad inverse	2-field	small	reject	reject	reject	agree	as expected
+field small tally:contests/[]/selections/[]/encrypted_vote/pad random	2-field	small	reject	reject	reject	agree	as expected
+field small tally:contests/[]/selections/[]/encrypted_vote/pad times g	2-field	small	reject	reject	reject	agree	as expected
+field small tally:contests/[]/selections/[]/proof/challenge +1	2-field	small	reject	reject	reject	agree	as expected
+field small tally:contests/[]/selections/[]/proof/challenge 0	2-field	small	reject	reject	reject	agree	as expected
+field small tally:contests/[]/selections/[]/proof/challenge negated	2-field	small	reject	reject	reject	agree	as expected
+field small tally:contests/[]/selections/[]/proof/challenge random	2-field	small	reject	reject	reject	agree	as expected
+field small tally:contests/[]/selections/[]/proof/response +1	2-field	small	reject	reject	reject	agree	as expected
+field small tally:contests/[]/selections/[]/proof/response 0	2-field	small	reject	reject	reject	agree	as expected
+field small tally:contests/[]/selections/[]/proof/response negated	2-field	small	reject	reject	reject	agree	as expected
+field small tally:contests/[]/selections/[]/proof/response random	2-field	small	reject	reject	reject	agree	as expected
+field small tally:contests/[]/selections/[]/selection_id changed	2-field	small	reject	reject	error	agree	as expected
+field small tally:contests/[]/selections/[]/tally +1	2-field	small	reject	reject	reject	agree	as expected
+field small tally:contests/[]/selections/[]/tally 0	2-field	small	reject	reject	reject	agree	as expected
+field small tally:election_id last digit changed	2-field	small	reject	reject	reject	agree	as expected
+field small tally:election_id zero	2-field	small	reject	reject	reject	agree	as expected
+field small tally:id changed	2-field	small	either	accept	accept	agree	as expected
+forgery egk-chainedJson tally: a cast ballot deleted, tally recomputed and decrypted	4-forgery	egk-chainedJson	reject	reject	reject	agree	as expected
+forgery egk-chainedJson tally: a cast ballot left out of the tally (file kept), validly decrypted | forgery	4-forgery	egk-chainedJson	reject	reject	reject	agree	as expected
+forgery egk-chainedJson tally: a challenged ballot counted, validly decrypted | forgery	4-forgery	egk-chainedJson	reject	reject	reject	agree	as expected
+forgery egk-chainedJson tally: a challenged ballot's decryption missing	4-forgery	egk-chainedJson	either	accept	accept	agree	as expected
+forgery egk-chainedJson tally: a challenged ballot's decryption re-made | control	4-forgery	egk-chainedJson	accept	accept	accept	agree	as expected
+forgery egk-chainedJson tally: encrypted tally times Enc(1), validly decrypted | forgery	4-forgery	egk-chainedJson	reject	reject	reject	agree	as expected
+forgery egk-chainedJson tally: re-decrypted unchanged | control	4-forgery	egk-chainedJson	accept	accept	accept	agree	as expected
+forgery multi ballot: option encrypts 2, range and limit proofs claim 1 (overvote) | control	4-forgery	multi	accept	accept	accept	agree	as expected
+forgery multi ballot: option encrypts 2, range and limit proofs claim 1 (overvote) | forgery	4-forgery	multi	reject	reject	reject	agree	as expected
+forgery multi ballot: two options of a 1-vote contest, limit proof claims 1 | control	4-forgery	multi	accept	accept	accept	agree	as expected
+forgery multi ballot: two options of a 1-vote contest, limit proof claims 1 | forgery	4-forgery	multi	reject	reject	reject	agree	as expected
+forgery multi ballot: vote transfer: an option encrypts -1 (range proof claims 0), another +1 | control	4-forgery	multi	accept	accept	accept	agree	as expected
+forgery multi ballot: vote transfer: an option encrypts -1 (range proof claims 0), another +1 | forgery	4-forgery	multi	reject	reject	reject	agree	as expected
+forgery quorum ballot: option encrypts 2, range and limit proofs claim 1 (overvote) | control	4-forgery	quorum	accept	accept	accept	agree	as expected
+forgery quorum ballot: option encrypts 2, range and limit proofs claim 1 (overvote) | forgery	4-forgery	quorum	reject	reject	reject	agree	as expected
+forgery quorum ballot: two options of a 1-vote contest, limit proof claims 1 | control	4-forgery	quorum	accept	accept	accept	agree	as expected
+forgery quorum ballot: two options of a 1-vote contest, limit proof claims 1 | forgery	4-forgery	quorum	reject	reject	reject	agree	as expected
+forgery quorum ballot: vote transfer: an option encrypts -1 (range proof claims 0), another +1 | control	4-forgery	quorum	accept	accept	accept	agree	as expected
+forgery quorum ballot: vote transfer: an option encrypts -1 (range proof claims 0), another +1 | forgery	4-forgery	quorum	reject	reject	reject	agree	as expected
+forgery quorum tally: a cast ballot deleted, tally recomputed and decrypted	4-forgery	quorum	accept	accept	accept	agree	as expected
+forgery quorum tally: a cast ballot left out of the tally (file kept), validly decrypted | forgery	4-forgery	quorum	reject	reject	reject	agree	as expected
+forgery quorum tally: a cast ballot's decryption published as a challenged ballot	4-forgery	quorum	reject	accept	reject	DISAGREE	UNEXPECTED
+forgery quorum tally: a challenged ballot counted, validly decrypted | forgery	4-forgery	quorum	reject	reject	reject	agree	as expected
+forgery quorum tally: a challenged ballot's decryption missing	4-forgery	quorum	either	accept	accept	agree	as expected
+forgery quorum tally: a challenged ballot's decryption re-made | control	4-forgery	quorum	accept	accept	accept	agree	as expected
+forgery quorum tally: a challenged ballot's published decryption is that of another ciphertext (other choices) | forgery	4-forgery	quorum	reject	accept	reject	DISAGREE	UNEXPECTED
+forgery quorum tally: encrypted tally times Enc(1), validly decrypted | forgery	4-forgery	quorum	reject	reject	reject	agree	as expected
+forgery quorum tally: re-decrypted unchanged | control	4-forgery	quorum	accept	accept	accept	agree	as expected
+forgery small ballot: option encrypts 2, range and limit proofs claim 1 (overvote) | control	4-forgery	small	accept	accept	accept	agree	as expected
+forgery small ballot: option encrypts 2, range and limit proofs claim 1 (overvote) | forgery	4-forgery	small	reject	reject	reject	agree	as expected
+forgery small ballot: two options of a 1-vote contest, limit proof claims 1 | control	4-forgery	small	accept	accept	accept	agree	as expected
+forgery small ballot: two options of a 1-vote contest, limit proof claims 1 | forgery	4-forgery	small	reject	reject	reject	agree	as expected
+forgery small ballot: vote transfer: an option encrypts -1 (range proof claims 0), another +1 | control	4-forgery	small	accept	accept	accept	agree	as expected
+forgery small ballot: vote transfer: an option encrypts -1 (range proof claims 0), another +1 | forgery	4-forgery	small	reject	reject	reject	agree	as expected
+forgery small base hash: H_B replaced, used consistently | forgery	4-forgery	small	reject	reject	reject	agree	as expected
+forgery small base hash: H_E replaced, used consistently | forgery	4-forgery	small	reject	reject	reject	agree	as expected
+forgery small base hash: H_M replaced, used consistently | forgery	4-forgery	small	reject	error	reject	agree	as expected
+forgery small base hash: H_P replaced, used consistently | forgery	4-forgery	small	reject	reject	reject	agree	as expected
+forgery small base hash: egk pipeline re-run | control	4-forgery	small	accept	accept	accept	agree	as expected
+forgery small tally: a cast ballot deleted, tally recomputed and decrypted	4-forgery	small	accept	accept	accept	agree	as expected
+forgery small tally: a cast ballot left out of the tally (file kept), validly decrypted | forgery	4-forgery	small	reject	reject	reject	agree	as expected
+forgery small tally: a cast ballot's decryption published as a challenged ballot	4-forgery	small	reject	accept	reject	DISAGREE	UNEXPECTED
+forgery small tally: a challenged ballot counted, validly decrypted | forgery	4-forgery	small	reject	reject	reject	agree	as expected
+forgery small tally: a challenged ballot's decryption missing	4-forgery	small	either	accept	accept	agree	as expected
+forgery small tally: a challenged ballot's decryption re-made | control	4-forgery	small	accept	accept	accept	agree	as expected
+forgery small tally: a challenged ballot's published decryption is that of another ciphertext (other choices) | forgery	4-forgery	small	reject	accept	reject	DISAGREE	UNEXPECTED
+forgery small tally: encrypted tally times Enc(1), validly decrypted | forgery	4-forgery	small	reject	reject	reject	agree	as expected
+forgery small tally: re-decrypted unchanged | control	4-forgery	small	accept	accept	accept	agree	as expected
+honest egk-allAvailableJson	1-honest	egk-allAvailableJson	accept	accept	accept	agree	as expected
+honest egk-chainedJson	1-honest	egk-chainedJson	accept	accept	accept	agree	as expected
+honest egk-someAvailableJson	1-honest	egk-someAvailableJson	accept	accept	accept	agree	as expected
+honest medium	1-honest	medium	accept	accept	accept	agree	as expected
+honest multi	1-honest	multi	accept	accept	accept	agree	as expected
+honest quorum	1-honest	quorum	accept	accept	accept	agree	as expected
+honest small	1-honest	small	accept	accept	accept	agree	as expected
+protocol chained-batch: configuration chains the codes, the ballots do not (egk RunBatchEncryption)	4-protocol	chained-batch	reject	reject	reject	agree	as expected
+protocol egk-chainedJson chain: a cast ballot removed from the middle of the chain, tally recomputed and decrypted	4-protocol	egk-chainedJson	reject	reject	reject	agree	as expected
+protocol egk-chainedJson chain: ballot_chain.json removed	4-protocol	egk-chainedJson	reject	reject	reject	agree	as expected
+protocol egk-chainedJson chain: closing hash changed	4-protocol	egk-chainedJson	reject	reject	reject	agree	as expected
+protocol egk-chainedJson chain: closing hash recomputed, unchanged | control	4-protocol	egk-chainedJson	accept	accept	accept	agree	as expected
+protocol egk-chainedJson chain: the last ballot left out of the chain and the tally (file kept, closing hash recomputed)	4-protocol	egk-chainedJson	reject	accept	reject	DISAGREE	UNEXPECTED
+protocol egk-chainedJson chain: two ballots swapped in the chain order (closing hash recomputed)	4-protocol	egk-chainedJson	reject	reject	reject	agree	as expected
+structure small a cast ballot duplicated (same id, second file)	3-structure	small	reject	reject	reject	agree	as expected
+structure small a cast ballot of another election added	3-structure	small	reject	reject	reject	agree	as expected
+structure small a cast ballot's state := CHALLENGED	3-structure	small	reject	reject	reject	agree	as expected
+structure small a cast ballot's state := SPOILED	3-structure	small	reject	reject	reject	agree	as expected
+structure small a cast ballot's state := UNKNOWN	3-structure	small	reject	reject	reject	agree	as expected
+structure small a cast ballot's state := cast	3-structure	small	reject	reject	reject	agree	as expected
+structure small ballot: a contest dropped	3-structure	small	reject	reject	reject	agree	as expected
+structure small ballot: a contest duplicated	3-structure	small	reject	reject	reject	agree	as expected
+structure small ballot: a range proof missing	3-structure	small	reject	reject	reject	agree	as expected
+structure small ballot: a range-proof branch dropped	3-structure	small	reject	reject	reject	agree	as expected
+structure small ballot: a range-proof branch duplicated	3-structure	small	reject	reject	reject	agree	as expected
+structure small ballot: a selection dropped	3-structure	small	reject	reject	reject	agree	as expected
+structure small ballot: a selection duplicated	3-structure	small	reject	reject	reject	agree	as expected
+structure small ballot: a selection-limit branch dropped	3-structure	small	reject	reject	reject	agree	as expected
+structure small ballot: an extra unknown field	3-structure	small	accept	accept	accept	agree	as expected
+structure small config: quorum := number of guardians + 1	3-structure	small	reject	error	reject	agree	as expected
+structure small constants: generator := g^2	3-structure	small	reject	reject	reject	agree	as expected
+structure small decrypted tally b_over_m := p - 1	3-structure	small	reject	reject	error	agree	as expected
+structure small element := 0	3-structure	small	reject	reject	reject	agree	as expected
+structure small element := 2 (not in the subgroup)	3-structure	small	reject	reject	reject	agree	as expected
+structure small element := element + p	3-structure	small	reject	reject	reject	agree	as expected
+structure small element := p	3-structure	small	reject	reject	reject	agree	as expected
+structure small element := p - 1 (not in the subgroup)	3-structure	small	reject	reject	reject	agree	as expected
+structure small element in lower case	3-structure	small	either	accept	accept	agree	as expected
+structure small element with an extra leading 00	3-structure	small	either	accept	accept	agree	as expected
+structure small element with leading zero digits stripped	3-structure	small	either	accept	accept	agree	as expected
+structure small encrypted tally: a cast ballot id dropped	3-structure	small	either	accept	accept	agree	as expected
+structure small encrypted tally: a cast ballot id duplicated	3-structure	small	either	accept	accept	agree	as expected
+structure small encrypted tally: a contest dropped	3-structure	small	reject	reject	error	agree	as expected
+structure small encrypted tally: a selection dropped	3-structure	small	reject	accept	error	DISAGREE	UNEXPECTED
+structure small initialized: a coefficient proof dropped	3-structure	small	reject	error	reject	agree	as expected
+structure small initialized: a guardian dropped	3-structure	small	reject	error	reject	agree	as expected
+structure small initialized: a guardian duplicated	3-structure	small	reject	error	reject	agree	as expected
+structure small joint public key := p - 1	3-structure	small	reject	reject	error	agree	as expected
+structure small scalar := 2^256 - 1	3-structure	small	reject	reject	reject	agree	as expected
+structure small scalar := q	3-structure	small	reject	reject	reject	agree	as expected
+structure small scalar := scalar + q	3-structure	small	reject	reject	reject	agree	as expected
+structure small scalar in lower case	3-structure	small	either	accept	accept	agree	as expected
+structure small scalar with leading zero digits stripped	3-structure	small	either	accept	accept	agree	as expected
+structure small tally: a contest dropped	3-structure	small	reject	accept	reject	DISAGREE	UNEXPECTED
+structure small tally: a count as a string	3-structure	small	either	accept	error	DISAGREE	as expected
+structure small tally: a selection dropped	3-structure	small	reject	reject	error	agree	as expected

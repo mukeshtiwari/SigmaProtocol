@@ -1,0 +1,735 @@
+id	source	election	expected	helios	certified	status	unexpected	helios_note	certified_note	case
+0000	honest	E1	accept	accept	accept	agree				as generated
+0001	field	E1	reject	reject	reject	agree				ballot alpha times g
+0002	field	E1	reject	reject	reject	agree				ballot alpha 1
+0003	field	E1	reject	reject	reject	agree				ballot alpha inverse
+0004	field	E1	reject	reject	reject	agree				ballot alpha random
+0005	field	E1	reject	reject	reject	agree				ballot alpha swapped with a sibling
+0006	field	E1	reject	reject	reject	agree				ballot beta times g
+0007	field	E1	reject	reject	reject	agree				ballot beta 1
+0008	field	E1	reject	reject	reject	agree				ballot beta inverse
+0009	field	E1	reject	reject	reject	agree				ballot beta random
+0010	field	E1	reject	reject	reject	agree				ballot beta swapped with a sibling
+0011	field	E1	either	accept	accept	agree				ballot cast_at changed
+0012	field	E1	reject	reject	reject	agree				ballot election_hash changed
+0013	field	E1	reject	reject	reject	agree				ballot election_uuid changed
+0014	field	E1	reject	reject	reject	agree				ballot proof A (branch 0) times g
+0015	field	E1	reject	reject	reject	agree				ballot proof A (branch 0) 1
+0016	field	E1	reject	reject	reject	agree				ballot proof A (branch 0) inverse
+0017	field	E1	reject	reject	reject	agree				ballot proof A (branch 0) random
+0018	field	E1	reject	reject	reject	agree				ballot proof A (branch 0) swapped with a sibling
+0019	field	E1	reject	reject	reject	agree				ballot proof A (branch 1) times g
+0020	field	E1	reject	reject	reject	agree				ballot proof A (branch 1) 1
+0021	field	E1	reject	reject	reject	agree				ballot proof A (branch 1) inverse
+0022	field	E1	reject	reject	reject	agree				ballot proof A (branch 1) random
+0023	field	E1	reject	reject	reject	agree				ballot proof A (branch 1) swapped with a sibling
+0024	field	E1	reject	reject	reject	agree				ballot proof B (branch 0) times g
+0025	field	E1	reject	reject	reject	agree				ballot proof B (branch 0) 1
+0026	field	E1	reject	reject	reject	agree				ballot proof B (branch 0) inverse
+0027	field	E1	reject	reject	reject	agree				ballot proof B (branch 0) random
+0028	field	E1	reject	reject	reject	agree				ballot proof B (branch 0) swapped with a sibling
+0029	field	E1	reject	reject	reject	agree				ballot proof B (branch 1) times g
+0030	field	E1	reject	reject	reject	agree				ballot proof B (branch 1) 1
+0031	field	E1	reject	reject	reject	agree				ballot proof B (branch 1) inverse
+0032	field	E1	reject	reject	reject	agree				ballot proof B (branch 1) random
+0033	field	E1	reject	reject	reject	agree				ballot proof B (branch 1) swapped with a sibling
+0034	field	E1	reject	reject	reject	agree				ballot proof challenge (branch 0) +1
+0035	field	E1	reject	reject	reject	agree				ballot proof challenge (branch 0) 0
+0036	field	E1	reject	reject	reject	agree				ballot proof challenge (branch 0) negated
+0037	field	E1	reject	reject	reject	agree				ballot proof challenge (branch 0) random
+0038	field	E1	reject	reject	reject	agree				ballot proof challenge (branch 1) +1
+0039	field	E1	reject	reject	reject	agree				ballot proof challenge (branch 1) 0
+0040	field	E1	reject	reject	reject	agree				ballot proof challenge (branch 1) negated
+0041	field	E1	reject	reject	reject	agree				ballot proof challenge (branch 1) random
+0042	field	E1	reject	reject	reject	agree				ballot proof response (branch 0) +1
+0043	field	E1	reject	reject	reject	agree				ballot proof response (branch 0) 0
+0044	field	E1	reject	reject	reject	agree				ballot proof response (branch 0) negated
+0045	field	E1	reject	reject	reject	agree				ballot proof response (branch 0) random
+0046	field	E1	reject	reject	reject	agree				ballot proof response (branch 1) +1
+0047	field	E1	reject	reject	reject	agree				ballot proof response (branch 1) 0
+0048	field	E1	reject	reject	reject	agree				ballot proof response (branch 1) negated
+0049	field	E1	reject	reject	reject	agree				ballot proof response (branch 1) random
+0050	field	E1	either	accept	accept	agree				ballot vote_hash changed
+0051	field	E1	either	accept	accept	agree				ballot voter_hash changed
+0052	field	E1	either	accept	accept	agree				ballot voter_uuid changed
+0053	field	E1	reject	reject	reject	agree				decryption factor times g
+0054	field	E1	reject	reject	reject	agree				decryption factor 1
+0055	field	E1	reject	reject	reject	agree				decryption factor inverse
+0056	field	E1	reject	reject	reject	agree				decryption factor random
+0057	field	E1	reject	reject	reject	agree				decryption factor swapped with a sibling
+0058	field	E1	reject	reject	reject	agree			decryption proof: challenge is not SHA-1(A, B)	decryption proof A times g
+0059	field	E1	reject	reject	reject	agree			decryption proof: challenge is not SHA-1(A, B)	decryption proof A 1
+0060	field	E1	reject	reject	reject	agree			decryption proof: challenge is not SHA-1(A, B)	decryption proof A inverse
+0061	field	E1	reject	reject	reject	agree			decryption proof: challenge is not SHA-1(A, B)	decryption proof A random
+0062	field	E1	reject	reject	reject	agree			decryption proof: challenge is not SHA-1(A, B)	decryption proof A swapped with a sibling
+0063	field	E1	reject	reject	reject	agree			decryption proof: challenge is not SHA-1(A, B)	decryption proof B times g
+0064	field	E1	reject	reject	reject	agree			decryption proof: challenge is not SHA-1(A, B)	decryption proof B 1
+0065	field	E1	reject	reject	reject	agree			decryption proof: challenge is not SHA-1(A, B)	decryption proof B inverse
+0066	field	E1	reject	reject	reject	agree			decryption proof: challenge is not SHA-1(A, B)	decryption proof B random
+0067	field	E1	reject	reject	reject	agree			decryption proof: challenge is not SHA-1(A, B)	decryption proof B swapped with a sibling
+0068	field	E1	reject	reject	reject	agree			decryption proof: challenge is not SHA-1(A, B)	decryption proof challenge +1
+0069	field	E1	reject	reject	reject	agree			decryption proof: challenge is not SHA-1(A, B)	decryption proof challenge 0
+0070	field	E1	reject	reject	reject	agree			decryption proof: challenge is not SHA-1(A, B)	decryption proof challenge negated
+0071	field	E1	reject	reject	reject	agree			decryption proof: challenge is not SHA-1(A, B)	decryption proof challenge random
+0072	field	E1	reject	reject	reject	agree				decryption proof response +1
+0073	field	E1	reject	reject	reject	agree				decryption proof response 0
+0074	field	E1	reject	reject	reject	agree				decryption proof response negated
+0075	field	E1	reject	reject	reject	agree				decryption proof response random
+0076	field	E1	reject	reject	reject	agree			proof of knowledge: challenge is not SHA-1(commitment)	pok challenge +1
+0077	field	E1	reject	reject	reject	agree			proof of knowledge: challenge is not SHA-1(commitment)	pok challenge 0
+0078	field	E1	reject	reject	reject	agree			proof of knowledge: challenge is not SHA-1(commitment)	pok challenge negated
+0079	field	E1	reject	reject	reject	agree			proof of knowledge: challenge is not SHA-1(commitment)	pok challenge random
+0080	field	E1	reject	reject	reject	agree			proof of knowledge: challenge is not SHA-1(commitment)	pok commitment times g
+0081	field	E1	reject	reject	reject	agree			proof of knowledge: challenge is not SHA-1(commitment)	pok commitment 1
+0082	field	E1	reject	reject	reject	agree			proof of knowledge: challenge is not SHA-1(commitment)	pok commitment inverse
+0083	field	E1	reject	reject	reject	agree			proof of knowledge: challenge is not SHA-1(commitment)	pok commitment random
+0084	field	E1	reject	reject	reject	agree			proof of knowledge: challenge is not SHA-1(commitment)	pok commitment swapped with a sibling
+0085	field	E1	reject	reject	reject	agree				pok response +1
+0086	field	E1	reject	reject	reject	agree				pok response 0
+0087	field	E1	reject	reject	reject	agree				pok response negated
+0088	field	E1	reject	reject	reject	agree				pok response random
+0089	field	E1	reject	reject	reject	agree				published tally +1
+0090	field	E1	reject	reject	reject	agree				published tally -1
+0091	field	E1	reject	reject	reject	agree				published tally swapped with another candidate
+0092	field	E1	either	accept	reject	DISAGREE			group element outside the order-q subgroup: 14887492224963187634282421537186040801304008017743492304481737382571933937568724473847106029915040150784031882206090286938661464458896494215273989547889201144857352611058572236578734319505128042602372864570426550855201448111746579871811249114781674309062693442442368697449970648232621880001709535143047913661432883287150003429802392229361583608686643243349727791976247247948618930423866180410558458272606627111270040091203073580238905303994472202930783207472394578498507764703191288249547659899997131166130259700604433891232298182348403175947450284433411265966789131024573629546048637848902243503970966798589660808535	trustee declared g changed
+0093	field	E1	either	accept	accept	agree				trustee declared p changed
+0094	field	E1	either	accept	accept	agree				trustee declared q changed
+0095	field	E1	either	accept	accept	agree				trustee email changed
+0096	field	E1	either	accept	accept	agree				trustee public_key_hash changed
+0097	field	E1	either	accept	accept	agree				trustee uuid changed
+0098	field	E1	reject	reject	reject	agree				trustee y times g
+0099	field	E1	reject	reject	reject	agree				trustee y 1
+0100	field	E1	reject	reject	reject	agree				trustee y inverse
+0101	field	E1	reject	reject	reject	agree				trustee y random
+0102	field	E1	reject	reject	reject	agree				trustee y swapped with a sibling
+0103	structural	E1	reject	reject	reject	agree		Tally.add_vote: IndexError		ballot 0: last choice dropped
+0104	structural	E1	reject	reject	reject	agree				ballot 0: last choice duplicated
+0105	structural	E1	reject	reject	reject	agree				ballot 0: last proof dropped
+0106	structural	E1	reject	accept	reject	DISAGREE	yes			ballot 0: last proof duplicated
+0107	structural	E1	reject	reject	reject	agree			syntax error	ballot 0: proof 0 with one branch
+0108	structural	E1	reject	reject	reject	agree			syntax error	ballot 0: proof 0 with a third branch
+0109	structural	E1	either	accept	reject	DISAGREE			syntax error	ballot 0: overall_proof [] instead of null
+0110	structural	E1	either	accept	reject	DISAGREE			syntax error	ballot 0: overall_proof = proof 0
+0111	structural	E1	reject	reject	reject	agree			syntax error	ballot 0: answer duplicated
+0112	structural	E1	either	accept	reject	DISAGREE			syntax error	ballot 0: extra field
+0113	structural	E1	either	accept	reject	DISAGREE			syntax error	ballot 0: voter_uuid missing
+0114	structural	E1	reject	reject	reject	agree		trustees/result: IndexError	shape: decryption factors or proofs	trustee 0: last decryption factor dropped
+0115	structural	E1	reject	accept	reject	DISAGREE	yes		shape: decryption factors or proofs	trustee 0: extra decryption factor
+0116	structural	E1	reject	reject	reject	agree		trustees/result: IndexError	shape: decryption factors or proofs	trustee 0: last decryption proof dropped
+0117	structural	E1	reject	reject	reject	agree			shape: result length	published tally: last entry dropped
+0118	structural	E1	reject	reject	reject	agree			shape: result length	published tally: extra entry
+0119	structural	E1	either	accept	reject	DISAGREE			syntax error	ballot 0: keys in reverse order
+0120	structural	E1	either	accept	accept	agree				ballot 0 alpha: leading zero
+0121	structural	E1	either	accept	reject	DISAGREE			not a decimal integer: +15720367374236141252951345098821653026765206774657673868028501749325029493650117168960892505288833968764642474382314755537611965938225453175735462766523899926391319679974563589006402188698762774625972289684189476973689922278489150623179406350424658716950063374628538968811574435913059564315080800422137954337410946893831046641212625010128707031898353212105556303025403226577770923989841650941093583002670143481027450548190201540622950357693652274887314159952390415812280657695730160742543779455929573772784672659380465966874342230544284599309508062319272810464762284786723662724544433596071142046067538250385044199244	ballot 0 alpha: plus sign
+0122	structural	E1	either	accept	reject	DISAGREE			not a decimal integer:  15720367374236141252951345098821653026765206774657673868028501749325029493650117168960892505288833968764642474382314755537611965938225453175735462766523899926391319679974563589006402188698762774625972289684189476973689922278489150623179406350424658716950063374628538968811574435913059564315080800422137954337410946893831046641212625010128707031898353212105556303025403226577770923989841650941093583002670143481027450548190201540622950357693652274887314159952390415812280657695730160742543779455929573772784672659380465966874342230544284599309508062319272810464762284786723662724544433596071142046067538250385044199244	ballot 0 alpha: leading space
+0123	structural	E1	either	accept	reject	DISAGREE			not a decimal integer: 15720367374236141252951345098821653026765206774657673868028501749325029493650117168960892505288833968764642474382314755537611965938225453175735462766523899926391319679974563589006402188698762774625972289684189476973689922278489150623179406350424658716950063374628538968811574435913059564315080800422137954337410946893831046641212625010128707031898353212105556303025403226577770923989841650941093583002670143481027450548190201540622950357693652274887314159952390415812280657695730160742543779455929573772784672659380465966874342230544284599309508062319272810464762284786723662724544433596071142046067538250385044199244 	ballot 0 alpha: trailing space
+0124	structural	E1	either	accept	reject	DISAGREE			not a decimal integer: 157_20367374236141252951345098821653026765206774657673868028501749325029493650117168960892505288833968764642474382314755537611965938225453175735462766523899926391319679974563589006402188698762774625972289684189476973689922278489150623179406350424658716950063374628538968811574435913059564315080800422137954337410946893831046641212625010128707031898353212105556303025403226577770923989841650941093583002670143481027450548190201540622950357693652274887314159952390415812280657695730160742543779455929573772784672659380465966874342230544284599309508062319272810464762284786723662724544433596071142046067538250385044199244	ballot 0 alpha: digit-group underscore
+0125	structural	E1	either	accept	reject	DISAGREE			not a decimal integer: \uff11\uff15\uff17\uff12\uff10\uff13\uff16\uff17\uff13\uff17\uff14\uff12\uff13\uff16\uff11\uff14\uff11\uff12\uff15\uff12\uff19\uff15\uff11\uff13\uff14\uff15\uff10\uff19\uff18\uff18\uff12\uff11\uff16\uff15\uff13\uff10\uff12\uff16\uff17\uff16\uff15\uff12\uff10\uff16\uff17\uff17\uff14\uff16\uff15\uff17\uff16\uff17\uff13\uff18\uff16\uff18\uff10\uff12\uff18\uff15\uff10\uff11\uff17\uff14\uff19\uff13\uff12\uff15\uff10\uff12\uff19\uff14\uff19\uff13\uff16\uff15\uff10\uff11\uff11\uff17\uff11\uff16\uff18\uff19\uff16\uff10\uff18\uff19\uff12\uff15\uff10\uff15\uff12\uff18\uff18\uff18\uff13\uff13\uff19\uff16\uff18\uff17\uff16\uff14\uff16\uff14\uff12\uff14\uff17\uff14\uff13\uff18\uff12\uff13\uff11\uff14\uff17\uff15\uff15\uff15\uff13\uff17\uff16\uff11\uff11\uff19\uff16\uff15\uff19\uff13\uff18\uff12\uff12\uff15\uff14\uff15\uff13\uff11\uff17\uff15\uff17\uff13\uff15\uff14\uff16\uff12\uff17\uff16\uff16\uff15\uff12\uff13\uff18\uff19\uff19\uff19\uff12\uff16\uff13\uff19\uff11\uff13\uff11\uff19\uff16\uff17\uff19\uff19\uff17\uff14\uff15\uff16\uff13\uff15\uff18\uff19\uff10\uff10\uff16\uff14\uff10\uff12\uff11\uff18\uff18\uff16\uff19\uff18\uff17\uff16\uff12\uff17\uff17\uff14\uff16\uff12\uff15\uff19\uff17\uff12\uff12\uff18\uff19\uff16\uff18\uff14\uff11\uff18\uff19\uff14\uff17\uff16\uff19\uff17\uff13\uff16\uff18\uff19\uff19\uff12\uff12\uff12\uff17\uff18\uff14\uff18\uff19\uff11\uff15\uff10\uff16\uff12\uff13\uff11\uff17\uff19\uff14\uff10\uff16\uff13\uff15\uff10\uff14\uff12\uff14\uff16\uff15\uff18\uff17\uff11\uff16\uff19\uff15\uff10\uff10\uff16\uff13\uff13\uff17\uff14\uff16\uff12\uff18\uff15\uff13\uff18\uff19\uff16\uff18\uff18\uff11\uff11\uff15\uff17\uff14\uff14\uff13\uff15\uff19\uff11\uff13\uff10\uff15\uff19\uff15\uff16\uff14\uff13\uff11\uff15\uff10\uff18\uff10\uff18\uff10\uff10\uff14\uff12\uff12\uff11\uff13\uff17\uff19\uff15\uff14\uff13\uff13\uff17\uff14\uff11\uff10\uff19\uff14\uff16\uff18\uff19\uff13\uff18\uff13\uff11\uff10\uff14\uff16\uff16\uff14\uff11\uff12\uff11\uff12\uff16\uff12\uff15\uff10\uff11\uff10\uff11\uff12\uff18\uff17\uff10\uff17\uff10\uff13\uff11\uff18\uff19\uff18\uff13\uff15\uff13\uff12\uff11\uff12\uff11\uff10\uff15\uff15\uff15\uff16\uff13\uff10\uff13\uff10\uff12\uff15\uff14\uff10\uff13\uff12\uff12\uff16\uff15\uff17\uff17\uff17\uff17\uff10\uff19\uff12\uff13\uff19\uff18\uff19\uff18\uff14\uff11\uff16\uff15\uff10\uff19\uff14\uff11\uff10\uff19\uff13\uff15\uff18\uff13\uff10\uff10\uff12\uff16\uff17\uff10\uff11\uff14\uff13\uff14\uff18\uff11\uff10\uff12\uff17\uff14\uff15\uff10\uff15\uff14\uff18\uff11\uff19\uff10\uff12\uff10\uff11\uff15\uff14\uff10\uff16\uff12\uff12\uff19\uff15\uff10\uff13\uff15\uff17\uff16\uff19\uff13\uff16\uff15\uff12\uff12\uff17\uff14\uff18\uff18\uff17\uff13\uff11\uff14\uff11\uff15\uff19\uff19\uff15\uff12\uff13\uff19\uff10\uff14\uff11\uff15\uff18\uff11\uff12\uff12\uff18\uff10\uff16\uff15\uff17\uff16\uff19\uff15\uff17\uff13\uff10\uff11\uff16\uff10\uff17\uff14\uff12\uff15\uff14\uff13\uff17\uff17\uff19\uff14\uff15\uff15\uff19\uff12\uff19\uff15\uff17\uff13\uff17\uff17\uff12\uff17\uff18\uff14\uff16\uff17\uff12\uff16\uff15\uff19\uff13\uff18\uff10\uff14\uff16\uff15\uff19\uff16\uff16\uff18\uff17\uff14\uff13\uff14\uff12\uff12\uff13\uff10\uff15\uff14\uff14\uff12\uff18\uff14\uff15\uff19\uff19\uff13\uff10\uff19\uff15\uff10\uff18\uff10\uff16\uff12\uff13\uff11\uff19\uff12\uff17\uff12\uff18\uff11\uff10\uff14\uff16\uff14\uff17\uff16\uff12\uff12\uff18\uff14\uff17\uff18\uff16\uff17\uff12\uff13\uff16\uff16\uff12\uff17\uff12\uff14\uff15\uff14\uff14\uff14\uff13\uff13\uff15\uff19\uff16\uff10\uff17\uff11\uff11\uff14\uff12\uff10\uff14\uff16\uff10\uff16\uff17\uff15\uff13\uff18\uff12\uff15\uff10\uff13\uff18\uff15\uff10\uff14\uff14\uff11\uff19\uff19\uff12\uff14\uff14	ballot 0 alpha: full-width digits
+0126	structural	E1	either	reject	reject	agree			not a decimal integer: 0x7c8780026886d084d3d48d013d712094378f3058aebc5dbcabfeaf3867e8cea308162635bf5af92345ae6286c087be32ea6e77750fb102eb8ea40b577f49f776c2319db8ec90129c577c3e019a992a8976e18ab745babdd8c6ab0672e7b79b4220eca274c71e91fb03da1e44f526257c73fcadcff488c9b638e828f870174071e0aa5af10b7a3c3d1977bd7173351a35461076573b387d44f19e668a5c0c13afee1193b93e0edc93e39ca6de7d704d870c9adf3168b61514e0c34e8b982d77ebf4c356e875e85a4a28b64b801f85d20f8bfd7f1817be92815ee49e9bed6162bcc1c6fbcb20f563d75bfa37627d5d0e8179027fb866112aeb234d846d0eb2d74c	ballot 0 alpha: hexadecimal 0x
+0127	structural	E1	either	reject	reject	agree			not a decimal integer: 15720367374236141252951345098821653026765206774657673868028501749325029493650117168960892505288833968764642474382314755537611965938225453175735462766523899926391319679974563589006402188698762774625972289684189476973689922278489150623179406350424658716950063374628538968811574435913059564315080800422137954337410946893831046641212625010128707031898353212105556303025403226577770923989841650941093583002670143481027450548190201540622950357693652274887314159952390415812280657695730160742543779455929573772784672659380465966874342230544284599309508062319272810464762284786723662724544433596071142046067538250385044199244.0	ballot 0 alpha: decimal point
+0128	structural	E1	reject	reject	reject	agree			group element outside the order-q subgroup: 0	ballot 0 alpha: 0
+0129	structural	E1	reject	reject	reject	agree			group element outside the order-q subgroup: 16328632084933010002384055033805457329601614771185955389739167309086214800406465799038583634953752941675645562182498120750264980492381375579367675648771293800310370964745767014243638518442553823973482995267304044326777047662957480269391322789378384619428596446446984694306187644767462460965622580087564339212631775817895958409016676398975671266179637898557687317076177218843233150695157881061257053019133078545928983562221396313169622475509818442661047018436264806901023966236718367204710755935899013750306107738002364137917426595737403871114187750804346564731250609196846638183903982387884578266136503697493474682071	ballot 0 alpha: p
+0130	structural	E1	reject	reject	reject	agree			group element outside the order-q subgroup: 32048999459169151255335400132627110356366821545843629257767669058411244294056582967999476140242586910440288036564812876287876946430606828755103138415295193726701690644720330603250040707141316598599455284951493521300466969941446630892570729139803043336378659821075523663117762080680522025280703380509702293550042722711727005050229301409104378298077991110663243620101580445421004074684999532002350636021803222026956434110411597853792572833203470717548361178388655222713304623932448527947254535391828587523090780397382830104791768826281688470423695813123619375196012893983570300908448415983955720312204041947878518881315	ballot 0 alpha: alpha + p
+0131	structural	E1	reject	reject	reject	agree			group element outside the order-q subgroup: 608264710696868749432709934983804302836407996528281521710665559761185306756348630077691129664918972911003087800183365212653014554155922403632212882247393873919051284771203425237236329743791049347510705583114567353087125384468329646211916438953725902478533071818445725494613208854402896650541779665426384875220828924064911767804051388846964234281284686452131014050773992265462226705316230120163470016462935064901533014031194772546672117816166167773732858483874391088743308540988206462166976479969439977521435078621898171043084365193119271804679688485073754266488324410122975459359548791813436220068965447108430482827	ballot 0 alpha: p - alpha
+0132	structural	E1	reject	reject	reject	agree			not a decimal integer: -15720367374236141252951345098821653026765206774657673868028501749325029493650117168960892505288833968764642474382314755537611965938225453175735462766523899926391319679974563589006402188698762774625972289684189476973689922278489150623179406350424658716950063374628538968811574435913059564315080800422137954337410946893831046641212625010128707031898353212105556303025403226577770923989841650941093583002670143481027450548190201540622950357693652274887314159952390415812280657695730160742543779455929573772784672659380465966874342230544284599309508062319272810464762284786723662724544433596071142046067538250385044199244	ballot 0 alpha: -alpha
+0133	structural	E1	reject	reject	reject	agree			field element out of range: 61329566248342901292543872769978950870633559608669337131139375508370458778917	ballot 0 response: q
+0134	structural	E1	reject	accept	reject	DISAGREE	yes		field element out of range: 65182319787918646871497298206393556856075516514183235519012553186725889669608	ballot 0 response: response + q
+0135	structural	E1	reject	reject	reject	agree			not a decimal integer: -1	ballot 0 response: -1
+0136	tally	E1	reject	reject	reject	agree				ballot 0 (votes [0, 1, 0]) dropped
+0137	tally	E1	reject	reject	reject	agree				ballot 0 (votes [0, 1, 0]) duplicated
+0138	tally	E1	reject	reject	reject	agree				all-0 ballot 4 dropped
+0139	tally	E1	reject	reject	reject	agree				all-0 ballot 4 duplicated
+0140	tally	E1	reject	reject	reject	agree				published tally: candidate 0 + 1
+0141	tally	E1	reject	reject	reject	agree				trustee 0's decryption replaced by trustee 1's
+0142	tally	E1	accept	accept	accept	agree				trustees in reverse order
+0143	tally	E1	reject	reject	reject	agree			shape: number of trustees	last trustee removed
+0144	tally	E1	reject	reject	reject	agree		trustees/result: AttributeError		election key h times g
+0145	tally	E1	reject	reject	reject	agree				last trustee replaced by a fresh trustee with valid proofs
+0146	tally	E1	accept	accept	accept	agree				ballot encrypted under another key appended
+0147	honest	E2	accept	accept	accept	agree				as generated
+0148	field	E2	reject	reject	reject	agree				ballot alpha times g
+0149	field	E2	reject	reject	reject	agree				ballot alpha 1
+0150	field	E2	reject	reject	reject	agree				ballot alpha inverse
+0151	field	E2	reject	reject	reject	agree				ballot alpha random
+0152	field	E2	reject	reject	reject	agree				ballot alpha swapped with a sibling
+0153	field	E2	reject	reject	reject	agree				ballot beta times g
+0154	field	E2	reject	reject	reject	agree				ballot beta 1
+0155	field	E2	reject	reject	reject	agree				ballot beta inverse
+0156	field	E2	reject	reject	reject	agree				ballot beta random
+0157	field	E2	reject	reject	reject	agree				ballot beta swapped with a sibling
+0158	field	E2	either	accept	accept	agree				ballot cast_at changed
+0159	field	E2	reject	reject	reject	agree				ballot election_hash changed
+0160	field	E2	reject	reject	reject	agree				ballot election_uuid changed
+0161	field	E2	reject	reject	reject	agree				ballot proof A (branch 0) times g
+0162	field	E2	reject	reject	reject	agree				ballot proof A (branch 0) 1
+0163	field	E2	reject	reject	reject	agree				ballot proof A (branch 0) inverse
+0164	field	E2	reject	reject	reject	agree				ballot proof A (branch 0) random
+0165	field	E2	reject	reject	reject	agree				ballot proof A (branch 0) swapped with a sibling
+0166	field	E2	reject	reject	reject	agree				ballot proof A (branch 1) times g
+0167	field	E2	reject	reject	reject	agree				ballot proof A (branch 1) 1
+0168	field	E2	reject	reject	reject	agree				ballot proof A (branch 1) inverse
+0169	field	E2	reject	reject	reject	agree				ballot proof A (branch 1) random
+0170	field	E2	reject	reject	reject	agree				ballot proof A (branch 1) swapped with a sibling
+0171	field	E2	reject	reject	reject	agree				ballot proof B (branch 0) times g
+0172	field	E2	reject	reject	reject	agree				ballot proof B (branch 0) 1
+0173	field	E2	reject	reject	reject	agree				ballot proof B (branch 0) inverse
+0174	field	E2	reject	reject	reject	agree				ballot proof B (branch 0) random
+0175	field	E2	reject	reject	reject	agree				ballot proof B (branch 0) swapped with a sibling
+0176	field	E2	reject	reject	reject	agree				ballot proof B (branch 1) times g
+0177	field	E2	reject	reject	reject	agree				ballot proof B (branch 1) 1
+0178	field	E2	reject	reject	reject	agree				ballot proof B (branch 1) inverse
+0179	field	E2	reject	reject	reject	agree				ballot proof B (branch 1) random
+0180	field	E2	reject	reject	reject	agree				ballot proof B (branch 1) swapped with a sibling
+0181	field	E2	reject	reject	reject	agree				ballot proof challenge (branch 0) +1
+0182	field	E2	reject	reject	reject	agree				ballot proof challenge (branch 0) 0
+0183	field	E2	reject	reject	reject	agree				ballot proof challenge (branch 0) negated
+0184	field	E2	reject	reject	reject	agree				ballot proof challenge (branch 0) random
+0185	field	E2	reject	reject	reject	agree				ballot proof challenge (branch 1) +1
+0186	field	E2	reject	reject	reject	agree				ballot proof challenge (branch 1) 0
+0187	field	E2	reject	reject	reject	agree				ballot proof challenge (branch 1) negated
+0188	field	E2	reject	reject	reject	agree				ballot proof challenge (branch 1) random
+0189	field	E2	reject	reject	reject	agree				ballot proof response (branch 0) +1
+0190	field	E2	reject	reject	reject	agree				ballot proof response (branch 0) 0
+0191	field	E2	reject	reject	reject	agree				ballot proof response (branch 0) negated
+0192	field	E2	reject	reject	reject	agree				ballot proof response (branch 0) random
+0193	field	E2	reject	reject	reject	agree				ballot proof response (branch 1) +1
+0194	field	E2	reject	reject	reject	agree				ballot proof response (branch 1) 0
+0195	field	E2	reject	reject	reject	agree				ballot proof response (branch 1) negated
+0196	field	E2	reject	reject	reject	agree				ballot proof response (branch 1) random
+0197	field	E2	either	accept	accept	agree				ballot vote_hash changed
+0198	field	E2	either	accept	accept	agree				ballot voter_hash changed
+0199	field	E2	either	accept	accept	agree				ballot voter_uuid changed
+0200	field	E2	reject	reject	reject	agree				decryption factor times g
+0201	field	E2	reject	reject	reject	agree				decryption factor 1
+0202	field	E2	reject	reject	reject	agree				decryption factor inverse
+0203	field	E2	reject	reject	reject	agree				decryption factor random
+0204	field	E2	reject	reject	reject	agree				decryption factor swapped with a sibling
+0205	field	E2	reject	reject	reject	agree			decryption proof: challenge is not SHA-1(A, B)	decryption proof A times g
+0206	field	E2	reject	reject	reject	agree			decryption proof: challenge is not SHA-1(A, B)	decryption proof A 1
+0207	field	E2	reject	reject	reject	agree			decryption proof: challenge is not SHA-1(A, B)	decryption proof A inverse
+0208	field	E2	reject	reject	reject	agree			decryption proof: challenge is not SHA-1(A, B)	decryption proof A random
+0209	field	E2	reject	reject	reject	agree			decryption proof: challenge is not SHA-1(A, B)	decryption proof A swapped with a sibling
+0210	field	E2	reject	reject	reject	agree			decryption proof: challenge is not SHA-1(A, B)	decryption proof B times g
+0211	field	E2	reject	reject	reject	agree			decryption proof: challenge is not SHA-1(A, B)	decryption proof B 1
+0212	field	E2	reject	reject	reject	agree			decryption proof: challenge is not SHA-1(A, B)	decryption proof B inverse
+0213	field	E2	reject	reject	reject	agree			decryption proof: challenge is not SHA-1(A, B)	decryption proof B random
+0214	field	E2	reject	reject	reject	agree			decryption proof: challenge is not SHA-1(A, B)	decryption proof B swapped with a sibling
+0215	field	E2	reject	reject	reject	agree			decryption proof: challenge is not SHA-1(A, B)	decryption proof challenge +1
+0216	field	E2	reject	reject	reject	agree			decryption proof: challenge is not SHA-1(A, B)	decryption proof challenge 0
+0217	field	E2	reject	reject	reject	agree			decryption proof: challenge is not SHA-1(A, B)	decryption proof challenge negated
+0218	field	E2	reject	reject	reject	agree			decryption proof: challenge is not SHA-1(A, B)	decryption proof challenge random
+0219	field	E2	reject	reject	reject	agree				decryption proof response +1
+0220	field	E2	reject	reject	reject	agree				decryption proof response 0
+0221	field	E2	reject	reject	reject	agree				decryption proof response negated
+0222	field	E2	reject	reject	reject	agree				decryption proof response random
+0223	field	E2	reject	reject	reject	agree			proof of knowledge: challenge is not SHA-1(commitment)	pok challenge +1
+0224	field	E2	reject	reject	reject	agree			proof of knowledge: challenge is not SHA-1(commitment)	pok challenge 0
+0225	field	E2	reject	reject	reject	agree			proof of knowledge: challenge is not SHA-1(commitment)	pok challenge negated
+0226	field	E2	reject	reject	reject	agree			proof of knowledge: challenge is not SHA-1(commitment)	pok challenge random
+0227	field	E2	reject	reject	reject	agree			proof of knowledge: challenge is not SHA-1(commitment)	pok commitment times g
+0228	field	E2	reject	reject	reject	agree			proof of knowledge: challenge is not SHA-1(commitment)	pok commitment 1
+0229	field	E2	reject	reject	reject	agree			proof of knowledge: challenge is not SHA-1(commitment)	pok commitment inverse
+0230	field	E2	reject	reject	reject	agree			proof of knowledge: challenge is not SHA-1(commitment)	pok commitment random
+0231	field	E2	reject	reject	reject	agree			proof of knowledge: challenge is not SHA-1(commitment)	pok commitment swapped with a sibling
+0232	field	E2	reject	reject	reject	agree				pok response +1
+0233	field	E2	reject	reject	reject	agree				pok response 0
+0234	field	E2	reject	reject	reject	agree				pok response negated
+0235	field	E2	reject	reject	reject	agree				pok response random
+0236	field	E2	reject	reject	reject	agree				published tally +1
+0237	field	E2	reject	reject	reject	agree				published tally -1
+0238	field	E2	either	accept	reject	DISAGREE			group element outside the order-q subgroup: 14887492224963187634282421537186040801304008017743492304481737382571933937568724473847106029915040150784031882206090286938661464458896494215273989547889201144857352611058572236578734319505128042602372864570426550855201448111746579871811249114781674309062693442442368697449970648232621880001709535143047913661432883287150003429802392229361583608686643243349727791976247247948618930423866180410558458272606627111270040091203073580238905303994472202930783207472394578498507764703191288249547659899997131166130259700604433891232298182348403175947450284433411265966789131024573629546048637848902243503970966798589660808535	trustee declared g changed
+0239	field	E2	either	accept	accept	agree				trustee declared p changed
+0240	field	E2	either	accept	accept	agree				trustee declared q changed
+0241	field	E2	either	accept	accept	agree				trustee email changed
+0242	field	E2	either	accept	accept	agree				trustee public_key_hash changed
+0243	field	E2	either	accept	accept	agree				trustee uuid changed
+0244	field	E2	reject	reject	reject	agree				trustee y times g
+0245	field	E2	reject	reject	reject	agree				trustee y 1
+0246	field	E2	reject	reject	reject	agree				trustee y inverse
+0247	field	E2	reject	reject	reject	agree				trustee y random
+0248	field	E2	reject	reject	reject	agree				trustee y swapped with a sibling
+0249	structural	E2	reject	reject	reject	agree		Tally.add_vote: IndexError	syntax error	ballot 0: last choice dropped
+0250	structural	E2	reject	reject	reject	agree				ballot 0: last choice duplicated
+0251	structural	E2	reject	reject	reject	agree			syntax error	ballot 0: last proof dropped
+0252	structural	E2	reject	accept	reject	DISAGREE	yes			ballot 0: last proof duplicated
+0253	structural	E2	reject	reject	reject	agree			syntax error	ballot 0: proof 0 with one branch
+0254	structural	E2	reject	reject	reject	agree			syntax error	ballot 0: proof 0 with a third branch
+0255	structural	E2	either	accept	reject	DISAGREE			syntax error	ballot 0: overall_proof [] instead of null
+0256	structural	E2	either	accept	reject	DISAGREE			syntax error	ballot 0: overall_proof = proof 0
+0257	structural	E2	reject	reject	reject	agree			syntax error	ballot 0: answer duplicated
+0258	structural	E2	either	accept	reject	DISAGREE			syntax error	ballot 0: extra field
+0259	structural	E2	either	accept	reject	DISAGREE			syntax error	ballot 0: voter_uuid missing
+0260	structural	E2	reject	reject	reject	agree		trustees/result: IndexError	syntax error	trustee 0: last decryption factor dropped
+0261	structural	E2	reject	accept	reject	DISAGREE	yes		shape: decryption factors or proofs	trustee 0: extra decryption factor
+0262	structural	E2	reject	reject	reject	agree		trustees/result: IndexError	syntax error	trustee 0: last decryption proof dropped
+0263	structural	E2	reject	reject	reject	agree			syntax error	published tally: last entry dropped
+0264	structural	E2	reject	reject	reject	agree			shape: result length	published tally: extra entry
+0265	structural	E2	either	accept	reject	DISAGREE			syntax error	ballot 0: keys in reverse order
+0266	structural	E2	either	accept	accept	agree				ballot 0 alpha: leading zero
+0267	structural	E2	either	accept	reject	DISAGREE			not a decimal integer: +15370915066083947515817433021608514855922393546380076486367762178764487416762803927138489897956682426740244532311557362016669597737290514869991662882722713334244476601284419934404733018519182645974816640346475755631258722026173548784289248001783563941576544682232022523948294923233590094279138592139127006971954424278547176881100707371589364299829412909744282780446452181833652872887174777723598674763323353586550000871106665809696470761213665699446881330588979659983892201394905497335527036396076665405062692394179703270946120500661559275318643832582789795782464189066351027154613010440476014245650424494711737514010	ballot 0 alpha: plus sign
+0268	structural	E2	either	accept	reject	DISAGREE			not a decimal integer:  15370915066083947515817433021608514855922393546380076486367762178764487416762803927138489897956682426740244532311557362016669597737290514869991662882722713334244476601284419934404733018519182645974816640346475755631258722026173548784289248001783563941576544682232022523948294923233590094279138592139127006971954424278547176881100707371589364299829412909744282780446452181833652872887174777723598674763323353586550000871106665809696470761213665699446881330588979659983892201394905497335527036396076665405062692394179703270946120500661559275318643832582789795782464189066351027154613010440476014245650424494711737514010	ballot 0 alpha: leading space
+0269	structural	E2	either	accept	reject	DISAGREE			not a decimal integer: 15370915066083947515817433021608514855922393546380076486367762178764487416762803927138489897956682426740244532311557362016669597737290514869991662882722713334244476601284419934404733018519182645974816640346475755631258722026173548784289248001783563941576544682232022523948294923233590094279138592139127006971954424278547176881100707371589364299829412909744282780446452181833652872887174777723598674763323353586550000871106665809696470761213665699446881330588979659983892201394905497335527036396076665405062692394179703270946120500661559275318643832582789795782464189066351027154613010440476014245650424494711737514010 	ballot 0 alpha: trailing space
+0270	structural	E2	either	accept	reject	DISAGREE			not a decimal integer: 153_70915066083947515817433021608514855922393546380076486367762178764487416762803927138489897956682426740244532311557362016669597737290514869991662882722713334244476601284419934404733018519182645974816640346475755631258722026173548784289248001783563941576544682232022523948294923233590094279138592139127006971954424278547176881100707371589364299829412909744282780446452181833652872887174777723598674763323353586550000871106665809696470761213665699446881330588979659983892201394905497335527036396076665405062692394179703270946120500661559275318643832582789795782464189066351027154613010440476014245650424494711737514010	ballot 0 alpha: digit-group underscore
+0271	structural	E2	either	accept	reject	DISAGREE			not a decimal integer: \uff11\uff15\uff13\uff17\uff10\uff19\uff11\uff15\uff10\uff16\uff16\uff10\uff18\uff13\uff19\uff14\uff17\uff15\uff11\uff15\uff18\uff11\uff17\uff14\uff13\uff13\uff10\uff12\uff11\uff16\uff10\uff18\uff15\uff11\uff14\uff18\uff15\uff15\uff19\uff12\uff12\uff13\uff19\uff13\uff15\uff14\uff16\uff13\uff18\uff10\uff10\uff17\uff16\uff14\uff18\uff16\uff13\uff16\uff17\uff17\uff16\uff12\uff11\uff17\uff18\uff17\uff16\uff14\uff14\uff18\uff17\uff14\uff11\uff16\uff17\uff16\uff12\uff18\uff10\uff13\uff19\uff12\uff17\uff11\uff13\uff18\uff14\uff18\uff19\uff18\uff19\uff17\uff19\uff15\uff16\uff16\uff18\uff12\uff14\uff12\uff16\uff17\uff14\uff10\uff12\uff14\uff14\uff15\uff13\uff12\uff13\uff11\uff11\uff15\uff15\uff17\uff13\uff16\uff12\uff10\uff11\uff16\uff16\uff16\uff19\uff15\uff19\uff17\uff17\uff13\uff17\uff12\uff19\uff10\uff15\uff11\uff14\uff18\uff16\uff19\uff19\uff19\uff11\uff16\uff16\uff12\uff18\uff18\uff12\uff17\uff12\uff12\uff17\uff11\uff13\uff13\uff13\uff14\uff12\uff14\uff14\uff14\uff17\uff16\uff16\uff10\uff11\uff12\uff18\uff14\uff14\uff11\uff19\uff19\uff13\uff14\uff14\uff10\uff14\uff17\uff13\uff13\uff10\uff11\uff18\uff15\uff11\uff19\uff11\uff18\uff12\uff16\uff14\uff15\uff19\uff17\uff14\uff18\uff11\uff16\uff16\uff14\uff10\uff13\uff14\uff16\uff14\uff17\uff15\uff17\uff15\uff15\uff16\uff13\uff11\uff12\uff15\uff18\uff17\uff12\uff12\uff10\uff12\uff16\uff11\uff17\uff13\uff15\uff14\uff18\uff17\uff18\uff14\uff12\uff18\uff19\uff12\uff14\uff18\uff10\uff10\uff11\uff17\uff18\uff13\uff15\uff16\uff13\uff19\uff14\uff11\uff15\uff17\uff16\uff15\uff14\uff14\uff16\uff18\uff12\uff12\uff13\uff12\uff10\uff12\uff12\uff15\uff12\uff13\uff19\uff14\uff18\uff12\uff19\uff14\uff19\uff12\uff13\uff12\uff13\uff13\uff15\uff19\uff10\uff10\uff19\uff14\uff12\uff17\uff19\uff11\uff13\uff18\uff15\uff19\uff12\uff11\uff13\uff19\uff11\uff12\uff17\uff10\uff10\uff16\uff19\uff17\uff11\uff19\uff15\uff14\uff14\uff12\uff14\uff12\uff17\uff18\uff15\uff14\uff17\uff11\uff17\uff16\uff18\uff18\uff11\uff11\uff10\uff10\uff17\uff10\uff17\uff13\uff17\uff11\uff15\uff18\uff19\uff13\uff16\uff14\uff12\uff19\uff19\uff18\uff12\uff19\uff14\uff11\uff12\uff19\uff10\uff19\uff17\uff14\uff14\uff12\uff18\uff12\uff17\uff18\uff10\uff14\uff14\uff16\uff14\uff15\uff12\uff11\uff18\uff11\uff18\uff13\uff13\uff16\uff15\uff12\uff18\uff17\uff12\uff18\uff18\uff17\uff11\uff17\uff14\uff17\uff17\uff17\uff17\uff12\uff13\uff15\uff19\uff18\uff16\uff17\uff14\uff17\uff16\uff13\uff13\uff12\uff13\uff13\uff15\uff13\uff15\uff18\uff16\uff15\uff15\uff10\uff10\uff10\uff10\uff18\uff17\uff11\uff11\uff10\uff16\uff16\uff16\uff15\uff18\uff10\uff19\uff16\uff19\uff16\uff14\uff17\uff10\uff17\uff16\uff11\uff12\uff11\uff13\uff16\uff16\uff15\uff16\uff19\uff19\uff14\uff14\uff16\uff18\uff18\uff11\uff13\uff13\uff10\uff15\uff18\uff18\uff19\uff17\uff19\uff16\uff15\uff19\uff19\uff18\uff13\uff18\uff19\uff12\uff12\uff10\uff11\uff13\uff19\uff14\uff19\uff10\uff15\uff14\uff19\uff17\uff13\uff13\uff15\uff15\uff12\uff17\uff10\uff13\uff16\uff13\uff19\uff16\uff10\uff17\uff16\uff16\uff16\uff15\uff14\uff10\uff15\uff10\uff16\uff12\uff16\uff19\uff12\uff13\uff19\uff14\uff11\uff17\uff19\uff17\uff10\uff13\uff12\uff17\uff10\uff19\uff14\uff16\uff11\uff12\uff10\uff15\uff10\uff10\uff16\uff16\uff11\uff15\uff15\uff19\uff12\uff17\uff15\uff13\uff11\uff18\uff16\uff14\uff13\uff18\uff13\uff12\uff15\uff18\uff12\uff17\uff18\uff19\uff17\uff19\uff15\uff17\uff18\uff12\uff14\uff16\uff14\uff11\uff18\uff19\uff10\uff16\uff16\uff13\uff15\uff11\uff10\uff12\uff17\uff11\uff15\uff14\uff16\uff11\uff13\uff10\uff11\uff10\uff14\uff14\uff10\uff14\uff17\uff16\uff10\uff11\uff14\uff12\uff14\uff15\uff16\uff15\uff10\uff14\uff12\uff14\uff14\uff19\uff14\uff17\uff11\uff11\uff17\uff13\uff17\uff15\uff11\uff14\uff10\uff11\uff10	ballot 0 alpha: full-width digits
+0272	structural	E2	either	reject	reject	agree			not a decimal integer: 0x79c2d78c84e312e629d2961894e46daa99c627a45f80c8f1bc3fd9bf0b5bed8c8d96ea8a32ee9242a4c74fccb12b8ad85c9085d5647f3869a770427cd3d424f44ea01261a87a28802033d2301de58f41b07326b97755b2c805a31128b94998b3f9acaf6082f097e5ef38e1dcd08017105e399957fa3c2c84fdcab2580107b8709c78624c88db7e910f4aa8ed0b99fcaaa408a4e2791c78200ce9c3c91e6b3eacfd5d8c5c8bf9de0415a913b787bfa707307d9950aa5ecc9c69f4653318b5873d52567013b99a18aed1938c8131c52f8a384e6f6a284338a5b8b46c69bc9a859a9bc7778d8eca152fe998dda1eb0096a595502877b0a68f8f4883c3c6372d781a	ballot 0 alpha: hexadecimal 0x
+0273	structural	E2	either	reject	reject	agree			not a decimal integer: 15370915066083947515817433021608514855922393546380076486367762178764487416762803927138489897956682426740244532311557362016669597737290514869991662882722713334244476601284419934404733018519182645974816640346475755631258722026173548784289248001783563941576544682232022523948294923233590094279138592139127006971954424278547176881100707371589364299829412909744282780446452181833652872887174777723598674763323353586550000871106665809696470761213665699446881330588979659983892201394905497335527036396076665405062692394179703270946120500661559275318643832582789795782464189066351027154613010440476014245650424494711737514010.0	ballot 0 alpha: decimal point
+0274	structural	E2	reject	reject	reject	agree			group element outside the order-q subgroup: 0	ballot 0 alpha: 0
+0275	structural	E2	reject	reject	reject	agree			group element outside the order-q subgroup: 16328632084933010002384055033805457329601614771185955389739167309086214800406465799038583634953752941675645562182498120750264980492381375579367675648771293800310370964745767014243638518442553823973482995267304044326777047662957480269391322789378384619428596446446984694306187644767462460965622580087564339212631775817895958409016676398975671266179637898557687317076177218843233150695157881061257053019133078545928983562221396313169622475509818442661047018436264806901023966236718367204710755935899013750306107738002364137917426595737403871114187750804346564731250609196846638183903982387884578266136503697493474682071	ballot 0 alpha: p
+0276	structural	E2	reject	reject	reject	agree			group element outside the order-q subgroup: 31699547151016957518201488055413972185524008317566031876106929487850702217169269726177073532910435368415890094494055482766934578229671890449359338531494007134554847566030186948648371536961736469948299635613779799958035769689131029053680570791161948561005141128679007218254482568001052555244761172226691346184586200096443135290117383770565035566009050808301970097522629400676886023582332658784855727782456432132478984433328062122866093236723484142107928349025244466884916167631623864540237792331975679155368800132182067408863547096398963146432831583387136360513714798263197665338516992828360592511786928192205212196081	ballot 0 alpha: alpha + p
+0277	structural	E2	reject	reject	reject	agree			group element outside the order-q subgroup: 957717018849062486566622012196942473679221224805878903371405130321727383643661871900093736997070514935401029870940758733595382755090860709376012766048580466065894363461347079838905499923371177998666354920828288695518325636783931485102074787594820677852051764214962170357892721533872366686483987948437332240677351539348781527915969027386306966350224988813404536629725037009580277807983103337658378255809724959378982691114730503473151714296152743214165687847285146917131764841812869869183719539822348345243415343822660866971306095075844595795543918221556768948786420130495611029290971947408564020486079202781737168061	ballot 0 alpha: p - alpha
+0278	structural	E2	reject	reject	reject	agree			not a decimal integer: -15370915066083947515817433021608514855922393546380076486367762178764487416762803927138489897956682426740244532311557362016669597737290514869991662882722713334244476601284419934404733018519182645974816640346475755631258722026173548784289248001783563941576544682232022523948294923233590094279138592139127006971954424278547176881100707371589364299829412909744282780446452181833652872887174777723598674763323353586550000871106665809696470761213665699446881330588979659983892201394905497335527036396076665405062692394179703270946120500661559275318643832582789795782464189066351027154613010440476014245650424494711737514010	ballot 0 alpha: -alpha
+0279	structural	E2	reject	reject	reject	agree			field element out of range: 61329566248342901292543872769978950870633559608669337131139375508370458778917	ballot 0 response: q
+0280	structural	E2	reject	accept	reject	DISAGREE	yes		field element out of range: 99344566609861555469655351969342110493190593097291988818868787049735684030913	ballot 0 response: response + q
+0281	structural	E2	reject	reject	reject	agree			not a decimal integer: -1	ballot 0 response: -1
+0282	tally	E2	reject	reject	reject	agree				ballot 0 (votes [1]) dropped
+0283	tally	E2	reject	reject	reject	agree				ballot 0 (votes [1]) duplicated
+0284	tally	E2	reject	reject	reject	agree				all-0 ballot 2 dropped
+0285	tally	E2	reject	reject	reject	agree				all-0 ballot 2 duplicated
+0286	tally	E2	reject	reject	reject	agree				published tally: candidate 0 + 1
+0287	tally	E2	reject	reject	reject	agree				trustee 0's decryption replaced by trustee 1's
+0288	tally	E2	accept	accept	accept	agree				trustees in reverse order
+0289	tally	E2	reject	reject	reject	agree			shape: number of trustees	last trustee removed
+0290	tally	E2	reject	reject	reject	agree		trustees/result: AttributeError		election key h times g
+0291	tally	E2	reject	reject	reject	agree				last trustee replaced by a fresh trustee with valid proofs
+0292	tally	E2	accept	accept	accept	agree				ballot encrypted under another key appended
+0293	honest	E3	accept	accept	accept	agree				as generated
+0294	field	E3	reject	reject	reject	agree				ballot alpha times g
+0295	field	E3	reject	reject	reject	agree				ballot alpha 1
+0296	field	E3	reject	reject	reject	agree				ballot alpha inverse
+0297	field	E3	reject	reject	reject	agree				ballot alpha random
+0298	field	E3	reject	reject	reject	agree				ballot alpha swapped with a sibling
+0299	field	E3	reject	reject	reject	agree				ballot beta times g
+0300	field	E3	reject	reject	reject	agree				ballot beta 1
+0301	field	E3	reject	reject	reject	agree				ballot beta inverse
+0302	field	E3	reject	reject	reject	agree				ballot beta random
+0303	field	E3	reject	reject	reject	agree				ballot beta swapped with a sibling
+0304	field	E3	either	accept	accept	agree				ballot cast_at changed
+0305	field	E3	reject	reject	reject	agree				ballot election_hash changed
+0306	field	E3	reject	reject	reject	agree				ballot election_uuid changed
+0307	field	E3	reject	reject	reject	agree				ballot proof A (branch 0) times g
+0308	field	E3	reject	reject	reject	agree				ballot proof A (branch 0) 1
+0309	field	E3	reject	reject	reject	agree				ballot proof A (branch 0) inverse
+0310	field	E3	reject	reject	reject	agree				ballot proof A (branch 0) random
+0311	field	E3	reject	reject	reject	agree				ballot proof A (branch 0) swapped with a sibling
+0312	field	E3	reject	reject	reject	agree				ballot proof A (branch 1) times g
+0313	field	E3	reject	reject	reject	agree				ballot proof A (branch 1) 1
+0314	field	E3	reject	reject	reject	agree				ballot proof A (branch 1) inverse
+0315	field	E3	reject	reject	reject	agree				ballot proof A (branch 1) random
+0316	field	E3	reject	reject	reject	agree				ballot proof A (branch 1) swapped with a sibling
+0317	field	E3	reject	reject	reject	agree				ballot proof B (branch 0) times g
+0318	field	E3	reject	reject	reject	agree				ballot proof B (branch 0) 1
+0319	field	E3	reject	reject	reject	agree				ballot proof B (branch 0) inverse
+0320	field	E3	reject	reject	reject	agree				ballot proof B (branch 0) random
+0321	field	E3	reject	reject	reject	agree				ballot proof B (branch 0) swapped with a sibling
+0322	field	E3	reject	reject	reject	agree				ballot proof B (branch 1) times g
+0323	field	E3	reject	reject	reject	agree				ballot proof B (branch 1) 1
+0324	field	E3	reject	reject	reject	agree				ballot proof B (branch 1) inverse
+0325	field	E3	reject	reject	reject	agree				ballot proof B (branch 1) random
+0326	field	E3	reject	reject	reject	agree				ballot proof B (branch 1) swapped with a sibling
+0327	field	E3	reject	reject	reject	agree				ballot proof challenge (branch 0) +1
+0328	field	E3	reject	reject	reject	agree				ballot proof challenge (branch 0) 0
+0329	field	E3	reject	reject	reject	agree				ballot proof challenge (branch 0) negated
+0330	field	E3	reject	reject	reject	agree				ballot proof challenge (branch 0) random
+0331	field	E3	reject	reject	reject	agree				ballot proof challenge (branch 1) +1
+0332	field	E3	reject	reject	reject	agree				ballot proof challenge (branch 1) 0
+0333	field	E3	reject	reject	reject	agree				ballot proof challenge (branch 1) negated
+0334	field	E3	reject	reject	reject	agree				ballot proof challenge (branch 1) random
+0335	field	E3	reject	reject	reject	agree				ballot proof response (branch 0) +1
+0336	field	E3	reject	reject	reject	agree				ballot proof response (branch 0) 0
+0337	field	E3	reject	reject	reject	agree				ballot proof response (branch 0) negated
+0338	field	E3	reject	reject	reject	agree				ballot proof response (branch 0) random
+0339	field	E3	reject	reject	reject	agree				ballot proof response (branch 1) +1
+0340	field	E3	reject	reject	reject	agree				ballot proof response (branch 1) 0
+0341	field	E3	reject	reject	reject	agree				ballot proof response (branch 1) negated
+0342	field	E3	reject	reject	reject	agree				ballot proof response (branch 1) random
+0343	field	E3	either	accept	accept	agree				ballot vote_hash changed
+0344	field	E3	either	accept	accept	agree				ballot voter_hash changed
+0345	field	E3	either	accept	accept	agree				ballot voter_uuid changed
+0346	field	E3	reject	reject	reject	agree				decryption factor times g
+0347	field	E3	reject	reject	reject	agree				decryption factor 1
+0348	field	E3	reject	reject	reject	agree				decryption factor inverse
+0349	field	E3	reject	reject	reject	agree				decryption factor random
+0350	field	E3	reject	reject	reject	agree				decryption factor swapped with a sibling
+0351	field	E3	reject	reject	reject	agree			decryption proof: challenge is not SHA-1(A, B)	decryption proof A times g
+0352	field	E3	reject	reject	reject	agree			decryption proof: challenge is not SHA-1(A, B)	decryption proof A 1
+0353	field	E3	reject	reject	reject	agree			decryption proof: challenge is not SHA-1(A, B)	decryption proof A inverse
+0354	field	E3	reject	reject	reject	agree			decryption proof: challenge is not SHA-1(A, B)	decryption proof A random
+0355	field	E3	reject	reject	reject	agree			decryption proof: challenge is not SHA-1(A, B)	decryption proof A swapped with a sibling
+0356	field	E3	reject	reject	reject	agree			decryption proof: challenge is not SHA-1(A, B)	decryption proof B times g
+0357	field	E3	reject	reject	reject	agree			decryption proof: challenge is not SHA-1(A, B)	decryption proof B 1
+0358	field	E3	reject	reject	reject	agree			decryption proof: challenge is not SHA-1(A, B)	decryption proof B inverse
+0359	field	E3	reject	reject	reject	agree			decryption proof: challenge is not SHA-1(A, B)	decryption proof B random
+0360	field	E3	reject	reject	reject	agree			decryption proof: challenge is not SHA-1(A, B)	decryption proof B swapped with a sibling
+0361	field	E3	reject	reject	reject	agree			decryption proof: challenge is not SHA-1(A, B)	decryption proof challenge +1
+0362	field	E3	reject	reject	reject	agree			decryption proof: challenge is not SHA-1(A, B)	decryption proof challenge 0
+0363	field	E3	reject	reject	reject	agree			decryption proof: challenge is not SHA-1(A, B)	decryption proof challenge negated
+0364	field	E3	reject	reject	reject	agree			decryption proof: challenge is not SHA-1(A, B)	decryption proof challenge random
+0365	field	E3	reject	reject	reject	agree				decryption proof response +1
+0366	field	E3	reject	reject	reject	agree				decryption proof response 0
+0367	field	E3	reject	reject	reject	agree				decryption proof response negated
+0368	field	E3	reject	reject	reject	agree				decryption proof response random
+0369	field	E3	reject	reject	reject	agree			proof of knowledge: challenge is not SHA-1(commitment)	pok challenge +1
+0370	field	E3	reject	reject	reject	agree			proof of knowledge: challenge is not SHA-1(commitment)	pok challenge 0
+0371	field	E3	reject	reject	reject	agree			proof of knowledge: challenge is not SHA-1(commitment)	pok challenge negated
+0372	field	E3	reject	reject	reject	agree			proof of knowledge: challenge is not SHA-1(commitment)	pok challenge random
+0373	field	E3	reject	reject	reject	agree			proof of knowledge: challenge is not SHA-1(commitment)	pok commitment times g
+0374	field	E3	reject	reject	reject	agree			proof of knowledge: challenge is not SHA-1(commitment)	pok commitment 1
+0375	field	E3	reject	reject	reject	agree			proof of knowledge: challenge is not SHA-1(commitment)	pok commitment inverse
+0376	field	E3	reject	reject	reject	agree			proof of knowledge: challenge is not SHA-1(commitment)	pok commitment random
+0377	field	E3	reject	reject	reject	agree			proof of knowledge: challenge is not SHA-1(commitment)	pok commitment swapped with a sibling
+0378	field	E3	reject	reject	reject	agree				pok response +1
+0379	field	E3	reject	reject	reject	agree				pok response 0
+0380	field	E3	reject	reject	reject	agree				pok response negated
+0381	field	E3	reject	reject	reject	agree				pok response random
+0382	field	E3	reject	reject	reject	agree				published tally +1
+0383	field	E3	reject	reject	reject	agree				published tally -1
+0384	field	E3	reject	reject	reject	agree				published tally swapped with another candidate
+0385	field	E3	either	accept	reject	DISAGREE			group element outside the order-q subgroup: 14887492224963187634282421537186040801304008017743492304481737382571933937568724473847106029915040150784031882206090286938661464458896494215273989547889201144857352611058572236578734319505128042602372864570426550855201448111746579871811249114781674309062693442442368697449970648232621880001709535143047913661432883287150003429802392229361583608686643243349727791976247247948618930423866180410558458272606627111270040091203073580238905303994472202930783207472394578498507764703191288249547659899997131166130259700604433891232298182348403175947450284433411265966789131024573629546048637848902243503970966798589660808535	trustee declared g changed
+0386	field	E3	either	accept	accept	agree				trustee declared p changed
+0387	field	E3	either	accept	accept	agree				trustee declared q changed
+0388	field	E3	either	accept	accept	agree				trustee email changed
+0389	field	E3	either	accept	accept	agree				trustee public_key_hash changed
+0390	field	E3	either	accept	accept	agree				trustee uuid changed
+0391	field	E3	reject	reject	reject	agree				trustee y times g
+0392	field	E3	reject	reject	reject	agree				trustee y 1
+0393	field	E3	reject	reject	reject	agree				trustee y inverse
+0394	field	E3	reject	reject	reject	agree				trustee y random
+0395	field	E3	reject	reject	reject	agree				trustee y swapped with a sibling
+0396	structural	E3	reject	reject	reject	agree		Tally.add_vote: IndexError		ballot 0: last choice dropped
+0397	structural	E3	reject	reject	reject	agree				ballot 0: last choice duplicated
+0398	structural	E3	reject	reject	reject	agree				ballot 0: last proof dropped
+0399	structural	E3	reject	accept	reject	DISAGREE	yes			ballot 0: last proof duplicated
+0400	structural	E3	reject	reject	reject	agree			syntax error	ballot 0: proof 0 with one branch
+0401	structural	E3	reject	reject	reject	agree			syntax error	ballot 0: proof 0 with a third branch
+0402	structural	E3	either	accept	reject	DISAGREE			syntax error	ballot 0: overall_proof [] instead of null
+0403	structural	E3	either	accept	reject	DISAGREE			syntax error	ballot 0: overall_proof = proof 0
+0404	structural	E3	reject	reject	reject	agree			syntax error	ballot 0: answer duplicated
+0405	structural	E3	either	accept	reject	DISAGREE			syntax error	ballot 0: extra field
+0406	structural	E3	either	accept	reject	DISAGREE			syntax error	ballot 0: voter_uuid missing
+0407	structural	E3	reject	reject	reject	agree		trustees/result: IndexError	shape: decryption factors or proofs	trustee 0: last decryption factor dropped
+0408	structural	E3	reject	accept	reject	DISAGREE	yes		shape: decryption factors or proofs	trustee 0: extra decryption factor
+0409	structural	E3	reject	reject	reject	agree		trustees/result: IndexError	shape: decryption factors or proofs	trustee 0: last decryption proof dropped
+0410	structural	E3	reject	reject	reject	agree			shape: result length	published tally: last entry dropped
+0411	structural	E3	reject	reject	reject	agree			shape: result length	published tally: extra entry
+0412	structural	E3	either	accept	reject	DISAGREE			syntax error	ballot 0: keys in reverse order
+0413	structural	E3	either	accept	accept	agree				ballot 0 alpha: leading zero
+0414	structural	E3	either	accept	reject	DISAGREE			not a decimal integer: +11437449356057537751966956405537044110256432331248893245709011140935708472973318068772000940462852136630134185200528242499091422857733745187387032606043827727775102557402071199777175925573404145601612427883716858408626776700844769282831432808677297890294519931439762331356250443188457002058833741217494886778035600747734945954568704057167752965080966464151781581532524768265300635873206591651422705966729194638717091500221658003770426333624049184009423978880582823139297140706513120529505363251660067832422639805806339285532047156720493402024113286965517388696928765955970798884436694174622102838655576024770830569083	ballot 0 alpha: plus sign
+0415	structural	E3	either	accept	reject	DISAGREE			not a decimal integer:  11437449356057537751966956405537044110256432331248893245709011140935708472973318068772000940462852136630134185200528242499091422857733745187387032606043827727775102557402071199777175925573404145601612427883716858408626776700844769282831432808677297890294519931439762331356250443188457002058833741217494886778035600747734945954568704057167752965080966464151781581532524768265300635873206591651422705966729194638717091500221658003770426333624049184009423978880582823139297140706513120529505363251660067832422639805806339285532047156720493402024113286965517388696928765955970798884436694174622102838655576024770830569083	ballot 0 alpha: leading space
+0416	structural	E3	either	accept	reject	DISAGREE			not a decimal integer: 11437449356057537751966956405537044110256432331248893245709011140935708472973318068772000940462852136630134185200528242499091422857733745187387032606043827727775102557402071199777175925573404145601612427883716858408626776700844769282831432808677297890294519931439762331356250443188457002058833741217494886778035600747734945954568704057167752965080966464151781581532524768265300635873206591651422705966729194638717091500221658003770426333624049184009423978880582823139297140706513120529505363251660067832422639805806339285532047156720493402024113286965517388696928765955970798884436694174622102838655576024770830569083 	ballot 0 alpha: trailing space
+0417	structural	E3	either	accept	reject	DISAGREE			not a decimal integer: 114_37449356057537751966956405537044110256432331248893245709011140935708472973318068772000940462852136630134185200528242499091422857733745187387032606043827727775102557402071199777175925573404145601612427883716858408626776700844769282831432808677297890294519931439762331356250443188457002058833741217494886778035600747734945954568704057167752965080966464151781581532524768265300635873206591651422705966729194638717091500221658003770426333624049184009423978880582823139297140706513120529505363251660067832422639805806339285532047156720493402024113286965517388696928765955970798884436694174622102838655576024770830569083	ballot 0 alpha: digit-group underscore
+0418	structural	E3	either	accept	reject	DISAGREE			not a decimal integer: \uff11\uff11\uff14\uff13\uff17\uff14\uff14\uff19\uff13\uff15\uff16\uff10\uff15\uff17\uff15\uff13\uff17\uff17\uff15\uff11\uff19\uff16\uff16\uff19\uff15\uff16\uff14\uff10\uff15\uff15\uff13\uff17\uff10\uff14\uff14\uff11\uff11\uff10\uff12\uff15\uff16\uff14\uff13\uff12\uff13\uff13\uff11\uff12\uff14\uff18\uff18\uff19\uff13\uff12\uff14\uff15\uff17\uff10\uff19\uff10\uff11\uff11\uff11\uff14\uff10\uff19\uff13\uff15\uff17\uff10\uff18\uff14\uff17\uff12\uff19\uff17\uff13\uff13\uff11\uff18\uff10\uff16\uff18\uff17\uff17\uff12\uff10\uff10\uff10\uff19\uff14\uff10\uff14\uff16\uff12\uff18\uff15\uff12\uff11\uff13\uff16\uff16\uff13\uff10\uff11\uff13\uff14\uff11\uff18\uff15\uff12\uff10\uff10\uff15\uff12\uff18\uff12\uff14\uff12\uff14\uff19\uff19\uff10\uff19\uff11\uff14\uff12\uff12\uff18\uff15\uff17\uff17\uff13\uff13\uff17\uff14\uff15\uff11\uff18\uff17\uff13\uff18\uff17\uff10\uff13\uff12\uff16\uff10\uff16\uff10\uff14\uff13\uff18\uff12\uff17\uff17\uff12\uff17\uff17\uff17\uff15\uff11\uff10\uff12\uff15\uff15\uff17\uff14\uff10\uff12\uff10\uff17\uff11\uff11\uff19\uff19\uff17\uff17\uff17\uff11\uff17\uff15\uff19\uff12\uff15\uff15\uff17\uff13\uff14\uff10\uff14\uff11\uff14\uff15\uff16\uff10\uff11\uff16\uff11\uff12\uff14\uff12\uff17\uff18\uff18\uff13\uff17\uff11\uff16\uff18\uff15\uff18\uff14\uff10\uff18\uff16\uff12\uff16\uff17\uff17\uff16\uff17\uff10\uff10\uff18\uff14\uff14\uff17\uff16\uff19\uff12\uff18\uff12\uff18\uff13\uff11\uff14\uff13\uff12\uff18\uff10\uff18\uff16\uff17\uff17\uff12\uff19\uff17\uff18\uff19\uff10\uff12\uff19\uff14\uff15\uff11\uff19\uff19\uff13\uff11\uff14\uff13\uff19\uff17\uff16\uff12\uff13\uff13\uff11\uff13\uff15\uff16\uff12\uff15\uff10\uff14\uff14\uff13\uff11\uff18\uff18\uff14\uff15\uff17\uff10\uff10\uff12\uff10\uff15\uff18\uff18\uff13\uff13\uff17\uff14\uff11\uff12\uff11\uff17\uff14\uff19\uff14\uff18\uff18\uff16\uff17\uff17\uff18\uff10\uff13\uff15\uff16\uff10\uff10\uff17\uff14\uff17\uff17\uff13\uff14\uff19\uff14\uff15\uff19\uff15\uff14\uff15\uff16\uff18\uff17\uff10\uff14\uff10\uff15\uff17\uff11\uff16\uff17\uff17\uff15\uff12\uff19\uff16\uff15\uff10\uff18\uff10\uff19\uff16\uff16\uff14\uff16\uff14\uff11\uff15\uff11\uff17\uff18\uff11\uff15\uff18\uff11\uff15\uff13\uff12\uff15\uff12\uff14\uff17\uff16\uff18\uff12\uff16\uff15\uff13\uff10\uff10\uff16\uff13\uff15\uff18\uff17\uff13\uff12\uff10\uff16\uff15\uff19\uff11\uff16\uff15\uff11\uff14\uff12\uff12\uff17\uff10\uff15\uff19\uff16\uff16\uff17\uff12\uff19\uff11\uff19\uff14\uff16\uff13\uff18\uff17\uff11\uff17\uff10\uff19\uff11\uff15\uff10\uff10\uff12\uff12\uff11\uff16\uff15\uff18\uff10\uff10\uff13\uff17\uff17\uff10\uff14\uff12\uff16\uff13\uff13\uff13\uff16\uff12\uff14\uff10\uff14\uff19\uff11\uff18\uff14\uff10\uff10\uff19\uff14\uff12\uff13\uff19\uff17\uff18\uff18\uff18\uff10\uff15\uff18\uff12\uff18\uff12\uff13\uff11\uff13\uff19\uff12\uff19\uff17\uff11\uff14\uff10\uff17\uff10\uff16\uff15\uff11\uff13\uff11\uff12\uff10\uff15\uff12\uff19\uff15\uff10\uff15\uff13\uff16\uff13\uff12\uff15\uff11\uff16\uff16\uff10\uff10\uff16\uff17\uff18\uff13\uff12\uff14\uff12\uff12\uff16\uff13\uff19\uff18\uff10\uff15\uff18\uff10\uff16\uff13\uff13\uff19\uff12\uff18\uff15\uff15\uff13\uff12\uff10\uff14\uff17\uff11\uff15\uff16\uff17\uff12\uff10\uff14\uff19\uff13\uff14\uff10\uff12\uff10\uff12\uff14\uff11\uff11\uff13\uff12\uff18\uff16\uff19\uff16\uff15\uff15\uff11\uff17\uff13\uff18\uff18\uff16\uff19\uff16\uff19\uff12\uff18\uff17\uff16\uff15\uff19\uff15\uff15\uff19\uff17\uff10\uff17\uff19\uff18\uff18\uff18\uff14\uff14\uff13\uff16\uff16\uff19\uff14\uff11\uff17\uff14\uff16\uff12\uff12\uff11\uff10\uff12\uff18\uff13\uff18\uff16\uff15\uff15\uff15\uff17\uff16\uff10\uff12\uff14\uff17\uff17\uff10\uff18\uff13\uff10\uff15\uff16\uff19\uff10\uff18\uff13	ballot 0 alpha: full-width digits
+0419	structural	E3	either	reject	reject	agree			not a decimal integer: 0x5a9a20052e5539e1a0df5b41f7e3d537c14f83cb568b555da0f9edf55e2b91943fe89e9032fa4f08ff978db3791d280cb883597463b45ce34763c8c4f221ecc299262594789a49d127f335755170274a3bc0659e2df077369223faf03e54a2bd2ebaa01a2cf969a98b00363eb9b3dda69d2640b034dd85f0009170e06d6988f1001081e0fe7d16563b5a35876f1abc49bd68288e6647a15c9b7e9669913fa2c439b795380d1c0593a7f220b8eb630039a940617021d1222b10f65f0244094c1bc670ffd87b294426b4eaebf39dddb8fc253a04c8870d956740c1a95d195cfb2c44eeac730588fdecc1c4ee3f42b79150cc2a5ec363bef3d4bba80d1785ca8e7b	ballot 0 alpha: hexadecimal 0x
+0420	structural	E3	either	reject	reject	agree			not a decimal integer: 11437449356057537751966956405537044110256432331248893245709011140935708472973318068772000940462852136630134185200528242499091422857733745187387032606043827727775102557402071199777175925573404145601612427883716858408626776700844769282831432808677297890294519931439762331356250443188457002058833741217494886778035600747734945954568704057167752965080966464151781581532524768265300635873206591651422705966729194638717091500221658003770426333624049184009423978880582823139297140706513120529505363251660067832422639805806339285532047156720493402024113286965517388696928765955970798884436694174622102838655576024770830569083.0	ballot 0 alpha: decimal point
+0421	structural	E3	reject	reject	reject	agree			group element outside the order-q subgroup: 0	ballot 0 alpha: 0
+0422	structural	E3	reject	reject	reject	agree			group element outside the order-q subgroup: 16328632084933010002384055033805457329601614771185955389739167309086214800406465799038583634953752941675645562182498120750264980492381375579367675648771293800310370964745767014243638518442553823973482995267304044326777047662957480269391322789378384619428596446446984694306187644767462460965622580087564339212631775817895958409016676398975671266179637898557687317076177218843233150695157881061257053019133078545928983562221396313169622475509818442661047018436264806901023966236718367204710755935899013750306107738002364137917426595737403871114187750804346564731250609196846638183903982387884578266136503697493474682071	ballot 0 alpha: p
+0423	structural	E3	reject	reject	reject	agree			group element outside the order-q subgroup: 27766081440990547754351011439342501439858047102434848635448178450021923273379783867810584575416605078305779747383026363249356403350115120766754708254815121528085473522147838214020814444015957969575095423151020902735403824363802249552222755598055682509723116377886747025662438087955919463024456321305059225990667376565630904363585380456143424231260604362709468898608701987108533786568364472712679758985862273184646075062443054316940048809133867626670470997316847630040321106943231487734216119187559081582728747543808703423449473752457897273138301037769863953428179375152817437068340676562506681104792079722264305251154	ballot 0 alpha: alpha + p
+0424	structural	E3	reject	reject	reject	agree			group element outside the order-q subgroup: 4891182728875472250417098628268413219345182439937062144030156168150506327433147730266582694490900805045511376981969878251173557634647630391980643042727466072535268407343695814466462592869149678371870567383587185918150270962112710986559889980701086729134076515007222362949937201579005458906788838870069452434596175070161012454447972341807918301098671434405905735543652450577932514821951289409834347052403883907211892061999738309399196141885769258651623039555681983761726825530205246675205392684238945917883467932196024852385379439016910469090074463838829176034321843240875839299467288213262475427480927672722644112988	ballot 0 alpha: p - alpha
+0425	structural	E3	reject	reject	reject	agree			not a decimal integer: -11437449356057537751966956405537044110256432331248893245709011140935708472973318068772000940462852136630134185200528242499091422857733745187387032606043827727775102557402071199777175925573404145601612427883716858408626776700844769282831432808677297890294519931439762331356250443188457002058833741217494886778035600747734945954568704057167752965080966464151781581532524768265300635873206591651422705966729194638717091500221658003770426333624049184009423978880582823139297140706513120529505363251660067832422639805806339285532047156720493402024113286965517388696928765955970798884436694174622102838655576024770830569083	ballot 0 alpha: -alpha
+0426	structural	E3	reject	reject	reject	agree			field element out of range: 61329566248342901292543872769978950870633559608669337131139375508370458778917	ballot 0 response: q
+0427	structural	E3	reject	accept	reject	DISAGREE	yes		field element out of range: 118195480220396605629981163214458917618340583263997056542659330890843144838459	ballot 0 response: response + q
+0428	structural	E3	reject	reject	reject	agree			not a decimal integer: -1	ballot 0 response: -1
+0429	tally	E3	reject	reject	reject	agree				ballot 0 (votes [1, 0, 0, 0, 0, 0, 0]) dropped
+0430	tally	E3	reject	reject	reject	agree				ballot 0 (votes [1, 0, 0, 0, 0, 0, 0]) duplicated
+0431	tally	E3	reject	reject	reject	agree				published tally: candidate 0 + 1
+0432	tally	E3	reject	reject	reject	agree				trustee 0's decryption replaced by trustee 1's
+0433	tally	E3	accept	accept	accept	agree				trustees in reverse order
+0434	tally	E3	reject	reject	reject	agree			shape: number of trustees	last trustee removed
+0435	tally	E3	reject	reject	reject	agree		trustees/result: AttributeError		election key h times g
+0436	tally	E3	reject	reject	reject	agree				last trustee replaced by a fresh trustee with valid proofs
+0437	tally	E3	accept	accept	accept	agree				ballot encrypted under another key appended
+0438	honest	E4	accept	accept	accept	agree				as generated
+0439	field	E4	reject	reject	reject	agree				ballot alpha times g
+0440	field	E4	reject	reject	reject	agree				ballot alpha 1
+0441	field	E4	reject	reject	reject	agree				ballot alpha inverse
+0442	field	E4	reject	reject	reject	agree				ballot alpha random
+0443	field	E4	reject	reject	reject	agree				ballot alpha swapped with a sibling
+0444	field	E4	reject	reject	reject	agree				ballot beta times g
+0445	field	E4	reject	reject	reject	agree				ballot beta 1
+0446	field	E4	reject	reject	reject	agree				ballot beta inverse
+0447	field	E4	reject	reject	reject	agree				ballot beta random
+0448	field	E4	reject	reject	reject	agree				ballot beta swapped with a sibling
+0449	field	E4	either	accept	accept	agree				ballot cast_at changed
+0450	field	E4	reject	reject	reject	agree				ballot election_hash changed
+0451	field	E4	reject	reject	reject	agree				ballot election_uuid changed
+0452	field	E4	reject	reject	reject	agree				ballot proof A (branch 0) times g
+0453	field	E4	reject	reject	reject	agree				ballot proof A (branch 0) 1
+0454	field	E4	reject	reject	reject	agree				ballot proof A (branch 0) inverse
+0455	field	E4	reject	reject	reject	agree				ballot proof A (branch 0) random
+0456	field	E4	reject	reject	reject	agree				ballot proof A (branch 0) swapped with a sibling
+0457	field	E4	reject	reject	reject	agree				ballot proof A (branch 1) times g
+0458	field	E4	reject	reject	reject	agree				ballot proof A (branch 1) 1
+0459	field	E4	reject	reject	reject	agree				ballot proof A (branch 1) inverse
+0460	field	E4	reject	reject	reject	agree				ballot proof A (branch 1) random
+0461	field	E4	reject	reject	reject	agree				ballot proof A (branch 1) swapped with a sibling
+0462	field	E4	reject	reject	reject	agree				ballot proof B (branch 0) times g
+0463	field	E4	reject	reject	reject	agree				ballot proof B (branch 0) 1
+0464	field	E4	reject	reject	reject	agree				ballot proof B (branch 0) inverse
+0465	field	E4	reject	reject	reject	agree				ballot proof B (branch 0) random
+0466	field	E4	reject	reject	reject	agree				ballot proof B (branch 0) swapped with a sibling
+0467	field	E4	reject	reject	reject	agree				ballot proof B (branch 1) times g
+0468	field	E4	reject	reject	reject	agree				ballot proof B (branch 1) 1
+0469	field	E4	reject	reject	reject	agree				ballot proof B (branch 1) inverse
+0470	field	E4	reject	reject	reject	agree				ballot proof B (branch 1) random
+0471	field	E4	reject	reject	reject	agree				ballot proof B (branch 1) swapped with a sibling
+0472	field	E4	reject	reject	reject	agree				ballot proof challenge (branch 0) +1
+0473	field	E4	reject	reject	reject	agree				ballot proof challenge (branch 0) 0
+0474	field	E4	reject	reject	reject	agree				ballot proof challenge (branch 0) negated
+0475	field	E4	reject	reject	reject	agree				ballot proof challenge (branch 0) random
+0476	field	E4	reject	reject	reject	agree				ballot proof challenge (branch 1) +1
+0477	field	E4	reject	reject	reject	agree				ballot proof challenge (branch 1) 0
+0478	field	E4	reject	reject	reject	agree				ballot proof challenge (branch 1) negated
+0479	field	E4	reject	reject	reject	agree				ballot proof challenge (branch 1) random
+0480	field	E4	reject	reject	reject	agree				ballot proof response (branch 0) +1
+0481	field	E4	reject	reject	reject	agree				ballot proof response (branch 0) 0
+0482	field	E4	reject	reject	reject	agree				ballot proof response (branch 0) negated
+0483	field	E4	reject	reject	reject	agree				ballot proof response (branch 0) random
+0484	field	E4	reject	reject	reject	agree				ballot proof response (branch 1) +1
+0485	field	E4	reject	reject	reject	agree				ballot proof response (branch 1) 0
+0486	field	E4	reject	reject	reject	agree				ballot proof response (branch 1) negated
+0487	field	E4	reject	reject	reject	agree				ballot proof response (branch 1) random
+0488	field	E4	either	accept	accept	agree				ballot vote_hash changed
+0489	field	E4	either	accept	accept	agree				ballot voter_hash changed
+0490	field	E4	either	accept	accept	agree				ballot voter_uuid changed
+0491	field	E4	reject	reject	reject	agree				decryption factor times g
+0492	field	E4	reject	reject	reject	agree				decryption factor 1
+0493	field	E4	reject	reject	reject	agree				decryption factor inverse
+0494	field	E4	reject	reject	reject	agree				decryption factor random
+0495	field	E4	reject	reject	reject	agree				decryption factor swapped with a sibling
+0496	field	E4	reject	reject	reject	agree			decryption proof: challenge is not SHA-1(A, B)	decryption proof A times g
+0497	field	E4	reject	reject	reject	agree			decryption proof: challenge is not SHA-1(A, B)	decryption proof A 1
+0498	field	E4	reject	reject	reject	agree			decryption proof: challenge is not SHA-1(A, B)	decryption proof A inverse
+0499	field	E4	reject	reject	reject	agree			decryption proof: challenge is not SHA-1(A, B)	decryption proof A random
+0500	field	E4	reject	reject	reject	agree			decryption proof: challenge is not SHA-1(A, B)	decryption proof A swapped with a sibling
+0501	field	E4	reject	reject	reject	agree			decryption proof: challenge is not SHA-1(A, B)	decryption proof B times g
+0502	field	E4	reject	reject	reject	agree			decryption proof: challenge is not SHA-1(A, B)	decryption proof B 1
+0503	field	E4	reject	reject	reject	agree			decryption proof: challenge is not SHA-1(A, B)	decryption proof B inverse
+0504	field	E4	reject	reject	reject	agree			decryption proof: challenge is not SHA-1(A, B)	decryption proof B random
+0505	field	E4	reject	reject	reject	agree			decryption proof: challenge is not SHA-1(A, B)	decryption proof B swapped with a sibling
+0506	field	E4	reject	reject	reject	agree			decryption proof: challenge is not SHA-1(A, B)	decryption proof challenge +1
+0507	field	E4	reject	reject	reject	agree			decryption proof: challenge is not SHA-1(A, B)	decryption proof challenge 0
+0508	field	E4	reject	reject	reject	agree			decryption proof: challenge is not SHA-1(A, B)	decryption proof challenge negated
+0509	field	E4	reject	reject	reject	agree			decryption proof: challenge is not SHA-1(A, B)	decryption proof challenge random
+0510	field	E4	reject	reject	reject	agree				decryption proof response +1
+0511	field	E4	reject	reject	reject	agree				decryption proof response 0
+0512	field	E4	reject	reject	reject	agree				decryption proof response negated
+0513	field	E4	reject	reject	reject	agree				decryption proof response random
+0514	field	E4	reject	reject	reject	agree			proof of knowledge: challenge is not SHA-1(commitment)	pok challenge +1
+0515	field	E4	reject	reject	reject	agree			proof of knowledge: challenge is not SHA-1(commitment)	pok challenge 0
+0516	field	E4	reject	reject	reject	agree			proof of knowledge: challenge is not SHA-1(commitment)	pok challenge negated
+0517	field	E4	reject	reject	reject	agree			proof of knowledge: challenge is not SHA-1(commitment)	pok challenge random
+0518	field	E4	reject	reject	reject	agree			proof of knowledge: challenge is not SHA-1(commitment)	pok commitment times g
+0519	field	E4	reject	reject	reject	agree			proof of knowledge: challenge is not SHA-1(commitment)	pok commitment 1
+0520	field	E4	reject	reject	reject	agree			proof of knowledge: challenge is not SHA-1(commitment)	pok commitment inverse
+0521	field	E4	reject	reject	reject	agree			proof of knowledge: challenge is not SHA-1(commitment)	pok commitment random
+0522	field	E4	reject	reject	reject	agree			proof of knowledge: challenge is not SHA-1(commitment)	pok commitment swapped with a sibling
+0523	field	E4	reject	reject	reject	agree				pok response +1
+0524	field	E4	reject	reject	reject	agree				pok response 0
+0525	field	E4	reject	reject	reject	agree				pok response negated
+0526	field	E4	reject	reject	reject	agree				pok response random
+0527	field	E4	reject	reject	reject	agree				published tally +1
+0528	field	E4	reject	reject	reject	agree				published tally -1
+0529	field	E4	reject	reject	reject	agree				published tally swapped with another candidate
+0530	field	E4	either	accept	reject	DISAGREE			group element outside the order-q subgroup: 14887492224963187634282421537186040801304008017743492304481737382571933937568724473847106029915040150784031882206090286938661464458896494215273989547889201144857352611058572236578734319505128042602372864570426550855201448111746579871811249114781674309062693442442368697449970648232621880001709535143047913661432883287150003429802392229361583608686643243349727791976247247948618930423866180410558458272606627111270040091203073580238905303994472202930783207472394578498507764703191288249547659899997131166130259700604433891232298182348403175947450284433411265966789131024573629546048637848902243503970966798589660808535	trustee declared g changed
+0531	field	E4	either	accept	accept	agree				trustee declared p changed
+0532	field	E4	either	accept	accept	agree				trustee declared q changed
+0533	field	E4	either	accept	accept	agree				trustee email changed
+0534	field	E4	either	accept	accept	agree				trustee public_key_hash changed
+0535	field	E4	either	accept	accept	agree				trustee uuid changed
+0536	field	E4	reject	reject	reject	agree				trustee y times g
+0537	field	E4	reject	reject	reject	agree				trustee y 1
+0538	field	E4	reject	reject	reject	agree				trustee y inverse
+0539	field	E4	reject	reject	reject	agree				trustee y random
+0540	field	E4	reject	reject	reject	agree				trustee y swapped with a sibling
+0541	structural	E4	reject	reject	reject	agree		Tally.add_vote: IndexError		ballot 0: last choice dropped
+0542	structural	E4	reject	reject	reject	agree				ballot 0: last choice duplicated
+0543	structural	E4	reject	reject	reject	agree				ballot 0: last proof dropped
+0544	structural	E4	reject	accept	reject	DISAGREE	yes			ballot 0: last proof duplicated
+0545	structural	E4	reject	reject	reject	agree			syntax error	ballot 0: proof 0 with one branch
+0546	structural	E4	reject	reject	reject	agree			syntax error	ballot 0: proof 0 with a third branch
+0547	structural	E4	either	accept	reject	DISAGREE			syntax error	ballot 0: overall_proof [] instead of null
+0548	structural	E4	either	accept	reject	DISAGREE			syntax error	ballot 0: overall_proof = proof 0
+0549	structural	E4	reject	reject	reject	agree			syntax error	ballot 0: answer duplicated
+0550	structural	E4	either	accept	reject	DISAGREE			syntax error	ballot 0: extra field
+0551	structural	E4	either	accept	reject	DISAGREE			syntax error	ballot 0: voter_uuid missing
+0552	structural	E4	reject	reject	reject	agree		trustees/result: IndexError	shape: decryption factors or proofs	trustee 0: last decryption factor dropped
+0553	structural	E4	reject	accept	reject	DISAGREE	yes		shape: decryption factors or proofs	trustee 0: extra decryption factor
+0554	structural	E4	reject	reject	reject	agree		trustees/result: IndexError	shape: decryption factors or proofs	trustee 0: last decryption proof dropped
+0555	structural	E4	reject	reject	reject	agree			shape: result length	published tally: last entry dropped
+0556	structural	E4	reject	reject	reject	agree			shape: result length	published tally: extra entry
+0557	structural	E4	either	accept	reject	DISAGREE			syntax error	ballot 0: keys in reverse order
+0558	structural	E4	either	accept	accept	agree				ballot 0 alpha: leading zero
+0559	structural	E4	either	accept	reject	DISAGREE			not a decimal integer: +7476847190559553215389761885957693848836106051372441648612054597585890753663671057119145878539365835024276412037702140811375865569420152058194834533608923667192485057691171789999728979857024083929077347670583064576093288183143884037819382842882474176066140558292417417561909520679367833640970503280518962495644918194328292927418700777886039696295422138020542785386600554513538293353537190173401268221695799282173526358567156248266415892166047148050031106741160516783354467493550776001795930982165310246079347616837757297493432541474088998527177893135585749714287345670629852076676348448570519744222341808032497272267	ballot 0 alpha: plus sign
+0560	structural	E4	either	accept	reject	DISAGREE			not a decimal integer:  7476847190559553215389761885957693848836106051372441648612054597585890753663671057119145878539365835024276412037702140811375865569420152058194834533608923667192485057691171789999728979857024083929077347670583064576093288183143884037819382842882474176066140558292417417561909520679367833640970503280518962495644918194328292927418700777886039696295422138020542785386600554513538293353537190173401268221695799282173526358567156248266415892166047148050031106741160516783354467493550776001795930982165310246079347616837757297493432541474088998527177893135585749714287345670629852076676348448570519744222341808032497272267	ballot 0 alpha: leading space
+0561	structural	E4	either	accept	reject	DISAGREE			not a decimal integer: 7476847190559553215389761885957693848836106051372441648612054597585890753663671057119145878539365835024276412037702140811375865569420152058194834533608923667192485057691171789999728979857024083929077347670583064576093288183143884037819382842882474176066140558292417417561909520679367833640970503280518962495644918194328292927418700777886039696295422138020542785386600554513538293353537190173401268221695799282173526358567156248266415892166047148050031106741160516783354467493550776001795930982165310246079347616837757297493432541474088998527177893135585749714287345670629852076676348448570519744222341808032497272267 	ballot 0 alpha: trailing space
+0562	structural	E4	either	accept	reject	DISAGREE			not a decimal integer: 747_6847190559553215389761885957693848836106051372441648612054597585890753663671057119145878539365835024276412037702140811375865569420152058194834533608923667192485057691171789999728979857024083929077347670583064576093288183143884037819382842882474176066140558292417417561909520679367833640970503280518962495644918194328292927418700777886039696295422138020542785386600554513538293353537190173401268221695799282173526358567156248266415892166047148050031106741160516783354467493550776001795930982165310246079347616837757297493432541474088998527177893135585749714287345670629852076676348448570519744222341808032497272267	ballot 0 alpha: digit-group underscore
+0563	structural	E4	either	accept	reject	DISAGREE			not a decimal integer: \uff17\uff14\uff17\uff16\uff18\uff14\uff17\uff11\uff19\uff10\uff15\uff15\uff19\uff15\uff15\uff13\uff12\uff11\uff15\uff13\uff18\uff19\uff17\uff16\uff11\uff18\uff18\uff15\uff19\uff15\uff17\uff16\uff19\uff13\uff18\uff14\uff18\uff18\uff13\uff16\uff11\uff10\uff16\uff10\uff15\uff11\uff13\uff17\uff12\uff14\uff14\uff11\uff16\uff14\uff18\uff16\uff11\uff12\uff10\uff15\uff14\uff15\uff19\uff17\uff15\uff18\uff15\uff18\uff19\uff10\uff17\uff15\uff13\uff16\uff16\uff13\uff16\uff17\uff11\uff10\uff15\uff17\uff11\uff11\uff19\uff11\uff14\uff15\uff18\uff17\uff18\uff15\uff13\uff19\uff13\uff16\uff15\uff18\uff13\uff15\uff10\uff12\uff14\uff12\uff17\uff16\uff14\uff11\uff12\uff10\uff13\uff17\uff17\uff10\uff12\uff11\uff14\uff10\uff18\uff11\uff11\uff13\uff17\uff15\uff18\uff16\uff15\uff15\uff16\uff19\uff14\uff12\uff10\uff11\uff15\uff12\uff10\uff15\uff18\uff11\uff19\uff14\uff18\uff13\uff14\uff15\uff13\uff13\uff16\uff10\uff18\uff19\uff12\uff13\uff16\uff16\uff17\uff11\uff19\uff12\uff14\uff18\uff15\uff10\uff15\uff17\uff16\uff19\uff11\uff11\uff17\uff11\uff17\uff18\uff19\uff19\uff19\uff19\uff17\uff12\uff18\uff19\uff17\uff19\uff18\uff15\uff17\uff10\uff12\uff14\uff10\uff18\uff13\uff19\uff12\uff19\uff10\uff17\uff17\uff13\uff14\uff17\uff16\uff17\uff10\uff15\uff18\uff13\uff10\uff16\uff14\uff15\uff17\uff16\uff10\uff19\uff13\uff12\uff18\uff18\uff11\uff18\uff13\uff11\uff14\uff13\uff18\uff18\uff14\uff10\uff13\uff17\uff18\uff11\uff19\uff13\uff18\uff12\uff18\uff14\uff12\uff18\uff18\uff12\uff14\uff17\uff14\uff11\uff17\uff16\uff10\uff16\uff16\uff11\uff14\uff10\uff15\uff15\uff18\uff12\uff19\uff12\uff14\uff11\uff17\uff14\uff11\uff17\uff15\uff16\uff11\uff19\uff10\uff19\uff15\uff12\uff10\uff16\uff17\uff19\uff13\uff16\uff17\uff18\uff13\uff13\uff16\uff14\uff10\uff19\uff17\uff10\uff15\uff10\uff13\uff12\uff18\uff10\uff15\uff11\uff18\uff19\uff16\uff12\uff14\uff19\uff15\uff16\uff14\uff14\uff19\uff11\uff18\uff11\uff19\uff14\uff13\uff12\uff18\uff12\uff19\uff12\uff19\uff12\uff17\uff14\uff11\uff18\uff17\uff10\uff10\uff17\uff17\uff17\uff18\uff18\uff16\uff10\uff13\uff19\uff16\uff19\uff16\uff12\uff19\uff15\uff14\uff12\uff12\uff11\uff13\uff18\uff10\uff12\uff10\uff15\uff14\uff12\uff17\uff18\uff15\uff13\uff18\uff16\uff16\uff10\uff10\uff15\uff15\uff14\uff15\uff11\uff13\uff15\uff13\uff18\uff12\uff19\uff13\uff13\uff15\uff13\uff15\uff13\uff17\uff11\uff19\uff10\uff11\uff17\uff13\uff14\uff10\uff11\uff12\uff16\uff18\uff12\uff12\uff11\uff16\uff19\uff15\uff17\uff19\uff19\uff12\uff18\uff12\uff11\uff17\uff13\uff15\uff12\uff16\uff13\uff15\uff18\uff15\uff16\uff17\uff11\uff15\uff16\uff12\uff14\uff18\uff12\uff16\uff16\uff14\uff11\uff15\uff18\uff19\uff12\uff11\uff16\uff16\uff10\uff14\uff17\uff11\uff14\uff18\uff10\uff15\uff10\uff10\uff13\uff11\uff11\uff10\uff16\uff17\uff14\uff11\uff11\uff16\uff10\uff15\uff11\uff16\uff17\uff18\uff13\uff13\uff15\uff14\uff14\uff16\uff17\uff14\uff19\uff13\uff15\uff15\uff10\uff17\uff17\uff16\uff10\uff10\uff11\uff17\uff19\uff15\uff19\uff13\uff10\uff19\uff18\uff12\uff11\uff16\uff15\uff13\uff11\uff10\uff12\uff14\uff16\uff10\uff17\uff19\uff13\uff14\uff17\uff16\uff11\uff16\uff18\uff13\uff17\uff17\uff15\uff17\uff12\uff19\uff17\uff14\uff19\uff13\uff14\uff13\uff12\uff15\uff14\uff11\uff14\uff17\uff14\uff10\uff18\uff18\uff19\uff19\uff18\uff15\uff12\uff17\uff11\uff17\uff17\uff18\uff19\uff13\uff11\uff13\uff15\uff15\uff18\uff15\uff17\uff14\uff19\uff17\uff11\uff14\uff12\uff18\uff17\uff13\uff14\uff15\uff16\uff17\uff10\uff16\uff12\uff19\uff18\uff15\uff12\uff10\uff17\uff16\uff16\uff17\uff16\uff13\uff14\uff18\uff14\uff14\uff18\uff15\uff17\uff10\uff15\uff11\uff19\uff17\uff14\uff14\uff12\uff12\uff12\uff13\uff14\uff11\uff18\uff10\uff18\uff10\uff13\uff12\uff14\uff19\uff17\uff12\uff17\uff12\uff12\uff16\uff17	ballot 0 alpha: full-width digits
+0564	structural	E4	either	reject	reject	agree			not a decimal integer: 0x3b3a60bbaee3b70b73d46d86641ca69c380489f60a899a20c477e128c1ae69d8c75398ba730ebe436e909baf842e5760a351fe8366b8524a673a1bd7f01286d3c77105217a2b1a256e62587ec9a7815cb6fa02249fba80b3f512ab6f684aaff2dd00ae6f956398bba3800688be6b19536745f777d15408cf580cfefc28e8c2b5c188f3c254c38b282623149921dcfa0c0acddd9bfa4ac20f5d00e23e6c193feffd193b35880151f3e63addb7cf1d870da6fac1f57cf50fc01ebcfa78c582b3ab5544731ef389fa06e0dae5b4844d4df4cc8088db1246f4f549dce66c0caf70f3fd5775633adb132f64b1028a3b1e5aba1f3823e07b29dbd0b83e8c98571805cb	ballot 0 alpha: hexadecimal 0x
+0565	structural	E4	either	reject	reject	agree			not a decimal integer: 7476847190559553215389761885957693848836106051372441648612054597585890753663671057119145878539365835024276412037702140811375865569420152058194834533608923667192485057691171789999728979857024083929077347670583064576093288183143884037819382842882474176066140558292417417561909520679367833640970503280518962495644918194328292927418700777886039696295422138020542785386600554513538293353537190173401268221695799282173526358567156248266415892166047148050031106741160516783354467493550776001795930982165310246079347616837757297493432541474088998527177893135585749714287345670629852076676348448570519744222341808032497272267.0	ballot 0 alpha: decimal point
+0566	structural	E4	reject	reject	reject	agree			group element outside the order-q subgroup: 0	ballot 0 alpha: 0
+0567	structural	E4	reject	reject	reject	agree			group element outside the order-q subgroup: 16328632084933010002384055033805457329601614771185955389739167309086214800406465799038583634953752941675645562182498120750264980492381375579367675648771293800310370964745767014243638518442553823973482995267304044326777047662957480269391322789378384619428596446446984694306187644767462460965622580087564339212631775817895958409016676398975671266179637898557687317076177218843233150695157881061257053019133078545928983562221396313169622475509818442661047018436264806901023966236718367204710755935899013750306107738002364137917426595737403871114187750804346564731250609196846638183903982387884578266136503697493474682071	ballot 0 alpha: p
+0568	structural	E4	reject	reject	reject	agree			group element outside the order-q subgroup: 23805479275492563217773816919763151178437720822558397038351221906672105554070136856157729513493118776699921974220200261561640846061801527637562510182380217467502856022436938804243367498299577907902560342937887108902870335846101364307210705632260858795494737004739402111868097165446830294606593083368083301708276694012224251336435377176861710962475060036578230102462777773356771444048695071234658321240828877828102509920788552561436038367675865590711078125177425323684378433730269143206506686918064323996385455354840121435410859137211492869641365643939932314445537954867476490260580330836455098010358845505525971954338	ballot 0 alpha: alpha + p
+0569	structural	E4	reject	reject	reject	agree			group element outside the order-q subgroup: 8851784894373456786994293147847763480765508719813513741127112711500324046742794741919437756414387106651369150144795979938889114922961223521172841115162370133117885907054595224243909538585529740044405647596720979750683759479813596231571939946495910443362455888154567276744278124088094627324652076807045376716986857623567665481597975621089631569884215760537144531689576664329694857341620690887855784797437279263755457203654240064903206583343771294611015911695104290117669498743167591202914824953733703504226760121164606840423994054263314872587009857668760815016963263526216786107227633939314058521914161889460977409804	ballot 0 alpha: p - alpha
+0570	structural	E4	reject	reject	reject	agree			not a decimal integer: -7476847190559553215389761885957693848836106051372441648612054597585890753663671057119145878539365835024276412037702140811375865569420152058194834533608923667192485057691171789999728979857024083929077347670583064576093288183143884037819382842882474176066140558292417417561909520679367833640970503280518962495644918194328292927418700777886039696295422138020542785386600554513538293353537190173401268221695799282173526358567156248266415892166047148050031106741160516783354467493550776001795930982165310246079347616837757297493432541474088998527177893135585749714287345670629852076676348448570519744222341808032497272267	ballot 0 alpha: -alpha
+0571	structural	E4	reject	reject	reject	agree			field element out of range: 61329566248342901292543872769978950870633559608669337131139375508370458778917	ballot 0 response: q
+0572	structural	E4	reject	accept	reject	DISAGREE	yes		field element out of range: 108574101085308937436700860613459465818821528018651509415908239872826907144569	ballot 0 response: response + q
+0573	structural	E4	reject	reject	reject	agree			not a decimal integer: -1	ballot 0 response: -1
+0574	tally	E4	reject	reject	reject	agree				ballot 1 (votes [1, 1, 1, 1, 1]) dropped
+0575	tally	E4	reject	reject	reject	agree				ballot 1 (votes [1, 1, 1, 1, 1]) duplicated
+0576	tally	E4	reject	reject	reject	agree				all-0 ballot 0 dropped
+0577	tally	E4	reject	reject	reject	agree				all-0 ballot 0 duplicated
+0578	tally	E4	reject	reject	reject	agree				published tally: candidate 0 + 1
+0579	tally	E4	reject	reject	reject	agree				trustee 0's decryption replaced by trustee 1's
+0580	tally	E4	accept	accept	accept	agree				trustees in reverse order
+0581	tally	E4	reject	reject	reject	agree			shape: number of trustees	last trustee removed
+0582	tally	E4	reject	reject	reject	agree		trustees/result: AttributeError		election key h times g
+0583	tally	E4	reject	reject	reject	agree				last trustee replaced by a fresh trustee with valid proofs
+0584	tally	E4	accept	accept	accept	agree				ballot encrypted under another key appended
+0585	honest	E5	accept	accept	accept	agree				as generated
+0586	field	E5	reject	reject	reject	agree				ballot alpha times g
+0587	field	E5	reject	reject	reject	agree				ballot alpha 1
+0588	field	E5	reject	reject	reject	agree				ballot alpha inverse
+0589	field	E5	reject	reject	reject	agree				ballot alpha random
+0590	field	E5	reject	reject	reject	agree				ballot alpha swapped with a sibling
+0591	field	E5	reject	reject	reject	agree				ballot beta times g
+0592	field	E5	reject	reject	reject	agree				ballot beta 1
+0593	field	E5	reject	reject	reject	agree				ballot beta inverse
+0594	field	E5	reject	reject	reject	agree				ballot beta random
+0595	field	E5	reject	reject	reject	agree				ballot beta swapped with a sibling
+0596	field	E5	either	accept	accept	agree				ballot cast_at changed
+0597	field	E5	reject	reject	reject	agree				ballot election_hash changed
+0598	field	E5	reject	reject	reject	agree				ballot election_uuid changed
+0599	field	E5	reject	reject	reject	agree				ballot proof A (branch 0) times g
+0600	field	E5	reject	reject	reject	agree				ballot proof A (branch 0) 1
+0601	field	E5	reject	reject	reject	agree				ballot proof A (branch 0) inverse
+0602	field	E5	reject	reject	reject	agree				ballot proof A (branch 0) random
+0603	field	E5	reject	reject	reject	agree				ballot proof A (branch 0) swapped with a sibling
+0604	field	E5	reject	reject	reject	agree				ballot proof A (branch 1) times g
+0605	field	E5	reject	reject	reject	agree				ballot proof A (branch 1) 1
+0606	field	E5	reject	reject	reject	agree				ballot proof A (branch 1) inverse
+0607	field	E5	reject	reject	reject	agree				ballot proof A (branch 1) random
+0608	field	E5	reject	reject	reject	agree				ballot proof A (branch 1) swapped with a sibling
+0609	field	E5	reject	reject	reject	agree				ballot proof B (branch 0) times g
+0610	field	E5	reject	reject	reject	agree				ballot proof B (branch 0) 1
+0611	field	E5	reject	reject	reject	agree				ballot proof B (branch 0) inverse
+0612	field	E5	reject	reject	reject	agree				ballot proof B (branch 0) random
+0613	field	E5	reject	reject	reject	agree				ballot proof B (branch 0) swapped with a sibling
+0614	field	E5	reject	reject	reject	agree				ballot proof B (branch 1) times g
+0615	field	E5	reject	reject	reject	agree				ballot proof B (branch 1) 1
+0616	field	E5	reject	reject	reject	agree				ballot proof B (branch 1) inverse
+0617	field	E5	reject	reject	reject	agree				ballot proof B (branch 1) random
+0618	field	E5	reject	reject	reject	agree				ballot proof B (branch 1) swapped with a sibling
+0619	field	E5	reject	reject	reject	agree				ballot proof challenge (branch 0) +1
+0620	field	E5	reject	reject	reject	agree				ballot proof challenge (branch 0) 0
+0621	field	E5	reject	reject	reject	agree				ballot proof challenge (branch 0) negated
+0622	field	E5	reject	reject	reject	agree				ballot proof challenge (branch 0) random
+0623	field	E5	reject	reject	reject	agree				ballot proof challenge (branch 1) +1
+0624	field	E5	reject	reject	reject	agree				ballot proof challenge (branch 1) 0
+0625	field	E5	reject	reject	reject	agree				ballot proof challenge (branch 1) negated
+0626	field	E5	reject	reject	reject	agree				ballot proof challenge (branch 1) random
+0627	field	E5	reject	reject	reject	agree				ballot proof response (branch 0) +1
+0628	field	E5	reject	reject	reject	agree				ballot proof response (branch 0) 0
+0629	field	E5	reject	reject	reject	agree				ballot proof response (branch 0) negated
+0630	field	E5	reject	reject	reject	agree				ballot proof response (branch 0) random
+0631	field	E5	reject	reject	reject	agree				ballot proof response (branch 1) +1
+0632	field	E5	reject	reject	reject	agree				ballot proof response (branch 1) 0
+0633	field	E5	reject	reject	reject	agree				ballot proof response (branch 1) negated
+0634	field	E5	reject	reject	reject	agree				ballot proof response (branch 1) random
+0635	field	E5	either	accept	accept	agree				ballot vote_hash changed
+0636	field	E5	either	accept	accept	agree				ballot voter_hash changed
+0637	field	E5	either	accept	accept	agree				ballot voter_uuid changed
+0638	field	E5	reject	reject	reject	agree				decryption factor times g
+0639	field	E5	reject	reject	reject	agree				decryption factor 1
+0640	field	E5	reject	reject	reject	agree				decryption factor inverse
+0641	field	E5	reject	reject	reject	agree				decryption factor random
+0642	field	E5	reject	reject	reject	agree				decryption factor swapped with a sibling
+0643	field	E5	reject	reject	reject	agree			decryption proof: challenge is not SHA-1(A, B)	decryption proof A times g
+0644	field	E5	reject	reject	reject	agree			decryption proof: challenge is not SHA-1(A, B)	decryption proof A 1
+0645	field	E5	reject	reject	reject	agree			decryption proof: challenge is not SHA-1(A, B)	decryption proof A inverse
+0646	field	E5	reject	reject	reject	agree			decryption proof: challenge is not SHA-1(A, B)	decryption proof A random
+0647	field	E5	reject	reject	reject	agree			decryption proof: challenge is not SHA-1(A, B)	decryption proof A swapped with a sibling
+0648	field	E5	reject	reject	reject	agree			decryption proof: challenge is not SHA-1(A, B)	decryption proof B times g
+0649	field	E5	reject	reject	reject	agree			decryption proof: challenge is not SHA-1(A, B)	decryption proof B 1
+0650	field	E5	reject	reject	reject	agree			decryption proof: challenge is not SHA-1(A, B)	decryption proof B inverse
+0651	field	E5	reject	reject	reject	agree			decryption proof: challenge is not SHA-1(A, B)	decryption proof B random
+0652	field	E5	reject	reject	reject	agree			decryption proof: challenge is not SHA-1(A, B)	decryption proof B swapped with a sibling
+0653	field	E5	reject	reject	reject	agree			decryption proof: challenge is not SHA-1(A, B)	decryption proof challenge +1
+0654	field	E5	reject	reject	reject	agree			decryption proof: challenge is not SHA-1(A, B)	decryption proof challenge 0
+0655	field	E5	reject	reject	reject	agree			decryption proof: challenge is not SHA-1(A, B)	decryption proof challenge negated
+0656	field	E5	reject	reject	reject	agree			decryption proof: challenge is not SHA-1(A, B)	decryption proof challenge random
+0657	field	E5	reject	reject	reject	agree				decryption proof response +1
+0658	field	E5	reject	reject	reject	agree				decryption proof response 0
+0659	field	E5	reject	reject	reject	agree				decryption proof response negated
+0660	field	E5	reject	reject	reject	agree				decryption proof response random
+0661	field	E5	reject	reject	reject	agree			proof of knowledge: challenge is not SHA-1(commitment)	pok challenge +1
+0662	field	E5	reject	reject	reject	agree			proof of knowledge: challenge is not SHA-1(commitment)	pok challenge 0
+0663	field	E5	reject	reject	reject	agree			proof of knowledge: challenge is not SHA-1(commitment)	pok challenge negated
+0664	field	E5	reject	reject	reject	agree			proof of knowledge: challenge is not SHA-1(commitment)	pok challenge random
+0665	field	E5	reject	reject	reject	agree			proof of knowledge: challenge is not SHA-1(commitment)	pok commitment times g
+0666	field	E5	reject	reject	reject	agree			proof of knowledge: challenge is not SHA-1(commitment)	pok commitment 1
+0667	field	E5	reject	reject	reject	agree			proof of knowledge: challenge is not SHA-1(commitment)	pok commitment inverse
+0668	field	E5	reject	reject	reject	agree			proof of knowledge: challenge is not SHA-1(commitment)	pok commitment random
+0669	field	E5	reject	reject	reject	agree			proof of knowledge: challenge is not SHA-1(commitment)	pok commitment swapped with a sibling
+0670	field	E5	reject	reject	reject	agree				pok response +1
+0671	field	E5	reject	reject	reject	agree				pok response 0
+0672	field	E5	reject	reject	reject	agree				pok response negated
+0673	field	E5	reject	reject	reject	agree				pok response random
+0674	field	E5	reject	reject	reject	agree				published tally +1
+0675	field	E5	reject	reject	reject	agree				published tally -1
+0676	field	E5	reject	reject	reject	agree				published tally swapped with another candidate
+0677	field	E5	either	accept	reject	DISAGREE			group element outside the order-q subgroup: 14887492224963187634282421537186040801304008017743492304481737382571933937568724473847106029915040150784031882206090286938661464458896494215273989547889201144857352611058572236578734319505128042602372864570426550855201448111746579871811249114781674309062693442442368697449970648232621880001709535143047913661432883287150003429802392229361583608686643243349727791976247247948618930423866180410558458272606627111270040091203073580238905303994472202930783207472394578498507764703191288249547659899997131166130259700604433891232298182348403175947450284433411265966789131024573629546048637848902243503970966798589660808535	trustee declared g changed
+0678	field	E5	either	accept	accept	agree				trustee declared p changed
+0679	field	E5	either	accept	accept	agree				trustee declared q changed
+0680	field	E5	either	accept	accept	agree				trustee email changed
+0681	field	E5	either	accept	accept	agree				trustee public_key_hash changed
+0682	field	E5	either	accept	accept	agree				trustee uuid changed
+0683	field	E5	reject	reject	reject	agree				trustee y times g
+0684	field	E5	reject	reject	reject	agree				trustee y 1
+0685	field	E5	reject	reject	reject	agree				trustee y inverse
+0686	field	E5	reject	reject	reject	agree				trustee y random
+0687	field	E5	reject	reject	reject	agree				trustee y swapped with a sibling
+0688	structural	E5	reject	reject	reject	agree		Tally.add_vote: IndexError		ballot 0: last choice dropped
+0689	structural	E5	reject	reject	reject	agree				ballot 0: last choice duplicated
+0690	structural	E5	reject	reject	reject	agree				ballot 0: last proof dropped
+0691	structural	E5	reject	accept	reject	DISAGREE	yes			ballot 0: last proof duplicated
+0692	structural	E5	reject	reject	reject	agree			syntax error	ballot 0: proof 0 with one branch
+0693	structural	E5	reject	reject	reject	agree			syntax error	ballot 0: proof 0 with a third branch
+0694	structural	E5	either	accept	reject	DISAGREE			syntax error	ballot 0: overall_proof [] instead of null
+0695	structural	E5	either	accept	reject	DISAGREE			syntax error	ballot 0: overall_proof = proof 0
+0696	structural	E5	reject	reject	reject	agree			syntax error	ballot 0: answer duplicated
+0697	structural	E5	either	accept	reject	DISAGREE			syntax error	ballot 0: extra field
+0698	structural	E5	either	accept	reject	DISAGREE			syntax error	ballot 0: voter_uuid missing
+0699	structural	E5	reject	reject	reject	agree		trustees/result: IndexError	shape: decryption factors or proofs	trustee 0: last decryption factor dropped
+0700	structural	E5	reject	accept	reject	DISAGREE	yes		shape: decryption factors or proofs	trustee 0: extra decryption factor
+0701	structural	E5	reject	reject	reject	agree		trustees/result: IndexError	shape: decryption factors or proofs	trustee 0: last decryption proof dropped
+0702	structural	E5	reject	reject	reject	agree			shape: result length	published tally: last entry dropped
+0703	structural	E5	reject	reject	reject	agree			shape: result length	published tally: extra entry
+0704	structural	E5	either	accept	reject	DISAGREE			syntax error	ballot 0: keys in reverse order
+0705	structural	E5	either	accept	accept	agree				ballot 0 alpha: leading zero
+0706	structural	E5	either	accept	reject	DISAGREE			not a decimal integer: +3909428273105655728223635044425014084559718457239625749965823983813253525984461204544619026947001447364598690350955045406895160268002011046202228087942694615784653118773913110977383677959429829199413176938357393502199456126248283563849952947886824094767847125288552756742401432716725399603449228445400133710826747085717599901794802061341877059038335802067177113323596207344890676662064467824496655920512692075172170666137619379916910116938343322415825326213060221959453388103752854420696747177557680152750714700713306228948757665474322190803382716118945549283469594555071595211834899734436822404063570840832767258864	ballot 0 alpha: plus sign
+0707	structural	E5	either	accept	reject	DISAGREE			not a decimal integer:  3909428273105655728223635044425014084559718457239625749965823983813253525984461204544619026947001447364598690350955045406895160268002011046202228087942694615784653118773913110977383677959429829199413176938357393502199456126248283563849952947886824094767847125288552756742401432716725399603449228445400133710826747085717599901794802061341877059038335802067177113323596207344890676662064467824496655920512692075172170666137619379916910116938343322415825326213060221959453388103752854420696747177557680152750714700713306228948757665474322190803382716118945549283469594555071595211834899734436822404063570840832767258864	ballot 0 alpha: leading space
+0708	structural	E5	either	accept	reject	DISAGREE			not a decimal integer: 3909428273105655728223635044425014084559718457239625749965823983813253525984461204544619026947001447364598690350955045406895160268002011046202228087942694615784653118773913110977383677959429829199413176938357393502199456126248283563849952947886824094767847125288552756742401432716725399603449228445400133710826747085717599901794802061341877059038335802067177113323596207344890676662064467824496655920512692075172170666137619379916910116938343322415825326213060221959453388103752854420696747177557680152750714700713306228948757665474322190803382716118945549283469594555071595211834899734436822404063570840832767258864 	ballot 0 alpha: trailing space
+0709	structural	E5	either	accept	reject	DISAGREE			not a decimal integer: 390_9428273105655728223635044425014084559718457239625749965823983813253525984461204544619026947001447364598690350955045406895160268002011046202228087942694615784653118773913110977383677959429829199413176938357393502199456126248283563849952947886824094767847125288552756742401432716725399603449228445400133710826747085717599901794802061341877059038335802067177113323596207344890676662064467824496655920512692075172170666137619379916910116938343322415825326213060221959453388103752854420696747177557680152750714700713306228948757665474322190803382716118945549283469594555071595211834899734436822404063570840832767258864	ballot 0 alpha: digit-group underscore
+0710	structural	E5	either	accept	reject	DISAGREE			not a decimal integer: \uff13\uff19\uff10\uff19\uff14\uff12\uff18\uff12\uff17\uff13\uff11\uff10\uff15\uff16\uff15\uff15\uff17\uff12\uff18\uff12\uff12\uff13\uff16\uff13\uff15\uff10\uff14\uff14\uff14\uff12\uff15\uff10\uff11\uff14\uff10\uff18\uff14\uff15\uff15\uff19\uff17\uff11\uff18\uff14\uff15\uff17\uff12\uff13\uff19\uff16\uff12\uff15\uff17\uff14\uff19\uff19\uff16\uff15\uff18\uff12\uff13\uff19\uff18\uff13\uff18\uff11\uff13\uff12\uff15\uff13\uff15\uff12\uff15\uff19\uff18\uff14\uff14\uff16\uff11\uff12\uff10\uff14\uff15\uff14\uff14\uff16\uff11\uff19\uff10\uff12\uff16\uff19\uff14\uff17\uff10\uff10\uff11\uff14\uff14\uff17\uff13\uff16\uff14\uff15\uff19\uff18\uff16\uff19\uff10\uff13\uff15\uff10\uff19\uff15\uff15\uff10\uff14\uff15\uff14\uff10\uff16\uff18\uff19\uff15\uff11\uff16\uff10\uff12\uff16\uff18\uff10\uff10\uff12\uff10\uff11\uff11\uff10\uff14\uff16\uff12\uff10\uff12\uff12\uff12\uff18\uff10\uff18\uff17\uff19\uff14\uff12\uff16\uff19\uff14\uff16\uff11\uff15\uff17\uff18\uff14\uff16\uff15\uff13\uff11\uff11\uff18\uff17\uff17\uff13\uff19\uff11\uff13\uff11\uff11\uff10\uff19\uff17\uff17\uff13\uff18\uff13\uff16\uff17\uff17\uff19\uff15\uff19\uff14\uff12\uff19\uff18\uff12\uff19\uff11\uff19\uff19\uff14\uff11\uff13\uff11\uff17\uff16\uff19\uff13\uff18\uff13\uff15\uff17\uff13\uff19\uff13\uff15\uff10\uff12\uff11\uff19\uff19\uff14\uff15\uff16\uff11\uff12\uff16\uff12\uff14\uff18\uff12\uff18\uff13\uff15\uff16\uff13\uff18\uff14\uff19\uff19\uff15\uff12\uff19\uff14\uff17\uff18\uff18\uff16\uff18\uff12\uff14\uff10\uff19\uff14\uff17\uff16\uff17\uff18\uff14\uff17\uff11\uff12\uff15\uff12\uff18\uff18\uff15\uff15\uff12\uff17\uff15\uff16\uff17\uff14\uff12\uff14\uff10\uff11\uff14\uff13\uff12\uff17\uff11\uff16\uff17\uff12\uff15\uff13\uff19\uff19\uff16\uff10\uff13\uff14\uff14\uff19\uff12\uff12\uff18\uff14\uff14\uff15\uff14\uff10\uff10\uff11\uff13\uff13\uff17\uff11\uff10\uff18\uff12\uff16\uff17\uff14\uff17\uff10\uff18\uff15\uff17\uff11\uff17\uff15\uff19\uff19\uff19\uff10\uff11\uff17\uff19\uff14\uff18\uff10\uff12\uff10\uff16\uff11\uff13\uff14\uff11\uff18\uff17\uff17\uff10\uff15\uff19\uff10\uff13\uff18\uff13\uff13\uff15\uff18\uff10\uff12\uff10\uff16\uff17\uff11\uff17\uff17\uff11\uff11\uff13\uff13\uff12\uff13\uff15\uff19\uff16\uff12\uff10\uff17\uff13\uff14\uff14\uff18\uff19\uff10\uff16\uff17\uff16\uff16\uff16\uff12\uff10\uff16\uff14\uff14\uff16\uff17\uff18\uff12\uff14\uff14\uff19\uff16\uff16\uff15\uff15\uff19\uff12\uff10\uff15\uff11\uff12\uff16\uff19\uff12\uff10\uff17\uff15\uff11\uff17\uff12\uff11\uff17\uff10\uff16\uff16\uff16\uff11\uff13\uff17\uff16\uff11\uff19\uff13\uff17\uff19\uff19\uff11\uff16\uff19\uff11\uff10\uff11\uff11\uff16\uff19\uff13\uff18\uff13\uff14\uff13\uff13\uff12\uff12\uff14\uff11\uff15\uff18\uff12\uff15\uff13\uff12\uff16\uff12\uff11\uff13\uff10\uff16\uff10\uff12\uff12\uff11\uff19\uff15\uff19\uff14\uff15\uff13\uff13\uff18\uff18\uff11\uff10\uff13\uff17\uff15\uff12\uff18\uff15\uff14\uff14\uff12\uff10\uff16\uff19\uff16\uff17\uff14\uff17\uff11\uff17\uff17\uff15\uff15\uff17\uff16\uff18\uff10\uff11\uff15\uff12\uff17\uff15\uff10\uff17\uff11\uff14\uff17\uff10\uff10\uff17\uff11\uff13\uff13\uff10\uff16\uff12\uff12\uff18\uff19\uff14\uff18\uff17\uff15\uff17\uff16\uff16\uff15\uff14\uff17\uff14\uff13\uff12\uff12\uff11\uff19\uff10\uff18\uff10\uff13\uff13\uff18\uff12\uff17\uff11\uff16\uff11\uff11\uff18\uff19\uff14\uff15\uff15\uff14\uff19\uff12\uff18\uff13\uff14\uff16\uff19\uff15\uff19\uff14\uff15\uff15\uff15\uff10\uff17\uff11\uff15\uff19\uff15\uff12\uff11\uff11\uff18\uff13\uff14\uff18\uff19\uff19\uff17\uff13\uff14\uff14\uff13\uff16\uff18\uff12\uff12\uff14\uff10\uff14\uff10\uff16\uff13\uff15\uff17\uff10\uff18\uff14\uff10\uff18\uff13\uff12\uff17\uff16\uff17\uff12\uff15\uff18\uff18\uff16\uff14	ballot 0 alpha: full-width digits
+0711	structural	E5	either	reject	reject	agree			not a decimal integer: 0x1ef7f89c4f5cc317a782370e75399dc722b199c4aa02bdebecf44c3fbd9f2fb7068b0b87e0cd94b0b304deabc9b4c0967cafc884fc4ddb03e1c7719a164ae20356ddff1648778a10644dc9b016ec4c22f50adf6fc3b59475ff51ea10f68c5c69e69a33bd5867e01c8cde3a4d3e2550c392ad9690345e980dd816cff7c810751b90f3241bdf3df1b069271695429ea5589a5de4412288bd36c9956d8f150bbeb7ae5992b5b3bcea9e61daec6b64834c2e4db316ae82915efcc9c733a8d9547481a955d204cfe32a97a30c09043f4182640d00b6ad74402122d57ae8991769152e15c79216bff1ad4c2cd0873b35582c97492f13307311bd700a49494fa07d70f0	ballot 0 alpha: hexadecimal 0x
+0712	structural	E5	either	reject	reject	agree			not a decimal integer: 3909428273105655728223635044425014084559718457239625749965823983813253525984461204544619026947001447364598690350955045406895160268002011046202228087942694615784653118773913110977383677959429829199413176938357393502199456126248283563849952947886824094767847125288552756742401432716725399603449228445400133710826747085717599901794802061341877059038335802067177113323596207344890676662064467824496655920512692075172170666137619379916910116938343322415825326213060221959453388103752854420696747177557680152750714700713306228948757665474322190803382716118945549283469594555071595211834899734436822404063570840832767258864.0	ballot 0 alpha: decimal point
+0713	structural	E5	reject	reject	reject	agree			group element outside the order-q subgroup: 0	ballot 0 alpha: 0
+0714	structural	E5	reject	reject	reject	agree			group element outside the order-q subgroup: 16328632084933010002384055033805457329601614771185955389739167309086214800406465799038583634953752941675645562182498120750264980492381375579367675648771293800310370964745767014243638518442553823973482995267304044326777047662957480269391322789378384619428596446446984694306187644767462460965622580087564339212631775817895958409016676398975671266179637898557687317076177218843233150695157881061257053019133078545928983562221396313169622475509818442661047018436264806901023966236718367204710755935899013750306107738002364137917426595737403871114187750804346564731250609196846638183903982387884578266136503697493474682071	ballot 0 alpha: p
+0715	structural	E5	reject	reject	reject	agree			group element outside the order-q subgroup: 20238060358038665730607690078230471414161333228425581139704991292899468326390927003583202661900754389040244252533453166157160140760383386625569903736713988416095024083519680125221022196401983653172896172205661437828976503789205763833241275737265208714196443571735537451048589077484187860569071808532964472923458522903613558310811478460317548325217973700624864430399773426188123827357222348885753708939645770621101154228359015693086532592448161765076872344649325028860477354340471221625407503113456693903056822438715670366866184261211726061917570466923292114014720203751918233395738882122321400670200074538326241940935	ballot 0 alpha: alpha + p
+0716	structural	E5	reject	reject	reject	agree			group element outside the order-q subgroup: 12419203811827354274160419989380443245041896313946329639773343325272961274422004594493964608006751494311046871831543075343369820224379364533165447560828599184525717845971853903266254840483123994774069818328946650824577591536709196705541369841491560524660749321158431937563786212050737061362173351642164205501805028732178358507221874337633794207141302096490510203752581011498342474033093413236760397098620386470756812896083776933252712358571475120245221692223204584941570578132965512784014008758341333597555393037289057908968668930263081680310805034685401015447781014641775042972069082653447755862072932856660707423207	ballot 0 alpha: p - alpha
+0717	structural	E5	reject	reject	reject	agree			not a decimal integer: -3909428273105655728223635044425014084559718457239625749965823983813253525984461204544619026947001447364598690350955045406895160268002011046202228087942694615784653118773913110977383677959429829199413176938357393502199456126248283563849952947886824094767847125288552756742401432716725399603449228445400133710826747085717599901794802061341877059038335802067177113323596207344890676662064467824496655920512692075172170666137619379916910116938343322415825326213060221959453388103752854420696747177557680152750714700713306228948757665474322190803382716118945549283469594555071595211834899734436822404063570840832767258864	ballot 0 alpha: -alpha
+0718	structural	E5	reject	reject	reject	agree			field element out of range: 61329566248342901292543872769978950870633559608669337131139375508370458778917	ballot 0 response: q
+0719	structural	E5	reject	accept	reject	DISAGREE	yes		field element out of range: 114703825701442623106521402865699613022277083324702762209223539599049315499961	ballot 0 response: response + q
+0720	structural	E5	reject	reject	reject	agree			not a decimal integer: -1	ballot 0 response: -1
+0721	tally	E5	reject	reject	reject	agree				ballot 0 (votes [0, 1]) dropped
+0722	tally	E5	reject	reject	reject	agree				ballot 0 (votes [0, 1]) duplicated
+0723	tally	E5	reject	reject	reject	agree				all-0 ballot 2 dropped
+0724	tally	E5	reject	reject	reject	agree				all-0 ballot 2 duplicated
+0725	tally	E5	reject	reject	reject	agree				published tally: candidate 0 + 1
+0726	tally	E5	reject	reject	reject	agree				trustee 0's decryption replaced by trustee 1's
+0727	tally	E5	accept	accept	accept	agree				trustees in reverse order
+0728	tally	E5	reject	reject	reject	agree			shape: number of trustees	last trustee removed
+0729	tally	E5	reject	reject	reject	agree		trustees/result: AttributeError		election key h times g
+0730	tally	E5	reject	reject	reject	agree				last trustee replaced by a fresh trustee with valid proofs
+0731	tally	E5	accept	accept	accept	agree				ballot encrypted under another key appended
+0732	honest	IACR2023	accept	accept	accept	agree				as published
+0733	honest	IACR2024	accept	accept	accept	agree				as published

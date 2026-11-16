@@ -1,0 +1,66 @@
+2026-10-21 09:43:47,681 [main] DEBUG  e.i.audit.shuffle.ThreadedVerifier - Started all compute A workers
+2026-10-21 09:43:47,681 [main] DEBUG  e.i.audit.shuffle.ThreadedVerifier - Collecting compute A worker results
+2026-10-21 09:43:47,681 [pool-1-thread-2] DEBUG  e.i.audit.shuffle.ThreadedVerifier - Compute A worker [1/2] started
+2026-10-21 09:43:47,681 [pool-1-thread-1] DEBUG  e.i.audit.shuffle.ThreadedVerifier - Compute A worker [0/2] started
+2026-10-21 09:43:47,682 [pool-1-thread-2] DEBUG  e.i.audit.shuffle.ThreadedVerifier - Compute A worker [1/2] finished
+2026-10-21 09:43:47,682 [pool-1-thread-1] DEBUG  e.i.audit.shuffle.ThreadedVerifier - Compute A worker [0/2] finished
+2026-10-21 09:43:47,682 [main] DEBUG  e.i.audit.shuffle.ThreadedVerifier - Collected all compute A worker results
+2026-10-21 09:43:47,684 [main] DEBUG  e.i.audit.shuffle.ThreadedVerifier - Started verify A workers
+2026-10-21 09:43:47,684 [pool-1-thread-2] DEBUG  e.i.audit.shuffle.ThreadedVerifier - Verify A worker [0/2] started
+2026-10-21 09:43:47,684 [pool-1-thread-1] DEBUG  e.i.audit.shuffle.ThreadedVerifier - Verify A worker [1/2] started
+2026-10-21 09:43:47,685 [main] DEBUG  e.i.audit.shuffle.ThreadedVerifier - Collecting verify A worker results
+2026-10-21 09:43:47,686 [pool-1-thread-1] DEBUG  e.i.audit.shuffle.ThreadedVerifier - Verify A worker [1/2] finished
+2026-10-21 09:43:47,686 [pool-1-thread-2] DEBUG  e.i.audit.shuffle.ThreadedVerifier - Verify A worker [0/2] finished
+2026-10-21 09:43:47,686 [main] DEBUG  e.i.audit.shuffle.ThreadedVerifier - Collected verify A worker result
+2026-10-21 09:43:47,686 [main] DEBUG  e.i.audit.shuffle.ThreadedVerifier - Collected verify A worker result
+2026-10-21 09:43:47,686 [main] DEBUG  e.i.audit.shuffle.ThreadedVerifier - Collected all verify A worker results
+2026-10-21 09:43:47,690 [main] DEBUG  e.i.audit.shuffle.ThreadedVerifier - Verified first B value
+2026-10-21 09:43:47,691 [main] DEBUG  e.i.audit.shuffle.ThreadedVerifier - Started verify B workers
+2026-10-21 09:43:47,691 [main] DEBUG  e.i.audit.shuffle.ThreadedVerifier - Collecting verify B worker results
+2026-10-21 09:43:47,691 [pool-1-thread-1] DEBUG  e.i.audit.shuffle.ThreadedVerifier - Verify B worker [0/2] started
+2026-10-21 09:43:47,691 [pool-1-thread-2] DEBUG  e.i.audit.shuffle.ThreadedVerifier - Verify B worker [1/2] started
+2026-10-21 09:43:47,697 [pool-1-thread-1] DEBUG  e.i.audit.shuffle.ThreadedVerifier - Verify B worker [0/2] finished
+2026-10-21 09:43:47,697 [main] DEBUG  e.i.audit.shuffle.ThreadedVerifier - Collected verify B worker result
+2026-10-21 09:43:47,698 [pool-1-thread-2] DEBUG  e.i.audit.shuffle.ThreadedVerifier - Verify B worker [1/2] finished
+2026-10-21 09:43:47,698 [main] DEBUG  e.i.audit.shuffle.ThreadedVerifier - Collected verify B worker result
+2026-10-21 09:43:47,698 [main] DEBUG  e.i.audit.shuffle.ThreadedVerifier - Collected all verify B worker results
+2026-10-21 09:43:47,702 [main] DEBUG  e.i.audit.shuffle.ThreadedVerifier - Started all compute F workers
+2026-10-21 09:43:47,703 [pool-1-thread-1] DEBUG  e.i.audit.shuffle.ThreadedVerifier - Compute F [0/2] worker started
+2026-10-21 09:43:47,703 [pool-1-thread-2] DEBUG  e.i.audit.shuffle.ThreadedVerifier - Compute F [1/2] worker started
+2026-10-21 09:43:47,703 [main] DEBUG  e.i.audit.shuffle.ThreadedVerifier - Collecting compute F worker results
+2026-10-21 09:43:47,711 [pool-1-thread-1] DEBUG  e.i.audit.shuffle.ThreadedVerifier - Compute F worker [0/2] finished
+2026-10-21 09:43:47,711 [pool-1-thread-2] DEBUG  e.i.audit.shuffle.ThreadedVerifier - Compute F worker [1/2] finished
+2026-10-21 09:43:47,711 [main] DEBUG  e.i.audit.shuffle.ThreadedVerifier - Collected all compute F worker results
+2026-10-21 09:43:47,711 [pool-1-thread-2] DEBUG  e.i.audit.shuffle.ThreadedVerifier - Verify F worker [1/2] started
+2026-10-21 09:43:47,711 [pool-1-thread-1] DEBUG  e.i.audit.shuffle.ThreadedVerifier - Verify F worker [0/2] started
+2026-10-21 09:43:47,711 [main] DEBUG  e.i.audit.shuffle.ThreadedVerifier - Started verify F workers
+2026-10-21 09:43:47,715 [main] DEBUG  e.i.audit.shuffle.ThreadedVerifier - Collecting verify F worker results
+2026-10-21 09:43:47,724 [pool-1-thread-2] DEBUG  e.i.audit.shuffle.ThreadedVerifier - Verify F worker [1/2] finished
+2026-10-21 09:43:47,732 [pool-1-thread-1] DEBUG  e.i.audit.shuffle.ThreadedVerifier - Verify F worker [0/2] finished
+2026-10-21 09:43:47,732 [main] DEBUG  e.i.audit.shuffle.ThreadedVerifier - Collected verify F worker result
+2026-10-21 09:43:47,732 [main] DEBUG  e.i.audit.shuffle.ThreadedVerifier - Collected verify F worker result
+2026-10-21 09:43:47,732 [main] DEBUG  e.i.audit.shuffle.ThreadedVerifier - Collected all verify F worker results
+2026-10-21 09:43:47,774 [pool-2-thread-1] DEBUG  e.i.audit.shuffle.ThreadedVerifier - Compute A worker [0/2] started
+2026-10-21 09:43:47,774 [pool-2-thread-2] DEBUG  e.i.audit.shuffle.ThreadedVerifier - Compute A worker [1/2] started
+2026-10-21 09:43:47,774 [main] DEBUG  e.i.audit.shuffle.ThreadedVerifier - Started all compute A workers
+2026-10-21 09:43:47,775 [main] DEBUG  e.i.audit.shuffle.ThreadedVerifier - Collecting compute A worker results
+2026-10-21 09:43:47,775 [pool-2-thread-2] DEBUG  e.i.audit.shuffle.ThreadedVerifier - Compute A worker [1/2] finished
+2026-10-21 09:43:47,776 [pool-2-thread-1] DEBUG  e.i.audit.shuffle.ThreadedVerifier - Compute A worker [0/2] finished
+2026-10-21 09:43:47,776 [main] DEBUG  e.i.audit.shuffle.ThreadedVerifier - Collected all compute A worker results
+2026-10-21 09:43:47,778 [main] DEBUG  e.i.audit.shuffle.ThreadedVerifier - Started verify A workers
+2026-10-21 09:43:47,778 [pool-2-thread-2] DEBUG  e.i.audit.shuffle.ThreadedVerifier - Verify A worker [0/2] started
+2026-10-21 09:43:47,778 [pool-2-thread-1] DEBUG  e.i.audit.shuffle.ThreadedVerifier - Verify A worker [1/2] started
+2026-10-21 09:43:47,778 [main] DEBUG  e.i.audit.shuffle.ThreadedVerifier - Collecting verify A worker results
+2026-10-21 09:43:47,780 [pool-2-thread-1] DEBUG  e.i.audit.shuffle.ThreadedVerifier - Verify A worker [1/2] finished
+2026-10-21 09:43:47,781 [pool-2-thread-2] DEBUG  e.i.audit.shuffle.ThreadedVerifier - Verify A worker [0/2] finished
+2026-10-21 09:43:47,781 [main] DEBUG  e.i.audit.shuffle.ThreadedVerifier - Collected verify A worker result
+2026-10-21 09:43:47,781 [main] DEBUG  e.i.audit.shuffle.ThreadedVerifier - Collected verify A worker result
+2026-10-21 09:43:47,781 [main] DEBUG  e.i.audit.shuffle.ThreadedVerifier - Collected all verify A worker results
+2026-10-21 09:43:47,786 [main] DEBUG  e.i.audit.shuffle.ThreadedVerifier - Verified first B value
+2026-10-21 09:43:47,787 [main] DEBUG  e.i.audit.shuffle.ThreadedVerifier - Started verify B workers
+2026-10-21 09:43:47,787 [main] DEBUG  e.i.audit.shuffle.ThreadedVerifier - Collecting verify B worker results
+2026-10-21 09:43:47,787 [pool-2-thread-1] DEBUG  e.i.audit.shuffle.ThreadedVerifier - Verify B worker [0/2] started
+2026-10-21 09:43:47,787 [pool-2-thread-2] DEBUG  e.i.audit.shuffle.ThreadedVerifier - Verify B worker [1/2] started
+2026-10-21 09:43:47,793 [pool-2-thread-2] DEBUG  e.i.audit.shuffle.ThreadedVerifier - Verify B worker [1/2] finished early
+2026-10-21 09:43:47,793 [pool-2-thread-1] DEBUG  e.i.audit.shuffle.ThreadedVerifier - Verify B worker [0/2] finished
+2026-10-21 09:43:47,793 [main] DEBUG  e.i.audit.shuffle.ThreadedVerifier - Collected verify B worker result

@@ -1,0 +1,9 @@
+IVXV 2785872f84dffb56bbecc41b096a7ee0f2876e64
+Verificatum 3.1.0 e848b8704df8ea04a5715808419f09318369ecfcd22dba86760dce520e473aad
+Gradle 8.11 57dafb5c2622c6cc08b993c85b7c06956a2f53536432a30ead46166dbca0f1e9
+openjdk version "21.0.13" 2026-10-20
+openjdk version "25.0.4.1" 2026-08-18
+go version go1.27.3 darwin/arm64
+OCaml 5.4.1, Rocq 9.2
+Python 3.15.0
+Darwin 27.0.0
