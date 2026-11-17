@@ -1,36 +1,51 @@
-(* The Terelius–Wikström proof of a shuffle as a whole (Step 1.3 of
-   plans/ZK_APPLICATIONS_PLAN.md): the theorems about the five-move
-   protocol that are not instances of the library's Okamoto theorems.
+(** * Terelius–Wikström shuffle: honest prover, completeness and zero knowledge
 
-   Crypto/ShuffleTW.v treats round 2 (the Okamoto protocol at the statement
-   space V) and shows that its relation is the conjunction of the five
-   equations. This file adds:
+    [Crypto/ShuffleTW.v] treats round two of the Terelius–Wikström proof of
+    a shuffle (AFRICACRYPT 2010) as the generalised Okamoto protocol over
+    the statement space [V], and shows that its relation is the conjunction
+    of five equations. This file proves the properties of the whole
+    five-move protocol that are not direct instances of the Okamoto
+    theorems.
 
-   - the honest prover: from a permutation π, commitment randomness r,
-     re-encryption randomness s and chain randomness β, the permutation
-     commitment u_j = g^{r_j} h_{π⁻¹(j)}, the outputs
-     w'_i = w_{π(i)} · Enc(1; s_{π(i)}), the bridging chain
-     B_i = g^{β_i} B_{i−1}^{e'_i} with e'_i = e_{π(i)}, and the derived
-     witness a = ⟨r, e⟩, c = Σ r, d = Σ_i β_i ∏_{k>i} e'_k, f = ⟨s, e⟩;
-   - completeness: this witness satisfies the five equations
-     (tw_derived_witness_correct), so round 2 accepts
-     (tw_full_completeness);
-   - honest-verifier zero knowledge of the whole protocol
-     (tw_full_shvzk): for uniformly random β and ω, the bridging chain and
-     the round-2 transcript of the honest prover have the same distribution
-     as the output of a simulator that knows neither the permutation nor
-     the re-encryption randomness. The simulator builds the chain with the
-     unpermuted e and runs the Okamoto simulator. The proof is a change of
-     variables: the map β ↦ β' with B_i(β, e') = B_i(β', e) is a bijection
-     of F^{N+1} (reshift), which needs h_0 = g^{t_0} for some t_0 (in a
-     prime-order group every h_0 is; the hypothesis is stated because the
-     vector-space class does not say so), composed with the Okamoto change
-     of variables ω ↦ ω + v·x.
+    _The honest prover._ From a permutation [π], commitment randomness [r],
+    re-encryption randomness [s] and chain randomness [β], the honest
+    prover publishes
 
-   The algebra is that of permuting the factors of a product: a fold of
-   a commutative, associative operation over a vector is invariant under
-   reindexing the vector by a bijection of Fin.t. *)
+    - the permutation commitment [u_j = g^{r_j} · h_{π⁻¹(j)}] ([commit_perm]);
+    - the shuffled outputs [w'_i = w_{π(i)} · Enc(1; s_{π(i)})]
+      ([shuffle_outputs]);
+    - the bridging chain [B_i = g^{β_i} · B_{i-1}^{e'_i}] with
+      [e'_i = e_{π(i)}] and [B_{-1} = h_0] ([chain]);
 
+    and uses the derived witness [a = ⟨r, e⟩], [c = Σ r_i],
+    [d = Σ_i β_i ∏_{k>i} e'_k] ([chain_exp]) and [f = ⟨s, e⟩].
+
+    _Main results._
+
+    - [tw_derived_witness_correct]: the derived witness satisfies the five
+      equations of [ShuffleTW.equations] for every batching vector [e];
+    - [tw_full_completeness]: hence the honest round-two transcript is
+      accepted by [tw_verify] for every [e], randomness [ω] and challenge [v];
+    - [tw_full_shvzk]: honest-verifier zero knowledge of the bridging chain
+      together with the round-two transcript. For uniformly random [β] and
+      [ω], the pair (chain, transcript) of the honest prover has the same
+      distribution as the output of a simulator that knows neither [π] nor
+      [s]: it builds the chain along the unpermuted [e] and runs the Okamoto
+      simulator. The proof is a change of variables [β ↦ β'] with
+      [B(β, e') = B(β', e)], a bijection of [F^(N+1)] ([reshift]), composed
+      with the Okamoto change of variables [ω ↦ ω + v·x]. It assumes
+      [h_0 = g^{t_0}] for some [t_0]; in a prime-order group this holds for
+      every [h_0], but the abstract vector-space interface does not provide
+      it, so it is a hypothesis.
+
+    The zero-knowledge statement is about enumerated distributions over a
+    list [lf] that enumerates the whole field, so it is a statement about
+    exact (perfect) distributions and only executable for toy fields.
+
+    The supporting algebra is the invariance of a fold of a commutative,
+    associative operation under reindexing by a bijection of [Fin.t n]
+    (sections [Fins] and [Folds]). Soundness (extracting the permutation)
+    is in [Crypto/ShuffleTWSound.v] and [Crypto/ShuffleTWSound2.v]. *)
 From Stdlib Require Import Utf8 Vector Fin Lia Bool List Permutation setoid_ring.Field
   RelationClasses Morphisms.
 From Algebra Require Import Hierarchy Group Monoid Field Integral_domain Ring
@@ -42,18 +57,20 @@ From ExtLib Require Import Monad.
 Import VectorNotations MonadNotation.
 #[local] Open Scope monad_scope.
 
-(* ------------------------------------------------------------------ *)
-(* Enumerating Fin.t, and permutations                                  *)
-(* ------------------------------------------------------------------ *)
+(** ** Enumerating [Fin.t n], and permutations
 
+    A vector listing all indices, a record of permutations of [Fin.t n]
+    with explicit inverse, and reindexing of vectors by a permutation. *)
 Section Fins.
 
+  (** [fins n = (0, 1, …, n-1)], all elements of [Fin.t n] in order. *)
   Fixpoint fins (n : nat) : Vector.t (Fin.t n) n :=
     match n with
     | 0 => []
     | S n' => Fin.F1 :: Vector.map Fin.FS (fins n')
     end.
 
+  (** The [i]-th entry of [fins n] is [i]. *)
   Lemma nth_fins : forall (n : nat) (i : Fin.t n), (fins n)[@i] = i.
   Proof.
     induction n as [| n ih]; intro i.
@@ -65,7 +82,7 @@ Section Fins.
         rewrite (Vector.nth_map Fin.FS (fins n) j j eq_refl), ih; reflexivity.
   Qed.
 
-  (* every vector is the map of its coordinates over fins *)
+  (** Every vector is the map of its own indexing function over [fins n]. *)
   Lemma vector_map_nth_fins : forall {A : Type} (n : nat) (v : Vector.t A n),
     Vector.map (fun i => v[@i]) (fins n) = v.
   Proof.
@@ -73,6 +90,9 @@ Section Fins.
     rewrite (Vector.nth_map _ _ i i eq_refl), nth_fins; reflexivity.
   Qed.
 
+  (** The indices in [fins n] are pairwise distinct ([to_list_fins_nodup])
+      and every index occurs ([to_list_fins_complete]): [fins n] enumerates
+      [Fin.t n]. *)
   Lemma to_list_fins_nodup : forall n, List.NoDup (Vector.to_list (fins n)).
   Proof.
     induction n as [| n ih]; cbn [fins].
@@ -97,7 +117,8 @@ Section Fins.
         right. rewrite Vector.to_list_map. apply List.in_map, ih.
   Qed.
 
-  (* a permutation of Fin.t n: a bijection with its inverse *)
+  (** A permutation of [Fin.t n], given as a function [pf] with a two-sided
+      inverse [pinv]. *)
   Record perm (n : nat) : Type := mk_perm {
     pf : Fin.t n -> Fin.t n;
     pinv : Fin.t n -> Fin.t n;
@@ -105,19 +126,22 @@ Section Fins.
     pf_pinv : forall i, pf (pinv i) = i
   }.
 
+  (** The inverse permutation, swapping [pf] and [pinv]. *)
   Definition perm_inverse {n} (π : perm n) : perm n :=
     mk_perm n (pinv n π) (pf n π) (pf_pinv n π) (pinv_pf n π).
 
-  (* v reindexed by π: (permute π v)_i = v_{π i} *)
+  (** Reindexing by [π]: [(permute π v)_i = v_{π(i)}]. *)
   Definition permute {A : Type} {n : nat} (π : perm n) (v : Vector.t A n) : Vector.t A n :=
     Vector.map (fun i => v[@pf n π i]) (fins n).
 
+  (** Pointwise characterisation of [permute]. *)
   Lemma nth_permute : forall {A : Type} {n : nat} (π : perm n) (v : Vector.t A n) (i : Fin.t n),
     (permute π v)[@i] = v[@pf n π i].
   Proof.
     intros; unfold permute; rewrite (Vector.nth_map _ _ i i eq_refl), nth_fins; reflexivity.
   Qed.
 
+  (** Reindexing by [π⁻¹] then by [π] is the identity. *)
   Lemma permute_inverse : forall {A : Type} {n : nat} (π : perm n) (v : Vector.t A n),
     permute π (permute (perm_inverse π) v) = v.
   Proof.
@@ -125,6 +149,7 @@ Section Fins.
     rewrite !nth_permute; cbn [pf perm_inverse]. rewrite pinv_pf; reflexivity.
   Qed.
 
+  (** [permute] commutes with [map] and with [map2]. *)
   Lemma permute_map : forall {A B : Type} {n : nat} (f : A -> B) (π : perm n) (v : Vector.t A n),
     permute π (Vector.map f v) = Vector.map f (permute π v).
   Proof.
@@ -141,8 +166,10 @@ Section Fins.
       (Vector.nth_map2 _ _ _ _ _ _ eq_refl eq_refl); reflexivity.
   Qed.
 
-  (* the list of coordinates of a permuted vector is a permutation of the
-    list of coordinates *)
+  (** The list of entries of a permuted vector is a permutation (in the
+      sense of [Permutation]) of the list of entries of the vector.
+      Proof: both are maps over [fins n], and [pf] is a bijection on an
+      enumeration of [Fin.t n] ([enumerates_perm_map]). *)
   Lemma to_list_permute : forall {A : Type} {n : nat} (π : perm n) (v : Vector.t A n),
     Permutation (Vector.to_list (permute π v)) (Vector.to_list v).
   Proof.
@@ -162,10 +189,9 @@ Section Fins.
 
 End Fins.
 
-(* ------------------------------------------------------------------ *)
-(* Folds of commutative operations are invariant under permutation       *)
-(* ------------------------------------------------------------------ *)
+(** ** Folds of commutative operations are invariant under permutation
 
+    For an associative, commutative operation [op] with left identity [id]. *)
 Section Folds.
 
   Context {A : Type} {op : A -> A -> A} {id : A}
@@ -173,6 +199,7 @@ Section Folds.
     {comm : forall x y, op x y = op y x}
     {idl : forall x, op id x = x}.
 
+  (** Folding over permuted lists gives the same result. *)
   Lemma fold_right_perm : forall (l l' : list A), Permutation l l' ->
     List.fold_right op id l = List.fold_right op id l'.
   Proof.
@@ -183,6 +210,7 @@ Section Folds.
     + rewrite ih1, ih2; reflexivity.
   Qed.
 
+  (** A vector fold equals the list fold of [to_list]. *)
   Lemma vector_fold_right_to_list : forall (n : nat) (v : Vector.t A n),
     Vector.fold_right op v id = List.fold_right op id (Vector.to_list v).
   Proof.
@@ -191,14 +219,15 @@ Section Folds.
     + destruct (vector_inv_S v) as (a & v' & ->); cbn; rewrite ih; reflexivity.
   Qed.
 
+  (** A vector fold is invariant under [permute]: [∏ v_{π(i)} = ∏ v_i]. *)
   Lemma vector_fold_permute : forall (n : nat) (π : perm n) (v : Vector.t A n),
     Vector.fold_right op (permute π v) id = Vector.fold_right op v id.
   Proof.
     intros; rewrite !vector_fold_right_to_list; apply fold_right_perm, to_list_permute.
   Qed.
 
-  (* a fold over map2 of a commutative monoid operation is the product of
-    the folds *)
+  (** The fold of a pointwise product is the product of the folds:
+      [∏ (v_i · w_i) = (∏ v_i) · (∏ w_i)]. *)
   Lemma vector_fold_map2 : forall (n : nat) (v w : Vector.t A n),
     Vector.fold_right op (Vector.map2 op v w) id = op (Vector.fold_right op v id) (Vector.fold_right op w id).
   Proof.
@@ -212,10 +241,10 @@ Section Folds.
 
 End Folds.
 
-(* ------------------------------------------------------------------ *)
-(* The honest prover and completeness                                   *)
-(* ------------------------------------------------------------------ *)
+(** ** The honest prover and completeness
 
+    Over a field [F] and a group [G] that is an [F]-vector space, with
+    [M = N + 1] ciphertexts. *)
 Section Honest.
 
   Context
@@ -235,7 +264,7 @@ Section Honest.
   Local Infix "*" := mul.
   Local Infix "+" := add.
 
-  (* the group laws, as explicit terms *)
+  (** Names for the group laws of [G], extracted from [Hvec]. *)
   Local Notation hcg := (@vector_space_commutative_group F (@eq F) zero one add mul sub div opp inv
     G (@eq G) gid ginv gop gpow Hvec).
   Local Notation gassoc := (@associative G (@eq G) gop (@monoid_is_associative G (@eq G) gop gid
@@ -249,7 +278,9 @@ Section Honest.
   Local Notation ginv_r := (@right_inverse G (@eq G) gop gid ginv (@group_is_right_inverse G (@eq G) gop gid ginv
     (@commutative_group_group G (@eq G) gop gid ginv hcg))).
   Local Notation gcomm := (@commutative G (@eq G) gop (@commutative_group_is_commutative G (@eq G) gop gid ginv hcg)).
-  (* the vector-space laws, as lemmas *)
+  (** The vector-space laws of [G] as lemmas:
+      [x^{r1+r2} = x^{r1} x^{r2}], [(xy)^r = x^r y^r],
+      [x^{r1 r2} = (x^{r1})^{r2}] and [x^0 = 1]. *)
   Lemma smul_fadd : forall (r1 r2 : F) (x : G), x ^ (r1 + r2) = gop (x ^ r1) (x ^ r2).
   Proof. pose proof (@vector_space_smul_distributive_fadd _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ Hvec) as h; hnf in h; exact h. Qed.
   Lemma smul_vadd : forall (r : F) (x y : G), (gop x y) ^ r = gop (x ^ r) (y ^ r).
@@ -259,13 +290,16 @@ Section Honest.
   Lemma smul_zero : forall x : G, x ^ zero = gid.
   Proof. pose proof (@vector_space_field_zero _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ Hvec) as h; hnf in h; exact h. Qed.
 
+  (** Multi-exponentiation in [G] and in [G × G]. *)
   Local Notation gexp := (mexp (vid := gid) (vadd := gop) (smul := gpow)).
   Local Notation cexp := (mexp (vid := (gid, gid)) (vadd := fun x y : G * G => (gop (fst x) (fst y), gop (snd x) (snd y)))
     (smul := fun (x : G * G) (r : F) => (gpow (fst x) r, gpow (snd x) r))).
 
+  (** [1^r = 1]. *)
   Lemma gid_pow : forall r, gid ^ r = gid.
   Proof. intro r; exact (smul_vid (HV := Hvec) r). Qed.
 
+  (** [(x⁻¹)^r = (x^r)⁻¹]. *)
   Lemma ginv_pow : forall (x : G) (r : F), (ginv x) ^ r = ginv (x ^ r).
   Proof.
     intros x r.
@@ -275,15 +309,18 @@ Section Honest.
     reflexivity.
   Qed.
 
+  (** Right cancellation: [(x · y) · y⁻¹ = x]. *)
   Lemma gop_cancel : forall x y : G, gop (gop x y) (ginv y) = x.
   Proof. intros; rewrite <-gassoc, ginv_r, gid_r; reflexivity. Qed.
 
-  (* folds over F and G *)
+  (** Sum of a vector of field elements. *)
   Definition fsum {m : nat} (v : Vector.t F m) : F := Vector.fold_right add v zero.
+  (** Inner product [⟨rs, xs⟩ = Σ rs_i · xs_i]. *)
   Definition inner {m : nat} (rs xs : Vector.t F m) : F := fsum (Vector.map2 mul rs xs).
   Local Notation fprod := (fprod (mul := mul) (one := one)).
   Local Notation gprod := (gprod (gid := gid) (gop := gop)).
 
+  (** Ring laws of [F] in the form expected by the generic fold lemmas. *)
   Lemma mul_assoc' : forall x y z : F, x * (y * z) = (x * y) * z. Proof. intros; field. Qed.
   Lemma mul_comm' : forall x y : F, x * y = y * x. Proof. intros; field. Qed.
   Lemma mul_1_l' : forall x : F, one * x = x. Proof. intros; field. Qed.
@@ -291,6 +328,8 @@ Section Honest.
   Lemma add_comm' : forall x y : F, x + y = y + x. Proof. intros; field. Qed.
   Lemma add_0_l' : forall x : F, zero + x = x. Proof. intros; field. Qed.
 
+  (** Products and sums in [F], products in [G] and inner products are
+      invariant when the vectors are reindexed by the same permutation. *)
   Lemma fprod_permute : forall (π : perm M) (v : Vector.t F M), fprod (permute π v) = fprod v.
   Proof. intros; apply (vector_fold_permute (assoc := mul_assoc') (comm := mul_comm')). Qed.
 
@@ -304,11 +343,12 @@ Section Honest.
     inner (permute π rs) (permute π xs) = inner rs xs.
   Proof. intros; unfold inner; rewrite <-permute_map2; apply fsum_permute. Qed.
 
+  (** The product of a pointwise product is the product of the products. *)
   Lemma gprod_map2 : forall (m : nat) (v w : Vector.t G m),
     gprod (Vector.map2 gop v w) = gop (gprod v) (gprod w).
   Proof. intros; apply (vector_fold_map2 (assoc := gassoc) (comm := gcomm) (idl := gid_l)). Qed.
 
-  (* multi-exponentiation as a product of powers *)
+  (** A multi-exponentiation is the product of the powers. *)
   Lemma gexp_as_gprod : forall (m : nat) (gs : Vector.t G m) (xs : Vector.t F m),
     gexp gs xs = gprod (Vector.map2 gpow gs xs).
   Proof.
@@ -319,10 +359,13 @@ Section Honest.
       rewrite mexp_cons, ih; reflexivity.
   Qed.
 
+  (** Multi-exponentiation is invariant under reindexing bases and exponents
+      by the same permutation. *)
   Lemma gexp_permute : forall (π : perm M) (gs : Vector.t G M) (xs : Vector.t F M),
     gexp (permute π gs) (permute π xs) = gexp gs xs.
   Proof. intros; rewrite !gexp_as_gprod, <-permute_map2; apply gprod_permute. Qed.
 
+  (** Multi-exponentiation distributes over pointwise products of bases. *)
   Lemma gexp_map2_gop : forall (m : nat) (gs gs' : Vector.t G m) (xs : Vector.t F m),
     gexp (Vector.map2 gop gs gs') xs = gop (gexp gs xs) (gexp gs' xs).
   Proof.
@@ -335,6 +378,8 @@ Section Honest.
       rewrite <-!gassoc; f_equal. rewrite !gassoc; f_equal; apply gcomm.
   Qed.
 
+  (** Multi-exponentiation of powers of a single base:
+      [∏ (g^{r_i})^{x_i} = g^{⟨r, x⟩}]. *)
   Lemma gexp_pow : forall (m : nat) (g : G) (rs xs : Vector.t F m),
     gexp (Vector.map (fun r => g ^ r) rs) xs = g ^ inner rs xs.
   Proof.
@@ -348,6 +393,7 @@ Section Honest.
       rewrite smul_fadd, smul_fmul; reflexivity.
   Qed.
 
+  (** [∏ g^{r_i} = g^{Σ r_i}]. *)
   Lemma gprod_pow : forall (m : nat) (g : G) (rs : Vector.t F m),
     gprod (Vector.map (fun r => g ^ r) rs) = g ^ fsum rs.
   Proof.
@@ -359,18 +405,22 @@ Section Honest.
       rewrite ih, smul_fadd; reflexivity.
   Qed.
 
-  (* ---- the honest prover ---- *)
+  (** *** The honest prover’s messages *)
 
-  (* u_j = g^{r_j} h_{π⁻¹(j)} *)
+  (** The permutation commitment [u_j = g^{r_j} · h_{π⁻¹(j)}]: a Pedersen
+      commitment to the columns of the permutation matrix. *)
   Definition commit_perm (g : G) (hs : Vector.t G M) (π : perm M) (rs : Vector.t F M) : Vector.t G M :=
     Vector.map2 gop (Vector.map (fun r => g ^ r) rs) (permute (perm_inverse π) hs).
 
-  (* w'_i = w_{π(i)} · Enc(1; s_{π(i)}) = (u_{π(i)} g^{s_{π(i)}}, v_{π(i)} y^{s_{π(i)}}) *)
+  (** The re-encrypted, permuted outputs
+      [w'_i = (w_{π(i)}.1 · g^{s_{π(i)}}, w_{π(i)}.2 · y^{s_{π(i)}})] for
+      ElGamal public key [y]. *)
   Definition shuffle_outputs (g y : G) (π : perm M) (ws : Vector.t (G * G) M) (ss : Vector.t F M) :
     Vector.t (G * G) M :=
     Vector.map2 (fun w s => (gop (fst w) (g ^ s), gop (snd w) (y ^ s))) (permute π ws) (permute π ss).
 
-  (* the bridging chain B_i = g^{β_i} B_{i-1}^{e'_i} *)
+  (** The bridging chain: [B_i = g^{β_i} · B_{i-1}^{e'_i}], starting from
+      [B_{-1} = prev]. *)
   Fixpoint chain (g : G) (prev : G) {m : nat} (betas : Vector.t F m) : Vector.t F m -> Vector.t G m :=
     match betas with
     | [] => fun _ => []
@@ -379,17 +429,22 @@ Section Honest.
         B :: chain g B betas' (Vector.tl es')
     end.
 
-  (* d = Σ_i β_i ∏_{k>i} e'_k *)
+  (** The discrete logarithm of the last chain element relative to [g],
+      excluding the contribution of [prev]:
+      [chain_exp β e' = Σ_i β_i ∏_{k>i} e'_k]. *)
   Fixpoint chain_exp {m : nat} (betas : Vector.t F m) : Vector.t F m -> F :=
     match betas with
     | [] => fun _ => zero
     | b :: betas' => fun es' => b * fprod (Vector.tl es') + chain_exp betas' (Vector.tl es')
     end.
 
+  (** [shiftout] on a vector of length at least two. *)
   Lemma shiftout_cons : forall {A : Type} (m : nat) (a b : A) (v : Vector.t A m),
     Vector.shiftout (a :: b :: v) = a :: Vector.shiftout (b :: v).
   Proof. reflexivity. Qed.
 
+  (** The chain satisfies the bridging equations of [ShuffleTW.equations]:
+      [B = (g^{β_i} · Bprev_i^{e'_i})_i] with [Bprev = (prev, B_0, …)]. *)
   Lemma chain_eq : forall (g : G) (m : nat) (prev : G) (betas es' : Vector.t F m),
     chain g prev betas es' =
     Vector.map2 gop (Vector.map2 gpow (Vector.const g m) betas)
@@ -404,9 +459,12 @@ Section Honest.
       apply ih.
   Qed.
 
+  (** [fprod (e :: v) = e · fprod v]. *)
   Lemma fprod_cons : forall (m : nat) (e : F) (v : Vector.t F m), fprod (e :: v) = e * fprod v.
   Proof. reflexivity. Qed.
 
+  (** The last chain element is [g^{chain_exp β e'} · prev^{∏ e'_i}]. Used
+      for the [D] equation. *)
   Lemma chain_last : forall (g : G) (m : nat) (prev : G) (betas es' : Vector.t F (S m)),
     Vector.last (chain g prev betas es') = gop (g ^ chain_exp betas es') (prev ^ fprod es').
   Proof.
@@ -429,7 +487,8 @@ Section Honest.
       rewrite gassoc, (gcomm (g ^ chain_exp betas' es1) (g ^ (b * fprod es1))); reflexivity.
   Qed.
 
-  (* fst and snd of the shuffled outputs *)
+  (** The two components of the shuffled outputs, as permuted input
+      components times re-encryption factors. *)
   Lemma map_fst_shuffle : forall (g y : G) (π : perm M) (ws : Vector.t (G * G) M) (ss : Vector.t F M),
     Vector.map fst (shuffle_outputs g y π ws ss) =
     Vector.map2 gop (permute π (Vector.map fst ws)) (Vector.map (fun s => g ^ s) (permute π ss)).
@@ -452,13 +511,26 @@ Section Honest.
     reflexivity.
   Qed.
 
-  (* the public data of the honest run, in the form of ShuffleTW *)
+  (** The public data produced by an honest run, in the [public] format of
+      [ShuffleTW]: [h0] is the first independent generator [h_0], the chain
+      uses [e' = permute π e]. *)
   Definition honest_public (g y : G) (hs : Vector.t G M) (π : perm M) (rs ss betas es : Vector.t F M)
     (ws : Vector.t (G * G) M) : @public F G N :=
     @ShuffleTW.mk_public F G N g (Vector.hd hs) hs y (commit_perm g hs π rs) es
       (chain g (Vector.hd hs) betas (permute π es)) ws (shuffle_outputs g y π ws ss).
 
-  (* The derived witness satisfies the five equations. *)
+  (** The derived witness [(⟨r,e⟩, Σ r, chain_exp β e', ⟨s,e⟩, β, e')]
+      satisfies the five equations for the honest public data.
+
+      Proof idea, equation by equation:
+
+      - [A]: [∏ u_j^{e_j} = g^{⟨r,e⟩} · ∏ h_{π⁻¹(j)}^{e_j}], and the last
+        product is [∏ h_i^{e'_i}] after reindexing by [π];
+      - [C]: [∏ u_j = g^{Σ r} · ∏ h_i] since a product is permutation-invariant;
+      - [D]: by [chain_last], [B_N = g^d · h_0^{∏ e'_i}] and [∏ e'_i = ∏ e_i];
+      - [B]: by [chain_eq];
+      - [F]: [∏ w'_i^{e'_i} = ∏ w_i^{e_i} · Enc(1; ⟨s,e⟩)] after reindexing,
+        so [F = Enc(1; -f) · ∏ w'_i^{e'_i}]. *)
   Theorem tw_derived_witness_correct : forall (g y : G) (hs : Vector.t G M) (π : perm M)
     (rs ss betas es : Vector.t F M) (ws : Vector.t (G * G) M),
     equations (one := one) (mul := mul)
@@ -469,16 +541,21 @@ Section Honest.
     intros; unfold equations, honest_public; cbn [ShuffleTW.g ShuffleTW.h0 ShuffleTW.hs ShuffleTW.pk
       ShuffleTW.us ShuffleTW.es ShuffleTW.Bs ShuffleTW.ws ShuffleTW.ws'].
     repeat split.
-    + (* A *)
+    (* Equation A: the commitment product. *)
+    +
       unfold commit_perm. rewrite gexp_map2_gop, gexp_pow.
       f_equal. rewrite <-(gexp_permute π), permute_inverse; reflexivity.
-    + (* C *)
+    (* Equation C: product of the commitments. *)
+    +
       unfold commit_perm. rewrite gprod_map2, gprod_pow, gprod_permute, gop_cancel; reflexivity.
-    + (* D *)
+    (* Equation D: last bridging commitment. *)
+    +
       rewrite chain_last, fprod_permute, gop_cancel; reflexivity.
-    + (* B *)
+    (* Equation B: the bridging chain. *)
+    +
       unfold Bprev; cbn [ShuffleTW.h0 ShuffleTW.Bs]. apply chain_eq.
-    + (* F *)
+    (* Equation F: the re-encrypted ciphertexts. *)
+    +
       rewrite cexp_components, map_fst_shuffle, map_snd_shuffle, !gexp_map2_gop, !gexp_permute, !gexp_pow,
         inner_permute, !ginv_pow.
       f_equal.
@@ -486,8 +563,11 @@ Section Honest.
       - rewrite gcomm, gop_cancel; reflexivity.
   Qed.
 
-  (* Completeness of the whole protocol: the honest prover's round 2 is
-    accepted, for every batching vector e and every challenge v. *)
+  (** Completeness of the whole protocol: for every permutation, all
+      randomness, every batching vector [e], every Okamoto randomness [ω] and
+      every challenge [v], the honest prover’s round-two transcript is
+      accepted by [tw_verify]. Follows from [tw_derived_witness_correct] and
+      [tw_completeness]. *)
   Theorem tw_full_completeness : forall (g y : G) (hs : Vector.t G M) (π : perm M)
     (rs ss betas es : Vector.t F M) (ws : Vector.t (G * G) M) (omega : Vector.t F (Nat.add 4 (Nat.add M M))) (v : F),
     tw_verify (one := one) (mul := mul) (gid := gid) (ginv := ginv) (gop := gop) (gpow := gpow) (Gdec := Gdec)
@@ -500,16 +580,14 @@ Section Honest.
     intros; apply (tw_completeness (Hvec := Hvec)); apply tw_derived_witness_correct.
   Qed.
 
-  (* ---------------------------------------------------------------- *)
-  (* Honest-verifier zero knowledge of the whole protocol              *)
-  (* ---------------------------------------------------------------- *)
-
+  (** ** Honest-verifier zero knowledge of the whole protocol *)
   Local Notation nwit := (Nat.add 4 (Nat.add M M)).
   Local Notation V := (@ShuffleTW.V G N).
 
-  (* the change of variables on the chain randomness: with B_{-1} = g^t,
-    the chain of β along e1 equals the chain of (reshift t β e1 e2) along
-    e2; the accumulator is the discrete logarithm of the current B_i *)
+  (** The change of variables on the chain randomness. With
+      [B_{-1} = g^t], the chain of [β] along [e1] equals the chain of
+      [reshift t β e1 e2] along [e2] ([chain_reshift]). The accumulator [t]
+      tracks the discrete logarithm of the current [B_i]. *)
   Fixpoint reshift (t : F) {m : nat} (betas : Vector.t F m) : Vector.t F m -> Vector.t F m -> Vector.t F m :=
     match betas with
     | [] => fun _ _ => []
@@ -518,6 +596,8 @@ Section Honest.
         (bb + opp (t * Vector.hd es2)) :: reshift bb betas' (Vector.tl es1) (Vector.tl es2)
     end.
 
+  (** [reshift] with [e1] and [e2] swapped is its inverse, so it is a
+      bijection of [F^m]. *)
   Lemma reshift_inverse : forall (m : nat) (t : F) (betas es1 es2 : Vector.t F m),
     reshift t (reshift t betas es1 es2) es2 es1 = betas.
   Proof.
@@ -532,9 +612,12 @@ Section Honest.
       rewrite h1, h2, ih; reflexivity.
   Qed.
 
+  (** One chain step written as a single power of [g]. *)
   Lemma chain_head : forall (g : G) (t b e : F), gop (g ^ b) ((g ^ t) ^ e) = g ^ (b + t * e).
   Proof. intros; rewrite smul_fadd, smul_fmul; reflexivity. Qed.
 
+  (** The chain of [β] along [e1] equals the chain of [reshift t β e1 e2]
+      along [e2], when the start is [g^t]. *)
   Lemma chain_reshift : forall (g : G) (m : nat) (t : F) (betas es1 es2 : Vector.t F m),
     chain g (g ^ t) betas es1 = chain g (g ^ t) (reshift t betas es1 es2) es2.
   Proof.
@@ -549,14 +632,18 @@ Section Honest.
       rewrite h. f_equal. apply ih.
   Qed.
 
+  (** Binding a distribution into pointwise equal continuations gives the
+      same distribution. *)
   Lemma bind_ext : forall {A B : Type} (d : dist A) (f g : A -> dist B),
     (forall a, f a = g a) -> Bind d f = Bind d g.
   Proof.
     intros A B d f g h; induction d as [| [a p] d ih]; cbn; [reflexivity | rewrite h, ih; reflexivity].
   Qed.
 
-  (* the real run: uniformly random chain randomness β and Okamoto
-    randomness ω; output the bridging chain and the round-2 transcript *)
+  (** The real run: uniform chain randomness [β] and uniform Okamoto
+      randomness [ω]; output the bridging chain and the round-two transcript
+      of the honest prover. The first-round values ([u], [w']) are fixed by
+      [rs], [ss] and [π]. *)
   Definition tw_real_full_distribution (lf : list F) (Hlfn : lf <> List.nil)
     (g y : G) (hs : Vector.t G M) (π : perm M) (rs ss es : Vector.t F M) (ws : Vector.t (G * G) M) (v : F) :
     dist (Vector.t G M * @sigma_proto F V 1 1 nwit) :=
@@ -568,8 +655,10 @@ Section Honest.
            (witness (inner rs es) (fsum rs) (chain_exp betas (permute π es)) (inner ss es) betas (permute π es))
            omega v).
 
-  (* the simulator: knows g, hs, y, the permutation commitment, the input
-    and output ciphertexts, e and v, but neither π nor s *)
+  (** The simulator: it knows [g], [hs], [y], the permutation commitment
+      [us], the input and output ciphertexts, [e] and [v], but neither [π]
+      nor the re-encryption randomness. It builds the chain from uniform [β]
+      along the unpermuted [e] and runs the Okamoto simulator. *)
   Definition tw_sim_full_distribution (lf : list F) (Hlfn : lf <> List.nil)
     (g y : G) (hs : Vector.t G M) (us : Vector.t G M) (ws ws' : Vector.t (G * G) M) (es : Vector.t F M) (v : F) :
     dist (Vector.t G M * @sigma_proto F V 1 1 nwit) :=
@@ -579,6 +668,18 @@ Section Honest.
          tw_simulator (one := one) (mul := mul) (opp := opp) (gid := gid) (ginv := ginv) (gop := gop) (gpow := gpow)
            (@ShuffleTW.mk_public F G N g (Vector.hd hs) hs y us es (chain g (Vector.hd hs) betas es) ws ws') k v).
 
+  (** Honest-verifier zero knowledge of the bridging chain plus round two:
+      if [h_0 = g^{t0}] and [lf] enumerates [F] without duplicates, the real
+      and simulated distributions are permutations of each other, with the
+      simulator given the honest [u] and [w'].
+
+      Proof idea: write [φ β = reshift t0 β e' e]. The honest public data for
+      [β] equals the simulator’s public data for [φ β] ([chain_reshift]).
+      For each fixed [β], [tw_special_honest_verifier_zkp_enum] at that
+      public data gives a permutation between the inner distributions; then
+      [φ] is a bijection on uniform vectors ([repeat_uniform_bijection_perm],
+      with inverse [reshift t0 · e e']), so reindexing the outer bind is a
+      permutation too. *)
   Theorem tw_full_shvzk : forall (lf : list F) (Hlfn : lf <> List.nil) (t0 : F)
     (g y : G) (hs : Vector.t G M) (π : perm M) (rs ss es : Vector.t F M) (ws : Vector.t (G * G) M) (v : F),
     Vector.hd hs = g ^ t0 ->
@@ -605,7 +706,7 @@ Section Honest.
         tw_simulator (one := one) (mul := mul) (opp := opp) (gid := gid) (ginv := ginv) (gop := gop) (gpow := gpow)
           (@ShuffleTW.mk_public F G N g (Vector.hd hs) hs y (commit_perm g hs π rs) es
             (chain g (Vector.hd hs) betas es) ws (shuffle_outputs g y π ws ss)) k v))))).
-    (* the honest public data of β is the simulator's public data of φ β *)
+    (* The honest public data for β is the simulator’s public data for φ β. *)
     assert (hP : forall betas, honest_public g y hs π rs ss betas es ws = P (phi betas)).
     { intro betas; unfold honest_public, P, phi; rewrite ht.
       rewrite (chain_reshift g M t0 betas (permute π es) es); reflexivity. }
@@ -615,12 +716,13 @@ Section Honest.
         tw_simulator (one := one) (mul := mul) (opp := opp) (gid := gid) (ginv := ginv) (gop := gop) (gpow := gpow)
           (@ShuffleTW.mk_public F G N g (Vector.hd hs) hs y (commit_perm g hs π rs) es
             (chain g (Vector.hd hs) (phi betas) es) ws (shuffle_outputs g y π ws ss)) k v)))).
+    (* Step 1: for fixed β, replace the real Okamoto transcript by the
+       simulated one, paired with the same chain. *)
     + apply bind_perm_right; intros betas p _.
       rewrite hB, hP.
       replace (@ShuffleTW.mk_public F G N g (Vector.hd hs) hs y (commit_perm g hs π rs) es
         (chain g (Vector.hd hs) (phi betas) es) ws (shuffle_outputs g y π ws ss)) with (P (phi betas))
         by (unfold P; rewrite ht; reflexivity).
-      (* the Okamoto zero-knowledge theorem at P (phi betas), paired with the chain *)
       pose proof (tw_special_honest_verifier_zkp_enum (Hvec := Hvec) (P (phi betas)) lf Hlfn
         (inner rs es) (fsum rs) (chain_exp betas e') (inner ss es) betas e' v) as hz.
       unfold tw_real_distribution, tw_simulator_distribution, generalised_okamoto_real_distribution,
@@ -640,6 +742,8 @@ Section Honest.
           (P (phi betas)) a v)))).
       { apply Permutation_map; exact hz. }
       rewrite map_bind. apply Permutation_refl'. apply bind_ext; intro a; reflexivity.
+    (* Step 2: the outer distribution over β is invariant under the
+       bijection φ. *)
     + apply Permutation_trans with (l' := Bind (List.map (fun '(a, p) => (phi a, p)) Db)
         (fun betas => Bind Dw (fun k => Ret (chain g (Vector.hd hs) betas es,
           tw_simulator (one := one) (mul := mul) (opp := opp) (gid := gid) (ginv := ginv) (gop := gop) (gpow := gpow)

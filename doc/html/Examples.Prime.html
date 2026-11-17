@@ -1,0 +1,225 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<link href="coqdoc.css" rel="stylesheet" type="text/css" />
+<title>Examples.Prime</title>
+</head>
+
+<body>
+
+<div id="page">
+
+<div id="header">
+</div>
+
+<div id="main">
+
+<h1 class="libtitle">Library Examples.Prime</h1>
+
+<div class="code">
+</div>
+
+<div class="doc">
+<a id="lab417"></a><h1 class="section">Primality of small integers by trial division</h1>
+
+<div class="paragraph"> </div>
+
+ The small textbook instances of the library (<span class="inlinecode"><span class="id" title="var">SigmaIns.v</span></span>,
+<span class="inlinecode"><span class="id" title="var">ElgamalIns.v</span></span>, <span class="inlinecode"><span class="id" title="var">ChaumPedersenIns.v</span></span> and the other examples over the toy
+safe-prime group <span class="inlinecode"><span class="id" title="var">p</span></span> <span class="inlinecode">=</span> <span class="inlinecode">2·2963</span> <span class="inlinecode">+</span> <span class="inlinecode">1</span> <span class="inlinecode">=</span> <span class="inlinecode">5927</span>) need proofs that <span class="inlinecode"><span class="id" title="var">p</span></span> and <span class="inlinecode"><span class="id" title="var">q</span></span> are
+prime. For numbers this small a Coqprime certificate is unnecessary: this
+file provides a boolean trial-division test <span class="inlinecode"><span class="id" title="var">is_prime_sqrt</span></span> and proves it
+sound (<span class="inlinecode"><span class="id" title="var">is_prime_sqrt_correct</span></span>), so that <span class="inlinecode"><span class="id" title="var">prime</span></span> <span class="inlinecode"><span class="id" title="var">n</span></span> follows from
+<span class="inlinecode"><span class="id" title="var">is_prime_sqrt</span></span> <span class="inlinecode"><span class="id" title="var">n</span></span> <span class="inlinecode">=</span> <span class="inlinecode"><span class="id" title="var">true</span></span> by computation (proof by reflection).
+
+<div class="paragraph"> </div>
+
+The test checks that <span class="inlinecode"><span class="id" title="var">n</span></span> <span class="inlinecode">&gt;</span> <span class="inlinecode">1</span> and that every <span class="inlinecode"><span class="id" title="var">k</span></span> with <span class="inlinecode">1</span> <span class="inlinecode">≤</span> <span class="inlinecode"><span class="id" title="var">k</span></span> <span class="inlinecode">≤</span> <span class="inlinecode">⌊√<span class="id" title="var">n</span>⌋</span> is
+coprime to <span class="inlinecode"><span class="id" title="var">n</span></span>. Its cost is linear in <span class="inlinecode">√<span class="id" title="var">n</span></span>, so it is only usable for small
+moduli; the cryptographic-size primes of the real-system instances are
+handled by the certificates of <span class="inlinecode"><span class="id" title="var">primeP.v</span></span>, <span class="inlinecode"><span class="id" title="var">primeQ.v</span></span>, <span class="inlinecode"><span class="id" title="var">primeQEG.v</span></span>,
+<span class="inlinecode"><span class="id" title="var">primePEG.v</span></span> and <span class="inlinecode"><span class="id" title="var">primeQSP.v</span></span>. 
+</div>
+<div class="code">
+
+<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">Stdlib</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="library">ZArith</span><br/>
+<span class="id" title="library">Znumtheory</span> <span class="id" title="library">Psatz</span> <span class="id" title="library">Utf8</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<span class="inlinecode"><span class="id" title="var">iterate_fn</span></span> <span class="inlinecode"><span class="id" title="var">f</span></span> <span class="inlinecode"><span class="id" title="var">n</span></span> is the conjunction <span class="inlinecode"><span class="id" title="var">f</span></span> <span class="inlinecode"><span class="id" title="var">n</span></span> <span class="inlinecode">&amp;&amp;</span> <span class="inlinecode"><span class="id" title="var">f</span></span> <span class="inlinecode">(<span class="id" title="var">n</span>-1)</span> <span class="inlinecode">&amp;&amp;</span> <span class="inlinecode">…</span> <span class="inlinecode">&amp;&amp;</span> <span class="inlinecode"><span class="id" title="var">f</span></span> <span class="inlinecode">1</span> of a
+    boolean predicate over the integers <span class="inlinecode">1..<span class="id" title="var">n</span></span> (with <span class="inlinecode"><span class="id" title="var">n</span></span> given as a natural
+    number). It is the loop of the trial-division test. 
+</div>
+<div class="code">
+<span class="id" title="keyword">Fixpoint</span> <a id="iterate_fn" class="idref" href="#iterate_fn"><span class="id" title="definition">iterate_fn</span></a> (<a id="f:1" class="idref" href="#f:1"><span class="id" title="binder">f</span></a> : <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Numbers.BinNums.html#Z"><span class="id" title="inductive">Z</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Notations.html#::type_scope:x_'-&gt;'_x"><span class="id" title="notation">→</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Datatypes.html#bool"><span class="id" title="inductive">bool</span></a>) (<a id="n:2" class="idref" href="#n:2"><span class="id" title="binder">n</span></a> : <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Datatypes.html#nat"><span class="id" title="inductive">nat</span></a>) : <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Datatypes.html#bool"><span class="id" title="inductive">bool</span></a> :=<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">match</span> <a class="idref" href="Examples.Prime.html#n:2"><span class="id" title="variable">n</span></a> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;| <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Datatypes.html#O"><span class="id" title="constructor">O</span></a> ⇒ <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Datatypes.html#true"><span class="id" title="constructor">true</span></a><br/>
+&nbsp;&nbsp;| <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Datatypes.html#S"><span class="id" title="constructor">S</span></a> <span class="id" title="var">m</span> ⇒ <a class="idref" href="Examples.Prime.html#f:1"><span class="id" title="variable">f</span></a> (<span class="id" title="definition">Z.of_nat</span> <a class="idref" href="Examples.Prime.html#n:2"><span class="id" title="variable">n</span></a>) <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Datatypes.html#::bool_scope:x_'&amp;&amp;'_x"><span class="id" title="notation">&amp;&amp;</span></a> <a class="idref" href="Examples.Prime.html#iterate_fn:3"><span class="id" title="definition">iterate_fn</span></a> <a class="idref" href="Examples.Prime.html#f:1"><span class="id" title="variable">f</span></a> <span class="id" title="var">m</span><br/>
+&nbsp;&nbsp;<span class="id" title="keyword">end</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+Soundness of <span class="inlinecode"><span class="id" title="var">iterate_fn</span></span>: if <span class="inlinecode"><span class="id" title="var">iterate_fn</span></span> <span class="inlinecode"><span class="id" title="var">f</span></span> <span class="inlinecode"><span class="id" title="var">n</span></span> <span class="inlinecode">=</span> <span class="inlinecode"><span class="id" title="var">true</span></span> then <span class="inlinecode"><span class="id" title="var">f</span></span> <span class="inlinecode"><span class="id" title="var">k</span></span> <span class="inlinecode">=</span> <span class="inlinecode"><span class="id" title="var">true</span></span>
+    for every integer <span class="inlinecode"><span class="id" title="var">k</span></span> with <span class="inlinecode">1</span> <span class="inlinecode">≤</span> <span class="inlinecode"><span class="id" title="var">k</span></span> <span class="inlinecode">≤</span> <span class="inlinecode"><span class="id" title="var">n</span></span>. Proved by induction on <span class="inlinecode"><span class="id" title="var">n</span></span>,
+    splitting on whether <span class="inlinecode"><span class="id" title="var">k</span></span> is the top value <span class="inlinecode"><span class="id" title="var">n</span></span> or below it. 
+</div>
+<div class="code">
+<span class="id" title="keyword">Lemma</span> <a id="iterate_fn_spec_prime" class="idref" href="#iterate_fn_spec_prime"><span class="id" title="lemma">iterate_fn_spec_prime</span></a> :<br/>
+&nbsp;&nbsp;<span class="id" title="notation">∀</span> <span class="id" title="notation">(</span><a id="n:5" class="idref" href="#n:5"><span class="id" title="binder">n</span></a> : <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Datatypes.html#nat"><span class="id" title="inductive">nat</span></a>) (<a id="f:6" class="idref" href="#f:6"><span class="id" title="binder">f</span></a> : <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Numbers.BinNums.html#Z"><span class="id" title="inductive">Z</span></a> <span class="id" title="notation">→</span> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Datatypes.html#bool"><span class="id" title="inductive">bool</span></a><span class="id" title="notation">),</span> <a class="idref" href="Examples.Prime.html#iterate_fn"><span class="id" title="definition">iterate_fn</span></a> <a class="idref" href="Examples.Prime.html#f:6"><span class="id" title="variable">f</span></a> <a class="idref" href="Examples.Prime.html#n:5"><span class="id" title="variable">n</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Logic.html#6cd0f7b28b6092304087c7049437bb1a"><span class="id" title="notation">=</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Datatypes.html#true"><span class="id" title="constructor">true</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Notations.html#::type_scope:x_'-&gt;'_x"><span class="id" title="notation">→</span></a><br/>
+&nbsp;&nbsp;<span class="id" title="notation">∀</span> <span class="id" title="notation">(</span><a id="k:7" class="idref" href="#k:7"><span class="id" title="binder">k</span></a> : <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Numbers.BinNums.html#Z"><span class="id" title="inductive">Z</span></a><span class="id" title="notation">),</span> 1 <span class="id" title="notation">≤</span> <a class="idref" href="Examples.Prime.html#k:7"><span class="id" title="variable">k</span></a> <span class="id" title="notation">≤</span> <span class="id" title="definition">Z.of_nat</span> <a class="idref" href="Examples.Prime.html#n:5"><span class="id" title="variable">n</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Notations.html#::type_scope:x_'-&gt;'_x"><span class="id" title="notation">→</span></a> <a class="idref" href="Examples.Prime.html#f:6"><span class="id" title="variable">f</span></a> <a class="idref" href="Examples.Prime.html#k:7"><span class="id" title="variable">k</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Logic.html#6cd0f7b28b6092304087c7049437bb1a"><span class="id" title="notation">=</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Datatypes.html#true"><span class="id" title="constructor">true</span></a>.<br/>
+<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">induction</span> <span class="id" title="var">n</span> <span class="id" title="keyword">as</span> [|<span class="id" title="var">n</span> <span class="id" title="var">ihn</span>].<br/>
+&nbsp;&nbsp;+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">intros</span> × <span class="id" title="var">ha</span> × <span class="id" title="var">hb</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">nia</span>.<br/>
+&nbsp;&nbsp;+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">intros</span> × <span class="id" title="var">ha</span> × <span class="id" title="var">hb</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">cbn</span> <span class="id" title="tactic">in</span> <span class="id" title="var">ha</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">eapply</span> <span class="id" title="lemma">Bool.andb_true_iff</span> <span class="id" title="tactic">in</span> <span class="id" title="var">ha</span> <span class="id" title="keyword">as</span> [<span class="id" title="var">hal</span> <span class="id" title="var">har</span>].<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">assert</span> (<span class="id" title="var">hc</span> : <span class="id" title="var">k</span> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Logic.html#6cd0f7b28b6092304087c7049437bb1a"><span class="id" title="notation">=</span></a> <span class="id" title="definition">Z.of_nat</span> (<a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Datatypes.html#S"><span class="id" title="constructor">S</span></a> <span class="id" title="var">n</span>) <span class="id" title="notation">∨</span> 1 <span class="id" title="notation">≤</span> <span class="id" title="var">k</span> <span class="id" title="notation">≤</span> <span class="id" title="definition">Z.of_nat</span> <span class="id" title="var">n</span>) <span class="id" title="tactic">by</span> <span class="id" title="var">nia</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">destruct</span> <span class="id" title="var">hc</span> <span class="id" title="keyword">as</span> [<span class="id" title="var">hc</span> | <span class="id" title="var">hc</span>].<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;++<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">subst</span>. <span class="id" title="tactic">exact</span> <span class="id" title="var">hal</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;++<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">eapply</span> <span class="id" title="var">ihn</span>; <span class="id" title="tactic">try</span> <span class="id" title="tactic">assumption</span>.<br/>
+<span class="id" title="keyword">Qed</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<span class="inlinecode"><span class="id" title="var">is_prime_sqrt</span></span> <span class="inlinecode"><span class="id" title="var">p</span></span> decides <span class="inlinecode">1</span> <span class="inlinecode">&lt;</span> <span class="inlinecode"><span class="id" title="var">p</span></span> and <span class="inlinecode"><span class="id" title="var">gcd</span></span> <span class="inlinecode"><span class="id" title="var">k</span></span> <span class="inlinecode"><span class="id" title="var">p</span></span> <span class="inlinecode">=</span> <span class="inlinecode">1</span> for every
+    <span class="inlinecode">1</span> <span class="inlinecode">≤</span> <span class="inlinecode"><span class="id" title="var">k</span></span> <span class="inlinecode">≤</span> <span class="inlinecode">⌊√<span class="id" title="var">p</span>⌋</span>. Note that <span class="inlinecode"><span class="id" title="var">k</span></span> <span class="inlinecode">=</span> <span class="inlinecode">1</span> is always coprime, so the test is
+    trial division by <span class="inlinecode">2..⌊√<span class="id" title="var">p</span>⌋</span>. 
+</div>
+<div class="code">
+<span class="id" title="keyword">Definition</span> <a id="is_prime_sqrt" class="idref" href="#is_prime_sqrt"><span class="id" title="definition">is_prime_sqrt</span></a> (<a id="p:8" class="idref" href="#p:8"><span class="id" title="binder">p</span></a> : <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Numbers.BinNums.html#Z"><span class="id" title="inductive">Z</span></a>) : <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Datatypes.html#bool"><span class="id" title="inductive">bool</span></a> :=<br/>
+&nbsp;&nbsp;<a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Datatypes.html#::bool_scope:x_'&amp;&amp;'_x"><span class="id" title="notation">(</span></a>1 <span class="id" title="notation">&lt;?</span> <a class="idref" href="Examples.Prime.html#p:8"><span class="id" title="variable">p</span></a><a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Datatypes.html#::bool_scope:x_'&amp;&amp;'_x"><span class="id" title="notation">)</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Datatypes.html#::bool_scope:x_'&amp;&amp;'_x"><span class="id" title="notation">&amp;&amp;</span></a> <a class="idref" href="Examples.Prime.html#iterate_fn"><span class="id" title="definition">iterate_fn</span></a> (<span class="id" title="keyword">fun</span> <a id="k:9" class="idref" href="#k:9"><span class="id" title="binder">k</span></a> ⇒ <span class="id" title="definition">Z.gcd</span> <a class="idref" href="Examples.Prime.html#k:9"><span class="id" title="variable">k</span></a> <a class="idref" href="Examples.Prime.html#p:8"><span class="id" title="variable">p</span></a> <span class="id" title="notation">=?</span> 1)<br/>
+&nbsp;&nbsp;(<span class="id" title="definition">Z.to_nat</span> (<span class="id" title="definition">Z.sqrt</span> <a class="idref" href="Examples.Prime.html#p:8"><span class="id" title="variable">p</span></a>)).<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+A composite number has a small divisor: if <span class="inlinecode">1</span> <span class="inlinecode">&lt;</span> <span class="inlinecode"><span class="id" title="var">n</span></span> and <span class="inlinecode"><span class="id" title="var">n</span></span> is not
+    prime, there is a <span class="inlinecode"><span class="id" title="var">d</span></span> with <span class="inlinecode">1</span> <span class="inlinecode">&lt;</span> <span class="inlinecode"><span class="id" title="var">d</span></span> <span class="inlinecode">≤</span> <span class="inlinecode">⌊√<span class="id" title="var">n</span>⌋</span> and <span class="inlinecode"><span class="id" title="var">d</span></span> <span class="inlinecode">|</span> <span class="inlinecode"><span class="id" title="var">n</span></span>. Given any
+    nontrivial factorisation <span class="inlinecode"><span class="id" title="var">n</span></span> <span class="inlinecode">=</span> <span class="inlinecode"><span class="id" title="var">v</span>·<span class="id" title="var">p</span></span>, either <span class="inlinecode"><span class="id" title="var">p</span></span> or the cofactor <span class="inlinecode"><span class="id" title="var">n</span>/<span class="id" title="var">p</span></span> is
+    at most <span class="inlinecode">⌊√<span class="id" title="var">n</span>⌋</span>. 
+</div>
+<div class="code">
+<span class="id" title="keyword">Lemma</span> <a id="composite_has_divisor_sqrt" class="idref" href="#composite_has_divisor_sqrt"><span class="id" title="lemma">composite_has_divisor_sqrt</span></a> :<br/>
+&nbsp;&nbsp;<span class="id" title="notation">∀</span> <a id="n:10" class="idref" href="#n:10"><span class="id" title="binder">n</span></a><span class="id" title="notation">,</span> 1 <span class="id" title="notation">&lt;</span> <a class="idref" href="Examples.Prime.html#n:10"><span class="id" title="variable">n</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Notations.html#::type_scope:x_'-&gt;'_x"><span class="id" title="notation">→</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Logic.html#63a68285c81db8f9bc456233bb9ed181"><span class="id" title="notation">¬</span></a><span class="id" title="inductive">prime</span> <a class="idref" href="Examples.Prime.html#n:10"><span class="id" title="variable">n</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Notations.html#::type_scope:x_'-&gt;'_x"><span class="id" title="notation">→</span></a><br/>
+&nbsp;&nbsp;<a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Logic.html#a883bdd010993579f99d60b3775bcf54"><span class="id" title="notation">∃</span></a> <a id="d:11" class="idref" href="#d:11"><span class="id" title="binder">d</span></a><a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Logic.html#a883bdd010993579f99d60b3775bcf54"><span class="id" title="notation">,</span></a> 1 <span class="id" title="notation">&lt;</span> <a class="idref" href="Examples.Prime.html#d:11"><span class="id" title="variable">d</span></a> <span class="id" title="notation">≤</span> <span class="id" title="definition">Z.sqrt</span> <a class="idref" href="Examples.Prime.html#n:10"><span class="id" title="variable">n</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Logic.html#ba2b0e492d2b4675a0acf3ea92aabadd"><span class="id" title="notation">∧</span></a> <span class="id" title="notation">(</span><a class="idref" href="Examples.Prime.html#d:11"><span class="id" title="variable">d</span></a> <span class="id" title="notation">|</span> <a class="idref" href="Examples.Prime.html#n:10"><span class="id" title="variable">n</span></a><span class="id" title="notation">)</span>.<br/>
+<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">intros</span> <span class="id" title="var">n</span> <span class="id" title="var">Hn</span> <span class="id" title="var">Hnp</span>.<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">destruct</span> (<span class="id" title="lemma">not_prime_divide</span> <span class="id" title="var">n</span> <span class="id" title="var">Hn</span> <span class="id" title="var">Hnp</span>) <span class="id" title="keyword">as</span> (<span class="id" title="var">p</span> &amp; <span class="id" title="var">hp</span> &amp; (<span class="id" title="var">v</span> &amp; <span class="id" title="var">hv</span>)).<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">destruct</span> (<span class="id" title="lemma">Z.le_gt_cases</span> <span class="id" title="var">p</span> (<span class="id" title="definition">Z.sqrt</span> <span class="id" title="var">n</span>)) <span class="id" title="keyword">as</span> [<span class="id" title="var">ha</span> | <span class="id" title="var">ha</span>].<br/>
+&nbsp;&nbsp;+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">∃</span> <span class="id" title="var">p</span>; <span class="id" title="tactic">split</span>; <span class="id" title="tactic">auto</span>. <span class="id" title="tactic">split</span>; [|<span class="id" title="tactic">assumption</span>]. <span class="id" title="var">nia</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">eexists</span>. <span class="id" title="tactic">exact</span> <span class="id" title="var">hv</span>.<br/>
+&nbsp;&nbsp;+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">∃</span> (<span class="id" title="var">n</span><span class="id" title="notation">/</span><span class="id" title="var">p</span>); <span class="id" title="tactic">split</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;++<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">split</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;×<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">rewrite</span> <span class="id" title="var">hv</span> <span class="id" title="tactic">in</span> <span class="id" title="var">hp</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">assert</span> (<span class="id" title="var">hb</span> : <span class="id" title="var">n</span><span class="id" title="notation">/</span><span class="id" title="var">p</span> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Logic.html#6cd0f7b28b6092304087c7049437bb1a"><span class="id" title="notation">=</span></a> <span class="id" title="var">v</span>).<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">rewrite</span> <span class="id" title="var">hv</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">rewrite</span> <span class="id" title="lemma">Z.div_mul</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">reflexivity</span>. <span class="id" title="var">nia</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">rewrite</span> <span class="id" title="var">hb</span>. <span class="id" title="var">nia</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;×<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">subst</span> <span class="id" title="var">n</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">rewrite</span> <span class="id" title="lemma">Z.div_mul</span>;[|<span class="id" title="tactic">try</span> <span class="id" title="var">nia</span>].<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">remember</span> (<span class="id" title="definition">Z.sqrt</span> (<span class="id" title="var">v</span> <span class="id" title="notation">×</span> <span class="id" title="var">p</span>)) <span class="id" title="keyword">as</span> <span class="id" title="var">s</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">assert</span> (<span class="id" title="var">hb</span> : <span class="id" title="var">s</span> <span class="id" title="notation">×</span> <span class="id" title="var">s</span> <span class="id" title="notation">≤</span> <span class="id" title="var">v</span> <span class="id" title="notation">×</span> <span class="id" title="var">p</span> <span class="id" title="notation">&lt;</span> <span class="id" title="definition">Z.succ</span> <span class="id" title="var">s</span> <span class="id" title="notation">×</span> <span class="id" title="definition">Z.succ</span> <span class="id" title="var">s</span>).<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">split</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">pose</span> <span class="id" title="var">proof</span> <span class="id" title="lemma">Z.sqrt_mul_below</span> (<span class="id" title="var">v</span> <span class="id" title="notation">×</span> <span class="id" title="var">p</span>) (<span class="id" title="var">v</span> <span class="id" title="notation">×</span> <span class="id" title="var">p</span>) <span class="id" title="keyword">as</span> <span class="id" title="var">hb</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">rewrite</span> &lt;-<span class="id" title="var">Heqs</span> <span class="id" title="tactic">in</span> <span class="id" title="var">hb</span>. <span class="id" title="tactic">rewrite</span> <span class="id" title="lemma">Z.sqrt_square</span> <span class="id" title="tactic">in</span> <span class="id" title="var">hb</span>;[|<span class="id" title="tactic">try</span> <span class="id" title="var">nia</span>].<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">exact</span> <span class="id" title="var">hb</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;+<br/>
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">assert</span> (<span class="id" title="var">hb</span> : <span class="id" title="var">v</span> <span class="id" title="notation">×</span> <span class="id" title="var">p</span> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Logic.html#6cd0f7b28b6092304087c7049437bb1a"><span class="id" title="notation">=</span></a> <span class="id" title="definition">Z.sqrt</span> (<span class="id" title="var">v</span> <span class="id" title="notation">×</span> <span class="id" title="var">p</span> <span class="id" title="notation">×</span> <span class="id" title="notation">(</span><span class="id" title="var">v</span> <span class="id" title="notation">×</span> <span class="id" title="var">p</span><span class="id" title="notation">)</span>)).<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">rewrite</span> <span class="id" title="lemma">Z.sqrt_square</span>. <span class="id" title="tactic">reflexivity</span>. <span class="id" title="var">nia</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">rewrite</span> <span class="id" title="var">hb</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">pose</span> <span class="id" title="var">proof</span> <span class="id" title="lemma">Z.sqrt_mul_above</span> (<span class="id" title="var">v</span> <span class="id" title="notation">×</span> <span class="id" title="var">p</span>) (<span class="id" title="var">v</span> <span class="id" title="notation">×</span> <span class="id" title="var">p</span>) (<span class="id" title="keyword">ltac</span>:(<span class="id" title="var">nia</span>))<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="keyword">ltac</span>:(<span class="id" title="var">nia</span>)) <span class="id" title="keyword">as</span> <span class="id" title="var">hc</span>. <span class="id" title="tactic">rewrite</span> <span class="id" title="var">Heqs</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">exact</span> <span class="id" title="var">hc</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">assert</span> (<span class="id" title="var">hc</span> : <span class="id" title="definition">Z.succ</span> <span class="id" title="var">s</span> <span class="id" title="notation">≤</span> <span class="id" title="var">p</span>) <span class="id" title="tactic">by</span> <span class="id" title="var">nia</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">assert</span>(<span class="id" title="var">hd</span> : <span class="id" title="var">v</span> <span class="id" title="notation">×</span> <span class="id" title="var">p</span> <span class="id" title="notation">≤</span> <span class="id" title="definition">Z.succ</span> <span class="id" title="var">s</span> <span class="id" title="notation">×</span> <span class="id" title="var">p</span>). <span class="id" title="var">nia</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">nia</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;++<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">∃</span> <span class="id" title="var">p</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">rewrite</span> !<span class="id" title="var">hv</span>. <span class="id" title="tactic">rewrite</span> <span class="id" title="lemma">Z.div_mul</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">nia</span>. <span class="id" title="var">nia</span>.<br/>
+<span class="id" title="keyword">Qed</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+Soundness of the test: <span class="inlinecode"><span class="id" title="var">is_prime_sqrt</span></span> <span class="inlinecode"><span class="id" title="var">n</span></span> <span class="inlinecode">=</span> <span class="inlinecode"><span class="id" title="var">true</span></span> implies <span class="inlinecode"><span class="id" title="var">prime</span></span> <span class="inlinecode"><span class="id" title="var">n</span></span>.
+
+<div class="paragraph"> </div>
+
+    Proof idea: the test gives <span class="inlinecode">1</span> <span class="inlinecode">&lt;</span> <span class="inlinecode"><span class="id" title="var">n</span></span> and <span class="inlinecode"><span class="id" title="var">gcd</span></span> <span class="inlinecode"><span class="id" title="var">k</span></span> <span class="inlinecode"><span class="id" title="var">n</span></span> <span class="inlinecode">=</span> <span class="inlinecode">1</span> for all
+    <span class="inlinecode">1</span> <span class="inlinecode">≤</span> <span class="inlinecode"><span class="id" title="var">k</span></span> <span class="inlinecode">≤</span> <span class="inlinecode">⌊√<span class="id" title="var">n</span>⌋</span>. If <span class="inlinecode"><span class="id" title="var">n</span></span> were not prime, <span class="inlinecode"><span class="id" title="var">composite_has_divisor_sqrt</span></span>
+    would give a divisor <span class="inlinecode"><span class="id" title="var">d</span></span> in that range, and then <span class="inlinecode"><span class="id" title="var">gcd</span></span> <span class="inlinecode"><span class="id" title="var">d</span></span> <span class="inlinecode"><span class="id" title="var">n</span></span> <span class="inlinecode">=</span> <span class="inlinecode"><span class="id" title="var">d</span></span> <span class="inlinecode">&gt;</span> <span class="inlinecode">1</span>,
+    a contradiction. The examples use it as
+    <span class="inlinecode"><span class="id" title="tactic">eapply</span></span> <span class="inlinecode"><span class="id" title="var">is_prime_sqrt_correct</span>;</span> <span class="inlinecode"><span class="id" title="tactic">compute</span>;</span> <span class="inlinecode"><span class="id" title="tactic">reflexivity</span></span>. 
+</div>
+<div class="code">
+<span class="id" title="keyword">Theorem</span> <a id="is_prime_sqrt_correct" class="idref" href="#is_prime_sqrt_correct"><span class="id" title="lemma">is_prime_sqrt_correct</span></a> :<br/>
+&nbsp;&nbsp;<span class="id" title="notation">∀</span> <span class="id" title="notation">(</span><a id="n:12" class="idref" href="#n:12"><span class="id" title="binder">n</span></a> : <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Numbers.BinNums.html#Z"><span class="id" title="inductive">Z</span></a><span class="id" title="notation">),</span> <a class="idref" href="Examples.Prime.html#is_prime_sqrt"><span class="id" title="definition">is_prime_sqrt</span></a> <a class="idref" href="Examples.Prime.html#n:12"><span class="id" title="variable">n</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Logic.html#6cd0f7b28b6092304087c7049437bb1a"><span class="id" title="notation">=</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Datatypes.html#true"><span class="id" title="constructor">true</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Notations.html#::type_scope:x_'-&gt;'_x"><span class="id" title="notation">→</span></a> <span class="id" title="inductive">prime</span> <a class="idref" href="Examples.Prime.html#n:12"><span class="id" title="variable">n</span></a>.<br/>
+<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">intros</span> × <span class="id" title="var">ha</span>.<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">unfold</span> <a class="idref" href="Examples.Prime.html#is_prime_sqrt"><span class="id" title="definition">is_prime_sqrt</span></a> <span class="id" title="tactic">in</span> <span class="id" title="var">ha</span>.<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">apply</span> <span class="id" title="lemma">Bool.andb_true_iff</span> <span class="id" title="tactic">in</span> <span class="id" title="var">ha</span>;<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">destruct</span> <span class="id" title="var">ha</span> <span class="id" title="keyword">as</span> [<span class="id" title="var">halt</span> <span class="id" title="var">haiter</span>].<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">rewrite</span> <span class="id" title="lemma">Z.ltb_lt</span> <span class="id" title="tactic">in</span> <span class="id" title="var">halt</span>.<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">assert</span> (<span class="id" title="var">hb</span> : <span class="id" title="keyword">∀</span> <a id="k:13" class="idref" href="#k:13"><span class="id" title="binder"><span id="k:14" class="id">k</span></span></a>, 1 <span class="id" title="notation">≤</span> <a class="idref" href="Examples.Prime.html#k:13"><span class="id" title="variable">k</span></a> <span class="id" title="notation">≤</span> <span class="id" title="definition">Z.sqrt</span> <span class="id" title="var">n</span> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Notations.html#::type_scope:x_'-&gt;'_x"><span class="id" title="notation">→</span></a> <span class="id" title="definition">Z.gcd</span> <a class="idref" href="Examples.Prime.html#k:13"><span class="id" title="variable">k</span></a> <span class="id" title="var">n</span> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Logic.html#6cd0f7b28b6092304087c7049437bb1a"><span class="id" title="notation">=</span></a> 1).<br/>
+&nbsp;&nbsp;{<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">intros</span> <span class="id" title="var">k</span> <span class="id" title="var">ha</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">eapply</span> <a class="idref" href="Examples.Prime.html#iterate_fn_spec_prime"><span class="id" title="lemma">iterate_fn_spec_prime</span></a> <span class="id" title="keyword">with</span> (<span class="id" title="var">k</span> := <span class="id" title="var">k</span>), <span class="id" title="lemma">Z.eqb_eq</span>  <span class="id" title="tactic">in</span> <span class="id" title="var">haiter</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">exact</span> <span class="id" title="var">haiter</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">rewrite</span> <span class="id" title="lemma">Z2Nat.id</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">exact</span> <span class="id" title="var">ha</span>. <span class="id" title="var">nia</span>.<br/>
+&nbsp;&nbsp;}<br/>
+&nbsp;&nbsp;<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">destruct</span> (<span class="id" title="definition">prime_dec</span> <span class="id" title="var">n</span>) <span class="id" title="keyword">as</span> [<span class="id" title="var">hp</span> | <span class="id" title="var">hnp</span>]; [<span class="id" title="tactic">assumption</span>|].<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">destruct</span> (<a class="idref" href="Examples.Prime.html#composite_has_divisor_sqrt"><span class="id" title="lemma">composite_has_divisor_sqrt</span></a> <span class="id" title="var">n</span> <span class="id" title="var">halt</span> <span class="id" title="var">hnp</span>) <span class="id" title="keyword">as</span> [<span class="id" title="var">d</span> [<span class="id" title="var">hc</span> <span class="id" title="var">hd</span>]].<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">assert</span> (<span class="id" title="var">Hd_pos</span> : 0 <span class="id" title="notation">&lt;</span> <span class="id" title="var">d</span>) <span class="id" title="tactic">by</span> <span class="id" title="var">lia</span>.<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">assert</span> (<span class="id" title="var">Hgcd</span> : <span class="id" title="definition">Z.gcd</span> <span class="id" title="var">d</span> <span class="id" title="var">n</span> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Logic.html#6cd0f7b28b6092304087c7049437bb1a"><span class="id" title="notation">=</span></a> <span class="id" title="var">d</span>).<br/>
+&nbsp;&nbsp;{<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">apply</span> <span class="id" title="lemma">Z.gcd_unique</span>; <span class="id" title="tactic">auto</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;- <span class="id" title="var">nia</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;- <span class="id" title="tactic">∃</span> 1. <span class="id" title="var">nia</span>.<br/>
+&nbsp;&nbsp;}<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">assert</span> (<span class="id" title="var">ha</span> : 1 <span class="id" title="notation">≤</span> <span class="id" title="var">d</span> <span class="id" title="notation">≤</span> <span class="id" title="definition">Z.sqrt</span> <span class="id" title="var">n</span>). <span class="id" title="var">nia</span>.<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">specialize</span> (<span class="id" title="var">hb</span> <span class="id" title="var">_</span> <span class="id" title="var">ha</span>).<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">rewrite</span> <span class="id" title="var">hb</span> <span class="id" title="tactic">in</span> <span class="id" title="var">Hgcd</span>.<br/>
+&nbsp;&nbsp;<span class="id" title="var">nia</span>.<br/>
+<span class="id" title="keyword">Qed</span>.<br/>
+</div>
+</div>
+
+<div id="footer">
+<hr/><a href="index_symbols.html">Index</a><hr/>This page has been generated by <a href="http://rocq-prover.org/">coqdoc</a>
+</div>
+
+</div>
+
+</body>
+</html>

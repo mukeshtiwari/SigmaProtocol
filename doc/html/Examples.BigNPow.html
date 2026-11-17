@@ -1,0 +1,154 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<link href="coqdoc.css" rel="stylesheet" type="text/css" />
+<title>Examples.BigNPow</title>
+</head>
+
+<body>
+
+<div id="page">
+
+<div id="header">
+</div>
+
+<div id="main">
+
+<h1 class="libtitle">Library Examples.BigNPow</h1>
+
+<div class="code">
+<span class="id" title="keyword">From</span> <span class="id" title="var">Stdlib</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="library">ZArith</span> <span class="id" title="library">Zpow_facts</span> <span class="id" title="library">Lia</span>.<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">Bignums</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="library">BigN</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<a id="lab375"></a><h1 class="section">Modular exponentiation over BigN for in-kernel checks</h1>
+
+
+<div class="paragraph"> </div>
+
+    This file gives modular exponentiation on Bignums' <span class="inlinecode"><span class="id" title="var">BigN</span></span> (arbitrary
+    precision naturals built on the kernel's 63-bit machine integers). It
+    follows the recursion of the standard library's <span class="inlinecode"><span class="id" title="var">Zpow_mod_pos</span></span> and is
+    proved equal to it (<span class="inlinecode"><span class="id" title="var">bpow_mod_spec</span></span>). A goal <span class="inlinecode"><span class="id" title="var">Zpow_mod</span></span> <span class="inlinecode"><span class="id" title="var">a</span></span> <span class="inlinecode"><span class="id" title="var">m</span></span> <span class="inlinecode"><span class="id" title="var">n</span></span> <span class="inlinecode">=</span> <span class="inlinecode"><span class="id" title="var">x</span></span> on
+    numbers of thousands of bits can therefore be rewritten into a <span class="inlinecode"><span class="id" title="var">BigN</span></span>
+    computation and closed by <span class="inlinecode"><span class="id" title="keyword">vm_compute</span></span> in about a second, since the
+    arithmetic runs on machine words instead of binary positive numbers.
+    <span class="inlinecode"><span class="id" title="var">Examples</span>/<span class="id" title="var">ElectionGuardIns.v</span></span> uses it to check <span class="inlinecode"><span class="id" title="var">g</span>^<span class="id" title="var">q</span></span> <span class="inlinecode">=</span> <span class="inlinecode">1</span> <span class="inlinecode"><span class="id" title="var">mod</span></span> <span class="inlinecode"><span class="id" title="var">p</span></span> at the
+    4096-bit ElectionGuard modulus. 
+</div>
+<div class="code">
+<span class="id" title="keyword">Module</span> <a id="BigNPow" class="idref" href="#BigNPow"><span class="id" title="module">BigNPow</span></a>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Local Open</span> <span class="id" title="keyword">Scope</span> <span class="id" title="var">Z_scope</span>.<br/>
+</div>
+
+<div class="doc">
+Local notation: a <span class="inlinecode"><span class="id" title="var">BigN</span></span> number written between square brackets
+      stands for its integer value <span class="inlinecode"><span class="id" title="var">BigN.to_Z</span></span> <span class="inlinecode"><span class="id" title="var">x</span></span>. 
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Local Notation</span> <a id="8930e7f5eda167634d1c139bc40f151f" class="idref" href="#8930e7f5eda167634d1c139bc40f151f"><span class="id" title="notation">&quot;</span></a>[ x ]" := (<span class="id" title="definition">BigN.to_Z</span> <span class="id" title="var">x</span>).<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<span class="inlinecode"><span class="id" title="var">bpow_mod_pos</span></span> <span class="inlinecode"><span class="id" title="var">a</span></span> <span class="inlinecode"><span class="id" title="var">m</span></span> <span class="inlinecode"><span class="id" title="var">n</span></span> computes <span class="inlinecode"><span class="id" title="var">a</span>^<span class="id" title="var">m</span></span> <span class="inlinecode"><span class="id" title="var">mod</span></span> <span class="inlinecode"><span class="id" title="var">n</span></span> for a positive exponent <span class="inlinecode"><span class="id" title="var">m</span></span>
+      by left-to-right square-and-multiply on the binary digits of <span class="inlinecode"><span class="id" title="var">m</span></span>,
+      exactly as <span class="inlinecode"><span class="id" title="var">Zpow_mod_pos</span></span>. This includes the short cut that returns
+      <span class="inlinecode">0</span> as soon as an intermediate result is <span class="inlinecode">0</span>. 
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Fixpoint</span> <a id="BigNPow.bpow_mod_pos" class="idref" href="#BigNPow.bpow_mod_pos"><span class="id" title="definition">bpow_mod_pos</span></a> (<a id="a:1" class="idref" href="#a:1"><span class="id" title="binder">a</span></a> : <span class="id" title="definition">BigN.t</span>) (<a id="m:2" class="idref" href="#m:2"><span class="id" title="binder">m</span></a> : <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Numbers.BinNums.html#positive"><span class="id" title="inductive">positive</span></a>) (<a id="n:3" class="idref" href="#n:3"><span class="id" title="binder">n</span></a> : <span class="id" title="definition">BigN.t</span>) : <span class="id" title="definition">BigN.t</span> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">match</span> <a class="idref" href="Examples.BigNPow.html#m:2"><span class="id" title="variable">m</span></a> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Numbers.BinNums.html#xH"><span class="id" title="constructor">xH</span></a> ⇒ <span class="id" title="definition">BigN.modulo</span> <a class="idref" href="Examples.BigNPow.html#a:1"><span class="id" title="variable">a</span></a> <a class="idref" href="Examples.BigNPow.html#n:3"><span class="id" title="variable">n</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Numbers.BinNums.html#xO"><span class="id" title="constructor">xO</span></a> <span class="id" title="var">m'</span> ⇒ <span class="id" title="keyword">let</span> <a id="z:6" class="idref" href="#z:6"><span class="id" title="binder">z</span></a> := <a class="idref" href="Examples.BigNPow.html#bpow_mod_pos:4"><span class="id" title="definition">bpow_mod_pos</span></a> <a class="idref" href="Examples.BigNPow.html#a:1"><span class="id" title="variable">a</span></a> <span class="id" title="var">m'</span> <a class="idref" href="Examples.BigNPow.html#n:3"><span class="id" title="variable">n</span></a> <span class="id" title="tactic">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">if</span> <span class="id" title="definition">BigN.eqb</span> <a class="idref" href="Examples.BigNPow.html#z:6"><span class="id" title="variable">z</span></a> <span class="id" title="definition">BigN.zero</span> <span class="id" title="keyword">then</span> <span class="id" title="definition">BigN.zero</span> <span class="id" title="keyword">else</span> <span class="id" title="definition">BigN.modulo</span> (<span class="id" title="definition">BigN.mul</span> <a class="idref" href="Examples.BigNPow.html#z:6"><span class="id" title="variable">z</span></a> <a class="idref" href="Examples.BigNPow.html#z:6"><span class="id" title="variable">z</span></a>) <a class="idref" href="Examples.BigNPow.html#n:3"><span class="id" title="variable">n</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Numbers.BinNums.html#xI"><span class="id" title="constructor">xI</span></a> <span class="id" title="var">m'</span> ⇒ <span class="id" title="keyword">let</span> <a id="z:7" class="idref" href="#z:7"><span class="id" title="binder">z</span></a> := <a class="idref" href="Examples.BigNPow.html#bpow_mod_pos:4"><span class="id" title="definition">bpow_mod_pos</span></a> <a class="idref" href="Examples.BigNPow.html#a:1"><span class="id" title="variable">a</span></a> <span class="id" title="var">m'</span> <a class="idref" href="Examples.BigNPow.html#n:3"><span class="id" title="variable">n</span></a> <span class="id" title="tactic">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">if</span> <span class="id" title="definition">BigN.eqb</span> <a class="idref" href="Examples.BigNPow.html#z:7"><span class="id" title="variable">z</span></a> <span class="id" title="definition">BigN.zero</span> <span class="id" title="keyword">then</span> <span class="id" title="definition">BigN.zero</span> <span class="id" title="keyword">else</span> <span class="id" title="definition">BigN.modulo</span> (<span class="id" title="definition">BigN.mul</span> (<span class="id" title="definition">BigN.mul</span> <a class="idref" href="Examples.BigNPow.html#z:7"><span class="id" title="variable">z</span></a> <a class="idref" href="Examples.BigNPow.html#z:7"><span class="id" title="variable">z</span></a>) <a class="idref" href="Examples.BigNPow.html#a:1"><span class="id" title="variable">a</span></a>) <a class="idref" href="Examples.BigNPow.html#n:3"><span class="id" title="variable">n</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">end</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<span class="inlinecode"><span class="id" title="var">bpow_mod_pos</span></span> agrees with <span class="inlinecode"><span class="id" title="var">Zpow_mod_pos</span></span> on the integer values. The
+      proof is by induction on <span class="inlinecode"><span class="id" title="var">m</span></span>, using the specifications of the <span class="inlinecode"><span class="id" title="var">BigN</span></span>
+      operations. 
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <a id="BigNPow.bpow_mod_pos_spec" class="idref" href="#BigNPow.bpow_mod_pos_spec"><span class="id" title="lemma">bpow_mod_pos_spec</span></a> : <span class="id" title="keyword">∀</span> <a id="m:8" class="idref" href="#m:8"><span class="id" title="binder">m</span></a> <a id="a:9" class="idref" href="#a:9"><span class="id" title="binder">a</span></a> <a id="n:10" class="idref" href="#n:10"><span class="id" title="binder">n</span></a>, <a class="idref" href="Examples.BigNPow.html#8930e7f5eda167634d1c139bc40f151f"><span class="id" title="notation">[</span></a><a class="idref" href="Examples.BigNPow.html#BigNPow.bpow_mod_pos"><span class="id" title="definition">bpow_mod_pos</span></a> <a class="idref" href="Examples.BigNPow.html#a:9"><span class="id" title="variable">a</span></a> <a class="idref" href="Examples.BigNPow.html#m:8"><span class="id" title="variable">m</span></a> <a class="idref" href="Examples.BigNPow.html#n:10"><span class="id" title="variable">n</span></a><a class="idref" href="Examples.BigNPow.html#8930e7f5eda167634d1c139bc40f151f"><span class="id" title="notation">]</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Logic.html#6cd0f7b28b6092304087c7049437bb1a"><span class="id" title="notation">=</span></a> <span class="id" title="definition">Zpow_mod_pos</span> <a class="idref" href="Examples.BigNPow.html#8930e7f5eda167634d1c139bc40f151f"><span class="id" title="notation">[</span></a><a class="idref" href="Examples.BigNPow.html#a:9"><span class="id" title="variable">a</span></a><a class="idref" href="Examples.BigNPow.html#8930e7f5eda167634d1c139bc40f151f"><span class="id" title="notation">]</span></a> <a class="idref" href="Examples.BigNPow.html#m:8"><span class="id" title="variable">m</span></a> <a class="idref" href="Examples.BigNPow.html#8930e7f5eda167634d1c139bc40f151f"><span class="id" title="notation">[</span></a><a class="idref" href="Examples.BigNPow.html#n:10"><span class="id" title="variable">n</span></a><a class="idref" href="Examples.BigNPow.html#8930e7f5eda167634d1c139bc40f151f"><span class="id" title="notation">]</span></a>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">induction</span> <span class="id" title="var">m</span> <span class="id" title="keyword">as</span> [<span class="id" title="var">m</span> <span class="id" title="var">ih</span> | <span class="id" title="var">m</span> <span class="id" title="var">ih</span> |]; <span class="id" title="tactic">intros</span> <span class="id" title="var">a</span> <span class="id" title="var">n</span>; <span class="id" title="var">cbn</span> [<a class="idref" href="Examples.BigNPow.html#BigNPow.bpow_mod_pos"><span class="id" title="definition">bpow_mod_pos</span></a> <span class="id" title="definition">Zpow_mod_pos</span>].<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;+ <span class="id" title="tactic">rewrite</span> <span class="id" title="lemma">BigN.spec_eqb</span>, <span class="id" title="lemma">BigN.spec_0</span>, <span class="id" title="var">ih</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">destruct</span> (<span class="id" title="definition">Zpow_mod_pos</span> <a class="idref" href="Examples.BigNPow.html#8930e7f5eda167634d1c139bc40f151f"><span class="id" title="notation">[</span></a><span class="id" title="var">a</span><a class="idref" href="Examples.BigNPow.html#8930e7f5eda167634d1c139bc40f151f"><span class="id" title="notation">]</span></a> <span class="id" title="var">m</span> <a class="idref" href="Examples.BigNPow.html#8930e7f5eda167634d1c139bc40f151f"><span class="id" title="notation">[</span></a><span class="id" title="var">n</span><a class="idref" href="Examples.BigNPow.html#8930e7f5eda167634d1c139bc40f151f"><span class="id" title="notation">]</span></a>) <span class="id" title="var">eqn</span>:<span class="id" title="var">e</span>; <span class="id" title="var">cbn</span> [<span class="id" title="definition">Z.eqb</span>].<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;- <span class="id" title="tactic">apply</span> <span class="id" title="lemma">BigN.spec_0</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;- <span class="id" title="tactic">rewrite</span> !<span class="id" title="lemma">BigN.spec_modulo</span>, !<span class="id" title="lemma">BigN.spec_mul</span>, <span class="id" title="var">ih</span>, <span class="id" title="var">e</span>; <span class="id" title="tactic">reflexivity</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;- <span class="id" title="tactic">rewrite</span> !<span class="id" title="lemma">BigN.spec_modulo</span>, !<span class="id" title="lemma">BigN.spec_mul</span>, <span class="id" title="var">ih</span>, <span class="id" title="var">e</span>; <span class="id" title="tactic">reflexivity</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;+ <span class="id" title="tactic">rewrite</span> <span class="id" title="lemma">BigN.spec_eqb</span>, <span class="id" title="lemma">BigN.spec_0</span>, <span class="id" title="var">ih</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">destruct</span> (<span class="id" title="definition">Zpow_mod_pos</span> <a class="idref" href="Examples.BigNPow.html#8930e7f5eda167634d1c139bc40f151f"><span class="id" title="notation">[</span></a><span class="id" title="var">a</span><a class="idref" href="Examples.BigNPow.html#8930e7f5eda167634d1c139bc40f151f"><span class="id" title="notation">]</span></a> <span class="id" title="var">m</span> <a class="idref" href="Examples.BigNPow.html#8930e7f5eda167634d1c139bc40f151f"><span class="id" title="notation">[</span></a><span class="id" title="var">n</span><a class="idref" href="Examples.BigNPow.html#8930e7f5eda167634d1c139bc40f151f"><span class="id" title="notation">]</span></a>) <span class="id" title="var">eqn</span>:<span class="id" title="var">e</span>; <span class="id" title="var">cbn</span> [<span class="id" title="definition">Z.eqb</span>].<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;- <span class="id" title="tactic">apply</span> <span class="id" title="lemma">BigN.spec_0</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;- <span class="id" title="tactic">rewrite</span> !<span class="id" title="lemma">BigN.spec_modulo</span>, !<span class="id" title="lemma">BigN.spec_mul</span>, <span class="id" title="var">ih</span>, <span class="id" title="var">e</span>; <span class="id" title="tactic">reflexivity</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;- <span class="id" title="tactic">rewrite</span> !<span class="id" title="lemma">BigN.spec_modulo</span>, !<span class="id" title="lemma">BigN.spec_mul</span>, <span class="id" title="var">ih</span>, <span class="id" title="var">e</span>; <span class="id" title="tactic">reflexivity</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;+ <span class="id" title="tactic">rewrite</span> <span class="id" title="lemma">BigN.spec_modulo</span>; <span class="id" title="tactic">reflexivity</span>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Qed</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+Conversion from <span class="inlinecode"><span class="id" title="var">Z</span></span> to <span class="inlinecode"><span class="id" title="var">BigN</span></span>, sending non-positive integers to
+      <span class="inlinecode">0</span>. 
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <a id="BigNPow.of_Z" class="idref" href="#BigNPow.of_Z"><span class="id" title="definition">of_Z</span></a> (<a id="z:11" class="idref" href="#z:11"><span class="id" title="binder">z</span></a> : <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Numbers.BinNums.html#Z"><span class="id" title="inductive">Z</span></a>) : <span class="id" title="definition">BigN.t</span> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">match</span> <a class="idref" href="Examples.BigNPow.html#z:11"><span class="id" title="variable">z</span></a> <span class="id" title="keyword">with</span> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Numbers.BinNums.html#Zpos"><span class="id" title="constructor">Zpos</span></a> <span class="id" title="var">p</span> ⇒ <span class="id" title="definition">BigN.of_pos</span> <span class="id" title="var">p</span> | <span class="id" title="var">_</span> ⇒ <span class="id" title="definition">BigN.zero</span> <span class="id" title="keyword">end</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<span class="inlinecode"><span class="id" title="var">of_Z</span></span> is the identity on non-negative integers. 
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <a id="BigNPow.spec_of_Z" class="idref" href="#BigNPow.spec_of_Z"><span class="id" title="lemma">spec_of_Z</span></a> : <span class="id" title="keyword">∀</span> <a id="z:13" class="idref" href="#z:13"><span class="id" title="binder">z</span></a>, 0 <span class="id" title="notation">≤</span> <a class="idref" href="Examples.BigNPow.html#z:13"><span class="id" title="variable">z</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Notations.html#::type_scope:x_'-&gt;'_x"><span class="id" title="notation">→</span></a> <a class="idref" href="Examples.BigNPow.html#8930e7f5eda167634d1c139bc40f151f"><span class="id" title="notation">[</span></a><a class="idref" href="Examples.BigNPow.html#BigNPow.of_Z"><span class="id" title="definition">of_Z</span></a> <a class="idref" href="Examples.BigNPow.html#z:13"><span class="id" title="variable">z</span></a><a class="idref" href="Examples.BigNPow.html#8930e7f5eda167634d1c139bc40f151f"><span class="id" title="notation">]</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Logic.html#6cd0f7b28b6092304087c7049437bb1a"><span class="id" title="notation">=</span></a> <a class="idref" href="Examples.BigNPow.html#z:13"><span class="id" title="variable">z</span></a>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">intros</span> [| <span class="id" title="var">p</span> | <span class="id" title="var">p</span>] <span class="id" title="var">h</span>; <span class="id" title="var">cbn</span> [<a class="idref" href="Examples.BigNPow.html#BigNPow.of_Z"><span class="id" title="definition">of_Z</span></a>].<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;+ <span class="id" title="tactic">apply</span> <span class="id" title="lemma">BigN.spec_0</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;+ <span class="id" title="tactic">apply</span> <span class="id" title="lemma">BigN.spec_of_pos</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;+ <span class="id" title="var">exfalso</span>; <span class="id" title="var">lia</span>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Qed</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+The rewriting lemma used by clients: for <span class="inlinecode"><span class="id" title="var">a</span>,</span> <span class="inlinecode"><span class="id" title="var">n</span></span> <span class="inlinecode">≥</span> <span class="inlinecode">0</span>,
+      <span class="inlinecode"><span class="id" title="var">Zpow_mod</span></span> <span class="inlinecode"><span class="id" title="var">a</span></span> <span class="inlinecode">(<span class="id" title="var">Zpos</span></span> <span class="inlinecode"><span class="id" title="var">m</span>)</span> <span class="inlinecode"><span class="id" title="var">n</span></span> equals the value of the <span class="inlinecode"><span class="id" title="var">BigN</span></span> computation. 
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <a id="BigNPow.bpow_mod_spec" class="idref" href="#BigNPow.bpow_mod_spec"><span class="id" title="lemma">bpow_mod_spec</span></a> : <span class="id" title="keyword">∀</span> <a id="a:14" class="idref" href="#a:14"><span class="id" title="binder">a</span></a> (<a id="m:15" class="idref" href="#m:15"><span class="id" title="binder">m</span></a> : <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Numbers.BinNums.html#positive"><span class="id" title="inductive">positive</span></a>) <a id="n:16" class="idref" href="#n:16"><span class="id" title="binder">n</span></a>, 0 <span class="id" title="notation">≤</span> <a class="idref" href="Examples.BigNPow.html#a:14"><span class="id" title="variable">a</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Notations.html#::type_scope:x_'-&gt;'_x"><span class="id" title="notation">→</span></a> 0 <span class="id" title="notation">≤</span> <a class="idref" href="Examples.BigNPow.html#n:16"><span class="id" title="variable">n</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Notations.html#::type_scope:x_'-&gt;'_x"><span class="id" title="notation">→</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="definition">Zpow_mod</span> <a class="idref" href="Examples.BigNPow.html#a:14"><span class="id" title="variable">a</span></a> (<a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Numbers.BinNums.html#Zpos"><span class="id" title="constructor">Zpos</span></a> <a class="idref" href="Examples.BigNPow.html#m:15"><span class="id" title="variable">m</span></a>) <a class="idref" href="Examples.BigNPow.html#n:16"><span class="id" title="variable">n</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Logic.html#6cd0f7b28b6092304087c7049437bb1a"><span class="id" title="notation">=</span></a> <a class="idref" href="Examples.BigNPow.html#8930e7f5eda167634d1c139bc40f151f"><span class="id" title="notation">[</span></a><a class="idref" href="Examples.BigNPow.html#BigNPow.bpow_mod_pos"><span class="id" title="definition">bpow_mod_pos</span></a> (<a class="idref" href="Examples.BigNPow.html#BigNPow.of_Z"><span class="id" title="definition">of_Z</span></a> <a class="idref" href="Examples.BigNPow.html#a:14"><span class="id" title="variable">a</span></a>) <a class="idref" href="Examples.BigNPow.html#m:15"><span class="id" title="variable">m</span></a> (<a class="idref" href="Examples.BigNPow.html#BigNPow.of_Z"><span class="id" title="definition">of_Z</span></a> <a class="idref" href="Examples.BigNPow.html#n:16"><span class="id" title="variable">n</span></a>)<a class="idref" href="Examples.BigNPow.html#8930e7f5eda167634d1c139bc40f151f"><span class="id" title="notation">]</span></a>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">intros</span>; <span class="id" title="var">cbn</span> [<span class="id" title="definition">Zpow_mod</span>]; <span class="id" title="tactic">rewrite</span> <a class="idref" href="Examples.BigNPow.html#BigNPow.bpow_mod_pos_spec"><span class="id" title="lemma">bpow_mod_pos_spec</span></a>, !<a class="idref" href="Examples.BigNPow.html#BigNPow.spec_of_Z"><span class="id" title="lemma">spec_of_Z</span></a> <span class="id" title="tactic">by</span> <span class="id" title="tactic">assumption</span>; <span class="id" title="tactic">reflexivity</span>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Qed</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">End</span> <a class="idref" href="Examples.BigNPow.html#BigNPow"><span class="id" title="module">BigNPow</span></a>.<br/>
+</div>
+</div>
+
+<div id="footer">
+<hr/><a href="index_symbols.html">Index</a><hr/>This page has been generated by <a href="http://rocq-prover.org/">coqdoc</a>
+</div>
+
+</div>
+
+</body>
+</html>

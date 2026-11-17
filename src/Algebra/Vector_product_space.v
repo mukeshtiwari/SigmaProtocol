@@ -1,20 +1,28 @@
-(* The n-fold product of a vector space over F is a vector space, with
-   pointwise operations on Vector.t V n. Used to write several group
-   equations that share witnesses as one multi-base statement in a single
-   vector space, so that the generalised Okamoto protocol (Crypto/Okamoto.v)
-   and its theorems apply: the round-2 statement of the Terelius–Wikström
-   shuffle, U-Prove presentations with pseudonyms, and the like. The two-fold
-   product with distinct component spaces is Algebra/Product_space.v. *)
+(** * The vector space [V ^ n] of length-indexed vectors *)
 
+(** For a vector space [V] over a field [F] (with Leibniz equality), the
+    type [Vector.t V n] of length-[n] vectors with componentwise operations
+    is again a vector space over [F] ([vec_vspace]). This lets the generic
+    Sigma-protocol machinery be applied to tuples of group elements, for
+    example to [n] commitments or ciphertexts at once (it is used by
+    [Crypto/OkamotoRows.v], [Crypto/BayerGrothZK.v], [Crypto/MultiExp.v],
+    [Crypto/UProve.v], [Crypto/BBSSharp.v] and the Schulze front ends).
+
+    The file also provides the two dependent-pattern-matching inversion
+    lemmas [vector_inv_0] and [vector_inv_S], used for induction on the
+    length, decidable equality [vec_dec], the componentwise group and
+    action laws, and [nth]-projection lemmas. *)
 From Stdlib Require Import Morphisms Utf8 RelationClasses Vector VectorEq Bool.
 From Algebra Require Import Hierarchy.
 Import VectorNotations.
 
-(* the two inversion lemmas of Utility/Util.v, restated here because the
-   Algebra theory does not depend on Utility *)
+(** ** Inversion of length-indexed vectors *)
 Section Inv.
+  (** Element type of the vectors. *)
   Context {R : Type}.
 
+  (** Every vector of length [0] is [nil]. Proved by a dependent match so
+      that the term reduces (it is closed with [Defined]). *)
   Lemma vector_inv_0 (v : Vector.t R 0) : v = @Vector.nil R.
   Proof.
     refine
@@ -28,6 +36,8 @@ Section Inv.
       end).
   Defined.
 
+  (** Every vector of length [S n] is a cons [h :: t]; the head and tail
+      are returned as computational data. *)
   Lemma vector_inv_S : forall {n : nat} (v : Vector.t R (S n)),
     {h : R & {t : Vector.t R n | v = h :: t}}.
   Proof.
@@ -45,20 +55,27 @@ Section Inv.
   Defined.
 End Inv.
 
+(** ** Componentwise vector-space structure on [Vector.t V n] *)
 Section VectorProduct.
 
+  (** A vector space [V] over [F], both with Leibniz equality. *)
   Context
     {F : Type} {zero one : F} {add mul sub div : F -> F -> F} {opp inv : F -> F}
     {V : Type} {vid : V} {vopp : V -> V} {vadd : V -> V -> V} {smul : V -> F -> V}
     {HV : @vector_space F (@eq F) zero one add mul sub div opp inv V (@eq V) vid vopp vadd smul}.
 
-  (* the operations, for any length *)
+  (** Componentwise operations on [Vector.t V n]: the zero vector
+      [vec_id n] (all entries [vid]), negation [vec_opp], addition
+      [vec_add] and scalar action [vec_smul x r], which scales every entry
+      by the same scalar [r]. *)
   Definition vec_id (n : nat) : Vector.t V n := Vector.const vid n.
   Definition vec_opp {n : nat} (x : Vector.t V n) : Vector.t V n := Vector.map vopp x.
   Definition vec_add {n : nat} (x y : Vector.t V n) : Vector.t V n := Vector.map2 vadd x y.
   Definition vec_smul {n : nat} (x : Vector.t V n) (r : F) : Vector.t V n :=
     Vector.map (fun v => smul v r) x.
 
+  (** Decidable equality on [Vector.t V n] from decidable equality on [V],
+      by induction on [n]. Transparent so that it computes. *)
   Definition vec_dec (d : forall x y : V, {x = y} + {x <> y}) {n : nat} :
     forall x y : Vector.t V n, {x = y} + {x <> y}.
   Proof.
@@ -72,7 +89,20 @@ Section VectorProduct.
       - right; intro h; apply ne; exact (f_equal Vector.hd h).
   Defined.
 
-  (* pointwise laws, by induction on the length *)
+  (** *** Componentwise laws
+
+      Each lemma below is proved by induction on the length [n], peeling
+      off the head with [vector_inv_S] and applying the corresponding law
+      of [V] to it:
+
+      - [vec_add_assoc], [vec_add_comm]: associativity and commutativity;
+      - [vec_add_id_l], [vec_add_id_r]: [vec_id n] is a two-sided identity;
+      - [vec_add_opp_l], [vec_add_opp_r]: [vec_opp] gives two-sided
+        inverses;
+      - [vec_smul_one], [vec_smul_zero]: scaling by [1] and [0];
+      - [vec_smul_assoc]: [x *s (r * s) = (x *s r) *s s];
+      - [vec_smul_fadd]: [x *s (r + s) = x *s r + x *s s];
+      - [vec_smul_vadd]: [(x + y) *s r = x *s r + y *s r]. *)
   Lemma vec_add_assoc : forall n (x y z : Vector.t V n),
     vec_add x (vec_add y z) = vec_add (vec_add x y) z.
   Proof.
@@ -169,6 +199,9 @@ Section VectorProduct.
       unfold vec_smul, vec_add in *; cbn; f_equal; [apply smul_distributive_vadd | apply ih].
   Qed.
 
+  (** *** Instances *)
+
+  (** [Vector.t V n] is a commutative group under [vec_add]. *)
   Global Instance vec_comm_group (n : nat) :
     @commutative_group (Vector.t V n) (@eq (Vector.t V n)) vec_add (vec_id n) vec_opp.
   Proof.
@@ -194,6 +227,7 @@ Section VectorProduct.
     + apply vec_add_comm.
   Qed.
 
+  (** [Vector.t V n] is a vector space over [F] under [vec_smul]. *)
   Global Instance vec_vspace (n : nat) :
     @vector_space F (@eq F) zero one add mul sub div opp inv
       (Vector.t V n) (@eq (Vector.t V n)) (vec_id n) vec_opp vec_add vec_smul.
@@ -216,7 +250,9 @@ Section VectorProduct.
     + apply vec_smul_vadd.
   Qed.
 
-  (* the coordinates of a sum and a scalar multiple *)
+  (** *** Projections
+
+      The [i]-th entry of a sum, a scaled vector and the zero vector. *)
   Lemma nth_vec_add : forall n (x y : Vector.t V n) (i : Fin.t n),
     (vec_add x y)[@i] = vadd x[@i] y[@i].
   Proof. intros; unfold vec_add; exact (Vector.nth_map2 vadd x y i i i eq_refl eq_refl). Qed.

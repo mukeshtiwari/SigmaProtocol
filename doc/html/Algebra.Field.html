@@ -1,0 +1,343 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<link href="coqdoc.css" rel="stylesheet" type="text/css" />
+<title>Algebra.Field</title>
+</head>
+
+<body>
+
+<div id="page">
+
+<div id="header">
+</div>
+
+<div id="main">
+
+<h1 class="libtitle">Library Algebra.Field</h1>
+
+<div class="code">
+</div>
+
+<div class="doc">
+<a id="lab1"></a><h1 class="section">Field lemmas and the bridge to the <span class="inlinecode"><span class="id" title="tactic">field</span></span> tactic</h1>
+
+<div class="paragraph"> </div>
+
+ Elementary consequences of the <span class="inlinecode"><span class="id" title="tactic">field</span></span> class of <span class="inlinecode"><span class="id" title="var">Hierarchy.v</span></span>. The main
+    item is <span class="inlinecode"><span class="id" title="var">field_theory_for_stdlib_tactic</span></span>, which packages a field as a
+    standard-library <span class="inlinecode"><span class="id" title="var">Field_theory.field_theory</span></span> record; virtually every
+    cryptographic file uses it as
+
+<div class="paragraph"> </div>
+
+    <br/>
+<span class="inlinecode">&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Add</span> <span class="id" title="var">Field</span> <span class="id" title="tactic">field</span> : (@<span class="id" title="var">field_theory_for_stdlib_tactic</span> <span class="id" title="var">F</span> <span class="id" title="var">eq</span> <span class="id" title="var">zero</span> <span class="id" title="var">one</span> <span class="id" title="var">opp</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">add</span> <span class="id" title="var">mul</span> <span class="id" title="var">sub</span> <span class="id" title="var">inv</span> <span class="id" title="var">div</span> <span class="id" title="var">vector_space_field</span>).<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;
+<div class="paragraph"> </div>
+
+</span>
+<div class="paragraph"> </div>
+
+    to obtain the <span class="inlinecode"><span class="id" title="tactic">field</span></span> and <span class="inlinecode"><span class="id" title="tactic">ring</span></span> tactics on the scalar field <span class="inlinecode"><span class="id" title="var">Z_q</span></span>. The
+    remaining lemmas are small identities about inverses and division, and
+    the instance <span class="inlinecode"><span class="id" title="var">integral_domain</span></span>, which shows that a field with decidable
+    equality has no zero divisors. 
+</div>
+<div class="code">
+<span class="id" title="keyword">From</span> <span class="id" title="var">Stdlib</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span><br/>
+&nbsp;&nbsp;<span class="id" title="library">Morphisms</span> <span class="id" title="library">Lia</span> <span class="id" title="library">Field_theory</span><br/>
+&nbsp;&nbsp;<span class="id" title="library">Field_tac</span>.<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">Algebra</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span><br/>
+&nbsp;&nbsp;<a class="idref" href="Algebra.Hierarchy.html#"><span class="id" title="library">Hierarchy</span></a> <a class="idref" href="Algebra.Monoid.html#"><span class="id" title="library">Monoid</span></a> <a class="idref" href="Algebra.Group.html#"><span class="id" title="library">Group</span></a><br/>
+&nbsp;&nbsp;<a class="idref" href="Algebra.Ring.html#"><span class="id" title="library">Ring</span></a> <a class="idref" href="Algebra.Integral_domain.html#"><span class="id" title="library">Integral_domain</span></a>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<a id="lab2"></a><h2 class="section">Fields</h2>
+
+</div>
+<div class="code">
+<span class="id" title="keyword">Section</span> <a id="Field" class="idref" href="#Field"><span class="id" title="section">Field</span></a>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+An arbitrary field with inverse <span class="inlinecode"><span class="id" title="var">inv</span></span> and division <span class="inlinecode"><span class="id" title="var">div</span></span>. 
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Context</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;{<a id="Field.T" class="idref" href="#Field.T"><span class="id" title="variable">T</span></a> : <span class="id" title="keyword">Type</span>}<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;{<a id="Field.eq" class="idref" href="#Field.eq"><span class="id" title="variable">eq</span></a> : <a class="idref" href="Algebra.Field.html#T:1"><span class="id" title="variable">T</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Notations.html#::type_scope:x_'-&gt;'_x"><span class="id" title="notation">→</span></a> <a class="idref" href="Algebra.Field.html#T:1"><span class="id" title="variable">T</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Notations.html#::type_scope:x_'-&gt;'_x"><span class="id" title="notation">→</span></a> <span class="id" title="keyword">Prop</span>}<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;{<a id="Field.zero" class="idref" href="#Field.zero"><span class="id" title="variable">zero</span></a> <a id="Field.one" class="idref" href="#Field.one"><span class="id" title="variable">one</span></a> : <a class="idref" href="Algebra.Field.html#T:1"><span class="id" title="variable">T</span></a>}<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;{<a id="Field.opp" class="idref" href="#Field.opp"><span class="id" title="variable">opp</span></a> : <a class="idref" href="Algebra.Field.html#T:1"><span class="id" title="variable">T</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Notations.html#::type_scope:x_'-&gt;'_x"><span class="id" title="notation">→</span></a> <a class="idref" href="Algebra.Field.html#T:1"><span class="id" title="variable">T</span></a>}<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;{<a id="Field.add" class="idref" href="#Field.add"><span class="id" title="variable">add</span></a> <a id="Field.mul" class="idref" href="#Field.mul"><span class="id" title="variable">mul</span></a> <a id="Field.sub" class="idref" href="#Field.sub"><span class="id" title="variable">sub</span></a> : <a class="idref" href="Algebra.Field.html#T:1"><span class="id" title="variable">T</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Notations.html#::type_scope:x_'-&gt;'_x"><span class="id" title="notation">→</span></a> <a class="idref" href="Algebra.Field.html#T:1"><span class="id" title="variable">T</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Notations.html#::type_scope:x_'-&gt;'_x"><span class="id" title="notation">→</span></a> <a class="idref" href="Algebra.Field.html#T:1"><span class="id" title="variable">T</span></a>}<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;{<a id="Field.inv" class="idref" href="#Field.inv"><span class="id" title="variable">inv</span></a> : <a class="idref" href="Algebra.Field.html#T:1"><span class="id" title="variable">T</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Notations.html#::type_scope:x_'-&gt;'_x"><span class="id" title="notation">→</span></a> <a class="idref" href="Algebra.Field.html#T:1"><span class="id" title="variable">T</span></a>}<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;{<a id="Field.div" class="idref" href="#Field.div"><span class="id" title="variable">div</span></a> : <a class="idref" href="Algebra.Field.html#T:1"><span class="id" title="variable">T</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Notations.html#::type_scope:x_'-&gt;'_x"><span class="id" title="notation">→</span></a> <a class="idref" href="Algebra.Field.html#T:1"><span class="id" title="variable">T</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Notations.html#::type_scope:x_'-&gt;'_x"><span class="id" title="notation">→</span></a> <a class="idref" href="Algebra.Field.html#T:1"><span class="id" title="variable">T</span></a>}<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;{<a id="Field.Hfield" class="idref" href="#Field.Hfield"><span class="id" title="variable">Hfield</span></a>: @<a class="idref" href="Algebra.Hierarchy.html#field"><span class="id" title="class">field</span></a> <a class="idref" href="Algebra.Field.html#T:1"><span class="id" title="variable">T</span></a> <a class="idref" href="Algebra.Field.html#eq:2"><span class="id" title="variable">eq</span></a> <a class="idref" href="Algebra.Field.html#zero:3"><span class="id" title="variable">zero</span></a> <a class="idref" href="Algebra.Field.html#one:4"><span class="id" title="variable">one</span></a> <a class="idref" href="Algebra.Field.html#opp:5"><span class="id" title="variable">opp</span></a> <a class="idref" href="Algebra.Field.html#add:6"><span class="id" title="variable">add</span></a> <a class="idref" href="Algebra.Field.html#sub:8"><span class="id" title="variable">sub</span></a> <a class="idref" href="Algebra.Field.html#mul:7"><span class="id" title="variable">mul</span></a> <a class="idref" href="Algebra.Field.html#inv:9"><span class="id" title="variable">inv</span></a> <a class="idref" href="Algebra.Field.html#div:10"><span class="id" title="variable">div</span></a>}.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Local Infix</span> <a id="95afa9ce8a20a6840779e4792301b8e5" class="idref" href="#95afa9ce8a20a6840779e4792301b8e5"><span class="id" title="notation">&quot;</span></a>=" := <a class="idref" href="Algebra.Field.html#Field.eq"><span class="id" title="variable">eq</span></a> : <span class="id" title="var">type_scope</span>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Local Notation</span> <a id="Field.::type_scope:x_'&lt;&gt;'_x" class="idref" href="#Field.::type_scope:x_'&lt;&gt;'_x"><span class="id" title="notation">&quot;</span></a>a &lt;&gt; b" := (<a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Logic.html#not"><span class="id" title="definition">not</span></a> (<span class="id" title="var">a</span> <a class="idref" href="Algebra.Field.html#95afa9ce8a20a6840779e4792301b8e5"><span class="id" title="notation">=</span></a> <span class="id" title="var">b</span>)) : <span class="id" title="var">type_scope</span>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Local Notation</span> <a id="Field.:::'0'" class="idref" href="#Field.:::'0'"><span class="id" title="notation">&quot;</span></a>0" := <a class="idref" href="Algebra.Field.html#Field.zero"><span class="id" title="variable">zero</span></a>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Local Notation</span> <a id="Field.:::'1'" class="idref" href="#Field.:::'1'"><span class="id" title="notation">&quot;</span></a>1" := <a class="idref" href="Algebra.Field.html#Field.one"><span class="id" title="variable">one</span></a>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Local Infix</span> <a id="5dfcd33079d78aca42ce51e1c73626c2" class="idref" href="#5dfcd33079d78aca42ce51e1c73626c2"><span class="id" title="notation">&quot;</span></a>+" := <a class="idref" href="Algebra.Field.html#Field.add"><span class="id" title="variable">add</span></a>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Local Infix</span> <a id="4f493fe657a93bb5d792ba4e15bc8838" class="idref" href="#4f493fe657a93bb5d792ba4e15bc8838"><span class="id" title="notation">&quot;</span></a>×" := <a class="idref" href="Algebra.Field.html#Field.mul"><span class="id" title="variable">mul</span></a>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+A field of the hierarchy satisfies the standard library's
+      <span class="inlinecode"><span class="id" title="var">field_theory</span></span>: the underlying commutative ring satisfies
+      <span class="inlinecode"><span class="id" title="var">ring_theory</span></span>, <span class="inlinecode">1</span> <span class="inlinecode">≠</span> <span class="inlinecode">0</span>, <span class="inlinecode"><span class="id" title="var">div</span></span> <span class="inlinecode"><span class="id" title="var">x</span></span> <span class="inlinecode"><span class="id" title="var">y</span></span> <span class="inlinecode">=</span> <span class="inlinecode"><span class="id" title="var">x</span></span> <span class="inlinecode">×</span> <span class="inlinecode"><span class="id" title="var">inv</span></span> <span class="inlinecode"><span class="id" title="var">y</span></span>, and
+      <span class="inlinecode"><span class="id" title="var">x</span></span> <span class="inlinecode">≠</span> <span class="inlinecode">0</span> <span class="inlinecode">→</span> <span class="inlinecode"><span class="id" title="var">inv</span></span> <span class="inlinecode"><span class="id" title="var">x</span></span> <span class="inlinecode">×</span> <span class="inlinecode"><span class="id" title="var">x</span></span> <span class="inlinecode">=</span> <span class="inlinecode">1</span>. 
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <a id="field_theory_for_stdlib_tactic" class="idref" href="#field_theory_for_stdlib_tactic"><span class="id" title="lemma">field_theory_for_stdlib_tactic</span></a> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="record">Field_theory.field_theory</span> 0 1 <a class="idref" href="Algebra.Field.html#Field.add"><span class="id" title="variable">add</span></a> <a class="idref" href="Algebra.Field.html#Field.mul"><span class="id" title="variable">mul</span></a> <a class="idref" href="Algebra.Field.html#Field.sub"><span class="id" title="variable">sub</span></a> <a class="idref" href="Algebra.Field.html#Field.opp"><span class="id" title="variable">opp</span></a> <a class="idref" href="Algebra.Field.html#Field.div"><span class="id" title="variable">div</span></a> <a class="idref" href="Algebra.Field.html#Field.inv"><span class="id" title="variable">inv</span></a> <a class="idref" href="Algebra.Field.html#Field.eq"><span class="id" title="variable">eq</span></a>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">constructor</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">apply</span> <a class="idref" href="Algebra.Ring.html#ring_theory_for_stdlib_tactic"><span class="id" title="lemma">ring_theory_for_stdlib_tactic</span></a>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">intro</span> <span class="id" title="var">Hn</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">symmetry</span> <span class="id" title="tactic">in</span> <span class="id" title="var">Hn</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">pose</span> <span class="id" title="var">proof</span> (<a class="idref" href="Algebra.Hierarchy.html#zero_neq_one"><span class="id" title="definition">zero_neq_one</span></a> (<span class="id" title="var">eq</span>:=<a class="idref" href="Algebra.Field.html#Field.eq"><span class="id" title="variable">eq</span></a>)) <span class="id" title="keyword">as</span> <span class="id" title="var">Ha</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">eapply</span> <span class="id" title="var">Ha</span> <span class="id" title="tactic">in</span> <span class="id" title="var">Hn</span>; <span class="id" title="tactic">assumption</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">apply</span> <a class="idref" href="Algebra.Hierarchy.html#field_div_definition"><span class="id" title="method">field_div_definition</span></a>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">apply</span> <a class="idref" href="Algebra.Hierarchy.html#left_multiplicative_inverse"><span class="id" title="definition">left_multiplicative_inverse</span></a>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Qed</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+The additive inverse cancels on the left: <span class="inlinecode"><span class="id" title="var">opp</span></span> <span class="inlinecode"><span class="id" title="var">x</span></span> <span class="inlinecode">+</span> <span class="inlinecode"><span class="id" title="var">x</span></span> <span class="inlinecode">=</span> <span class="inlinecode">0</span>. 
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <a id="field_zero_iff_left" class="idref" href="#field_zero_iff_left"><span class="id" title="lemma">field_zero_iff_left</span></a> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">∀</span> <a id="x:12" class="idref" href="#x:12"><span class="id" title="binder">x</span></a>, <a class="idref" href="Algebra.Field.html#5dfcd33079d78aca42ce51e1c73626c2"><span class="id" title="notation">(</span></a><a class="idref" href="Algebra.Field.html#Field.opp"><span class="id" title="variable">opp</span></a> <a class="idref" href="Algebra.Field.html#x:12"><span class="id" title="variable">x</span></a><a class="idref" href="Algebra.Field.html#5dfcd33079d78aca42ce51e1c73626c2"><span class="id" title="notation">)</span></a> <a class="idref" href="Algebra.Field.html#5dfcd33079d78aca42ce51e1c73626c2"><span class="id" title="notation">+</span></a> <a class="idref" href="Algebra.Field.html#x:12"><span class="id" title="variable">x</span></a> <a class="idref" href="Algebra.Field.html#95afa9ce8a20a6840779e4792301b8e5"><span class="id" title="notation">=</span></a> <a class="idref" href="Algebra.Field.html#Field.zero"><span class="id" title="variable">zero</span></a>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">intros</span> ?; <span class="id" title="tactic">rewrite</span> <a class="idref" href="Algebra.Hierarchy.html#left_inverse"><span class="id" title="definition">left_inverse</span></a>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">reflexivity</span>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Qed</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+The additive inverse cancels on the right: <span class="inlinecode"><span class="id" title="var">x</span></span> <span class="inlinecode">+</span> <span class="inlinecode"><span class="id" title="var">opp</span></span> <span class="inlinecode"><span class="id" title="var">x</span></span> <span class="inlinecode">=</span> <span class="inlinecode">0</span>. 
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <a id="field_zero_iff_right" class="idref" href="#field_zero_iff_right"><span class="id" title="lemma">field_zero_iff_right</span></a> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">∀</span> <a id="x:13" class="idref" href="#x:13"><span class="id" title="binder">x</span></a>, <a class="idref" href="Algebra.Field.html#x:13"><span class="id" title="variable">x</span></a> <a class="idref" href="Algebra.Field.html#5dfcd33079d78aca42ce51e1c73626c2"><span class="id" title="notation">+</span></a> <a class="idref" href="Algebra.Field.html#5dfcd33079d78aca42ce51e1c73626c2"><span class="id" title="notation">(</span></a><a class="idref" href="Algebra.Field.html#Field.opp"><span class="id" title="variable">opp</span></a> <a class="idref" href="Algebra.Field.html#x:13"><span class="id" title="variable">x</span></a><a class="idref" href="Algebra.Field.html#5dfcd33079d78aca42ce51e1c73626c2"><span class="id" title="notation">)</span></a> <a class="idref" href="Algebra.Field.html#95afa9ce8a20a6840779e4792301b8e5"><span class="id" title="notation">=</span></a> <a class="idref" href="Algebra.Field.html#Field.zero"><span class="id" title="variable">zero</span></a>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">intros</span> ?; <span class="id" title="tactic">rewrite</span> <a class="idref" href="Algebra.Hierarchy.html#right_inverse"><span class="id" title="definition">right_inverse</span></a>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">reflexivity</span>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Qed</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+Right multiplicative inverse, from the left one by commutativity:
+      <span class="inlinecode"><span class="id" title="var">x</span></span> <span class="inlinecode">≠</span> <span class="inlinecode">0</span> <span class="inlinecode">→</span> <span class="inlinecode"><span class="id" title="var">x</span></span> <span class="inlinecode">×</span> <span class="inlinecode"><span class="id" title="var">inv</span></span> <span class="inlinecode"><span class="id" title="var">x</span></span> <span class="inlinecode">=</span> <span class="inlinecode">1</span>. 
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <a id="field_right_multiplicative_inverse" class="idref" href="#field_right_multiplicative_inverse"><span class="id" title="lemma">field_right_multiplicative_inverse</span></a> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">∀</span> <a id="x:14" class="idref" href="#x:14"><span class="id" title="binder">x</span></a> : <a class="idref" href="Algebra.Field.html#Field.T"><span class="id" title="variable">T</span></a>, <a class="idref" href="Algebra.Field.html#x:14"><span class="id" title="variable">x</span></a> <a class="idref" href="Algebra.Field.html#Field.::type_scope:x_'&lt;&gt;'_x"><span class="id" title="notation">≠</span></a> 0 <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Notations.html#::type_scope:x_'-&gt;'_x"><span class="id" title="notation">→</span></a> <a class="idref" href="Algebra.Field.html#Field.mul"><span class="id" title="variable">mul</span></a> <a class="idref" href="Algebra.Field.html#x:14"><span class="id" title="variable">x</span></a> (<a class="idref" href="Algebra.Field.html#Field.inv"><span class="id" title="variable">inv</span></a> <a class="idref" href="Algebra.Field.html#x:14"><span class="id" title="variable">x</span></a>) <a class="idref" href="Algebra.Field.html#95afa9ce8a20a6840779e4792301b8e5"><span class="id" title="notation">=</span></a> 1.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">intros</span> ? <span class="id" title="var">Hx</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">rewrite</span> <a class="idref" href="Algebra.Hierarchy.html#commutative"><span class="id" title="definition">commutative</span></a>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">eapply</span> <a class="idref" href="Algebra.Hierarchy.html#left_multiplicative_inverse"><span class="id" title="definition">left_multiplicative_inverse</span></a>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">assumption</span>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Qed</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+Uniqueness of the multiplicative inverse, left form:
+      <span class="inlinecode"><span class="id" title="var">y</span></span> <span class="inlinecode">×</span> <span class="inlinecode"><span class="id" title="var">x</span></span> <span class="inlinecode">=</span> <span class="inlinecode">1</span> <span class="inlinecode">→</span> <span class="inlinecode"><span class="id" title="var">y</span></span> <span class="inlinecode">=</span> <span class="inlinecode"><span class="id" title="var">inv</span></span> <span class="inlinecode"><span class="id" title="var">x</span></span>. The hypothesis forces <span class="inlinecode"><span class="id" title="var">x</span></span> <span class="inlinecode">≠</span> <span class="inlinecode">0</span>, since
+      otherwise <span class="inlinecode"><span class="id" title="var">y</span></span> <span class="inlinecode">×</span> <span class="inlinecode"><span class="id" title="var">x</span></span> <span class="inlinecode">=</span> <span class="inlinecode">0</span> <span class="inlinecode">≠</span> <span class="inlinecode">1</span>. 
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <a id="field_left_inv_unique" class="idref" href="#field_left_inv_unique"><span class="id" title="lemma">field_left_inv_unique</span></a> :<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">∀</span> <a id="x:15" class="idref" href="#x:15"><span class="id" title="binder">x</span></a> <a id="y:16" class="idref" href="#y:16"><span class="id" title="binder">y</span></a>, <a class="idref" href="Algebra.Field.html#y:16"><span class="id" title="variable">y</span></a> <a class="idref" href="Algebra.Field.html#4f493fe657a93bb5d792ba4e15bc8838"><span class="id" title="notation">×</span></a> <a class="idref" href="Algebra.Field.html#x:15"><span class="id" title="variable">x</span></a> <a class="idref" href="Algebra.Field.html#95afa9ce8a20a6840779e4792301b8e5"><span class="id" title="notation">=</span></a> <a class="idref" href="Algebra.Field.html#Field.one"><span class="id" title="variable">one</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Notations.html#::type_scope:x_'-&gt;'_x"><span class="id" title="notation">→</span></a> <a class="idref" href="Algebra.Field.html#y:16"><span class="id" title="variable">y</span></a> <a class="idref" href="Algebra.Field.html#95afa9ce8a20a6840779e4792301b8e5"><span class="id" title="notation">=</span></a> <a class="idref" href="Algebra.Field.html#Field.inv"><span class="id" title="variable">inv</span></a> <a class="idref" href="Algebra.Field.html#x:15"><span class="id" title="variable">x</span></a>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">intros</span> ? ? <span class="id" title="var">Hxy</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">assert</span> (<span class="id" title="var">Ht</span> : <span class="id" title="var">y</span> <a class="idref" href="Algebra.Field.html#4f493fe657a93bb5d792ba4e15bc8838"><span class="id" title="notation">×</span></a> <span class="id" title="var">x</span> <a class="idref" href="Algebra.Field.html#4f493fe657a93bb5d792ba4e15bc8838"><span class="id" title="notation">×</span></a> <a class="idref" href="Algebra.Field.html#Field.inv"><span class="id" title="variable">inv</span></a> <span class="id" title="var">x</span> <a class="idref" href="Algebra.Field.html#95afa9ce8a20a6840779e4792301b8e5"><span class="id" title="notation">=</span></a> <a class="idref" href="Algebra.Field.html#Field.inv"><span class="id" title="variable">inv</span></a> <span class="id" title="var">x</span>).<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">rewrite</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">Hxy</span>,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="Algebra.Hierarchy.html#left_identity"><span class="id" title="definition">left_identity</span></a>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">reflexivity</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">rewrite</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;-<a class="idref" href="Algebra.Hierarchy.html#associative"><span class="id" title="definition">associative</span></a>,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="Algebra.Field.html#field_right_multiplicative_inverse"><span class="id" title="lemma">field_right_multiplicative_inverse</span></a>,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="Algebra.Hierarchy.html#right_identity"><span class="id" title="definition">right_identity</span></a> <span class="id" title="tactic">in</span> <span class="id" title="var">Ht</span>; <span class="id" title="tactic">trivial</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">intros</span> <span class="id" title="var">Hx</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">rewrite</span> <span class="id" title="var">Hx</span>, <a class="idref" href="Algebra.Ring.html#ring_mul_0_r"><span class="id" title="lemma">ring_mul_0_r</span></a> <span class="id" title="tactic">in</span> <span class="id" title="var">Hxy</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">apply</span> <a class="idref" href="Algebra.Hierarchy.html#field_is_zero_neq_one"><span class="id" title="method">field_is_zero_neq_one</span></a> <span class="id" title="tactic">in</span> <span class="id" title="var">Hxy</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">exact</span> <span class="id" title="var">Hxy</span>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Qed</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+Uniqueness of the multiplicative inverse, right form:
+      <span class="inlinecode"><span class="id" title="var">x</span></span> <span class="inlinecode">×</span> <span class="inlinecode"><span class="id" title="var">y</span></span> <span class="inlinecode">=</span> <span class="inlinecode">1</span> <span class="inlinecode">→</span> <span class="inlinecode"><span class="id" title="var">y</span></span> <span class="inlinecode">=</span> <span class="inlinecode"><span class="id" title="var">inv</span></span> <span class="inlinecode"><span class="id" title="var">x</span></span>. 
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <a id="field_right_inv_unique" class="idref" href="#field_right_inv_unique"><span class="id" title="lemma">field_right_inv_unique</span></a> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">∀</span> <a id="x:17" class="idref" href="#x:17"><span class="id" title="binder">x</span></a> <a id="y:18" class="idref" href="#y:18"><span class="id" title="binder">y</span></a>, <a class="idref" href="Algebra.Field.html#x:17"><span class="id" title="variable">x</span></a> <a class="idref" href="Algebra.Field.html#4f493fe657a93bb5d792ba4e15bc8838"><span class="id" title="notation">×</span></a> <a class="idref" href="Algebra.Field.html#y:18"><span class="id" title="variable">y</span></a> <a class="idref" href="Algebra.Field.html#95afa9ce8a20a6840779e4792301b8e5"><span class="id" title="notation">=</span></a> <a class="idref" href="Algebra.Field.html#Field.one"><span class="id" title="variable">one</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Notations.html#::type_scope:x_'-&gt;'_x"><span class="id" title="notation">→</span></a> <a class="idref" href="Algebra.Field.html#y:18"><span class="id" title="variable">y</span></a> <a class="idref" href="Algebra.Field.html#95afa9ce8a20a6840779e4792301b8e5"><span class="id" title="notation">=</span></a> <a class="idref" href="Algebra.Field.html#Field.inv"><span class="id" title="variable">inv</span></a> <a class="idref" href="Algebra.Field.html#x:17"><span class="id" title="variable">x</span></a>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">intros</span> ? ? <span class="id" title="var">H</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">rewrite</span> <a class="idref" href="Algebra.Hierarchy.html#commutative"><span class="id" title="definition">commutative</span></a> <span class="id" title="tactic">in</span> <span class="id" title="var">H</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">apply</span> <a class="idref" href="Algebra.Field.html#field_left_inv_unique"><span class="id" title="lemma">field_left_inv_unique</span></a>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">exact</span> <span class="id" title="var">H</span>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Qed</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+Dividing by one is the identity: <span class="inlinecode"><span class="id" title="var">div</span></span> <span class="inlinecode"><span class="id" title="var">x</span></span> <span class="inlinecode">1</span> <span class="inlinecode">=</span> <span class="inlinecode"><span class="id" title="var">x</span></span>. 
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <a id="field_div_one" class="idref" href="#field_div_one"><span class="id" title="lemma">field_div_one</span></a>:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">∀</span> <a id="x:19" class="idref" href="#x:19"><span class="id" title="binder">x</span></a>, <a class="idref" href="Algebra.Field.html#Field.div"><span class="id" title="variable">div</span></a> <a class="idref" href="Algebra.Field.html#x:19"><span class="id" title="variable">x</span></a> <a class="idref" href="Algebra.Field.html#Field.one"><span class="id" title="variable">one</span></a> <a class="idref" href="Algebra.Field.html#95afa9ce8a20a6840779e4792301b8e5"><span class="id" title="notation">=</span></a> <a class="idref" href="Algebra.Field.html#x:19"><span class="id" title="variable">x</span></a>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">intros</span> ?.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">rewrite</span> <a class="idref" href="Algebra.Hierarchy.html#field_div_definition"><span class="id" title="method">field_div_definition</span></a>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">rewrite</span> &lt;-(<a class="idref" href="Algebra.Field.html#field_left_inv_unique"><span class="id" title="lemma">field_left_inv_unique</span></a> 1 1);<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">apply</span> <a class="idref" href="Algebra.Hierarchy.html#monoid_is_right_identity"><span class="id" title="method">monoid_is_right_identity</span></a>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Qed</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+For non-zero <span class="inlinecode"><span class="id" title="var">y</span></span>, <span class="inlinecode"><span class="id" title="var">x</span></span> <span class="inlinecode">×</span> <span class="inlinecode"><span class="id" title="var">y</span></span> <span class="inlinecode">=</span> <span class="inlinecode"><span class="id" title="var">y</span></span> holds exactly when <span class="inlinecode"><span class="id" title="var">x</span></span> <span class="inlinecode">=</span> <span class="inlinecode">1</span>. 
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <a id="field_mul_cancel_l_iff" class="idref" href="#field_mul_cancel_l_iff"><span class="id" title="lemma">field_mul_cancel_l_iff</span></a> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">∀</span> <a id="x:20" class="idref" href="#x:20"><span class="id" title="binder">x</span></a> <a id="y:21" class="idref" href="#y:21"><span class="id" title="binder">y</span></a>, <a class="idref" href="Algebra.Field.html#y:21"><span class="id" title="variable">y</span></a> <a class="idref" href="Algebra.Field.html#Field.::type_scope:x_'&lt;&gt;'_x"><span class="id" title="notation">≠</span></a> 0 <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Notations.html#::type_scope:x_'-&gt;'_x"><span class="id" title="notation">→</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Notations.html#::type_scope:x_'-&gt;'_x"><span class="id" title="notation">(</span></a><a class="idref" href="Algebra.Field.html#x:20"><span class="id" title="variable">x</span></a> <a class="idref" href="Algebra.Field.html#4f493fe657a93bb5d792ba4e15bc8838"><span class="id" title="notation">×</span></a> <a class="idref" href="Algebra.Field.html#y:21"><span class="id" title="variable">y</span></a> <a class="idref" href="Algebra.Field.html#95afa9ce8a20a6840779e4792301b8e5"><span class="id" title="notation">=</span></a> <a class="idref" href="Algebra.Field.html#y:21"><span class="id" title="variable">y</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Logic.html#::type_scope:x_'&lt;-&gt;'_x"><span class="id" title="notation">↔</span></a> <a class="idref" href="Algebra.Field.html#x:20"><span class="id" title="variable">x</span></a> <a class="idref" href="Algebra.Field.html#95afa9ce8a20a6840779e4792301b8e5"><span class="id" title="notation">=</span></a> <a class="idref" href="Algebra.Field.html#Field.one"><span class="id" title="variable">one</span></a><a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Notations.html#::type_scope:x_'-&gt;'_x"><span class="id" title="notation">)</span></a>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">intros</span> <span class="id" title="var">x</span> <span class="id" title="var">y</span> <span class="id" title="var">Ht</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">split</span>; <span class="id" title="tactic">intros</span> <span class="id" title="var">H₁</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;+ <span class="id" title="tactic">rewrite</span> &lt;-(<a class="idref" href="Algebra.Field.html#field_right_multiplicative_inverse"><span class="id" title="lemma">field_right_multiplicative_inverse</span></a> <span class="id" title="var">y</span>) <span class="id" title="tactic">by</span> <span class="id" title="tactic">assumption</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">rewrite</span> &lt;-<span class="id" title="var">H₁</span> <span class="id" title="tactic">at</span> 1;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">rewrite</span> &lt;-<a class="idref" href="Algebra.Hierarchy.html#associative"><span class="id" title="definition">associative</span></a>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">rewrite</span> <a class="idref" href="Algebra.Field.html#field_right_multiplicative_inverse"><span class="id" title="lemma">field_right_multiplicative_inverse</span></a> <span class="id" title="tactic">by</span> <span class="id" title="tactic">assumption</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">rewrite</span> <a class="idref" href="Algebra.Hierarchy.html#right_identity"><span class="id" title="definition">right_identity</span></a>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">reflexivity</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;+ <span class="id" title="tactic">rewrite</span> <span class="id" title="var">H₁</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">apply</span> <a class="idref" href="Algebra.Hierarchy.html#left_identity"><span class="id" title="definition">left_identity</span></a>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Qed</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+The product of non-zero elements is non-zero. Proved directly from
+      the inverse axiom: if <span class="inlinecode"><span class="id" title="var">x</span></span> <span class="inlinecode">×</span> <span class="inlinecode"><span class="id" title="var">y</span></span> <span class="inlinecode">=</span> <span class="inlinecode">0</span> then
+      <span class="inlinecode">1</span> <span class="inlinecode">=</span> <span class="inlinecode">(<span class="id" title="var">x</span></span> <span class="inlinecode">×</span> <span class="inlinecode"><span class="id" title="var">inv</span></span> <span class="inlinecode"><span class="id" title="var">x</span>)</span> <span class="inlinecode">×</span> <span class="inlinecode">(<span class="id" title="var">y</span></span> <span class="inlinecode">×</span> <span class="inlinecode"><span class="id" title="var">inv</span></span> <span class="inlinecode"><span class="id" title="var">y</span>)</span> <span class="inlinecode">=</span> <span class="inlinecode">(<span class="id" title="var">x</span></span> <span class="inlinecode">×</span> <span class="inlinecode"><span class="id" title="var">y</span>)</span> <span class="inlinecode">×</span> <span class="inlinecode"><span class="id" title="var">inv</span></span> <span class="inlinecode"><span class="id" title="var">x</span></span> <span class="inlinecode">×</span> <span class="inlinecode"><span class="id" title="var">inv</span></span> <span class="inlinecode"><span class="id" title="var">y</span></span> <span class="inlinecode">=</span> <span class="inlinecode">0</span>. 
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <a id="field_mul_not_zero" class="idref" href="#field_mul_not_zero"><span class="id" title="lemma">field_mul_not_zero</span></a> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">∀</span> <a id="x:22" class="idref" href="#x:22"><span class="id" title="binder">x</span></a> <a id="y:23" class="idref" href="#y:23"><span class="id" title="binder">y</span></a> : <a class="idref" href="Algebra.Field.html#Field.T"><span class="id" title="variable">T</span></a>, <a class="idref" href="Algebra.Field.html#x:22"><span class="id" title="variable">x</span></a> <a class="idref" href="Algebra.Field.html#Field.::type_scope:x_'&lt;&gt;'_x"><span class="id" title="notation">≠</span></a> 0 <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Notations.html#::type_scope:x_'-&gt;'_x"><span class="id" title="notation">→</span></a> <a class="idref" href="Algebra.Field.html#y:23"><span class="id" title="variable">y</span></a> <a class="idref" href="Algebra.Field.html#Field.::type_scope:x_'&lt;&gt;'_x"><span class="id" title="notation">≠</span></a> 0 <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Notations.html#::type_scope:x_'-&gt;'_x"><span class="id" title="notation">→</span></a> <a class="idref" href="Algebra.Field.html#x:22"><span class="id" title="variable">x</span></a> <a class="idref" href="Algebra.Field.html#4f493fe657a93bb5d792ba4e15bc8838"><span class="id" title="notation">×</span></a> <a class="idref" href="Algebra.Field.html#y:23"><span class="id" title="variable">y</span></a> <a class="idref" href="Algebra.Field.html#Field.::type_scope:x_'&lt;&gt;'_x"><span class="id" title="notation">≠</span></a> 0.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">intros</span> <span class="id" title="var">x</span> <span class="id" title="var">y</span> <span class="id" title="var">Hx</span> <span class="id" title="var">Hy</span> <span class="id" title="var">Hn</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">apply</span> <a class="idref" href="Algebra.Field.html#field_right_multiplicative_inverse"><span class="id" title="lemma">field_right_multiplicative_inverse</span></a> <span class="id" title="tactic">in</span> <span class="id" title="var">Hx</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">apply</span> <a class="idref" href="Algebra.Field.html#field_right_multiplicative_inverse"><span class="id" title="lemma">field_right_multiplicative_inverse</span></a> <span class="id" title="tactic">in</span> <span class="id" title="var">Hy</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">assert</span> (<span class="id" title="var">Ht</span>: <span class="id" title="var">x</span> <a class="idref" href="Algebra.Field.html#4f493fe657a93bb5d792ba4e15bc8838"><span class="id" title="notation">×</span></a> <a class="idref" href="Algebra.Field.html#Field.inv"><span class="id" title="variable">inv</span></a> <span class="id" title="var">x</span> <a class="idref" href="Algebra.Field.html#4f493fe657a93bb5d792ba4e15bc8838"><span class="id" title="notation">×</span></a> <span class="id" title="var">y</span> <a class="idref" href="Algebra.Field.html#4f493fe657a93bb5d792ba4e15bc8838"><span class="id" title="notation">×</span></a> <a class="idref" href="Algebra.Field.html#Field.inv"><span class="id" title="variable">inv</span></a> <span class="id" title="var">y</span> <a class="idref" href="Algebra.Field.html#95afa9ce8a20a6840779e4792301b8e5"><span class="id" title="notation">=</span></a> 1).<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">rewrite</span> <span class="id" title="var">Hx</span>, <a class="idref" href="Algebra.Hierarchy.html#left_identity"><span class="id" title="definition">left_identity</span></a>, <span class="id" title="var">Hy</span>; <span class="id" title="tactic">reflexivity</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">assert</span>(<span class="id" title="var">Hab</span>: <span class="id" title="var">x</span> <a class="idref" href="Algebra.Field.html#4f493fe657a93bb5d792ba4e15bc8838"><span class="id" title="notation">×</span></a> <a class="idref" href="Algebra.Field.html#Field.inv"><span class="id" title="variable">inv</span></a> <span class="id" title="var">x</span> <a class="idref" href="Algebra.Field.html#4f493fe657a93bb5d792ba4e15bc8838"><span class="id" title="notation">×</span></a> <span class="id" title="var">y</span> <a class="idref" href="Algebra.Field.html#4f493fe657a93bb5d792ba4e15bc8838"><span class="id" title="notation">×</span></a> <a class="idref" href="Algebra.Field.html#Field.inv"><span class="id" title="variable">inv</span></a> <span class="id" title="var">y</span> <a class="idref" href="Algebra.Field.html#95afa9ce8a20a6840779e4792301b8e5"><span class="id" title="notation">=</span></a> <span class="id" title="var">x</span> <a class="idref" href="Algebra.Field.html#4f493fe657a93bb5d792ba4e15bc8838"><span class="id" title="notation">×</span></a> <span class="id" title="var">y</span> <a class="idref" href="Algebra.Field.html#4f493fe657a93bb5d792ba4e15bc8838"><span class="id" title="notation">×</span></a> <a class="idref" href="Algebra.Field.html#Field.inv"><span class="id" title="variable">inv</span></a> <span class="id" title="var">x</span> <a class="idref" href="Algebra.Field.html#4f493fe657a93bb5d792ba4e15bc8838"><span class="id" title="notation">×</span></a> <a class="idref" href="Algebra.Field.html#Field.inv"><span class="id" title="variable">inv</span></a> <span class="id" title="var">y</span>).<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">rewrite</span> &lt;-!<a class="idref" href="Algebra.Hierarchy.html#associative"><span class="id" title="definition">associative</span></a>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">assert</span> (<span class="id" title="var">Htt</span>: <a class="idref" href="Algebra.Field.html#Field.inv"><span class="id" title="variable">inv</span></a> <span class="id" title="var">x</span> <a class="idref" href="Algebra.Field.html#4f493fe657a93bb5d792ba4e15bc8838"><span class="id" title="notation">×</span></a> <a class="idref" href="Algebra.Field.html#4f493fe657a93bb5d792ba4e15bc8838"><span class="id" title="notation">(</span></a><span class="id" title="var">y</span> <a class="idref" href="Algebra.Field.html#4f493fe657a93bb5d792ba4e15bc8838"><span class="id" title="notation">×</span></a> <a class="idref" href="Algebra.Field.html#Field.inv"><span class="id" title="variable">inv</span></a> <span class="id" title="var">y</span><a class="idref" href="Algebra.Field.html#4f493fe657a93bb5d792ba4e15bc8838"><span class="id" title="notation">)</span></a> <a class="idref" href="Algebra.Field.html#95afa9ce8a20a6840779e4792301b8e5"><span class="id" title="notation">=</span></a> <a class="idref" href="Algebra.Field.html#4f493fe657a93bb5d792ba4e15bc8838"><span class="id" title="notation">(</span></a><span class="id" title="var">y</span> <a class="idref" href="Algebra.Field.html#4f493fe657a93bb5d792ba4e15bc8838"><span class="id" title="notation">×</span></a> <a class="idref" href="Algebra.Field.html#Field.inv"><span class="id" title="variable">inv</span></a> <span class="id" title="var">y</span><a class="idref" href="Algebra.Field.html#4f493fe657a93bb5d792ba4e15bc8838"><span class="id" title="notation">)</span></a> <a class="idref" href="Algebra.Field.html#4f493fe657a93bb5d792ba4e15bc8838"><span class="id" title="notation">×</span></a> <a class="idref" href="Algebra.Field.html#Field.inv"><span class="id" title="variable">inv</span></a> <span class="id" title="var">x</span>).<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">rewrite</span> <a class="idref" href="Algebra.Hierarchy.html#commutative"><span class="id" title="definition">commutative</span></a>; <span class="id" title="tactic">reflexivity</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">rewrite</span> <span class="id" title="var">Htt</span>, &lt;-<a class="idref" href="Algebra.Hierarchy.html#associative"><span class="id" title="definition">associative</span></a>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">assert</span> (<span class="id" title="var">Httt</span>: <a class="idref" href="Algebra.Field.html#Field.inv"><span class="id" title="variable">inv</span></a> <span class="id" title="var">x</span> <a class="idref" href="Algebra.Field.html#4f493fe657a93bb5d792ba4e15bc8838"><span class="id" title="notation">×</span></a> <a class="idref" href="Algebra.Field.html#Field.inv"><span class="id" title="variable">inv</span></a> <span class="id" title="var">y</span> <a class="idref" href="Algebra.Field.html#95afa9ce8a20a6840779e4792301b8e5"><span class="id" title="notation">=</span></a> <a class="idref" href="Algebra.Field.html#Field.inv"><span class="id" title="variable">inv</span></a> <span class="id" title="var">y</span> <a class="idref" href="Algebra.Field.html#4f493fe657a93bb5d792ba4e15bc8838"><span class="id" title="notation">×</span></a> <a class="idref" href="Algebra.Field.html#Field.inv"><span class="id" title="variable">inv</span></a> <span class="id" title="var">x</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">by</span> (<span class="id" title="tactic">rewrite</span> <a class="idref" href="Algebra.Hierarchy.html#commutative"><span class="id" title="definition">commutative</span></a>; <span class="id" title="tactic">reflexivity</span>).<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">rewrite</span> <span class="id" title="var">Httt</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">reflexivity</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">rewrite</span> <span class="id" title="var">Hab</span> <span class="id" title="tactic">in</span> <span class="id" title="var">Ht</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">clear</span> <span class="id" title="var">Hab</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">rewrite</span> <span class="id" title="var">Hn</span> <span class="id" title="tactic">in</span> <span class="id" title="var">Ht</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">rewrite</span> !<a class="idref" href="Algebra.Ring.html#ring_mul_0_l"><span class="id" title="lemma">ring_mul_0_l</span></a> <span class="id" title="tactic">in</span> <span class="id" title="var">Ht</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">apply</span> <a class="idref" href="Algebra.Hierarchy.html#zero_neq_one"><span class="id" title="definition">zero_neq_one</span></a> <span class="id" title="tactic">in</span> <span class="id" title="var">Ht</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">exact</span> <span class="id" title="var">Ht</span>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Qed</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+For the remaining results, equality in the field is assumed
+      decidable, which is the case for all concrete instances. 
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Context</span> {<a id="Field.eq_dec" class="idref" href="#Field.eq_dec"><span class="id" title="variable">eq_dec</span></a> : <span class="id" title="keyword">∀</span> <a id="x:24" class="idref" href="#x:24"><span class="id" title="binder">x</span></a> <a id="y:25" class="idref" href="#y:25"><span class="id" title="binder">y</span></a> : <a class="idref" href="Algebra.Field.html#Field.T"><span class="id" title="variable">T</span></a>, <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Specif.html#87727981cdc1579fef00b9d9c1d3b9da"><span class="id" title="notation">{</span></a><a class="idref" href="Algebra.Field.html#x:24"><span class="id" title="variable">x</span></a> <a class="idref" href="Algebra.Field.html#95afa9ce8a20a6840779e4792301b8e5"><span class="id" title="notation">=</span></a> <a class="idref" href="Algebra.Field.html#y:25"><span class="id" title="variable">y</span></a><a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Specif.html#87727981cdc1579fef00b9d9c1d3b9da"><span class="id" title="notation">}</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Specif.html#87727981cdc1579fef00b9d9c1d3b9da"><span class="id" title="notation">+</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Specif.html#87727981cdc1579fef00b9d9c1d3b9da"><span class="id" title="notation">{</span></a><a class="idref" href="Algebra.Field.html#x:24"><span class="id" title="variable">x</span></a> <a class="idref" href="Algebra.Field.html#Field.::type_scope:x_'&lt;&gt;'_x"><span class="id" title="notation">≠</span></a> <a class="idref" href="Algebra.Field.html#y:25"><span class="id" title="variable">y</span></a><a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Specif.html#87727981cdc1579fef00b9d9c1d3b9da"><span class="id" title="notation">}</span></a>}.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+A field with decidable equality has no zero divisors: case analysis on
+      whether <span class="inlinecode"><span class="id" title="var">x</span></span> and <span class="inlinecode"><span class="id" title="var">y</span></span> are zero, using <span class="inlinecode"><span class="id" title="var">field_mul_not_zero</span></span> in the
+      remaining case. 
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Global Instance</span> <a id="is_mul_nonzero_nonzero" class="idref" href="#is_mul_nonzero_nonzero"><span class="id" title="instance">is_mul_nonzero_nonzero</span></a> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;@<a class="idref" href="Algebra.Hierarchy.html#is_zero_product_zero_factor"><span class="id" title="class">is_zero_product_zero_factor</span></a> <a class="idref" href="Algebra.Field.html#Field.T"><span class="id" title="variable">T</span></a> <a class="idref" href="Algebra.Field.html#Field.eq"><span class="id" title="variable">eq</span></a> 0 <a class="idref" href="Algebra.Field.html#Field.mul"><span class="id" title="variable">mul</span></a>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">intros</span> <span class="id" title="var">x</span> <span class="id" title="var">y</span> <span class="id" title="var">Hxy</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">assert</span> (<span class="id" title="var">Hx</span>: <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Specif.html#87727981cdc1579fef00b9d9c1d3b9da"><span class="id" title="notation">{</span></a><span class="id" title="var">x</span> <a class="idref" href="Algebra.Field.html#95afa9ce8a20a6840779e4792301b8e5"><span class="id" title="notation">=</span></a> 0<a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Specif.html#87727981cdc1579fef00b9d9c1d3b9da"><span class="id" title="notation">}</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Specif.html#87727981cdc1579fef00b9d9c1d3b9da"><span class="id" title="notation">+</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Specif.html#87727981cdc1579fef00b9d9c1d3b9da"><span class="id" title="notation">{</span></a><span class="id" title="var">x</span> <a class="idref" href="Algebra.Field.html#Field.::type_scope:x_'&lt;&gt;'_x"><span class="id" title="notation">≠</span></a> 0<a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Specif.html#87727981cdc1579fef00b9d9c1d3b9da"><span class="id" title="notation">}</span></a>) <span class="id" title="tactic">by</span> <span class="id" title="tactic">apply</span> <a class="idref" href="Algebra.Field.html#Field.eq_dec"><span class="id" title="variable">eq_dec</span></a>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">assert</span> (<span class="id" title="var">Hy</span>: <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Specif.html#87727981cdc1579fef00b9d9c1d3b9da"><span class="id" title="notation">{</span></a><span class="id" title="var">y</span> <a class="idref" href="Algebra.Field.html#95afa9ce8a20a6840779e4792301b8e5"><span class="id" title="notation">=</span></a> 0<a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Specif.html#87727981cdc1579fef00b9d9c1d3b9da"><span class="id" title="notation">}</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Specif.html#87727981cdc1579fef00b9d9c1d3b9da"><span class="id" title="notation">+</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Specif.html#87727981cdc1579fef00b9d9c1d3b9da"><span class="id" title="notation">{</span></a><span class="id" title="var">y</span> <a class="idref" href="Algebra.Field.html#Field.::type_scope:x_'&lt;&gt;'_x"><span class="id" title="notation">≠</span></a> 0<a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Specif.html#87727981cdc1579fef00b9d9c1d3b9da"><span class="id" title="notation">}</span></a>) <span class="id" title="tactic">by</span> <span class="id" title="tactic">apply</span> <a class="idref" href="Algebra.Field.html#Field.eq_dec"><span class="id" title="variable">eq_dec</span></a>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">destruct</span> <span class="id" title="var">Hx</span> <span class="id" title="keyword">as</span> [<span class="id" title="var">Hx</span> | <span class="id" title="var">Hx</span>];<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">destruct</span> <span class="id" title="var">Hy</span> <span class="id" title="keyword">as</span> [<span class="id" title="var">Hy</span> | <span class="id" title="var">Hy</span>].<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">left</span>; <span class="id" title="tactic">exact</span> <span class="id" title="var">Hx</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">left</span>; <span class="id" title="tactic">exact</span> <span class="id" title="var">Hx</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">right</span>; <span class="id" title="tactic">exact</span> <span class="id" title="var">Hy</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">pose</span> <span class="id" title="var">proof</span> (<a class="idref" href="Algebra.Field.html#field_mul_not_zero"><span class="id" title="lemma">field_mul_not_zero</span></a> <span class="id" title="var">_</span> <span class="id" title="var">_</span> <span class="id" title="var">Hx</span> <span class="id" title="var">Hy</span>).<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">rewrite</span> <span class="id" title="var">Hxy</span> <span class="id" title="tactic">in</span> <span class="id" title="var">H</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">unfold</span> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Logic.html#not"><span class="id" title="definition">not</span></a> <span class="id" title="tactic">in</span> <span class="id" title="var">H</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">assert</span> (<span class="id" title="var">Hf</span> : 0 <a class="idref" href="Algebra.Field.html#95afa9ce8a20a6840779e4792301b8e5"><span class="id" title="notation">=</span></a> 0) <span class="id" title="tactic">by</span> <span class="id" title="tactic">reflexivity</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">pose</span> <span class="id" title="var">proof</span> (<span class="id" title="var">H</span> <span class="id" title="var">Hf</span>) <span class="id" title="keyword">as</span> <span class="id" title="var">HF</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">inversion</span> <span class="id" title="var">HF</span>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Qed</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+A field with decidable equality is an <span class="inlinecode"><span class="id" title="var">integral_domain</span></span>. Note that
+      the instance reuses the name of the class from <span class="inlinecode"><span class="id" title="var">Hierarchy.v</span></span>. 
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Global Instance</span> <a id="integral_domain" class="idref" href="#integral_domain"><span class="id" title="instance">integral_domain</span></a> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;@<a class="idref" href="Algebra.Hierarchy.html#integral_domain"><span class="id" title="class">integral_domain</span></a> <a class="idref" href="Algebra.Field.html#Field.T"><span class="id" title="variable">T</span></a> <a class="idref" href="Algebra.Field.html#Field.eq"><span class="id" title="variable">eq</span></a> <a class="idref" href="Algebra.Field.html#Field.zero"><span class="id" title="variable">zero</span></a> <a class="idref" href="Algebra.Field.html#Field.one"><span class="id" title="variable">one</span></a> <a class="idref" href="Algebra.Field.html#Field.opp"><span class="id" title="variable">opp</span></a> <a class="idref" href="Algebra.Field.html#Field.add"><span class="id" title="variable">add</span></a> <a class="idref" href="Algebra.Field.html#Field.sub"><span class="id" title="variable">sub</span></a> <a class="idref" href="Algebra.Field.html#Field.mul"><span class="id" title="variable">mul</span></a>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">split</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">eauto</span> <span class="id" title="keyword">using</span> <a class="idref" href="Algebra.Hierarchy.html#field_commutative_ring"><span class="id" title="method">field_commutative_ring</span></a>,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="Algebra.Hierarchy.html#field_is_zero_neq_one"><span class="id" title="method">field_is_zero_neq_one</span></a>,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="Algebra.Field.html#is_mul_nonzero_nonzero"><span class="id" title="instance">is_mul_nonzero_nonzero</span></a>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Qed</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">End</span> <a class="idref" href="Algebra.Field.html#Field"><span class="id" title="section">Field</span></a>.<br/>
+</div>
+</div>
+
+<div id="footer">
+<hr/><a href="index_symbols.html">Index</a><hr/>This page has been generated by <a href="http://rocq-prover.org/">coqdoc</a>
+</div>
+
+</div>
+
+</body>
+</html>

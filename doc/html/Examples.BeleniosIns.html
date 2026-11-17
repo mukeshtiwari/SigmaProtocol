@@ -1,0 +1,245 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<link href="coqdoc.css" rel="stylesheet" type="text/css" />
+<title>Examples.BeleniosIns</title>
+</head>
+
+<body>
+
+<div id="page">
+
+<div id="header">
+</div>
+
+<div id="main">
+
+<h1 class="libtitle">Library Examples.BeleniosIns</h1>
+
+<div class="code">
+</div>
+
+<div class="doc">
+<a id="lab371"></a><h1 class="section">The Belenios verifier at Ed25519</h1>
+
+<div class="paragraph"> </div>
+
+ This file instantiates the certified Belenios verifier
+(<span class="inlinecode"><span class="id" title="var">Backend</span>/<span class="id" title="var">BeleniosTally.v</span></span>) at Ed25519, the group used by Belenios 3.x
+(<span class="inlinecode"><span class="id" title="var">Curve</span>/<span class="id" title="var">Ed25519.v</span></span>, scalar field <span class="inlinecode"><span class="id" title="var">Z</span>/<span class="id" title="var">lZ</span></span>). The hash functions of Belenios
+(SHA-256 over its serialisation of points and strings) are computed by the
+OCaml driver <span class="inlinecode"><span class="id" title="var">Executable</span>/<span class="id" title="var">Beleniosverifier</span></span> and passed in through the
+<span class="inlinecode"><span class="id" title="var">ballot_hashes</span></span> and <span class="inlinecode"><span class="id" title="var">trustee_hashes</span></span> records; they are trusted, together
+with the parser of the election archive. The file is extracted by
+<span class="inlinecode"><span class="id" title="var">src</span>/<span class="id" title="keyword">Extraction</span>/<span class="id" title="var">Belenioslib</span></span>. 
+<div class="paragraph"> </div>
+
+<a id="lab372"></a><h2 class="section">How a Belenios election is checked</h2>
+
+
+<div class="paragraph"> </div>
+
+Belenios (Cortier, Gaudry and Glondu, Inria) is a descendant of Helios.
+The election public key <span class="inlinecode"><span class="id" title="var">y</span></span> <span class="inlinecode">=</span> <span class="inlinecode"><span class="id" title="var">g</span>^<span class="id" title="var">x</span></span> is the product of the trustees' keys,
+and a vote <span class="inlinecode"><span class="id" title="var">m</span></span> is encrypted with exponential ElGamal,
+<span class="inlinecode"><span class="id" title="var">Enc</span>(<span class="id" title="var">m</span>;</span> <span class="inlinecode"><span class="id" title="var">r</span>)</span> <span class="inlinecode">=</span> <span class="inlinecode">(<span class="id" title="var">α</span>,</span> <span class="inlinecode"><span class="id" title="var">β</span>)</span> <span class="inlinecode">=</span> <span class="inlinecode">(<span class="id" title="var">g</span>^<span class="id" title="var">r</span>,</span> <span class="inlinecode"><span class="id" title="var">y</span>^<span class="id" title="var">r</span>·<span class="id" title="var">g</span>^<span class="id" title="var">m</span>)</span>, so that the componentwise product of
+ciphertexts encrypts the sum of the votes. All the proofs are Schnorr
+proofs or Cramer–Damgård–Schoenmakers disjunctions of Schnorr proofs in
+<span class="inlinecode"><span class="id" title="var">G</span></span> <span class="inlinecode">×</span> <span class="inlinecode"><span class="id" title="var">G</span></span> with base <span class="inlinecode">(<span class="id" title="var">g</span>,</span> <span class="inlinecode"><span class="id" title="var">y</span>)</span>, each branch stating that a ciphertext encrypts
+a value <span class="inlinecode"><span class="id" title="var">k</span></span>: <span class="inlinecode">(<span class="id" title="var">α</span>,</span> <span class="inlinecode"><span class="id" title="var">β</span>/<span class="id" title="var">g</span>^<span class="id" title="var">k</span>)</span> <span class="inlinecode">=</span> <span class="inlinecode">(<span class="id" title="var">g</span>,</span> <span class="inlinecode"><span class="id" title="var">y</span>)^<span class="id" title="var">r</span></span>.
+
+<div class="paragraph"> </div>
+
+<ul class="doclist">
+<li> Individual proof: each answer bit <span class="inlinecode"><span class="id" title="var">m</span>ᵢ</span> is in <span class="inlinecode">{0,</span> <span class="inlinecode">1}</span>.
+
+</li>
+<li> Overall proof: <span class="inlinecode"><span class="id" title="var">Σ</span></span> <span class="inlinecode"><span class="id" title="var">m</span>ᵢ</span> <span class="inlinecode">∈</span> <span class="inlinecode">[<span class="id" title="var">min</span>,</span> <span class="inlinecode"><span class="id" title="var">max</span>]</span>, on the product ciphertext.
+
+</li>
+<li> With blank votes, an extra blank bit <span class="inlinecode"><span class="id" title="var">m₀</span></span> and the proofs
+  <span class="inlinecode"><span class="id" title="var">m₀</span></span> <span class="inlinecode">=</span> <span class="inlinecode">0</span> <span class="inlinecode">∨</span> <span class="inlinecode"><span class="id" title="var">Σ</span></span> <span class="inlinecode"><span class="id" title="var">m</span>ᵢ</span> <span class="inlinecode">=</span> <span class="inlinecode">0</span> and <span class="inlinecode"><span class="id" title="var">m₀</span></span> <span class="inlinecode">=</span> <span class="inlinecode">1</span> <span class="inlinecode">∨</span> <span class="inlinecode"><span class="id" title="var">Σ</span></span> <span class="inlinecode"><span class="id" title="var">m</span>ᵢ</span> <span class="inlinecode">∈</span> <span class="inlinecode">[<span class="id" title="var">min</span>,</span> <span class="inlinecode"><span class="id" title="var">max</span>]</span>.
+
+</li>
+<li> The ballot is signed with the voter's credential: a Schnorr proof of
+  knowledge of <span class="inlinecode"><span class="id" title="var">s</span></span> with <span class="inlinecode"><span class="id" title="var">cred</span></span> <span class="inlinecode">=</span> <span class="inlinecode"><span class="id" title="var">g</span>^<span class="id" title="var">s</span></span>, bound to the ballot.
+
+</li>
+</ul>
+
+<div class="paragraph"> </div>
+
+Belenios stores a (challenge, response) pair per branch; the verifier
+reconstructs the announcements and accepts if the hash of the statement and
+announcements equals the sum of the challenges. Belenios writes the
+response as <span class="inlinecode"><span class="id" title="var">w</span></span> <span class="inlinecode">-</span> <span class="inlinecode"><span class="id" title="var">x</span>·<span class="id" title="var">c</span></span> where the library writes <span class="inlinecode"><span class="id" title="var">u</span></span> <span class="inlinecode">+</span> <span class="inlinecode"><span class="id" title="var">c</span>·<span class="id" title="var">x</span></span>, hence negated
+challenges in the backend.
+
+<div class="paragraph"> </div>
+
+The tally is the product of the valid ballots, keeping the last ballot of
+each credential, each raised to the weight of its credential. Each trustee
+publishes a decryption factor <span class="inlinecode"><span class="id" title="var">α_Σ</span>^<span class="id" title="var">x</span></span> with a Chaum–Pedersen proof, and the
+result <span class="inlinecode"><span class="id" title="var">g</span>^<span class="id" title="var">v</span></span> <span class="inlinecode">=</span> <span class="inlinecode"><span class="id" title="var">β_Σ</span></span> <span class="inlinecode">/</span> <span class="inlinecode">∏</span> <span class="inlinecode"><span class="id" title="var">F</span></span> is checked against the published result.
+
+<div class="paragraph"> </div>
+
+<span class="inlinecode"><span class="id" title="var">Backend</span>/<span class="id" title="var">BeleniosTally.v</span></span> proves that every accepted proof is an accepting
+transcript of the library's Schnorr protocol or OR composition
+(<span class="inlinecode"><span class="id" title="var">fs_verify_schnorr_accepting</span></span>, <span class="inlinecode"><span class="id" title="var">fs_verify_or_accepting</span></span>), so completeness,
+special soundness and honest-verifier zero knowledge are the library's
+theorems, and <span class="inlinecode"><span class="id" title="var">compute_final_count</span></span> returns a certificate of the counting
+relation <span class="inlinecode"><span class="id" title="var">count</span></span>. 
+</div>
+<div class="code">
+<span class="id" title="keyword">From</span> <span class="id" title="var">Stdlib</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="library">Utf8</span> <span class="id" title="library">ZArith</span> <span class="id" title="library">Zmod</span> <span class="id" title="library">List</span>.<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">Backend</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <a class="idref" href="Backend.BeleniosTally.html#"><span class="id" title="library">BeleniosTally</span></a>.<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">Utility</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <a class="idref" href="Utility.Util.html#"><span class="id" title="library">Util</span></a>.<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">Curve</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <a class="idref" href="Curve.Ed25519.html#"><span class="id" title="library">Ed25519</span></a>.<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">Examples</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <a class="idref" href="Examples.Ed25519Ins.html#"><span class="id" title="library">Ed25519Ins</span></a>.<br/>
+
+<br/>
+<span class="id" title="keyword">Section</span> <a id="BeleniosIns" class="idref" href="#BeleniosIns"><span class="id" title="section">BeleniosIns</span></a>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Import</span> <a class="idref" href="Curve.Ed25519.html#Ed25519"><span class="id" title="module">Ed25519</span></a>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<span class="inlinecode"><span class="id" title="var">F</span></span> <span class="inlinecode">=</span> <span class="inlinecode"><span class="id" title="var">Z</span>/<span class="id" title="var">lZ</span></span> and <span class="inlinecode"><span class="id" title="var">G</span></span> the order-<span class="inlinecode"><span class="id" title="var">l</span></span> subgroup of Ed25519. 
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Local Notation</span> <a id="F" class="idref" href="#F"><span class="id" title="abbreviation">F</span></a> := <a class="idref" href="Curve.Ed25519.html#Ed25519.Zl.F"><span class="id" title="definition">Zl.F</span></a>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Local Notation</span> <a id="G" class="idref" href="#G"><span class="id" title="abbreviation">G</span></a> := <a class="idref" href="Curve.Ed25519.html#Ed25519.Ed.G"><span class="id" title="definition">Ed.G</span></a>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<a id="lab373"></a><h2 class="section">The data types at Ed25519</h2>
+
+
+<div class="paragraph"> </div>
+
+      The records of <span class="inlinecode"><span class="id" title="var">Backend</span>/<span class="id" title="var">BeleniosTally.v</span></span> specialised to this group, for
+      the driver: a proof (one challenge/response pair), a ciphertext,
+      a question, an answer (ciphertexts and their proofs), a ballot, the
+      driver-computed ballot hashes, an election, a trustee and the
+      driver-computed trustee hashes. 
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <a id="proof" class="idref" href="#proof"><span class="id" title="definition">proof</span></a> := @<a class="idref" href="Backend.BeleniosTally.html#proof"><span class="id" title="definition">proof</span></a> <a class="idref" href="Examples.BeleniosIns.html#F"><span class="id" title="abbreviation">F</span></a>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <a id="ciphertext" class="idref" href="#ciphertext"><span class="id" title="definition">ciphertext</span></a> := @<a class="idref" href="Backend.BeleniosTally.html#ciphertext"><span class="id" title="definition">ciphertext</span></a> <a class="idref" href="Examples.BeleniosIns.html#G"><span class="id" title="abbreviation">G</span></a>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <a id="question" class="idref" href="#question"><span class="id" title="definition">question</span></a> := <a class="idref" href="Backend.BeleniosTally.html#question"><span class="id" title="record">question</span></a>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <a id="answer" class="idref" href="#answer"><span class="id" title="definition">answer</span></a> := @<a class="idref" href="Backend.BeleniosTally.html#answer"><span class="id" title="record">answer</span></a> <a class="idref" href="Examples.BeleniosIns.html#F"><span class="id" title="abbreviation">F</span></a> <a class="idref" href="Examples.BeleniosIns.html#G"><span class="id" title="abbreviation">G</span></a>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <a id="ballot" class="idref" href="#ballot"><span class="id" title="definition">ballot</span></a> := @<a class="idref" href="Backend.BeleniosTally.html#ballot"><span class="id" title="record">ballot</span></a> <a class="idref" href="Examples.BeleniosIns.html#F"><span class="id" title="abbreviation">F</span></a> <a class="idref" href="Examples.BeleniosIns.html#G"><span class="id" title="abbreviation">G</span></a>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <a id="ballot_hashes" class="idref" href="#ballot_hashes"><span class="id" title="definition">ballot_hashes</span></a> := @<a class="idref" href="Backend.BeleniosTally.html#ballot_hashes"><span class="id" title="record">ballot_hashes</span></a> <a class="idref" href="Examples.BeleniosIns.html#F"><span class="id" title="abbreviation">F</span></a> <a class="idref" href="Examples.BeleniosIns.html#G"><span class="id" title="abbreviation">G</span></a>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <a id="election" class="idref" href="#election"><span class="id" title="definition">election</span></a> := @<a class="idref" href="Backend.BeleniosTally.html#election"><span class="id" title="record">election</span></a> <a class="idref" href="Examples.BeleniosIns.html#F"><span class="id" title="abbreviation">F</span></a> <a class="idref" href="Examples.BeleniosIns.html#G"><span class="id" title="abbreviation">G</span></a>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <a id="trustee" class="idref" href="#trustee"><span class="id" title="definition">trustee</span></a> := @<a class="idref" href="Backend.BeleniosTally.html#trustee"><span class="id" title="record">trustee</span></a> <a class="idref" href="Examples.BeleniosIns.html#F"><span class="id" title="abbreviation">F</span></a> <a class="idref" href="Examples.BeleniosIns.html#G"><span class="id" title="abbreviation">G</span></a>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <a id="trustee_hashes" class="idref" href="#trustee_hashes"><span class="id" title="definition">trustee_hashes</span></a> := @<a class="idref" href="Backend.BeleniosTally.html#trustee_hashes"><span class="id" title="record">trustee_hashes</span></a> <a class="idref" href="Examples.BeleniosIns.html#F"><span class="id" title="abbreviation">F</span></a> <a class="idref" href="Examples.BeleniosIns.html#G"><span class="id" title="abbreviation">G</span></a>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+The constructors of the records above. 
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <a id="mk_question" class="idref" href="#mk_question"><span class="id" title="definition">mk_question</span></a> := <a class="idref" href="Backend.BeleniosTally.html#mk_question"><span class="id" title="constructor">mk_question</span></a>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <a id="mk_answer" class="idref" href="#mk_answer"><span class="id" title="definition">mk_answer</span></a> := @<a class="idref" href="Backend.BeleniosTally.html#mk_answer"><span class="id" title="constructor">mk_answer</span></a> <a class="idref" href="Examples.BeleniosIns.html#F"><span class="id" title="abbreviation">F</span></a> <a class="idref" href="Examples.BeleniosIns.html#G"><span class="id" title="abbreviation">G</span></a>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <a id="mk_ballot" class="idref" href="#mk_ballot"><span class="id" title="definition">mk_ballot</span></a> := @<a class="idref" href="Backend.BeleniosTally.html#mk_ballot"><span class="id" title="constructor">mk_ballot</span></a> <a class="idref" href="Examples.BeleniosIns.html#F"><span class="id" title="abbreviation">F</span></a> <a class="idref" href="Examples.BeleniosIns.html#G"><span class="id" title="abbreviation">G</span></a>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <a id="mk_ballot_hashes" class="idref" href="#mk_ballot_hashes"><span class="id" title="definition">mk_ballot_hashes</span></a> := @<a class="idref" href="Backend.BeleniosTally.html#mk_ballot_hashes"><span class="id" title="constructor">mk_ballot_hashes</span></a> <a class="idref" href="Examples.BeleniosIns.html#F"><span class="id" title="abbreviation">F</span></a> <a class="idref" href="Examples.BeleniosIns.html#G"><span class="id" title="abbreviation">G</span></a>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <a id="mk_election" class="idref" href="#mk_election"><span class="id" title="definition">mk_election</span></a> := @<a class="idref" href="Backend.BeleniosTally.html#mk_election"><span class="id" title="constructor">mk_election</span></a> <a class="idref" href="Examples.BeleniosIns.html#F"><span class="id" title="abbreviation">F</span></a> <a class="idref" href="Examples.BeleniosIns.html#G"><span class="id" title="abbreviation">G</span></a>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <a id="mk_trustee" class="idref" href="#mk_trustee"><span class="id" title="definition">mk_trustee</span></a> := @<a class="idref" href="Backend.BeleniosTally.html#mk_trustee"><span class="id" title="constructor">mk_trustee</span></a> <a class="idref" href="Examples.BeleniosIns.html#F"><span class="id" title="abbreviation">F</span></a> <a class="idref" href="Examples.BeleniosIns.html#G"><span class="id" title="abbreviation">G</span></a>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <a id="mk_trustee_hashes" class="idref" href="#mk_trustee_hashes"><span class="id" title="definition">mk_trustee_hashes</span></a> := @<a class="idref" href="Backend.BeleniosTally.html#mk_trustee_hashes"><span class="id" title="constructor">mk_trustee_hashes</span></a> <a class="idref" href="Examples.BeleniosIns.html#F"><span class="id" title="abbreviation">F</span></a> <a class="idref" href="Examples.BeleniosIns.html#G"><span class="id" title="abbreviation">G</span></a>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<a id="lab374"></a><h2 class="section">The verifier</h2>
+
+
+<div class="paragraph"> </div>
+
+      Checks one ballot: the credential signature and every individual,
+      overall and blank proof, with the hashes <span class="inlinecode"><span class="id" title="var">hs</span></span> supplied by the driver. 
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <a id="verify_ballot_ins" class="idref" href="#verify_ballot_ins"><span class="id" title="definition">verify_ballot_ins</span></a> (<a id="E:1" class="idref" href="#E:1"><span class="id" title="binder">E</span></a> : <a class="idref" href="Examples.BeleniosIns.html#election"><span class="id" title="definition">election</span></a>) (<a id="hs:2" class="idref" href="#hs:2"><span class="id" title="binder">hs</span></a> : <a class="idref" href="Examples.BeleniosIns.html#ballot_hashes"><span class="id" title="definition">ballot_hashes</span></a>) (<a id="b:3" class="idref" href="#b:3"><span class="id" title="binder">b</span></a> : <a class="idref" href="Examples.BeleniosIns.html#ballot"><span class="id" title="definition">ballot</span></a>) : <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Datatypes.html#bool"><span class="id" title="inductive">bool</span></a> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="Backend.BeleniosTally.html#verify_ballot"><span class="id" title="definition">verify_ballot</span></a> (<span class="id" title="var">zero</span> := <a class="idref" href="Curve.Ed25519.html#Ed25519.Zl.zero"><span class="id" title="definition">Zl.zero</span></a>) (<span class="id" title="var">one</span> := <a class="idref" href="Curve.Ed25519.html#Ed25519.Zl.one"><span class="id" title="definition">Zl.one</span></a>) (<span class="id" title="var">add</span> := <a class="idref" href="Curve.Ed25519.html#Ed25519.Zl.add"><span class="id" title="definition">Zl.add</span></a>) (<span class="id" title="var">Fdec</span> := <a class="idref" href="Curve.Ed25519.html#Ed25519.Zl.Fdec"><span class="id" title="definition">Zl.Fdec</span></a>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">gid</span> := <a class="idref" href="Curve.Ed25519.html#Ed25519.Ed.gid"><span class="id" title="definition">Ed.gid</span></a>) (<span class="id" title="var">ginv</span> := <a class="idref" href="Curve.Ed25519.html#Ed25519.Ed.ginv"><span class="id" title="definition">Ed.ginv</span></a>) (<span class="id" title="var">gop</span> := <a class="idref" href="Curve.Ed25519.html#Ed25519.Ed.gop"><span class="id" title="definition">Ed.gop</span></a>) (<span class="id" title="var">gpow</span> := <a class="idref" href="Curve.Ed25519.html#Ed25519.Ed.gpow_fast"><span class="id" title="definition">Ed.gpow_fast</span></a>) (<span class="id" title="var">Gdec</span> := <a class="idref" href="Curve.Ed25519.html#Ed25519.Ed.Gdec"><span class="id" title="definition">Ed.Gdec</span></a>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="Examples.BeleniosIns.html#E:1"><span class="id" title="variable">E</span></a> <a class="idref" href="Examples.BeleniosIns.html#hs:2"><span class="id" title="variable">hs</span></a> <a class="idref" href="Examples.BeleniosIns.html#b:3"><span class="id" title="variable">b</span></a>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+The encrypted tally: for every question and choice, the product of the
+      weighted ciphertexts of the given ballots. 
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <a id="encrypted_tally_ins" class="idref" href="#encrypted_tally_ins"><span class="id" title="definition">encrypted_tally_ins</span></a> (<a id="E:4" class="idref" href="#E:4"><span class="id" title="binder">E</span></a> : <a class="idref" href="Examples.BeleniosIns.html#election"><span class="id" title="definition">election</span></a>) (<a id="bs:5" class="idref" href="#bs:5"><span class="id" title="binder">bs</span></a> : <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Datatypes.html#list"><span class="id" title="inductive">list</span></a> <a class="idref" href="Examples.BeleniosIns.html#ballot"><span class="id" title="definition">ballot</span></a>) : <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Datatypes.html#list"><span class="id" title="inductive">list</span></a> (<a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Datatypes.html#list"><span class="id" title="inductive">list</span></a> <a class="idref" href="Examples.BeleniosIns.html#ciphertext"><span class="id" title="definition">ciphertext</span></a>) :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="Backend.BeleniosTally.html#encrypted_tally"><span class="id" title="definition">encrypted_tally</span></a> (<span class="id" title="var">zero</span> := <a class="idref" href="Curve.Ed25519.html#Ed25519.Zl.zero"><span class="id" title="definition">Zl.zero</span></a>) (<span class="id" title="var">gid</span> := <a class="idref" href="Curve.Ed25519.html#Ed25519.Ed.gid"><span class="id" title="definition">Ed.gid</span></a>) (<span class="id" title="var">gop</span> := <a class="idref" href="Curve.Ed25519.html#Ed25519.Ed.gop"><span class="id" title="definition">Ed.gop</span></a>) (<span class="id" title="var">gpow</span> := <a class="idref" href="Curve.Ed25519.html#Ed25519.Ed.gpow_fast"><span class="id" title="definition">Ed.gpow_fast</span></a>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">Gdec</span> := <a class="idref" href="Curve.Ed25519.html#Ed25519.Ed.Gdec"><span class="id" title="definition">Ed.Gdec</span></a>) <a class="idref" href="Examples.BeleniosIns.html#E:4"><span class="id" title="variable">E</span></a> <a class="idref" href="Examples.BeleniosIns.html#bs:5"><span class="id" title="variable">bs</span></a>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+Keeps, for each credential, only its last ballot (Belenios's revoting
+      policy). 
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <a id="last_per_credential_ins" class="idref" href="#last_per_credential_ins"><span class="id" title="definition">last_per_credential_ins</span></a> (<a id="bs:6" class="idref" href="#bs:6"><span class="id" title="binder">bs</span></a> : <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Datatypes.html#list"><span class="id" title="inductive">list</span></a> <a class="idref" href="Examples.BeleniosIns.html#ballot"><span class="id" title="definition">ballot</span></a>) : <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Datatypes.html#list"><span class="id" title="inductive">list</span></a> <a class="idref" href="Examples.BeleniosIns.html#ballot"><span class="id" title="definition">ballot</span></a> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="Backend.BeleniosTally.html#last_per_credential"><span class="id" title="definition">last_per_credential</span></a> (<span class="id" title="var">Gdec</span> := <a class="idref" href="Curve.Ed25519.html#Ed25519.Ed.Gdec"><span class="id" title="definition">Ed.Gdec</span></a>) <a class="idref" href="Examples.BeleniosIns.html#bs:6"><span class="id" title="variable">bs</span></a>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+The certified verifier and entry point of the extracted code: given the
+      ballots in casting order, the published encrypted tally, the trustees
+      and the published result, it returns the lists of valid and invalid
+      ballots, the final flag (encrypted tally, every trustee's decryption
+      proof and the result all check) and a proof that these are related by
+      the counting relation <span class="inlinecode"><span class="id" title="var">count</span></span>. 
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <a id="compute_final_count_ins" class="idref" href="#compute_final_count_ins"><span class="id" title="definition">compute_final_count_ins</span></a> (<a id="E:7" class="idref" href="#E:7"><span class="id" title="binder">E</span></a> : <a class="idref" href="Examples.BeleniosIns.html#election"><span class="id" title="definition">election</span></a>) (<a id="hs:8" class="idref" href="#hs:8"><span class="id" title="binder">hs</span></a> : <a class="idref" href="Examples.BeleniosIns.html#ballot"><span class="id" title="definition">ballot</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Notations.html#::type_scope:x_'-&gt;'_x"><span class="id" title="notation">→</span></a> <a class="idref" href="Examples.BeleniosIns.html#ballot_hashes"><span class="id" title="definition">ballot_hashes</span></a>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<a id="th:9" class="idref" href="#th:9"><span class="id" title="binder">th</span></a> : <a class="idref" href="Examples.BeleniosIns.html#trustee_hashes"><span class="id" title="definition">trustee_hashes</span></a>) (<a id="bs:10" class="idref" href="#bs:10"><span class="id" title="binder">bs</span></a> : <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Datatypes.html#list"><span class="id" title="inductive">list</span></a> <a class="idref" href="Examples.BeleniosIns.html#ballot"><span class="id" title="definition">ballot</span></a>) (<a id="published:11" class="idref" href="#published:11"><span class="id" title="binder">published</span></a> : <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Datatypes.html#list"><span class="id" title="inductive">list</span></a> (<a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Datatypes.html#list"><span class="id" title="inductive">list</span></a> <a class="idref" href="Examples.BeleniosIns.html#ciphertext"><span class="id" title="definition">ciphertext</span></a>))<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<a id="trs:12" class="idref" href="#trs:12"><span class="id" title="binder">trs</span></a> : <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Datatypes.html#list"><span class="id" title="inductive">list</span></a> <a class="idref" href="Examples.BeleniosIns.html#trustee"><span class="id" title="definition">trustee</span></a>) (<a id="result:13" class="idref" href="#result:13"><span class="id" title="binder">result</span></a> : <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Datatypes.html#list"><span class="id" title="inductive">list</span></a> (<a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Datatypes.html#list"><span class="id" title="inductive">list</span></a> <a class="idref" href="Examples.BeleniosIns.html#F"><span class="id" title="abbreviation">F</span></a>)) :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="Utility.Util.html#1c1c78eb8010a689d430e9cce412ba6d"><span class="id" title="notation">existsT</span></a> <a class="idref" href="Utility.Util.html#1c1c78eb8010a689d430e9cce412ba6d"><span class="id" title="notation">(</span></a><a id="vbs:14" class="idref" href="#vbs:14"><span class="id" title="binder">vbs</span></a> <a id="inbs:15" class="idref" href="#inbs:15"><span class="id" title="binder">inbs</span></a> : <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Datatypes.html#list"><span class="id" title="inductive">list</span></a> <a class="idref" href="Examples.BeleniosIns.html#ballot"><span class="id" title="definition">ballot</span></a>) (<a id="bfinal:16" class="idref" href="#bfinal:16"><span class="id" title="binder">bfinal</span></a> : <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Datatypes.html#bool"><span class="id" title="inductive">bool</span></a><a class="idref" href="Utility.Util.html#1c1c78eb8010a689d430e9cce412ba6d"><span class="id" title="notation">),</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="Backend.BeleniosTally.html#count"><span class="id" title="inductive">count</span></a> (<span class="id" title="var">zero</span> := <a class="idref" href="Curve.Ed25519.html#Ed25519.Zl.zero"><span class="id" title="definition">Zl.zero</span></a>) (<span class="id" title="var">one</span> := <a class="idref" href="Curve.Ed25519.html#Ed25519.Zl.one"><span class="id" title="definition">Zl.one</span></a>) (<span class="id" title="var">add</span> := <a class="idref" href="Curve.Ed25519.html#Ed25519.Zl.add"><span class="id" title="definition">Zl.add</span></a>) (<span class="id" title="var">Fdec</span> := <a class="idref" href="Curve.Ed25519.html#Ed25519.Zl.Fdec"><span class="id" title="definition">Zl.Fdec</span></a>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">gid</span> := <a class="idref" href="Curve.Ed25519.html#Ed25519.Ed.gid"><span class="id" title="definition">Ed.gid</span></a>) (<span class="id" title="var">ginv</span> := <a class="idref" href="Curve.Ed25519.html#Ed25519.Ed.ginv"><span class="id" title="definition">Ed.ginv</span></a>) (<span class="id" title="var">gop</span> := <a class="idref" href="Curve.Ed25519.html#Ed25519.Ed.gop"><span class="id" title="definition">Ed.gop</span></a>) (<span class="id" title="var">gpow</span> := <a class="idref" href="Curve.Ed25519.html#Ed25519.Ed.gpow_fast"><span class="id" title="definition">Ed.gpow_fast</span></a>) (<span class="id" title="var">Gdec</span> := <a class="idref" href="Curve.Ed25519.html#Ed25519.Ed.Gdec"><span class="id" title="definition">Ed.Gdec</span></a>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="Examples.BeleniosIns.html#E:7"><span class="id" title="variable">E</span></a> <a class="idref" href="Examples.BeleniosIns.html#hs:8"><span class="id" title="variable">hs</span></a> (<a class="idref" href="Backend.BeleniosTally.html#finished"><span class="id" title="constructor">finished</span></a> (<span class="id" title="definition">List.rev</span> <a class="idref" href="Examples.BeleniosIns.html#bs:10"><span class="id" title="variable">bs</span></a>) <a class="idref" href="Examples.BeleniosIns.html#vbs:14"><span class="id" title="variable">vbs</span></a> <a class="idref" href="Examples.BeleniosIns.html#inbs:15"><span class="id" title="variable">inbs</span></a> <a class="idref" href="Examples.BeleniosIns.html#bfinal:16"><span class="id" title="variable">bfinal</span></a>) :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="Backend.BeleniosTally.html#compute_final_count"><span class="id" title="definition">compute_final_count</span></a> (<span class="id" title="var">zero</span> := <a class="idref" href="Curve.Ed25519.html#Ed25519.Zl.zero"><span class="id" title="definition">Zl.zero</span></a>) (<span class="id" title="var">one</span> := <a class="idref" href="Curve.Ed25519.html#Ed25519.Zl.one"><span class="id" title="definition">Zl.one</span></a>) (<span class="id" title="var">add</span> := <a class="idref" href="Curve.Ed25519.html#Ed25519.Zl.add"><span class="id" title="definition">Zl.add</span></a>) (<span class="id" title="var">Fdec</span> := <a class="idref" href="Curve.Ed25519.html#Ed25519.Zl.Fdec"><span class="id" title="definition">Zl.Fdec</span></a>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">gid</span> := <a class="idref" href="Curve.Ed25519.html#Ed25519.Ed.gid"><span class="id" title="definition">Ed.gid</span></a>) (<span class="id" title="var">ginv</span> := <a class="idref" href="Curve.Ed25519.html#Ed25519.Ed.ginv"><span class="id" title="definition">Ed.ginv</span></a>) (<span class="id" title="var">gop</span> := <a class="idref" href="Curve.Ed25519.html#Ed25519.Ed.gop"><span class="id" title="definition">Ed.gop</span></a>) (<span class="id" title="var">gpow</span> := <a class="idref" href="Curve.Ed25519.html#Ed25519.Ed.gpow_fast"><span class="id" title="definition">Ed.gpow_fast</span></a>) (<span class="id" title="var">Gdec</span> := <a class="idref" href="Curve.Ed25519.html#Ed25519.Ed.Gdec"><span class="id" title="definition">Ed.Gdec</span></a>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="Examples.BeleniosIns.html#E:7"><span class="id" title="variable">E</span></a> <a class="idref" href="Examples.BeleniosIns.html#hs:8"><span class="id" title="variable">hs</span></a> <a class="idref" href="Examples.BeleniosIns.html#th:9"><span class="id" title="variable">th</span></a> <a class="idref" href="Examples.BeleniosIns.html#bs:10"><span class="id" title="variable">bs</span></a> <a class="idref" href="Examples.BeleniosIns.html#published:11"><span class="id" title="variable">published</span></a> <a class="idref" href="Examples.BeleniosIns.html#trs:12"><span class="id" title="variable">trs</span></a> <a class="idref" href="Examples.BeleniosIns.html#result:13"><span class="id" title="variable">result</span></a>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+The Ed25519 base point, exported for the driver. 
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <a id="base" class="idref" href="#base"><span class="id" title="definition">base</span></a> : <a class="idref" href="Examples.BeleniosIns.html#G"><span class="id" title="abbreviation">G</span></a> := <a class="idref" href="Curve.Ed25519.html#Ed25519.Ed.B"><span class="id" title="definition">Ed.B</span></a>.<br/>
+
+<br/>
+<span class="id" title="keyword">End</span> <a class="idref" href="Examples.BeleniosIns.html#BeleniosIns"><span class="id" title="section">BeleniosIns</span></a>.<br/>
+</div>
+</div>
+
+<div id="footer">
+<hr/><a href="index_symbols.html">Index</a><hr/>This page has been generated by <a href="http://rocq-prover.org/">coqdoc</a>
+</div>
+
+</div>
+
+</body>
+</html>

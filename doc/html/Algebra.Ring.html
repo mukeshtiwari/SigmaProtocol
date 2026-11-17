@@ -1,0 +1,521 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<link href="coqdoc.css" rel="stylesheet" type="text/css" />
+<title>Algebra.Ring</title>
+</head>
+
+<body>
+
+<div id="page">
+
+<div id="header">
+</div>
+
+<div id="main">
+
+<h1 class="libtitle">Library Algebra.Ring</h1>
+
+<div class="code">
+</div>
+
+<div class="doc">
+<a id="lab18"></a><h1 class="section">Ring lemmas and the bridge to the standard-library ring tactic</h1>
+
+<div class="paragraph"> </div>
+
+ This file develops the elementary theory of the <span class="inlinecode"><span class="id" title="tactic">ring</span></span> and
+    <span class="inlinecode"><span class="id" title="var">commutative_ring</span></span> classes of <span class="inlinecode"><span class="id" title="var">Hierarchy.v</span></span> and connects them to the
+    Rocq standard library so that the <span class="inlinecode"><span class="id" title="tactic">ring</span></span> and <span class="inlinecode"><span class="id" title="tactic">field</span></span> tactics can be
+    used on any instance of the hierarchy.
+
+<div class="paragraph"> </div>
+
+<ul class="doclist">
+<li> <span class="inlinecode"><span class="id" title="var">Ncring_ops</span></span> and <span class="inlinecode"><span class="id" title="var">Ncring_ring</span></span> make every <span class="inlinecode"><span class="id" title="tactic">ring</span></span> an instance of the
+      standard library's non-commutative ring class <span class="inlinecode"><span class="id" title="var">Ncring.Ring</span></span>, from
+      which the basic identities (<span class="inlinecode"><span class="id" title="var">ring_mul_0_l</span></span>, <span class="inlinecode"><span class="id" title="var">ring_mul_opp_r</span></span>, ...)
+      are inherited.
+
+</li>
+<li> <span class="inlinecode"><span class="id" title="var">Cring_commutative_ring</span></span> does the same for <span class="inlinecode"><span class="id" title="var">Cring.Cring</span></span>, and
+      <span class="inlinecode"><span class="id" title="var">ring_theory_for_stdlib_tactic</span></span> packages a commutative ring as a
+      <span class="inlinecode"><span class="id" title="var">Ring_theory.ring_theory</span></span> record, the argument expected by
+      <span class="inlinecode"><span class="id" title="keyword">Add</span></span> <span class="inlinecode"><span class="id" title="var">Ring</span></span>. <span class="inlinecode"><span class="id" title="var">Field.v</span></span> builds on it for <span class="inlinecode"><span class="id" title="keyword">Add</span></span> <span class="inlinecode"><span class="id" title="var">Field</span></span>.
+
+</li>
+<li> <span class="inlinecode"><span class="id" title="var">of_nat</span></span> and <span class="inlinecode"><span class="id" title="var">of_Z</span></span> are the canonical maps from <span class="inlinecode"><span class="id" title="var">nat</span></span> and <span class="inlinecode"><span class="id" title="var">Z</span></span> into
+      any ring. 
+
+</li>
+</ul>
+</div>
+<div class="code">
+<span class="id" title="keyword">From</span> <span class="id" title="var">Stdlib</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span><br/>
+&nbsp;&nbsp;<span class="id" title="library">Ncring</span> <span class="id" title="library">Cring</span> <span class="id" title="library">ZArith</span><br/>
+&nbsp;&nbsp;<span class="id" title="library">PArith</span> <span class="id" title="library">Morphisms</span> <span class="id" title="library">Lia</span>.<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">Algebra</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span><br/>
+&nbsp;&nbsp;<a class="idref" href="Algebra.Hierarchy.html#"><span class="id" title="library">Hierarchy</span></a> <a class="idref" href="Algebra.Monoid.html#"><span class="id" title="library">Monoid</span></a> <a class="idref" href="Algebra.Group.html#"><span class="id" title="library">Group</span></a>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<a id="lab19"></a><h2 class="section">Rings</h2>
+
+</div>
+<div class="code">
+<span class="id" title="keyword">Section</span> <a id="Ring" class="idref" href="#Ring"><span class="id" title="section">Ring</span></a>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+An arbitrary (not necessarily commutative) ring. 
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Context</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;{<a id="Ring.T" class="idref" href="#Ring.T"><span class="id" title="variable">T</span></a> : <span class="id" title="keyword">Type</span>}<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;{<a id="Ring.eq" class="idref" href="#Ring.eq"><span class="id" title="variable">eq</span></a> : <a class="idref" href="Algebra.Ring.html#T:1"><span class="id" title="variable">T</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Notations.html#::type_scope:x_'-&gt;'_x"><span class="id" title="notation">→</span></a> <a class="idref" href="Algebra.Ring.html#T:1"><span class="id" title="variable">T</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Notations.html#::type_scope:x_'-&gt;'_x"><span class="id" title="notation">→</span></a> <span class="id" title="keyword">Prop</span>}<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;{<a id="Ring.zero" class="idref" href="#Ring.zero"><span class="id" title="variable">zero</span></a> <a id="Ring.one" class="idref" href="#Ring.one"><span class="id" title="variable">one</span></a> : <a class="idref" href="Algebra.Ring.html#T:1"><span class="id" title="variable">T</span></a>}<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;{<a id="Ring.opp" class="idref" href="#Ring.opp"><span class="id" title="variable">opp</span></a> : <a class="idref" href="Algebra.Ring.html#T:1"><span class="id" title="variable">T</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Notations.html#::type_scope:x_'-&gt;'_x"><span class="id" title="notation">→</span></a> <a class="idref" href="Algebra.Ring.html#T:1"><span class="id" title="variable">T</span></a>}<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;{<a id="Ring.add" class="idref" href="#Ring.add"><span class="id" title="variable">add</span></a> <a id="Ring.sub" class="idref" href="#Ring.sub"><span class="id" title="variable">sub</span></a> <a id="Ring.mul" class="idref" href="#Ring.mul"><span class="id" title="variable">mul</span></a> : <a class="idref" href="Algebra.Ring.html#T:1"><span class="id" title="variable">T</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Notations.html#::type_scope:x_'-&gt;'_x"><span class="id" title="notation">→</span></a> <a class="idref" href="Algebra.Ring.html#T:1"><span class="id" title="variable">T</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Notations.html#::type_scope:x_'-&gt;'_x"><span class="id" title="notation">→</span></a> <a class="idref" href="Algebra.Ring.html#T:1"><span class="id" title="variable">T</span></a>}<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;{<a id="Ring.Hr" class="idref" href="#Ring.Hr"><span class="id" title="variable">Hr</span></a> : @<a class="idref" href="Algebra.Hierarchy.html#ring"><span class="id" title="class">ring</span></a> <a class="idref" href="Algebra.Ring.html#T:1"><span class="id" title="variable">T</span></a> <a class="idref" href="Algebra.Ring.html#eq:2"><span class="id" title="variable">eq</span></a> <a class="idref" href="Algebra.Ring.html#zero:3"><span class="id" title="variable">zero</span></a> <a class="idref" href="Algebra.Ring.html#one:4"><span class="id" title="variable">one</span></a> <a class="idref" href="Algebra.Ring.html#opp:5"><span class="id" title="variable">opp</span></a> <a class="idref" href="Algebra.Ring.html#add:6"><span class="id" title="variable">add</span></a> <a class="idref" href="Algebra.Ring.html#sub:7"><span class="id" title="variable">sub</span></a> <a class="idref" href="Algebra.Ring.html#mul:8"><span class="id" title="variable">mul</span></a>}.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Local Infix</span> <a id="7db1bece133ff7ef40e0371a39a92b02" class="idref" href="#7db1bece133ff7ef40e0371a39a92b02"><span class="id" title="notation">&quot;</span></a>=" := <a class="idref" href="Algebra.Ring.html#Ring.eq"><span class="id" title="variable">eq</span></a> : <span class="id" title="var">type_scope</span>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Local Notation</span> <a id="Ring.::type_scope:x_'&lt;&gt;'_x" class="idref" href="#Ring.::type_scope:x_'&lt;&gt;'_x"><span class="id" title="notation">&quot;</span></a>a &lt;&gt; b" := (<a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Logic.html#not"><span class="id" title="definition">not</span></a> (<span class="id" title="var">a</span> <a class="idref" href="Algebra.Ring.html#7db1bece133ff7ef40e0371a39a92b02"><span class="id" title="notation">=</span></a> <span class="id" title="var">b</span>)) : <span class="id" title="var">type_scope</span>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Local Notation</span> <a id="Ring.:::'0'" class="idref" href="#Ring.:::'0'"><span class="id" title="notation">&quot;</span></a>0" := <a class="idref" href="Algebra.Ring.html#Ring.zero"><span class="id" title="variable">zero</span></a>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Local Notation</span> <a id="Ring.:::'1'" class="idref" href="#Ring.:::'1'"><span class="id" title="notation">&quot;</span></a>1" := <a class="idref" href="Algebra.Ring.html#Ring.one"><span class="id" title="variable">one</span></a>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Local Infix</span> <a id="54b8f422327483381e4066b62a2c8088" class="idref" href="#54b8f422327483381e4066b62a2c8088"><span class="id" title="notation">&quot;</span></a>+" := <a class="idref" href="Algebra.Ring.html#Ring.add"><span class="id" title="variable">add</span></a>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Local Infix</span> <a id="Ring.:::x_'-'_x" class="idref" href="#Ring.:::x_'-'_x"><span class="id" title="notation">&quot;</span></a>-" := <a class="idref" href="Algebra.Ring.html#Ring.sub"><span class="id" title="variable">sub</span></a>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Local Infix</span> <a id="13ac2ba2b42f7c061ece16843c77f010" class="idref" href="#13ac2ba2b42f7c061ece16843c77f010"><span class="id" title="notation">&quot;</span></a>×" := <a class="idref" href="Algebra.Ring.html#Ring.mul"><span class="id" title="variable">mul</span></a>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+The operations of the ring, packaged for the standard library's
+      <span class="inlinecode"><span class="id" title="var">Ncring</span></span> interface. The class has no fields beyond its parameters,
+      so the instance is defined by an empty proof. 
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Global Instance</span> <a id="Ncring_ops" class="idref" href="#Ncring_ops"><span class="id" title="instance">Ncring_ops</span></a> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;@<span class="id" title="class">Ncring.Ring_ops</span> <a class="idref" href="Algebra.Ring.html#Ring.T"><span class="id" title="variable">T</span></a> 0 1 <a class="idref" href="Algebra.Ring.html#Ring.add"><span class="id" title="variable">add</span></a> <a class="idref" href="Algebra.Ring.html#Ring.mul"><span class="id" title="variable">mul</span></a> <a class="idref" href="Algebra.Ring.html#Ring.sub"><span class="id" title="variable">sub</span></a> <a class="idref" href="Algebra.Ring.html#Ring.opp"><span class="id" title="variable">opp</span></a> <a class="idref" href="Algebra.Ring.html#Ring.eq"><span class="id" title="variable">eq</span></a>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Defined</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+Every <span class="inlinecode"><span class="id" title="tactic">ring</span></span> of the hierarchy satisfies the <span class="inlinecode"><span class="id" title="var">Ncring.Ring</span></span> axioms.
+      Each goal is discharged by the matching field of the <span class="inlinecode"><span class="id" title="tactic">ring</span></span> class. 
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Global Instance</span> <a id="Ncring_ring" class="idref" href="#Ncring_ring"><span class="id" title="instance">Ncring_ring</span></a> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;@<span class="id" title="class">Ncring.Ring</span> <a class="idref" href="Algebra.Ring.html#Ring.T"><span class="id" title="variable">T</span></a> 0 1 <a class="idref" href="Algebra.Ring.html#Ring.add"><span class="id" title="variable">add</span></a> <a class="idref" href="Algebra.Ring.html#Ring.mul"><span class="id" title="variable">mul</span></a> <a class="idref" href="Algebra.Ring.html#Ring.sub"><span class="id" title="variable">sub</span></a> <a class="idref" href="Algebra.Ring.html#Ring.opp"><span class="id" title="variable">opp</span></a> <a class="idref" href="Algebra.Ring.html#Ring.eq"><span class="id" title="variable">eq</span></a> <a class="idref" href="Algebra.Ring.html#Ncring_ops"><span class="id" title="instance">Ncring_ops</span></a>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">split</span>; <span class="id" title="tactic">try</span> (<span class="id" title="var">typeclasses</span> <span class="id" title="tactic">eauto</span>).<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;+ <span class="id" title="tactic">intros</span> ?.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">rewrite</span> <a class="idref" href="Algebra.Hierarchy.html#left_identity"><span class="id" title="definition">left_identity</span></a>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">reflexivity</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;+ <span class="id" title="tactic">intros</span> ? ?.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">rewrite</span> <a class="idref" href="Algebra.Hierarchy.html#commutative"><span class="id" title="definition">commutative</span></a>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">reflexivity</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;+ <span class="id" title="tactic">intros</span> ? ? ?.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">rewrite</span> <a class="idref" href="Algebra.Hierarchy.html#associative"><span class="id" title="definition">associative</span></a>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">reflexivity</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;+ <span class="id" title="tactic">intros</span> ?;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">rewrite</span> <a class="idref" href="Algebra.Hierarchy.html#left_identity"><span class="id" title="definition">left_identity</span></a>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">reflexivity</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;+ <span class="id" title="tactic">intros</span> ?;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">rewrite</span> <a class="idref" href="Algebra.Hierarchy.html#right_identity"><span class="id" title="definition">right_identity</span></a>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">reflexivity</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;+ <span class="id" title="tactic">intros</span> ? ? ?;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">rewrite</span> <a class="idref" href="Algebra.Hierarchy.html#associative"><span class="id" title="definition">associative</span></a>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">reflexivity</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;+ <span class="id" title="tactic">intros</span> ? ? ?;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">rewrite</span> <a class="idref" href="Algebra.Hierarchy.html#right_distributive"><span class="id" title="definition">right_distributive</span></a>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">reflexivity</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;+ <span class="id" title="tactic">intros</span> ? ? ?;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">rewrite</span> <a class="idref" href="Algebra.Hierarchy.html#left_distributive"><span class="id" title="definition">left_distributive</span></a>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">reflexivity</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;+ <span class="id" title="tactic">intros</span> ? ?;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">rewrite</span> <a class="idref" href="Algebra.Hierarchy.html#ring_sub_definition"><span class="id" title="method">ring_sub_definition</span></a>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">reflexivity</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;+ <span class="id" title="tactic">intros</span> ?;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">rewrite</span> <a class="idref" href="Algebra.Hierarchy.html#right_inverse"><span class="id" title="definition">right_inverse</span></a>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">reflexivity</span>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Defined</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+Zero annihilates on the left: <span class="inlinecode">0</span> <span class="inlinecode">×</span> <span class="inlinecode"><span class="id" title="var">x</span></span> <span class="inlinecode">=</span> <span class="inlinecode">0</span>. 
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <a id="ring_mul_0_l" class="idref" href="#ring_mul_0_l"><span class="id" title="lemma">ring_mul_0_l</span></a> : <span class="id" title="keyword">∀</span> <a id="x:10" class="idref" href="#x:10"><span class="id" title="binder">x</span></a>, 0 <a class="idref" href="Algebra.Ring.html#13ac2ba2b42f7c061ece16843c77f010"><span class="id" title="notation">×</span></a> <a class="idref" href="Algebra.Ring.html#x:10"><span class="id" title="variable">x</span></a> <a class="idref" href="Algebra.Ring.html#7db1bece133ff7ef40e0371a39a92b02"><span class="id" title="notation">=</span></a> 0.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">apply</span> <span class="id" title="lemma">Ncring.ring_mul_0_l</span>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Qed</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+Zero annihilates on the right: <span class="inlinecode"><span class="id" title="var">x</span></span> <span class="inlinecode">×</span> <span class="inlinecode">0</span> <span class="inlinecode">=</span> <span class="inlinecode">0</span>. 
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <a id="ring_mul_0_r" class="idref" href="#ring_mul_0_r"><span class="id" title="lemma">ring_mul_0_r</span></a> : <span class="id" title="keyword">∀</span> <a id="x:11" class="idref" href="#x:11"><span class="id" title="binder">x</span></a>, <a class="idref" href="Algebra.Ring.html#x:11"><span class="id" title="variable">x</span></a> <a class="idref" href="Algebra.Ring.html#13ac2ba2b42f7c061ece16843c77f010"><span class="id" title="notation">×</span></a> 0 <a class="idref" href="Algebra.Ring.html#7db1bece133ff7ef40e0371a39a92b02"><span class="id" title="notation">=</span></a> 0.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">apply</span> <span class="id" title="lemma">Ncring.ring_mul_0_r</span>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Qed</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+Subtracting from zero is negation: <span class="inlinecode">0</span> <span class="inlinecode">-</span> <span class="inlinecode"><span class="id" title="var">x</span></span> <span class="inlinecode">=</span> <span class="inlinecode"><span class="id" title="var">opp</span></span> <span class="inlinecode"><span class="id" title="var">x</span></span>. 
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <a id="ring_sub_0_l" class="idref" href="#ring_sub_0_l"><span class="id" title="lemma">ring_sub_0_l</span></a> : <span class="id" title="keyword">∀</span> <a id="x:12" class="idref" href="#x:12"><span class="id" title="binder">x</span></a>, 0 <a class="idref" href="Algebra.Ring.html#Ring.:::x_'-'_x"><span class="id" title="notation">-</span></a> <a class="idref" href="Algebra.Ring.html#x:12"><span class="id" title="variable">x</span></a> <a class="idref" href="Algebra.Ring.html#7db1bece133ff7ef40e0371a39a92b02"><span class="id" title="notation">=</span></a> <a class="idref" href="Algebra.Ring.html#Ring.opp"><span class="id" title="variable">opp</span></a> <a class="idref" href="Algebra.Ring.html#x:12"><span class="id" title="variable">x</span></a>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">intros</span> ?.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">rewrite</span> <a class="idref" href="Algebra.Hierarchy.html#ring_sub_definition"><span class="id" title="method">ring_sub_definition</span></a>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">rewrite</span> <a class="idref" href="Algebra.Hierarchy.html#commutative"><span class="id" title="definition">commutative</span></a>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">apply</span> <span class="id" title="lemma">Ncring.ring_add_0_r</span>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Qed</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+Negation commutes out of the right factor:
+      <span class="inlinecode"><span class="id" title="var">x</span></span> <span class="inlinecode">×</span> <span class="inlinecode"><span class="id" title="var">opp</span></span> <span class="inlinecode"><span class="id" title="var">y</span></span> <span class="inlinecode">=</span> <span class="inlinecode"><span class="id" title="var">opp</span></span> <span class="inlinecode">(<span class="id" title="var">x</span></span> <span class="inlinecode">×</span> <span class="inlinecode"><span class="id" title="var">y</span>)</span>. 
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <a id="ring_mul_opp_r" class="idref" href="#ring_mul_opp_r"><span class="id" title="lemma">ring_mul_opp_r</span></a> : <span class="id" title="keyword">∀</span> <a id="x:13" class="idref" href="#x:13"><span class="id" title="binder">x</span></a> <a id="y:14" class="idref" href="#y:14"><span class="id" title="binder">y</span></a>, <a class="idref" href="Algebra.Ring.html#x:13"><span class="id" title="variable">x</span></a> <a class="idref" href="Algebra.Ring.html#13ac2ba2b42f7c061ece16843c77f010"><span class="id" title="notation">×</span></a> <a class="idref" href="Algebra.Ring.html#Ring.opp"><span class="id" title="variable">opp</span></a> <a class="idref" href="Algebra.Ring.html#y:14"><span class="id" title="variable">y</span></a> <a class="idref" href="Algebra.Ring.html#7db1bece133ff7ef40e0371a39a92b02"><span class="id" title="notation">=</span></a> <a class="idref" href="Algebra.Ring.html#Ring.opp"><span class="id" title="variable">opp</span></a> (<a class="idref" href="Algebra.Ring.html#x:13"><span class="id" title="variable">x</span></a> <a class="idref" href="Algebra.Ring.html#13ac2ba2b42f7c061ece16843c77f010"><span class="id" title="notation">×</span></a> <a class="idref" href="Algebra.Ring.html#y:14"><span class="id" title="variable">y</span></a>).<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">intros</span> ? ?.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">symmetry</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">apply</span> <span class="id" title="lemma">Ncring.ring_opp_mul_r</span>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Qed</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+Negation commutes out of the left factor:
+      <span class="inlinecode"><span class="id" title="var">opp</span></span> <span class="inlinecode"><span class="id" title="var">x</span></span> <span class="inlinecode">×</span> <span class="inlinecode"><span class="id" title="var">y</span></span> <span class="inlinecode">=</span> <span class="inlinecode"><span class="id" title="var">opp</span></span> <span class="inlinecode">(<span class="id" title="var">x</span></span> <span class="inlinecode">×</span> <span class="inlinecode"><span class="id" title="var">y</span>)</span>. 
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <a id="ring_mul_opp_l" class="idref" href="#ring_mul_opp_l"><span class="id" title="lemma">ring_mul_opp_l</span></a> : <span class="id" title="keyword">∀</span> <a id="x:15" class="idref" href="#x:15"><span class="id" title="binder">x</span></a> <a id="y:16" class="idref" href="#y:16"><span class="id" title="binder">y</span></a>, <a class="idref" href="Algebra.Ring.html#Ring.opp"><span class="id" title="variable">opp</span></a> <a class="idref" href="Algebra.Ring.html#x:15"><span class="id" title="variable">x</span></a> <a class="idref" href="Algebra.Ring.html#13ac2ba2b42f7c061ece16843c77f010"><span class="id" title="notation">×</span></a> <a class="idref" href="Algebra.Ring.html#y:16"><span class="id" title="variable">y</span></a> <a class="idref" href="Algebra.Ring.html#7db1bece133ff7ef40e0371a39a92b02"><span class="id" title="notation">=</span></a> <a class="idref" href="Algebra.Ring.html#Ring.opp"><span class="id" title="variable">opp</span></a> (<a class="idref" href="Algebra.Ring.html#x:15"><span class="id" title="variable">x</span></a> <a class="idref" href="Algebra.Ring.html#13ac2ba2b42f7c061ece16843c77f010"><span class="id" title="notation">×</span></a> <a class="idref" href="Algebra.Ring.html#y:16"><span class="id" title="variable">y</span></a>).<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">intros</span> ? ?.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">symmetry</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">apply</span> <span class="id" title="lemma">Ncring.ring_opp_mul_l</span>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Qed</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<span class="inlinecode"><span class="id" title="var">opp</span></span> <span class="inlinecode"><span class="id" title="var">x</span></span> <span class="inlinecode">=</span> <span class="inlinecode">0</span> <span class="inlinecode">↔</span> <span class="inlinecode"><span class="id" title="var">x</span></span> <span class="inlinecode">=</span> <span class="inlinecode">0</span>, an instance of <span class="inlinecode"><span class="id" title="var">group_inv_id_iff</span></span> for the
+      additive group. 
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <a id="ring_opp_zero_iff" class="idref" href="#ring_opp_zero_iff"><span class="id" title="lemma">ring_opp_zero_iff</span></a> : <span class="id" title="keyword">∀</span> <a id="x:17" class="idref" href="#x:17"><span class="id" title="binder">x</span></a>, <a class="idref" href="Algebra.Ring.html#Ring.opp"><span class="id" title="variable">opp</span></a> <a class="idref" href="Algebra.Ring.html#x:17"><span class="id" title="variable">x</span></a> <a class="idref" href="Algebra.Ring.html#7db1bece133ff7ef40e0371a39a92b02"><span class="id" title="notation">=</span></a> 0 <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Logic.html#::type_scope:x_'&lt;-&gt;'_x"><span class="id" title="notation">↔</span></a> <a class="idref" href="Algebra.Ring.html#x:17"><span class="id" title="variable">x</span></a> <a class="idref" href="Algebra.Ring.html#7db1bece133ff7ef40e0371a39a92b02"><span class="id" title="notation">=</span></a> 0.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">apply</span> <a class="idref" href="Algebra.Group.html#group_inv_id_iff"><span class="id" title="lemma">Group.group_inv_id_iff</span></a>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Qed</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+Multiplication distributes over subtraction on the left:
+      <span class="inlinecode"><span class="id" title="var">x</span></span> <span class="inlinecode">×</span> <span class="inlinecode">(<span class="id" title="var">y</span></span> <span class="inlinecode">-</span> <span class="inlinecode"><span class="id" title="var">z</span>)</span> <span class="inlinecode">=</span> <span class="inlinecode"><span class="id" title="var">x</span></span> <span class="inlinecode">×</span> <span class="inlinecode"><span class="id" title="var">y</span></span> <span class="inlinecode">-</span> <span class="inlinecode"><span class="id" title="var">x</span></span> <span class="inlinecode">×</span> <span class="inlinecode"><span class="id" title="var">z</span></span>. 
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Global Instance</span> <a id="is_left_distributive_sub" class="idref" href="#is_left_distributive_sub"><span class="id" title="instance">is_left_distributive_sub</span></a> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="Algebra.Hierarchy.html#is_left_distributive"><span class="id" title="class">is_left_distributive</span></a> (<span class="id" title="var">eq</span> := <a class="idref" href="Algebra.Ring.html#Ring.eq"><span class="id" title="variable">eq</span></a>)(<span class="id" title="var">add</span> := <a class="idref" href="Algebra.Ring.html#Ring.sub"><span class="id" title="variable">sub</span></a>)(<span class="id" title="var">mul</span> := <a class="idref" href="Algebra.Ring.html#Ring.mul"><span class="id" title="variable">mul</span></a>).<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">intros</span> ? ? ?.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">rewrite</span> !<a class="idref" href="Algebra.Hierarchy.html#ring_sub_definition"><span class="id" title="method">ring_sub_definition</span></a>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">rewrite</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="Algebra.Hierarchy.html#left_distributive"><span class="id" title="definition">left_distributive</span></a>,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="Algebra.Ring.html#ring_mul_opp_r"><span class="id" title="lemma">ring_mul_opp_r</span></a>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">reflexivity</span>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Qed</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+Multiplication distributes over subtraction on the right:
+      <span class="inlinecode">(<span class="id" title="var">y</span></span> <span class="inlinecode">-</span> <span class="inlinecode"><span class="id" title="var">z</span>)</span> <span class="inlinecode">×</span> <span class="inlinecode"><span class="id" title="var">x</span></span> <span class="inlinecode">=</span> <span class="inlinecode"><span class="id" title="var">y</span></span> <span class="inlinecode">×</span> <span class="inlinecode"><span class="id" title="var">x</span></span> <span class="inlinecode">-</span> <span class="inlinecode"><span class="id" title="var">z</span></span> <span class="inlinecode">×</span> <span class="inlinecode"><span class="id" title="var">x</span></span>. 
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Global Instance</span> <a id="is_right_distributive_sub" class="idref" href="#is_right_distributive_sub"><span class="id" title="instance">is_right_distributive_sub</span></a> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="Algebra.Hierarchy.html#is_right_distributive"><span class="id" title="class">is_right_distributive</span></a> (<span class="id" title="var">eq</span> := <a class="idref" href="Algebra.Ring.html#Ring.eq"><span class="id" title="variable">eq</span></a>)(<span class="id" title="var">add</span> := <a class="idref" href="Algebra.Ring.html#Ring.sub"><span class="id" title="variable">sub</span></a>)(<span class="id" title="var">mul</span> := <a class="idref" href="Algebra.Ring.html#Ring.mul"><span class="id" title="variable">mul</span></a>).<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">intros</span> ? ? ?.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">repeat</span> <span class="id" title="tactic">rewrite</span> <a class="idref" href="Algebra.Hierarchy.html#ring_sub_definition"><span class="id" title="method">ring_sub_definition</span></a>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">rewrite</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="Algebra.Hierarchy.html#right_distributive"><span class="id" title="definition">right_distributive</span></a>,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="Algebra.Ring.html#ring_mul_opp_l"><span class="id" title="lemma">ring_mul_opp_l</span></a>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">reflexivity</span>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Qed</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+A difference is zero exactly when the operands are equal:
+      <span class="inlinecode"><span class="id" title="var">x</span></span> <span class="inlinecode">-</span> <span class="inlinecode"><span class="id" title="var">y</span></span> <span class="inlinecode">=</span> <span class="inlinecode">0</span> <span class="inlinecode">↔</span> <span class="inlinecode"><span class="id" title="var">x</span></span> <span class="inlinecode">=</span> <span class="inlinecode"><span class="id" title="var">y</span></span>. 
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <a id="ring_sub_zero_iff" class="idref" href="#ring_sub_zero_iff"><span class="id" title="lemma">ring_sub_zero_iff</span></a> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">∀</span> <a id="x:18" class="idref" href="#x:18"><span class="id" title="binder">x</span></a> <a id="y:19" class="idref" href="#y:19"><span class="id" title="binder">y</span></a>, <a class="idref" href="Algebra.Ring.html#x:18"><span class="id" title="variable">x</span></a> <a class="idref" href="Algebra.Ring.html#Ring.:::x_'-'_x"><span class="id" title="notation">-</span></a> <a class="idref" href="Algebra.Ring.html#y:19"><span class="id" title="variable">y</span></a> <a class="idref" href="Algebra.Ring.html#7db1bece133ff7ef40e0371a39a92b02"><span class="id" title="notation">=</span></a> 0 <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Logic.html#::type_scope:x_'&lt;-&gt;'_x"><span class="id" title="notation">↔</span></a> <a class="idref" href="Algebra.Ring.html#x:18"><span class="id" title="variable">x</span></a> <a class="idref" href="Algebra.Ring.html#7db1bece133ff7ef40e0371a39a92b02"><span class="id" title="notation">=</span></a> <a class="idref" href="Algebra.Ring.html#y:19"><span class="id" title="variable">y</span></a>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">intros</span> ? ?;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">split</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">intros</span> <span class="id" title="var">H</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">rewrite</span> <a class="idref" href="Algebra.Hierarchy.html#ring_sub_definition"><span class="id" title="method">ring_sub_definition</span></a>,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="Algebra.Group.html#group_inv_unique"><span class="id" title="lemma">group_inv_unique</span></a>,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="Algebra.Group.html#group_inv_inv"><span class="id" title="lemma">group_inv_inv</span></a> <span class="id" title="tactic">in</span> <span class="id" title="var">H</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">exact</span> <span class="id" title="var">H</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">rewrite</span> <span class="id" title="var">H</span>,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="Algebra.Hierarchy.html#ring_sub_definition"><span class="id" title="method">ring_sub_definition</span></a>,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="Algebra.Hierarchy.html#right_inverse"><span class="id" title="definition">right_inverse</span></a>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">reflexivity</span>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Qed</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+Distinct elements have a non-zero difference. Used, for example,
+      when dividing by a difference of two challenges in special-soundness
+      extractors. 
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <a id="ring_neq_sub_neq_zero" class="idref" href="#ring_neq_sub_neq_zero"><span class="id" title="lemma">ring_neq_sub_neq_zero</span></a> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">∀</span> <a id="x:20" class="idref" href="#x:20"><span class="id" title="binder">x</span></a> <a id="y:21" class="idref" href="#y:21"><span class="id" title="binder">y</span></a>, <a class="idref" href="Algebra.Ring.html#x:20"><span class="id" title="variable">x</span></a> <a class="idref" href="Algebra.Ring.html#Ring.::type_scope:x_'&lt;&gt;'_x"><span class="id" title="notation">≠</span></a> <a class="idref" href="Algebra.Ring.html#y:21"><span class="id" title="variable">y</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Notations.html#::type_scope:x_'-&gt;'_x"><span class="id" title="notation">→</span></a> <a class="idref" href="Algebra.Ring.html#x:20"><span class="id" title="variable">x</span></a><a class="idref" href="Algebra.Ring.html#Ring.:::x_'-'_x"><span class="id" title="notation">-</span></a><a class="idref" href="Algebra.Ring.html#y:21"><span class="id" title="variable">y</span></a> <a class="idref" href="Algebra.Ring.html#Ring.::type_scope:x_'&lt;&gt;'_x"><span class="id" title="notation">≠</span></a> 0.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">intros</span> ? ? <span class="id" title="var">H</span> <span class="id" title="var">Hsub</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">pose</span> <span class="id" title="var">proof</span> (<a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Logic.html#proj1"><span class="id" title="lemma">proj1</span></a> (<a class="idref" href="Algebra.Ring.html#ring_sub_zero_iff"><span class="id" title="lemma">ring_sub_zero_iff</span></a> <span class="id" title="var">_</span> <span class="id" title="var">_</span>) <span class="id" title="var">Hsub</span>) <span class="id" title="keyword">as</span> <span class="id" title="var">Ht</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">unfold</span> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Logic.html#not"><span class="id" title="definition">not</span></a> <span class="id" title="tactic">in</span> <span class="id" title="var">H</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">apply</span> <span class="id" title="var">H</span> <span class="id" title="tactic">in</span> <span class="id" title="var">Ht</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">inversion</span> <span class="id" title="var">Ht</span>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Qed</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+In a ring without zero divisors, <span class="inlinecode"><span class="id" title="var">x</span></span> <span class="inlinecode">×</span> <span class="inlinecode"><span class="id" title="var">y</span></span> <span class="inlinecode">=</span> <span class="inlinecode">0</span> <span class="inlinecode">↔</span> <span class="inlinecode"><span class="id" title="var">x</span></span> <span class="inlinecode">=</span> <span class="inlinecode">0</span> <span class="inlinecode">∨</span> <span class="inlinecode"><span class="id" title="var">y</span></span> <span class="inlinecode">=</span> <span class="inlinecode">0</span>. 
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <a id="ring_zero_product_iff_zero_factor" class="idref" href="#ring_zero_product_iff_zero_factor"><span class="id" title="lemma">ring_zero_product_iff_zero_factor</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;{<a id="Hzpzf:22" class="idref" href="#Hzpzf:22"><span class="id" title="binder">Hzpzf</span></a> : @<a class="idref" href="Algebra.Hierarchy.html#is_zero_product_zero_factor"><span class="id" title="class">is_zero_product_zero_factor</span></a> <a class="idref" href="Algebra.Ring.html#Ring.T"><span class="id" title="variable">T</span></a> <a class="idref" href="Algebra.Ring.html#Ring.eq"><span class="id" title="variable">eq</span></a> <a class="idref" href="Algebra.Ring.html#Ring.zero"><span class="id" title="variable">zero</span></a> <a class="idref" href="Algebra.Ring.html#Ring.mul"><span class="id" title="variable">mul</span></a>} :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">∀</span> <a id="x:23" class="idref" href="#x:23"><span class="id" title="binder">x</span></a> <a id="y:24" class="idref" href="#y:24"><span class="id" title="binder">y</span></a> : <a class="idref" href="Algebra.Ring.html#Ring.T"><span class="id" title="variable">T</span></a>, <a class="idref" href="Algebra.Ring.html#x:23"><span class="id" title="variable">x</span></a> <a class="idref" href="Algebra.Ring.html#13ac2ba2b42f7c061ece16843c77f010"><span class="id" title="notation">×</span></a> <a class="idref" href="Algebra.Ring.html#y:24"><span class="id" title="variable">y</span></a> <a class="idref" href="Algebra.Ring.html#7db1bece133ff7ef40e0371a39a92b02"><span class="id" title="notation">=</span></a> 0 <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Logic.html#::type_scope:x_'&lt;-&gt;'_x"><span class="id" title="notation">↔</span></a> <a class="idref" href="Algebra.Ring.html#x:23"><span class="id" title="variable">x</span></a> <a class="idref" href="Algebra.Ring.html#7db1bece133ff7ef40e0371a39a92b02"><span class="id" title="notation">=</span></a> 0 <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Logic.html#f031fe1957c4a4a8e217aa46af2b4e25"><span class="id" title="notation">∨</span></a> <a class="idref" href="Algebra.Ring.html#y:24"><span class="id" title="variable">y</span></a> <a class="idref" href="Algebra.Ring.html#7db1bece133ff7ef40e0371a39a92b02"><span class="id" title="notation">=</span></a> 0.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">intros</span> ? ?; <span class="id" title="tactic">split</span>; <span class="id" title="tactic">intros</span> <span class="id" title="var">H</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">apply</span> <a class="idref" href="Algebra.Hierarchy.html#zero_product_zero_factor"><span class="id" title="definition">zero_product_zero_factor</span></a>; <span class="id" title="tactic">exact</span> <span class="id" title="var">H</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">destruct</span> <span class="id" title="var">H</span>; <span class="id" title="tactic">rewrite</span> <span class="id" title="var">H</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[<span class="id" title="tactic">apply</span> <a class="idref" href="Algebra.Ring.html#ring_mul_0_l"><span class="id" title="lemma">ring_mul_0_l</span></a> | <span class="id" title="tactic">apply</span> <a class="idref" href="Algebra.Ring.html#ring_mul_0_r"><span class="id" title="lemma">ring_mul_0_r</span></a>].<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Qed</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+In a ring without zero divisors, a product is non-zero exactly when
+      both factors are: <span class="inlinecode"><span class="id" title="var">x</span></span> <span class="inlinecode">×</span> <span class="inlinecode"><span class="id" title="var">y</span></span> <span class="inlinecode">≠</span> <span class="inlinecode">0</span> <span class="inlinecode">↔</span> <span class="inlinecode"><span class="id" title="var">x</span></span> <span class="inlinecode">≠</span> <span class="inlinecode">0</span> <span class="inlinecode">∧</span> <span class="inlinecode"><span class="id" title="var">y</span></span> <span class="inlinecode">≠</span> <span class="inlinecode">0</span>. 
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <a id="nonzero_product_iff_nonzero_factor" class="idref" href="#nonzero_product_iff_nonzero_factor"><span class="id" title="lemma">nonzero_product_iff_nonzero_factor</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;{<a id="Hzpzf:25" class="idref" href="#Hzpzf:25"><span class="id" title="binder">Hzpzf</span></a> : @<a class="idref" href="Algebra.Hierarchy.html#is_zero_product_zero_factor"><span class="id" title="class">is_zero_product_zero_factor</span></a> <a class="idref" href="Algebra.Ring.html#Ring.T"><span class="id" title="variable">T</span></a> <a class="idref" href="Algebra.Ring.html#Ring.eq"><span class="id" title="variable">eq</span></a> <a class="idref" href="Algebra.Ring.html#Ring.zero"><span class="id" title="variable">zero</span></a> <a class="idref" href="Algebra.Ring.html#Ring.mul"><span class="id" title="variable">mul</span></a>} :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">∀</span> <a id="x:26" class="idref" href="#x:26"><span class="id" title="binder">x</span></a> <a id="y:27" class="idref" href="#y:27"><span class="id" title="binder">y</span></a> : <a class="idref" href="Algebra.Ring.html#Ring.T"><span class="id" title="variable">T</span></a>,  <a class="idref" href="Algebra.Ring.html#x:26"><span class="id" title="variable">x</span></a> <a class="idref" href="Algebra.Ring.html#13ac2ba2b42f7c061ece16843c77f010"><span class="id" title="notation">×</span></a> <a class="idref" href="Algebra.Ring.html#y:27"><span class="id" title="variable">y</span></a> <a class="idref" href="Algebra.Ring.html#Ring.::type_scope:x_'&lt;&gt;'_x"><span class="id" title="notation">≠</span></a> 0 <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Logic.html#::type_scope:x_'&lt;-&gt;'_x"><span class="id" title="notation">↔</span></a> <a class="idref" href="Algebra.Ring.html#x:26"><span class="id" title="variable">x</span></a> <a class="idref" href="Algebra.Ring.html#Ring.::type_scope:x_'&lt;&gt;'_x"><span class="id" title="notation">≠</span></a> 0 <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Logic.html#ba2b0e492d2b4675a0acf3ea92aabadd"><span class="id" title="notation">∧</span></a> <a class="idref" href="Algebra.Ring.html#y:27"><span class="id" title="variable">y</span></a> <a class="idref" href="Algebra.Ring.html#Ring.::type_scope:x_'&lt;&gt;'_x"><span class="id" title="notation">≠</span></a> 0.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">intros</span> ? ?;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">split</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">intros</span> <span class="id" title="var">H</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">split</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">intro</span> <span class="id" title="var">Ht</span>; <span class="id" title="tactic">apply</span> <span class="id" title="var">H</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">rewrite</span> <span class="id" title="var">Ht</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;[<span class="id" title="tactic">rewrite</span> <a class="idref" href="Algebra.Ring.html#ring_mul_0_l"><span class="id" title="lemma">ring_mul_0_l</span></a> | <span class="id" title="tactic">rewrite</span> <a class="idref" href="Algebra.Ring.html#ring_mul_0_r"><span class="id" title="lemma">ring_mul_0_r</span></a>];<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">reflexivity</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">intro</span> <span class="id" title="var">Ht</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">destruct</span> <span class="id" title="var">H</span> <span class="id" title="keyword">as</span> [<span class="id" title="var">H1</span> <span class="id" title="var">H2</span>].<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">apply</span> <a class="idref" href="Algebra.Ring.html#ring_zero_product_iff_zero_factor"><span class="id" title="lemma">ring_zero_product_iff_zero_factor</span></a> <span class="id" title="tactic">in</span> <span class="id" title="var">Ht</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">destruct</span> <span class="id" title="var">Ht</span> <span class="id" title="keyword">as</span> [<span class="id" title="var">Ht</span> | <span class="id" title="var">Ht</span>].<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">apply</span> <span class="id" title="var">H1</span> <span class="id" title="tactic">in</span> <span class="id" title="var">Ht</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">exact</span> <span class="id" title="var">Ht</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">apply</span> <span class="id" title="var">H2</span> <span class="id" title="tactic">in</span> <span class="id" title="var">Ht</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">exact</span> <span class="id" title="var">Ht</span>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Qed</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">End</span> <a class="idref" href="Algebra.Ring.html#Ring"><span class="id" title="section">Ring</span></a>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<a id="lab20"></a><h2 class="section">Commutative rings and the <span class="inlinecode"><span class="id" title="tactic">ring</span></span> tactic</h2>
+
+</div>
+<div class="code">
+<span class="id" title="keyword">Section</span> <a id="Cring" class="idref" href="#Cring"><span class="id" title="section">Cring</span></a>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+An arbitrary commutative ring. 
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Context</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;{<a id="Cring.T" class="idref" href="#Cring.T"><span class="id" title="variable">T</span></a> <a id="Cring.eq" class="idref" href="#Cring.eq"><span class="id" title="variable">eq</span></a> <a id="Cring.zero" class="idref" href="#Cring.zero"><span class="id" title="variable">zero</span></a> <a id="Cring.one" class="idref" href="#Cring.one"><span class="id" title="variable">one</span></a> <a id="Cring.opp" class="idref" href="#Cring.opp"><span class="id" title="variable">opp</span></a> <a id="Cring.add" class="idref" href="#Cring.add"><span class="id" title="variable">add</span></a> <a id="Cring.sub" class="idref" href="#Cring.sub"><span class="id" title="variable">sub</span></a> <a id="Cring.mul" class="idref" href="#Cring.mul"><span class="id" title="variable">mul</span></a>}<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;{<a id="Cring.Hcring" class="idref" href="#Cring.Hcring"><span class="id" title="variable">Hcring</span></a> : @<a class="idref" href="Algebra.Hierarchy.html#commutative_ring"><span class="id" title="class">commutative_ring</span></a> <a class="idref" href="Algebra.Ring.html#T:28"><span class="id" title="variable">T</span></a> <a class="idref" href="Algebra.Ring.html#eq:29"><span class="id" title="variable">eq</span></a> <a class="idref" href="Algebra.Ring.html#zero:30"><span class="id" title="variable">zero</span></a> <a class="idref" href="Algebra.Ring.html#one:31"><span class="id" title="variable">one</span></a> <a class="idref" href="Algebra.Ring.html#opp:32"><span class="id" title="variable">opp</span></a> <a class="idref" href="Algebra.Ring.html#add:33"><span class="id" title="variable">add</span></a> <a class="idref" href="Algebra.Ring.html#sub:34"><span class="id" title="variable">sub</span></a> <a class="idref" href="Algebra.Ring.html#mul:35"><span class="id" title="variable">mul</span></a>}.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+Every <span class="inlinecode"><span class="id" title="var">commutative_ring</span></span> is a standard-library <span class="inlinecode"><span class="id" title="var">Cring.Cring</span></span>; the
+      only extra obligation is commutativity of multiplication. 
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Global Instance</span> <a id="Cring_commutative_ring" class="idref" href="#Cring_commutative_ring"><span class="id" title="instance">Cring_commutative_ring</span></a> :<br/>
+&nbsp;&nbsp;&nbsp;@<span class="id" title="class">Cring.Cring</span> <a class="idref" href="Algebra.Ring.html#Cring.T"><span class="id" title="variable">T</span></a> <a class="idref" href="Algebra.Ring.html#Cring.zero"><span class="id" title="variable">zero</span></a> <a class="idref" href="Algebra.Ring.html#Cring.one"><span class="id" title="variable">one</span></a> <a class="idref" href="Algebra.Ring.html#Cring.add"><span class="id" title="variable">add</span></a> <a class="idref" href="Algebra.Ring.html#Cring.mul"><span class="id" title="variable">mul</span></a> <a class="idref" href="Algebra.Ring.html#Cring.sub"><span class="id" title="variable">sub</span></a> <a class="idref" href="Algebra.Ring.html#Cring.opp"><span class="id" title="variable">opp</span></a> <a class="idref" href="Algebra.Ring.html#Cring.eq"><span class="id" title="variable">eq</span></a> <a class="idref" href="Algebra.Ring.html#Ncring_ops"><span class="id" title="instance">Ncring_ops</span></a> <a class="idref" href="Algebra.Ring.html#Ncring_ring"><span class="id" title="instance">Ncring_ring</span></a>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">intros</span> ? ?.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">apply</span> <a class="idref" href="Algebra.Hierarchy.html#commutative"><span class="id" title="definition">commutative</span></a>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Defined</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+A commutative ring of the hierarchy satisfies the standard library's
+      <span class="inlinecode"><span class="id" title="var">ring_theory</span></span>. Client files use it as
+      <span class="inlinecode"><span class="id" title="keyword">Add</span></span> <span class="inlinecode"><span class="id" title="var">Ring</span></span> <span class="inlinecode"><span class="id" title="var">r</span></span> <span class="inlinecode">:</span> <span class="inlinecode">(<span class="id" title="var">ring_theory_for_stdlib_tactic</span></span> <span class="inlinecode">...)</span> to enable the
+      <span class="inlinecode"><span class="id" title="tactic">ring</span></span> tactic modulo <span class="inlinecode"><span class="id" title="var">eq</span></span>. 
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <a id="ring_theory_for_stdlib_tactic" class="idref" href="#ring_theory_for_stdlib_tactic"><span class="id" title="lemma">ring_theory_for_stdlib_tactic</span></a> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="record">Ring_theory.ring_theory</span> <a class="idref" href="Algebra.Ring.html#Cring.zero"><span class="id" title="variable">zero</span></a> <a class="idref" href="Algebra.Ring.html#Cring.one"><span class="id" title="variable">one</span></a> <a class="idref" href="Algebra.Ring.html#Cring.add"><span class="id" title="variable">add</span></a> <a class="idref" href="Algebra.Ring.html#Cring.mul"><span class="id" title="variable">mul</span></a> <a class="idref" href="Algebra.Ring.html#Cring.sub"><span class="id" title="variable">sub</span></a> <a class="idref" href="Algebra.Ring.html#Cring.opp"><span class="id" title="variable">opp</span></a> <a class="idref" href="Algebra.Ring.html#Cring.eq"><span class="id" title="variable">eq</span></a>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">split</span>; <span class="id" title="tactic">intros</span>; <span class="id" title="tactic">try</span> (<span class="id" title="var">typeclasses</span> <span class="id" title="tactic">eauto</span>).<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;+ <span class="id" title="tactic">apply</span> <a class="idref" href="Algebra.Hierarchy.html#left_identity"><span class="id" title="definition">left_identity</span></a>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;+ <span class="id" title="tactic">apply</span> <a class="idref" href="Algebra.Hierarchy.html#commutative"><span class="id" title="definition">commutative</span></a>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;+ <span class="id" title="tactic">apply</span> <a class="idref" href="Algebra.Hierarchy.html#associative"><span class="id" title="definition">associative</span></a>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;+ <span class="id" title="tactic">apply</span> <a class="idref" href="Algebra.Hierarchy.html#left_identity"><span class="id" title="definition">left_identity</span></a>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;+ <span class="id" title="tactic">apply</span> <a class="idref" href="Algebra.Hierarchy.html#commutative"><span class="id" title="definition">commutative</span></a>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;+ <span class="id" title="tactic">apply</span> <a class="idref" href="Algebra.Hierarchy.html#associative"><span class="id" title="definition">associative</span></a>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;+ <span class="id" title="tactic">apply</span> <a class="idref" href="Algebra.Hierarchy.html#right_distributive"><span class="id" title="definition">right_distributive</span></a>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;+ <span class="id" title="tactic">apply</span> <a class="idref" href="Algebra.Hierarchy.html#ring_sub_definition"><span class="id" title="method">ring_sub_definition</span></a>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;+ <span class="id" title="tactic">apply</span> <a class="idref" href="Algebra.Hierarchy.html#right_inverse"><span class="id" title="definition">right_inverse</span></a>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Qed</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">End</span> <a class="idref" href="Algebra.Ring.html#Cring"><span class="id" title="section">Cring</span></a>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<a id="lab21"></a><h2 class="section">Embedding the integers</h2>
+
+</div>
+<div class="code">
+<span class="id" title="keyword">Section</span> <a id="of_Z" class="idref" href="#of_Z"><span class="id" title="section">of_Z</span></a>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Local Open</span> <span class="id" title="keyword">Scope</span> <span class="id" title="var">Z_scope</span>.<br/>
+</div>
+
+<div class="doc">
+An arbitrary ring <span class="inlinecode"><span class="id" title="var">R</span></span>; <span class="inlinecode"><span class="id" title="var">Req</span></span> is written <span class="inlinecode">=</span> locally. 
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Context</span> {<a id="of_Z.R" class="idref" href="#of_Z.R"><span class="id" title="variable">R</span></a> <a id="of_Z.Req" class="idref" href="#of_Z.Req"><span class="id" title="variable">Req</span></a> <a id="of_Z.Rzero" class="idref" href="#of_Z.Rzero"><span class="id" title="variable">Rzero</span></a> <a id="of_Z.Rone" class="idref" href="#of_Z.Rone"><span class="id" title="variable">Rone</span></a> <a id="of_Z.Ropp" class="idref" href="#of_Z.Ropp"><span class="id" title="variable">Ropp</span></a> <a id="of_Z.Radd" class="idref" href="#of_Z.Radd"><span class="id" title="variable">Radd</span></a> <a id="of_Z.Rsub" class="idref" href="#of_Z.Rsub"><span class="id" title="variable">Rsub</span></a> <a id="of_Z.Rmul" class="idref" href="#of_Z.Rmul"><span class="id" title="variable">Rmul</span></a>}<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{<a id="of_Z.Rring" class="idref" href="#of_Z.Rring"><span class="id" title="variable">Rring</span></a> : @<a class="idref" href="Algebra.Hierarchy.html#ring"><span class="id" title="class">ring</span></a> <a class="idref" href="Algebra.Ring.html#R:37"><span class="id" title="variable">R</span></a> <a class="idref" href="Algebra.Ring.html#Req:38"><span class="id" title="variable">Req</span></a> <a class="idref" href="Algebra.Ring.html#Rzero:39"><span class="id" title="variable">Rzero</span></a> <a class="idref" href="Algebra.Ring.html#Rone:40"><span class="id" title="variable">Rone</span></a> <a class="idref" href="Algebra.Ring.html#Ropp:41"><span class="id" title="variable">Ropp</span></a> <a class="idref" href="Algebra.Ring.html#Radd:42"><span class="id" title="variable">Radd</span></a> <a class="idref" href="Algebra.Ring.html#Rsub:43"><span class="id" title="variable">Rsub</span></a> <a class="idref" href="Algebra.Ring.html#Rmul:44"><span class="id" title="variable">Rmul</span></a>}.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Local Infix</span> <a id="51b4a7d858ad135d32e10c3ae7d58fe1" class="idref" href="#51b4a7d858ad135d32e10c3ae7d58fe1"><span class="id" title="notation">&quot;</span></a>=" := <a class="idref" href="Algebra.Ring.html#of_Z.Req"><span class="id" title="variable">Req</span></a> : <span class="id" title="var">type_scope</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+The image of a natural number in <span class="inlinecode"><span class="id" title="var">R</span></span>, computed by unary recursion:
+      <span class="inlinecode"><span class="id" title="var">of_nat</span></span> <span class="inlinecode">(<span class="id" title="var">S</span></span> <span class="inlinecode"><span class="id" title="var">n</span>)</span> <span class="inlinecode">=</span> <span class="inlinecode">1</span> <span class="inlinecode">+</span> <span class="inlinecode"><span class="id" title="var">of_nat</span></span> <span class="inlinecode"><span class="id" title="var">n</span></span>. 
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Fixpoint</span> <a id="of_nat" class="idref" href="#of_nat"><span class="id" title="definition">of_nat</span></a> (<a id="n:46" class="idref" href="#n:46"><span class="id" title="binder">n</span></a> : <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Datatypes.html#nat"><span class="id" title="inductive">nat</span></a>) : <a class="idref" href="Algebra.Ring.html#of_Z.R"><span class="id" title="variable">R</span></a> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">match</span> <a class="idref" href="Algebra.Ring.html#n:46"><span class="id" title="variable">n</span></a> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| 0%<span class="id" title="var">nat</span> ⇒ <a class="idref" href="Algebra.Ring.html#of_Z.Rzero"><span class="id" title="variable">Rzero</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Datatypes.html#S"><span class="id" title="constructor">S</span></a> <span class="id" title="var">n'</span> ⇒ <a class="idref" href="Algebra.Ring.html#of_Z.Radd"><span class="id" title="variable">Radd</span></a> <a class="idref" href="Algebra.Ring.html#of_Z.Rone"><span class="id" title="variable">Rone</span></a> (<a class="idref" href="Algebra.Ring.html#of_nat:47"><span class="id" title="definition">of_nat</span></a> <span class="id" title="var">n'</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">end</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+The image of an integer in <span class="inlinecode"><span class="id" title="var">R</span></span>: positive integers via <span class="inlinecode"><span class="id" title="var">of_nat</span></span>,
+      negative ones as the additive inverse of the image of their absolute
+      value. 
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <a id="of_Z" class="idref" href="#of_Z"><span class="id" title="definition">of_Z</span></a> (<a id="n:49" class="idref" href="#n:49"><span class="id" title="binder">n</span></a> : <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Numbers.BinNums.html#Z"><span class="id" title="inductive">Z</span></a>) : <a class="idref" href="Algebra.Ring.html#of_Z.R"><span class="id" title="variable">R</span></a> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">match</span> <a class="idref" href="Algebra.Ring.html#n:49"><span class="id" title="variable">n</span></a> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Numbers.BinNums.html#Z0"><span class="id" title="constructor">Z0</span></a> ⇒ <a class="idref" href="Algebra.Ring.html#of_Z.Rzero"><span class="id" title="variable">Rzero</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Numbers.BinNums.html#Zpos"><span class="id" title="constructor">Zpos</span></a> <span class="id" title="var">p</span> ⇒ <a class="idref" href="Algebra.Ring.html#of_nat"><span class="id" title="definition">of_nat</span></a> (<span class="id" title="definition">Pos.to_nat</span> <span class="id" title="var">p</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Numbers.BinNums.html#Zneg"><span class="id" title="constructor">Zneg</span></a> <span class="id" title="var">p</span> ⇒ <a class="idref" href="Algebra.Ring.html#of_Z.Ropp"><span class="id" title="variable">Ropp</span></a> (<a class="idref" href="Algebra.Ring.html#of_nat"><span class="id" title="definition">of_nat</span></a> (<span class="id" title="definition">Pos.to_nat</span> <span class="id" title="var">p</span>))<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">end</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<span class="inlinecode"><span class="id" title="var">of_Z</span></span> <span class="inlinecode">0</span> is the ring zero (by computation). 
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <a id="of_Z_0" class="idref" href="#of_Z_0"><span class="id" title="lemma">of_Z_0</span></a> : <a class="idref" href="Algebra.Ring.html#of_Z"><span class="id" title="definition">of_Z</span></a> 0 <a class="idref" href="Algebra.Ring.html#51b4a7d858ad135d32e10c3ae7d58fe1"><span class="id" title="notation">=</span></a> <a class="idref" href="Algebra.Ring.html#of_Z.Rzero"><span class="id" title="variable">Rzero</span></a>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>. <span class="id" title="tactic">reflexivity</span>. <span class="id" title="keyword">Qed</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+The successor written on the right:
+      <span class="inlinecode"><span class="id" title="var">of_nat</span></span> <span class="inlinecode">(<span class="id" title="var">n</span></span> <span class="inlinecode">+</span> <span class="inlinecode">1)</span> <span class="inlinecode">=</span> <span class="inlinecode"><span class="id" title="var">of_nat</span></span> <span class="inlinecode"><span class="id" title="var">n</span></span> <span class="inlinecode">+</span> <span class="inlinecode">1</span>. 
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <a id="of_nat_add" class="idref" href="#of_nat_add"><span class="id" title="lemma">of_nat_add</span></a> : <span class="id" title="keyword">∀</span> <a id="n:51" class="idref" href="#n:51"><span class="id" title="binder">n</span></a>,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="Algebra.Ring.html#of_nat"><span class="id" title="definition">of_nat</span></a> (<span class="id" title="definition">Nat.add</span> <a class="idref" href="Algebra.Ring.html#n:51"><span class="id" title="variable">n</span></a> 1) <a class="idref" href="Algebra.Ring.html#51b4a7d858ad135d32e10c3ae7d58fe1"><span class="id" title="notation">=</span></a> <a class="idref" href="Algebra.Ring.html#of_Z.Radd"><span class="id" title="variable">Radd</span></a> (<a class="idref" href="Algebra.Ring.html#of_nat"><span class="id" title="definition">of_nat</span></a> <a class="idref" href="Algebra.Ring.html#n:51"><span class="id" title="variable">n</span></a>) <a class="idref" href="Algebra.Ring.html#of_Z.Rone"><span class="id" title="variable">Rone</span></a>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">unfold</span> <a class="idref" href="Algebra.Ring.html#of_nat"><span class="id" title="definition">of_nat</span></a>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">induction</span> <span class="id" title="var">n</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;+ <span class="id" title="tactic">simpl</span>. <span class="id" title="tactic">rewrite</span> <a class="idref" href="Algebra.Hierarchy.html#commutative"><span class="id" title="definition">commutative</span></a>; <span class="id" title="tactic">reflexivity</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;+ <span class="id" title="tactic">simpl</span>. <span class="id" title="tactic">rewrite</span> <span class="id" title="var">IHn</span>, <a class="idref" href="Algebra.Hierarchy.html#associative"><span class="id" title="definition">associative</span></a>; <span class="id" title="tactic">reflexivity</span>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Qed</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">End</span> <a class="idref" href="Algebra.Ring.html#of_Z"><span class="id" title="section">of_Z</span></a>.<br/>
+</div>
+</div>
+
+<div id="footer">
+<hr/><a href="index_symbols.html">Index</a><hr/>This page has been generated by <a href="http://rocq-prover.org/">coqdoc</a>
+</div>
+
+</div>
+
+</body>
+</html>

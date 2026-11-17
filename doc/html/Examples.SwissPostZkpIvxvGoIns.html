@@ -1,0 +1,187 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<link href="coqdoc.css" rel="stylesheet" type="text/css" />
+<title>Examples.SwissPostZkpIvxvGoIns</title>
+</head>
+
+<body>
+
+<div id="page">
+
+<div id="header">
+</div>
+
+<div id="main">
+
+<h1 class="libtitle">Library Examples.SwissPostZkpIvxvGoIns</h1>
+
+<div class="code">
+</div>
+
+<div class="doc">
+<a id="lab435"></a><h1 class="section">Swiss Post zero-knowledge proofs at RFC 3526 group 14</h1>
+
+<div class="paragraph"> </div>
+
+ The verifiers of the zero-knowledge proofs of the Swiss Post
+crypto-primitives library (specification 1.6.0, section 10: Schnorr,
+decryption, exponentiation and plaintext-equality proofs) at
+the group of <span class="inlinecode"><span class="id" title="var">BayerGrothIvxvGoIns.v</span></span> (the 2048-bit MODP group 14 of
+RFC 3526, as used by the IVXV Go core library), whose <span class="inlinecode"><span class="id" title="var">prime_q</span></span> is an
+axiom, not a certificate.
+
+<div class="paragraph"> </div>
+
+Each proof is a Maurer-style proof of a preimage for a group homomorphism
+<span class="inlinecode">φ</span> <span class="inlinecode">:</span> <span class="inlinecode"><span class="id" title="var">Z_q</span>^<span class="id" title="var">K</span></span> <span class="inlinecode">→</span> <span class="inlinecode"><span class="id" title="var">G</span>^<span class="id" title="var">m</span></span> whose components are multi-exponentiations,
+<span class="inlinecode">φ(<span class="id" title="var">w</span>)ᵢ</span> <span class="inlinecode">=</span> <span class="inlinecode">∏ⱼ</span> <span class="inlinecode"><span class="id" title="var">B_</span>(<span class="id" title="var">i</span>,<span class="id" title="var">j</span>)^<span class="id" title="var">w</span>ⱼ</span>, for a public statement <span class="inlinecode"><span class="id" title="var">y</span></span> <span class="inlinecode">∈</span> <span class="inlinecode"><span class="id" title="var">G</span>^<span class="id" title="var">m</span></span>. The proof is
+published in compact form <span class="inlinecode">(<span class="id" title="var">e</span>,</span> <span class="inlinecode"><span class="id" title="var">z</span>)</span>: the verifier reconstructs the
+announcement <span class="inlinecode"><span class="id" title="var">c'</span>ᵢ</span> <span class="inlinecode">=</span> <span class="inlinecode"><span class="id" title="var">y</span>ᵢ^(-<span class="id" title="var">e</span>)</span> <span class="inlinecode">·</span> <span class="inlinecode">∏ⱼ</span> <span class="inlinecode"><span class="id" title="var">B_</span>(<span class="id" title="var">i</span>,<span class="id" title="var">j</span>)^<span class="id" title="var">z</span>ⱼ</span> and checks <span class="inlinecode"><span class="id" title="var">e</span></span> <span class="inlinecode">=</span> <span class="inlinecode"><span class="id" title="var">H</span>(<span class="id" title="var">c'</span>)</span>, where
+<span class="inlinecode"><span class="id" title="var">H</span></span> is the specification's RecursiveHash with the public values (the
+statement and auxiliary data) fixed. This is <span class="inlinecode"><span class="id" title="var">verify_rows</span></span> of
+<span class="inlinecode"><span class="id" title="var">Backend</span>/<span class="id" title="var">BBSSharpVerifier.v</span></span>, whose reconstruction (<span class="inlinecode"><span class="id" title="var">ext_reconstruct</span></span>,
+<span class="inlinecode"><span class="id" title="var">Crypto</span>/<span class="id" title="var">OkamotoRows.v</span></span>) uses the same sign convention <span class="inlinecode"><span class="id" title="var">y</span>^(-<span class="id" title="var">e</span>)</span>.
+
+<div class="paragraph"> </div>
+
+The matrix of bases <span class="inlinecode"><span class="id" title="var">B</span></span> for each proof is built by the OCaml driver
+<span class="inlinecode"><span class="id" title="var">Executable</span>/<span class="id" title="var">Swisspostzkp</span></span> (and is trusted):
+
+<div class="paragraph"> </div>
+
+<ul class="doclist">
+<li> Schnorr: <span class="inlinecode"><span class="id" title="var">K</span></span> <span class="inlinecode">=</span> <span class="inlinecode">1</span>, <span class="inlinecode"><span class="id" title="var">m</span></span> <span class="inlinecode">=</span> <span class="inlinecode">1</span>, row <span class="inlinecode">[<span class="id" title="var">g</span>]</span>, statement <span class="inlinecode"><span class="id" title="var">y</span></span>.
+
+</li>
+<li> Exponentiation: <span class="inlinecode"><span class="id" title="var">K</span></span> <span class="inlinecode">=</span> <span class="inlinecode">1</span>, <span class="inlinecode"><span class="id" title="var">m</span></span> <span class="inlinecode">=</span> <span class="inlinecode"><span class="id" title="var">n</span></span>, rows <span class="inlinecode">[<span class="id" title="var">g</span>ᵢ]</span>, statements <span class="inlinecode"><span class="id" title="var">y</span>ᵢ</span>.
+
+</li>
+<li> Plaintext equality: <span class="inlinecode"><span class="id" title="var">K</span></span> <span class="inlinecode">=</span> <span class="inlinecode">2</span>, <span class="inlinecode"><span class="id" title="var">m</span></span> <span class="inlinecode">=</span> <span class="inlinecode">3</span>, rows <span class="inlinecode">[<span class="id" title="var">g</span>,</span> <span class="inlinecode">1]</span>, <span class="inlinecode">[1,</span> <span class="inlinecode"><span class="id" title="var">g</span>]</span>,
+  <span class="inlinecode">[<span class="id" title="var">h</span>,</span> <span class="inlinecode"><span class="id" title="var">h'⁻¹</span>]</span>, statement <span class="inlinecode">(<span class="id" title="var">c₀</span>,</span> <span class="inlinecode"><span class="id" title="var">c'₀</span>,</span> <span class="inlinecode"><span class="id" title="var">c₁</span>/<span class="id" title="var">c'₁</span>)</span>.
+
+</li>
+<li> Decryption: <span class="inlinecode"><span class="id" title="var">K</span></span> <span class="inlinecode">=</span> <span class="inlinecode"><span class="id" title="var">ℓ</span></span>, <span class="inlinecode"><span class="id" title="var">m</span></span> <span class="inlinecode">=</span> <span class="inlinecode">2<span class="id" title="var">ℓ</span></span>, rows <span class="inlinecode"><span class="id" title="var">g</span>·<span class="id" title="var">e</span>ᵢ</span> and <span class="inlinecode"><span class="id" title="var">γ</span>·<span class="id" title="var">e</span>ᵢ</span> (with <span class="inlinecode"><span class="id" title="var">e</span>ᵢ</span> the
+  <span class="inlinecode"><span class="id" title="var">i</span></span>-th unit vector), statements <span class="inlinecode"><span class="id" title="var">pk</span>ᵢ</span> and <span class="inlinecode">φᵢ/<span class="id" title="var">m</span>ᵢ</span>.
+
+</li>
+</ul>
+
+<div class="paragraph"> </div>
+
+The generalised Okamoto protocol of <span class="inlinecode"><span class="id" title="var">Crypto</span>/<span class="id" title="var">Okamoto.v</span></span> needs at least two
+bases per row, so <span class="inlinecode"><span class="id" title="var">verify_rows_accepting</span></span> is stated for <span class="inlinecode"><span class="id" title="var">K</span></span> <span class="inlinecode">≥</span> <span class="inlinecode">2</span>. To cover
+<span class="inlinecode"><span class="id" title="var">K</span></span> <span class="inlinecode">=</span> <span class="inlinecode">1</span> as well, <span class="inlinecode"><span class="id" title="var">verify_zkp_ins</span></span> appends a column of base <span class="inlinecode">1</span> with
+response <span class="inlinecode">0</span>; this changes neither <span class="inlinecode">φ</span> nor the reconstruction, and every
+proof gets the accepting-transcript theorem <span class="inlinecode"><span class="id" title="var">verify_zkp_ins_accepting</span></span>.
+
+<div class="paragraph"> </div>
+
+This file is generated by <span class="inlinecode"><span class="id" title="var">bench</span>/<span class="id" title="var">ivxv</span>-<span class="id" title="var">diff</span>/<span class="id" title="var">mkins.py</span></span> from
+<span class="inlinecode"><span class="id" title="var">SwissPostZkpIns.v</span></span> and should not be edited by hand; it differs only in
+the imported group. It is extracted by <span class="inlinecode"><span class="id" title="var">src</span>/<span class="id" title="keyword">Extraction</span>/<span class="id" title="var">Ivxvlib</span></span>. 
+</div>
+<div class="code">
+<span class="id" title="keyword">From</span> <span class="id" title="var">Stdlib</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="library">Utf8</span> <span class="id" title="library">Vector</span>.<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">Algebra</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <a class="idref" href="Algebra.Hierarchy.html#"><span class="id" title="library">Hierarchy</span></a> <a class="idref" href="Algebra.Vector_space.html#"><span class="id" title="library">Vector_space</span></a>.<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">Crypto</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <a class="idref" href="Crypto.Sigma.html#"><span class="id" title="library">Sigma</span></a> <a class="idref" href="Crypto.OkamotoRows.html#"><span class="id" title="library">OkamotoRows</span></a>.<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">Backend</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <a class="idref" href="Backend.BBSSharpVerifier.html#"><span class="id" title="library">BBSSharpVerifier</span></a>.<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">Utility</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <a class="idref" href="Utility.Zpstar.html#"><span class="id" title="library">Zpstar</span></a> <a class="idref" href="Utility.Util.html#"><span class="id" title="library">Util</span></a>.<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">Examples</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <a class="idref" href="Examples.BayerGrothIvxvGoIns.html#"><span class="id" title="library">BayerGrothIvxvGoIns</span></a>.<br/>
+<span class="id" title="keyword">Import</span> <span class="id" title="module">VectorNotations</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Section</span> <a id="SwissPostZkpIvxvGoIns" class="idref" href="#SwissPostZkpIvxvGoIns"><span class="id" title="section">SwissPostZkpIvxvGoIns</span></a>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<span class="inlinecode"><span class="id" title="var">VG</span></span> <span class="inlinecode"><span class="id" title="var">m</span></span> is a vector of <span class="inlinecode"><span class="id" title="var">m</span></span> group elements. 
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Local Notation</span> <a id="VG" class="idref" href="#VG"><span class="id" title="abbreviation">VG</span></a> <span class="id" title="var">m</span> := (<span class="id" title="inductive">Vector.t</span> <a class="idref" href="Examples.BayerGrothIvxvGoIns.html#G"><span class="id" title="definition">G</span></a> <span class="id" title="var">m</span>).<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+Appends a base <span class="inlinecode">1</span> (the group identity) to every row of <span class="inlinecode"><span class="id" title="var">Bs</span></span>, turning
+      <span class="inlinecode"><span class="id" title="var">K</span></span> columns into <span class="inlinecode"><span class="id" title="var">K</span></span> <span class="inlinecode">+</span> <span class="inlinecode">1</span>. 
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <a id="pad_rows" class="idref" href="#pad_rows"><span class="id" title="definition">pad_rows</span></a> {<a id="K:1" class="idref" href="#K:1"><span class="id" title="binder">K</span></a> <a id="m:2" class="idref" href="#m:2"><span class="id" title="binder">m</span></a> : <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Datatypes.html#nat"><span class="id" title="inductive">nat</span></a>} (<a id="Bs:3" class="idref" href="#Bs:3"><span class="id" title="binder">Bs</span></a> : <span class="id" title="inductive">Vector.t</span> (<a class="idref" href="Examples.SwissPostZkpIvxvGoIns.html#VG"><span class="id" title="abbreviation">VG</span></a> <a class="idref" href="Examples.SwissPostZkpIvxvGoIns.html#K:1"><span class="id" title="variable">K</span></a>) <a class="idref" href="Examples.SwissPostZkpIvxvGoIns.html#m:2"><span class="id" title="variable">m</span></a>) : <span class="id" title="inductive">Vector.t</span> (<a class="idref" href="Examples.SwissPostZkpIvxvGoIns.html#VG"><span class="id" title="abbreviation">VG</span></a> (<a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Datatypes.html#S"><span class="id" title="constructor">S</span></a> <a class="idref" href="Examples.SwissPostZkpIvxvGoIns.html#K:1"><span class="id" title="variable">K</span></a>)) <a class="idref" href="Examples.SwissPostZkpIvxvGoIns.html#m:2"><span class="id" title="variable">m</span></a> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="definition">Vector.map</span> (<span class="id" title="keyword">fun</span> <a id="row:4" class="idref" href="#row:4"><span class="id" title="binder">row</span></a> ⇒ <span class="id" title="definition">Vector.shiftin</span> <a class="idref" href="Examples.BayerGrothIvxvGoIns.html#Gone"><span class="id" title="definition">Gone</span></a> <a class="idref" href="Examples.SwissPostZkpIvxvGoIns.html#row:4"><span class="id" title="variable">row</span></a>) <a class="idref" href="Examples.SwissPostZkpIvxvGoIns.html#Bs:3"><span class="id" title="variable">Bs</span></a>.<br/>
+</div>
+
+<div class="doc">
+Appends the response <span class="inlinecode">0</span> for the padding column. 
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <a id="pad_resp" class="idref" href="#pad_resp"><span class="id" title="definition">pad_resp</span></a> {<a id="K:5" class="idref" href="#K:5"><span class="id" title="binder">K</span></a> : <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Datatypes.html#nat"><span class="id" title="inductive">nat</span></a>} (<a id="rs:6" class="idref" href="#rs:6"><span class="id" title="binder">rs</span></a> : <span class="id" title="inductive">Vector.t</span> <a class="idref" href="Examples.BayerGrothIvxvGoIns.html#F"><span class="id" title="definition">F</span></a> <a class="idref" href="Examples.SwissPostZkpIvxvGoIns.html#K:5"><span class="id" title="variable">K</span></a>) : <span class="id" title="inductive">Vector.t</span> <a class="idref" href="Examples.BayerGrothIvxvGoIns.html#F"><span class="id" title="definition">F</span></a> (<a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Datatypes.html#S"><span class="id" title="constructor">S</span></a> <a class="idref" href="Examples.SwissPostZkpIvxvGoIns.html#K:5"><span class="id" title="variable">K</span></a>) := <span class="id" title="definition">Vector.shiftin</span> <a class="idref" href="Examples.BayerGrothIvxvGoIns.html#Fzero"><span class="id" title="definition">Fzero</span></a> <a class="idref" href="Examples.SwissPostZkpIvxvGoIns.html#rs:6"><span class="id" title="variable">rs</span></a>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+The reconstructed announcement <span class="inlinecode"><span class="id" title="var">y</span>ᵢ^(-<span class="id" title="var">e</span>)·∏ⱼ</span> <span class="inlinecode"><span class="id" title="var">B_</span>(<span class="id" title="var">i</span>,<span class="id" title="var">j</span>)^<span class="id" title="var">r</span>ⱼ</span>, exported so that
+      the driver can compute the hash input. 
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <a id="reconstruct_ins" class="idref" href="#reconstruct_ins"><span class="id" title="definition">reconstruct_ins</span></a> {<a id="K:7" class="idref" href="#K:7"><span class="id" title="binder">K</span></a> <a id="m:8" class="idref" href="#m:8"><span class="id" title="binder">m</span></a> : <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Datatypes.html#nat"><span class="id" title="inductive">nat</span></a>} (<a id="e:9" class="idref" href="#e:9"><span class="id" title="binder">e</span></a> : <a class="idref" href="Examples.BayerGrothIvxvGoIns.html#F"><span class="id" title="definition">F</span></a>) (<a id="Bs:10" class="idref" href="#Bs:10"><span class="id" title="binder">Bs</span></a> : <span class="id" title="inductive">Vector.t</span> (<a class="idref" href="Examples.SwissPostZkpIvxvGoIns.html#VG"><span class="id" title="abbreviation">VG</span></a> <a class="idref" href="Examples.SwissPostZkpIvxvGoIns.html#K:7"><span class="id" title="variable">K</span></a>) <a class="idref" href="Examples.SwissPostZkpIvxvGoIns.html#m:8"><span class="id" title="variable">m</span></a>) (<a id="Ts:11" class="idref" href="#Ts:11"><span class="id" title="binder">Ts</span></a> : <a class="idref" href="Examples.SwissPostZkpIvxvGoIns.html#VG"><span class="id" title="abbreviation">VG</span></a> <a class="idref" href="Examples.SwissPostZkpIvxvGoIns.html#m:8"><span class="id" title="variable">m</span></a>) (<a id="rs:12" class="idref" href="#rs:12"><span class="id" title="binder">rs</span></a> : <span class="id" title="inductive">Vector.t</span> <a class="idref" href="Examples.BayerGrothIvxvGoIns.html#F"><span class="id" title="definition">F</span></a> <a class="idref" href="Examples.SwissPostZkpIvxvGoIns.html#K:7"><span class="id" title="variable">K</span></a>) : <a class="idref" href="Examples.SwissPostZkpIvxvGoIns.html#VG"><span class="id" title="abbreviation">VG</span></a> <a class="idref" href="Examples.SwissPostZkpIvxvGoIns.html#m:8"><span class="id" title="variable">m</span></a> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="Crypto.OkamotoRows.html#ext_reconstruct"><span class="id" title="definition">ext_reconstruct</span></a> (<span class="id" title="var">opp</span> := <a class="idref" href="Examples.BayerGrothIvxvGoIns.html#Fopp"><span class="id" title="definition">Fopp</span></a>) (<span class="id" title="var">gid</span> := <a class="idref" href="Examples.BayerGrothIvxvGoIns.html#Gone"><span class="id" title="definition">Gone</span></a>) (<span class="id" title="var">gop</span> := <a class="idref" href="Examples.BayerGrothIvxvGoIns.html#Gmul"><span class="id" title="definition">Gmul</span></a>) (<span class="id" title="var">gpow</span> := <a class="idref" href="Examples.BayerGrothIvxvGoIns.html#Gpow"><span class="id" title="definition">Gpow</span></a>) <a class="idref" href="Examples.SwissPostZkpIvxvGoIns.html#e:9"><span class="id" title="variable">e</span></a> <a class="idref" href="Examples.SwissPostZkpIvxvGoIns.html#Bs:10"><span class="id" title="variable">Bs</span></a> <a class="idref" href="Examples.SwissPostZkpIvxvGoIns.html#Ts:11"><span class="id" title="variable">Ts</span></a> <a class="idref" href="Examples.SwissPostZkpIvxvGoIns.html#rs:12"><span class="id" title="variable">rs</span></a>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+The certified verifier: reconstructs the announcement for the padded
+      rows and checks <span class="inlinecode"><span class="id" title="var">e</span></span> <span class="inlinecode">=</span> <span class="inlinecode"><span class="id" title="var">H</span>(<span class="id" title="var">announcement</span>)</span>. <span class="inlinecode"><span class="id" title="var">H</span></span> is the RecursiveHash computed
+      by the driver. 
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <a id="verify_zkp_ins" class="idref" href="#verify_zkp_ins"><span class="id" title="definition">verify_zkp_ins</span></a> {<a id="K:13" class="idref" href="#K:13"><span class="id" title="binder">K</span></a> <a id="m:14" class="idref" href="#m:14"><span class="id" title="binder">m</span></a> : <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Datatypes.html#nat"><span class="id" title="inductive">nat</span></a>} (<a id="H:15" class="idref" href="#H:15"><span class="id" title="binder">H</span></a> : <a class="idref" href="Examples.SwissPostZkpIvxvGoIns.html#VG"><span class="id" title="abbreviation">VG</span></a> <a class="idref" href="Examples.SwissPostZkpIvxvGoIns.html#m:14"><span class="id" title="variable">m</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Notations.html#::type_scope:x_'-&gt;'_x"><span class="id" title="notation">→</span></a> <a class="idref" href="Examples.BayerGrothIvxvGoIns.html#F"><span class="id" title="definition">F</span></a>) (<a id="Bs:16" class="idref" href="#Bs:16"><span class="id" title="binder">Bs</span></a> : <span class="id" title="inductive">Vector.t</span> (<a class="idref" href="Examples.SwissPostZkpIvxvGoIns.html#VG"><span class="id" title="abbreviation">VG</span></a> <a class="idref" href="Examples.SwissPostZkpIvxvGoIns.html#K:13"><span class="id" title="variable">K</span></a>) <a class="idref" href="Examples.SwissPostZkpIvxvGoIns.html#m:14"><span class="id" title="variable">m</span></a>) (<a id="Ts:17" class="idref" href="#Ts:17"><span class="id" title="binder">Ts</span></a> : <a class="idref" href="Examples.SwissPostZkpIvxvGoIns.html#VG"><span class="id" title="abbreviation">VG</span></a> <a class="idref" href="Examples.SwissPostZkpIvxvGoIns.html#m:14"><span class="id" title="variable">m</span></a>) (<a id="e:18" class="idref" href="#e:18"><span class="id" title="binder">e</span></a> : <a class="idref" href="Examples.BayerGrothIvxvGoIns.html#F"><span class="id" title="definition">F</span></a>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<a id="rs:19" class="idref" href="#rs:19"><span class="id" title="binder">rs</span></a> : <span class="id" title="inductive">Vector.t</span> <a class="idref" href="Examples.BayerGrothIvxvGoIns.html#F"><span class="id" title="definition">F</span></a> <a class="idref" href="Examples.SwissPostZkpIvxvGoIns.html#K:13"><span class="id" title="variable">K</span></a>) : <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Datatypes.html#bool"><span class="id" title="inductive">bool</span></a> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="Backend.BBSSharpVerifier.html#verify_rows"><span class="id" title="definition">verify_rows</span></a> (<span class="id" title="var">Fdec</span> := <a class="idref" href="Examples.BayerGrothIvxvGoIns.html#Fdec"><span class="id" title="definition">Fdec</span></a>) (<span class="id" title="var">opp</span> := <a class="idref" href="Examples.BayerGrothIvxvGoIns.html#Fopp"><span class="id" title="definition">Fopp</span></a>) (<span class="id" title="var">gid</span> := <a class="idref" href="Examples.BayerGrothIvxvGoIns.html#Gone"><span class="id" title="definition">Gone</span></a>) (<span class="id" title="var">gop</span> := <a class="idref" href="Examples.BayerGrothIvxvGoIns.html#Gmul"><span class="id" title="definition">Gmul</span></a>) (<span class="id" title="var">gpow</span> := <a class="idref" href="Examples.BayerGrothIvxvGoIns.html#Gpow"><span class="id" title="definition">Gpow</span></a>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="Examples.SwissPostZkpIvxvGoIns.html#H:15"><span class="id" title="variable">H</span></a> (<a class="idref" href="Examples.SwissPostZkpIvxvGoIns.html#pad_rows"><span class="id" title="definition">pad_rows</span></a> <a class="idref" href="Examples.SwissPostZkpIvxvGoIns.html#Bs:16"><span class="id" title="variable">Bs</span></a>) <a class="idref" href="Examples.SwissPostZkpIvxvGoIns.html#Ts:17"><span class="id" title="variable">Ts</span></a> <a class="idref" href="Examples.SwissPostZkpIvxvGoIns.html#e:18"><span class="id" title="variable">e</span></a> (<a class="idref" href="Examples.SwissPostZkpIvxvGoIns.html#pad_resp"><span class="id" title="definition">pad_resp</span></a> <a class="idref" href="Examples.SwissPostZkpIvxvGoIns.html#rs:19"><span class="id" title="variable">rs</span></a>).<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+If <span class="inlinecode"><span class="id" title="var">verify_zkp_ins</span></span> accepts a proof with <span class="inlinecode"><span class="id" title="var">K</span></span> <span class="inlinecode">=</span> <span class="inlinecode"><span class="id" title="var">n</span></span> <span class="inlinecode">+</span> <span class="inlinecode">1</span> <span class="inlinecode">≥</span> <span class="inlinecode">1</span> columns, then
+      for the reconstructed announcement <span class="inlinecode"><span class="id" title="var">A</span></span> the challenge is its hash,
+      <span class="inlinecode"><span class="id" title="var">e</span></span> <span class="inlinecode">=</span> <span class="inlinecode"><span class="id" title="var">H</span></span> <span class="inlinecode"><span class="id" title="var">A</span></span>, and <span class="inlinecode">([<span class="id" title="var">A</span>],</span> <span class="inlinecode">[<span class="id" title="var">e</span>],</span> <span class="inlinecode"><span class="id" title="var">padded</span></span> <span class="inlinecode"><span class="id" title="var">responses</span>)</span> is an accepting transcript
+      of the generalised Okamoto protocol for the padded rows (<span class="inlinecode"><span class="id" title="var">ext_verify</span></span>).
+      This connects the verifier to the special soundness of that protocol;
+      the random-oracle argument for <span class="inlinecode"><span class="id" title="var">H</span></span> itself is not formalised. It is
+      <span class="inlinecode"><span class="id" title="var">verify_rows_accepting</span></span> at <span class="inlinecode"><span class="id" title="var">bg_vspace</span></span>. 
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Theorem</span> <a id="verify_zkp_ins_accepting" class="idref" href="#verify_zkp_ins_accepting"><span class="id" title="lemma">verify_zkp_ins_accepting</span></a> : <span class="id" title="keyword">∀</span> (<a id="n:20" class="idref" href="#n:20"><span class="id" title="binder">n</span></a> <a id="m:21" class="idref" href="#m:21"><span class="id" title="binder">m</span></a> : <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Datatypes.html#nat"><span class="id" title="inductive">nat</span></a>) (<a id="H:22" class="idref" href="#H:22"><span class="id" title="binder">H</span></a> : <a class="idref" href="Examples.SwissPostZkpIvxvGoIns.html#VG"><span class="id" title="abbreviation">VG</span></a> <a class="idref" href="Examples.SwissPostZkpIvxvGoIns.html#m:21"><span class="id" title="variable">m</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Notations.html#::type_scope:x_'-&gt;'_x"><span class="id" title="notation">→</span></a> <a class="idref" href="Examples.BayerGrothIvxvGoIns.html#F"><span class="id" title="definition">F</span></a>) (<a id="Bs:23" class="idref" href="#Bs:23"><span class="id" title="binder">Bs</span></a> : <span class="id" title="inductive">Vector.t</span> (<a class="idref" href="Examples.SwissPostZkpIvxvGoIns.html#VG"><span class="id" title="abbreviation">VG</span></a> (<a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Datatypes.html#S"><span class="id" title="constructor">S</span></a> <a class="idref" href="Examples.SwissPostZkpIvxvGoIns.html#n:20"><span class="id" title="variable">n</span></a>)) <a class="idref" href="Examples.SwissPostZkpIvxvGoIns.html#m:21"><span class="id" title="variable">m</span></a>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<a id="Ts:24" class="idref" href="#Ts:24"><span class="id" title="binder">Ts</span></a> : <a class="idref" href="Examples.SwissPostZkpIvxvGoIns.html#VG"><span class="id" title="abbreviation">VG</span></a> <a class="idref" href="Examples.SwissPostZkpIvxvGoIns.html#m:21"><span class="id" title="variable">m</span></a>) (<a id="e:25" class="idref" href="#e:25"><span class="id" title="binder">e</span></a> : <a class="idref" href="Examples.BayerGrothIvxvGoIns.html#F"><span class="id" title="definition">F</span></a>) (<a id="rs:26" class="idref" href="#rs:26"><span class="id" title="binder">rs</span></a> : <span class="id" title="inductive">Vector.t</span> <a class="idref" href="Examples.BayerGrothIvxvGoIns.html#F"><span class="id" title="definition">F</span></a> (<a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Datatypes.html#S"><span class="id" title="constructor">S</span></a> <a class="idref" href="Examples.SwissPostZkpIvxvGoIns.html#n:20"><span class="id" title="variable">n</span></a>)),<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="Examples.SwissPostZkpIvxvGoIns.html#verify_zkp_ins"><span class="id" title="definition">verify_zkp_ins</span></a> <a class="idref" href="Examples.SwissPostZkpIvxvGoIns.html#H:22"><span class="id" title="variable">H</span></a> <a class="idref" href="Examples.SwissPostZkpIvxvGoIns.html#Bs:23"><span class="id" title="variable">Bs</span></a> <a class="idref" href="Examples.SwissPostZkpIvxvGoIns.html#Ts:24"><span class="id" title="variable">Ts</span></a> <a class="idref" href="Examples.SwissPostZkpIvxvGoIns.html#e:25"><span class="id" title="variable">e</span></a> <a class="idref" href="Examples.SwissPostZkpIvxvGoIns.html#rs:26"><span class="id" title="variable">rs</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Logic.html#6cd0f7b28b6092304087c7049437bb1a"><span class="id" title="notation">=</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Datatypes.html#true"><span class="id" title="constructor">true</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Notations.html#::type_scope:x_'-&gt;'_x"><span class="id" title="notation">→</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">let</span> <a id="A:27" class="idref" href="#A:27"><span class="id" title="binder">A</span></a> := <a class="idref" href="Crypto.OkamotoRows.html#ext_reconstruct"><span class="id" title="definition">ext_reconstruct</span></a> (<span class="id" title="var">opp</span> := <a class="idref" href="Examples.BayerGrothIvxvGoIns.html#Fopp"><span class="id" title="definition">Fopp</span></a>) (<span class="id" title="var">gid</span> := <a class="idref" href="Examples.BayerGrothIvxvGoIns.html#Gone"><span class="id" title="definition">Gone</span></a>) (<span class="id" title="var">gop</span> := <a class="idref" href="Examples.BayerGrothIvxvGoIns.html#Gmul"><span class="id" title="definition">Gmul</span></a>) (<span class="id" title="var">gpow</span> := <a class="idref" href="Examples.BayerGrothIvxvGoIns.html#Gpow"><span class="id" title="definition">Gpow</span></a>) <a class="idref" href="Examples.SwissPostZkpIvxvGoIns.html#e:25"><span class="id" title="variable">e</span></a> (<a class="idref" href="Examples.SwissPostZkpIvxvGoIns.html#pad_rows"><span class="id" title="definition">pad_rows</span></a> <a class="idref" href="Examples.SwissPostZkpIvxvGoIns.html#Bs:23"><span class="id" title="variable">Bs</span></a>) <a class="idref" href="Examples.SwissPostZkpIvxvGoIns.html#Ts:24"><span class="id" title="variable">Ts</span></a> (<a class="idref" href="Examples.SwissPostZkpIvxvGoIns.html#pad_resp"><span class="id" title="definition">pad_resp</span></a> <a class="idref" href="Examples.SwissPostZkpIvxvGoIns.html#rs:26"><span class="id" title="variable">rs</span></a>) <span class="id" title="tactic">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="Examples.SwissPostZkpIvxvGoIns.html#e:25"><span class="id" title="variable">e</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Logic.html#6cd0f7b28b6092304087c7049437bb1a"><span class="id" title="notation">=</span></a> <a class="idref" href="Examples.SwissPostZkpIvxvGoIns.html#H:22"><span class="id" title="variable">H</span></a> <a class="idref" href="Examples.SwissPostZkpIvxvGoIns.html#A:27"><span class="id" title="variable">A</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Logic.html#ba2b0e492d2b4675a0acf3ea92aabadd"><span class="id" title="notation">∧</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="Crypto.OkamotoRows.html#ext_verify"><span class="id" title="definition">ext_verify</span></a> (<span class="id" title="var">gid</span> := <a class="idref" href="Examples.BayerGrothIvxvGoIns.html#Gone"><span class="id" title="definition">Gone</span></a>) (<span class="id" title="var">gop</span> := <a class="idref" href="Examples.BayerGrothIvxvGoIns.html#Gmul"><span class="id" title="definition">Gmul</span></a>) (<span class="id" title="var">gpow</span> := <a class="idref" href="Examples.BayerGrothIvxvGoIns.html#Gpow"><span class="id" title="definition">Gpow</span></a>) (<span class="id" title="var">Gdec</span> := <a class="idref" href="Examples.BayerGrothIvxvGoIns.html#Gdec"><span class="id" title="definition">Gdec</span></a>) (<a class="idref" href="Examples.SwissPostZkpIvxvGoIns.html#pad_rows"><span class="id" title="definition">pad_rows</span></a> <a class="idref" href="Examples.SwissPostZkpIvxvGoIns.html#Bs:23"><span class="id" title="variable">Bs</span></a>) <a class="idref" href="Examples.SwissPostZkpIvxvGoIns.html#Ts:24"><span class="id" title="variable">Ts</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<a class="idref" href="Crypto.Sigma.html#mk_sigma"><span class="id" title="constructor">mk_sigma</span></a> <span class="id" title="var">_</span> <span class="id" title="var">_</span> <span class="id" title="var">_</span> <span class="id" title="notation">[</span><a class="idref" href="Examples.SwissPostZkpIvxvGoIns.html#A:27"><span class="id" title="variable">A</span></a><span class="id" title="notation">]</span> <span class="id" title="notation">[</span><a class="idref" href="Examples.SwissPostZkpIvxvGoIns.html#e:25"><span class="id" title="variable">e</span></a><span class="id" title="notation">]</span> (<a class="idref" href="Examples.SwissPostZkpIvxvGoIns.html#pad_resp"><span class="id" title="definition">pad_resp</span></a> <a class="idref" href="Examples.SwissPostZkpIvxvGoIns.html#rs:26"><span class="id" title="variable">rs</span></a>)) <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Logic.html#6cd0f7b28b6092304087c7049437bb1a"><span class="id" title="notation">=</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Datatypes.html#true"><span class="id" title="constructor">true</span></a>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">intros</span> × <span class="id" title="var">hv</span>; <span class="id" title="tactic">cbv</span> <span class="id" title="keyword">zeta</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">exact</span> (<a class="idref" href="Backend.BBSSharpVerifier.html#verify_rows_accepting"><span class="id" title="lemma">verify_rows_accepting</span></a> (<span class="id" title="var">Hvec</span> := <a class="idref" href="Examples.BayerGrothIvxvGoIns.html#bg_vspace"><span class="id" title="definition">bg_vspace</span></a>) <span class="id" title="var">n</span> <span class="id" title="var">m</span> <span class="id" title="var">H</span> (<a class="idref" href="Examples.SwissPostZkpIvxvGoIns.html#pad_rows"><span class="id" title="definition">pad_rows</span></a> <span class="id" title="var">Bs</span>) <span class="id" title="var">Ts</span> <span class="id" title="var">e</span> (<a class="idref" href="Examples.SwissPostZkpIvxvGoIns.html#pad_resp"><span class="id" title="definition">pad_resp</span></a> <span class="id" title="var">rs</span>) <span class="id" title="var">hv</span>).<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Qed</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">End</span> <a class="idref" href="Examples.SwissPostZkpIvxvGoIns.html#SwissPostZkpIvxvGoIns"><span class="id" title="section">SwissPostZkpIvxvGoIns</span></a>.<br/>
+</div>
+</div>
+
+<div id="footer">
+<hr/><a href="index_symbols.html">Index</a><hr/>This page has been generated by <a href="http://rocq-prover.org/">coqdoc</a>
+</div>
+
+</div>
+
+</body>
+</html>

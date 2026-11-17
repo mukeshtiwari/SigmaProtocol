@@ -1,44 +1,98 @@
+(** * The (generalised) Okamoto protocol: knowledge of a representation *)
+
+(** This file formalises Okamoto's Sigma protocol for proving knowledge of a
+    representation of a group element with respect to several generators
+    (T. Okamoto, Provably Secure and Practical Identification Schemes and
+    Corresponding Signature Schemes, CRYPTO 1992). For public generators
+    [g_1, ..., g_m] (with [m = 2 + n ≥ 2]) and a public element [h], the
+    relation is
+
+    [[
+      h = g_1^(x_1) · g_2^(x_2) · ... · g_m^(x_m)
+    ]]
+
+    with witness vector [xs = (x_1, ..., x_m)]. One run of the protocol:
+
+    - the prover picks random [us] and sends [a = ∏_i g_i^(u_i)];
+    - the verifier sends a challenge [c];
+    - the prover answers [r_i = u_i + c·x_i];
+    - the verifier accepts iff [∏_i g_i^(r_i) = a · h^c].
+
+    Transcripts use the generic [sigma_proto] record of [Sigma] with one
+    commitment, one challenge and [2 + n] responses.
+
+    The file proves, for arbitrary [n]:
+
+    - completeness: [generalised_okamoto_real_accepting_conversation];
+    - special soundness: [generalised_okamoto_real_special_soundness]
+      extracts the witness [x_i = (r_i − r'_i) / (c − c')] from two accepting
+      transcripts with the same commitment and different challenges;
+    - special honest-verifier zero knowledge, in three forms: the weak
+      form [generalised_okamoto_special_honest_verifier_zkp] (the two
+      distributions have the same acceptance bits and probabilities), and the
+      strong forms [generalised_okamoto_special_honest_verifier_zkp_perm] and
+      [generalised_okamoto_special_honest_verifier_zkp_enum] (the real and
+      simulated transcript distributions are equal up to permutation of
+      their support lists, when the sampling list is closed under shifts,
+      e.g. when it enumerates the field);
+    - witness indistinguishability
+      [generalised_okamoto_witness_indistinguishable]: for two witnesses of
+      the same [h], every real transcript of the first is a real transcript
+      of the second for exactly one choice of randomness.
+
+    The simulator is the usual one: pick responses [us] uniformly and set the
+    commitment to [∏_i g_i^(u_i) · h^(−c)].
+
+    The protocol is used in many places: [NeqSigma] (inequality of discrete
+    logarithms, via the two-generator instance in section [Ins]),
+    [OkamotoRows], [UProve], [BBSSharp], the Terelius–Wikström shuffle files
+    [ShuffleTW], [ShuffleTWProps], [ShuffleTWSound], [ShuffleTWSound2], and
+    the extracted verifiers in [Backend] ([VerificatumVerifier],
+    [FiatShamirLinRel], [UProveVerifier], [BBSSharpVerifier]). *)
 From Stdlib Require Import Setoid
   setoid_ring.Field Lia Vector Utf8
-  Psatz Bool Pnat BinNatDef 
-  BinPos Permutation. 
-From Algebra Require Import 
+  Psatz Bool Pnat BinNatDef
+  BinPos Permutation.
+From Algebra Require Import
   Hierarchy Group Monoid
   Field Integral_domain
   Ring Vector_space.
-From Probability Require Import 
-  Prob Distr. 
-From Utility Require Import Util. 
-From ExtLib Require Import Monad. 
-From Crypto Require Import Sigma 
+From Probability Require Import
+  Prob Distr.
+From Utility Require Import Util.
+From ExtLib Require Import Monad.
+From Crypto Require Import Sigma
   AndSigma.
 
-Import MonadNotation 
+Import MonadNotation
   VectorNotations.
 
 #[local] Open Scope monad_scope.
 
+(** ** Setting
 
+    A field [F] of exponents and a group [G] written multiplicatively with
+    exponentiation [gpow] (written [^]). The vector-space axioms linking them
+    are assumed only in section [Proofs]. *)
 Section Okamoto.
-  (* Underlying Field of Vector Space *)
-  Context 
+  (** The field of exponents with its operations and decidable equality
+      [Fdec]. *)
+  Context
     {F : Type}
-    {zero one : F} 
+    {zero one : F}
     {add mul sub div : F -> F -> F}
     {opp inv : F -> F}
-    {Fdec: forall x y : F, {x = y} + {x <> y}}. 
-    (* decidable equality on Field *)
+    {Fdec: forall x y : F, {x = y} + {x <> y}}.
 
-  (* Vector Element *)
-  Context 
-    {G : Type} 
-    {gid : G} 
+  (** The group: identity [gid], inverse [ginv], operation [gop],
+      exponentiation [gpow], decidable equality [Gdec]. *)
+  Context
+    {G : Type}
+    {gid : G}
     {ginv : G -> G}
-    {gop : G -> G -> G} 
+    {gop : G -> G -> G}
     {gpow : G -> F -> G}
-    {Gdec : forall x y : G, {x = y} + {x <> y}}. 
-    (* decidable equality on G *)
-    
+    {Gdec : forall x y : G, {x = y} + {x <> y}}.
 
   #[local] Infix "^" := gpow.
   #[local] Infix "*" := mul.
@@ -46,181 +100,227 @@ Section Okamoto.
   #[local] Infix "+" := add.
   #[local] Infix "-" := sub.
 
-  #[local] Notation "( a ; c ; r )" := 
+  (** [(a; c; r)] builds a Sigma-protocol transcript [mk_sigma] from the
+      commitment vector [a], the challenge vector [c] and the response vector
+      [r]. *)
+  #[local] Notation "( a ; c ; r )" :=
     (mk_sigma _ _ _ a c r).
 
+  (** ** The protocol for [2 + n] generators *)
   Section WI.
 
-    Section Def. 
+    (** *** Prover, simulator and verifier *)
+    Section Def.
 
-      (* 
-          h = g₁^x₁ ⋅ g₂^x₂ ⋅ g₃^x₃ .... g_n^{x_n}
-      *)
-
-      Definition generalised_okamoto_commitment {n : nat} 
-        (gs : Vector.t G (2 + n)) (us : Vector.t F (2 + n)) : G := 
-        Vector.fold_right (fun '(g, u) acc => gop (g^u) acc) 
+      (** Multi-exponentiation [∏_i g_i^(u_i)] over the generators [gs] and
+          exponents [us]. It is the prover's commitment when [us] is the
+          randomness, and it is also the public value [h] when [us] is the
+          witness. *)
+      Definition generalised_okamoto_commitment {n : nat}
+        (gs : Vector.t G (2 + n)) (us : Vector.t F (2 + n)) : G :=
+        Vector.fold_right (fun '(g, u) acc => gop (g^u) acc)
         (zip_with pair gs us) gid.
 
+      (** The prover's responses [r_i = u_i + c·x_i], coordinate-wise. *)
       Definition generalised_okamoto_response {n : nat}
-        (xs : Vector.t F (2 + n)) (us : Vector.t F (2 + n)) (c : F) : 
+        (xs : Vector.t F (2 + n)) (us : Vector.t F (2 + n)) (c : F) :
         Vector.t F (2 + n) :=
         zip_with (fun x u => u + c * x) xs us.
 
+      (** An honest transcript with witness [xs], randomness [us] and challenge
+          [c]: commitment [∏_i g_i^(u_i)], challenge [c], responses
+          [u_i + c·x_i]. The argument [h] is not used; it is kept so that real
+          protocol and simulator have the same interface. *)
       Definition generalised_okamoto_real_protocol {n : nat}
-        (xs : Vector.t F (2 + n)) (gs : Vector.t G (2 + n)) 
-        (h : G) (us : Vector.t F (2 + n)) (c : F) : 
-        @sigma_proto F G 1 1 (2 + n) := 
-        ([generalised_okamoto_commitment gs us]; [c]; 
+        (xs : Vector.t F (2 + n)) (gs : Vector.t G (2 + n))
+        (h : G) (us : Vector.t F (2 + n)) (c : F) :
+        @sigma_proto F G 1 1 (2 + n) :=
+        ([generalised_okamoto_commitment gs us]; [c];
         @generalised_okamoto_response n xs us c).
 
-      (* https://cs.pwr.edu.pl/kutylowski/articles/prezentacja_SCC-AsiaCCS.pdf *)
+      (** The simulated commitment [∏_i g_i^(u_i) · h^(−c)], chosen so that the
+          responses [us] verify for challenge [c] without knowledge of a witness. *)
       Definition generalised_okamoto_simulator_protocol_commitment {n : nat}
-        (gs : Vector.t G (2 + n)) (h : G) (us : Vector.t F (2 + n)) 
-        (c : F) : G := 
+        (gs : Vector.t G (2 + n)) (h : G) (us : Vector.t F (2 + n))
+        (c : F) : G :=
         gop (generalised_okamoto_commitment gs us) (h ^ (opp c)).
 
-
+      (** A simulated transcript for challenge [c]: the commitment from
+          [generalised_okamoto_simulator_protocol_commitment], challenge [c], and
+          the random values [us] as responses. *)
       Definition generalised_okamoto_simulator_protocol {n : nat}
-        (gs : Vector.t G (2 + n)) (h : G) (us : Vector.t F (2 + n)) (c : F) : 
-        @sigma_proto F G 1 1 (2 + n) := 
-        ([generalised_okamoto_simulator_protocol_commitment gs h us c]; 
+        (gs : Vector.t G (2 + n)) (h : G) (us : Vector.t F (2 + n)) (c : F) :
+        @sigma_proto F G 1 1 (2 + n) :=
+        ([generalised_okamoto_simulator_protocol_commitment gs h us c];
         [c]; us).
 
-      
-      
-      Definition generalised_okamoto_accepting_conversation 
-        {n : nat} (gs : Vector.t G (2 + n)) (h : G) 
+      (** The verifier: accept the transcript [(a; c; rs)] iff
+          [∏_i g_i^(r_i) = a_0 · h^(c_0)], decided with [Gdec]. *)
+      Definition generalised_okamoto_accepting_conversation
+        {n : nat} (gs : Vector.t G (2 + n)) (h : G)
         (v : @sigma_proto F G 1 1 (2 + n)) : bool.
       Proof.
         refine
-          match v with 
-          | (a; c; rs) => _ 
+          match v with
+          | (a; c; rs) => _
           end.
         set (ret := zip_with (fun g r => g^r) gs rs).
         set (retval := Vector.fold_right (fun gr acc => gop gr acc) ret gid).
-        refine 
-          match Gdec retval (gop (hd a) (h^(hd c))) with 
-          | left _ => true 
+        refine
+          match Gdec retval (gop (hd a) (h^(hd c))) with
+          | left _ => true
           | _ => false
           end.
       Defined.
 
+      (** The distribution of honest transcripts for a fixed challenge [c]: draw
+          [2 + n] values independently and uniformly from the non-empty list [lf]
+          (sampling with replacement) and run the honest prover. In the
+          applications [lf] lists the field elements. *)
       Definition generalised_okamoto_real_distribution {n : nat}
-        (lf : list F) (Hlfn : lf <> List.nil) 
-        (xs : Vector.t F (2 + n)) (gs : Vector.t G (2 + n)) (h : G) (c : F) : 
-        dist (@sigma_proto F G 1 1 (2 + n))  := 
-        us <- repeat_dist_ntimes_vector 
-          (uniform_with_replacement lf Hlfn) (2 + n);; 
+        (lf : list F) (Hlfn : lf <> List.nil)
+        (xs : Vector.t F (2 + n)) (gs : Vector.t G (2 + n)) (h : G) (c : F) :
+        dist (@sigma_proto F G 1 1 (2 + n))  :=
+        us <- repeat_dist_ntimes_vector
+          (uniform_with_replacement lf Hlfn) (2 + n);;
         Ret (@generalised_okamoto_real_protocol n xs gs h us c).
 
+      (** The distribution of simulated transcripts for a fixed challenge [c],
+          with responses drawn as in [generalised_okamoto_real_distribution]. *)
       Definition generalised_okamoto_simulator_distribution {n : nat}
-        (lf : list F) (Hlfn : lf <> List.nil) 
-        (gs : Vector.t G (2 + n)) (h : G) (c : F) : 
+        (lf : list F) (Hlfn : lf <> List.nil)
+        (gs : Vector.t G (2 + n)) (h : G) (c : F) :
         dist (@sigma_proto F G 1 1 (2 + n)) :=
-        us <- repeat_dist_ntimes_vector 
-          (uniform_with_replacement lf Hlfn) (2 + n);; 
+        us <- repeat_dist_ntimes_vector
+          (uniform_with_replacement lf Hlfn) (2 + n);;
         Ret (generalised_okamoto_simulator_protocol gs h us c).
-      
-      (* WI *)
-      Definition transform_us {n : nat} (xs₁ xs₂ : Vector.t F (2 + n)) 
-        (c : F) (us : Vector.t F (2 + n)) : Vector.t F (2 + n) :=
-        zip_with (fun u '(x₁, x₂) => u + c * (x₁ - x₂)) us 
-        (zip_with pair xs₁ xs₂).
-      
 
-      Definition inverse_transform {n : nat} (xs₁ xs₂ : Vector.t F (2 + n)) 
+      (** Randomness transformation used for witness indistinguishability: maps
+          randomness [us] for witness [xs₁] to the randomness
+          [u_i + c·(x₁_i − x₂_i)] that produces the same transcript with witness
+          [xs₂]. *)
+      Definition transform_us {n : nat} (xs₁ xs₂ : Vector.t F (2 + n))
         (c : F) (us : Vector.t F (2 + n)) : Vector.t F (2 + n) :=
-        zip_with (fun u '(x₁, x₂) => u + c * (x₂ - x₁)) us 
+        zip_with (fun u '(x₁, x₂) => u + c * (x₁ - x₂)) us
         (zip_with pair xs₁ xs₂).
 
-    End Def. 
+      (** The inverse of [transform_us]: [u_i ↦ u_i + c·(x₂_i − x₁_i)]. *)
+      Definition inverse_transform {n : nat} (xs₁ xs₂ : Vector.t F (2 + n))
+        (c : F) (us : Vector.t F (2 + n)) : Vector.t F (2 + n) :=
+        zip_with (fun u '(x₁, x₂) => u + c * (x₂ - x₁)) us
+        (zip_with pair xs₁ xs₂).
 
-    (* This is specialised Okamoto h = g₁ ^ x₁ ⋅ g₂ ^ x₂. I needed 
-    this specialised instance for NEQ *)
+    End Def.
+
+    (** *** The two-generator instance
+
+        The classical Okamoto protocol for [h = g_1^(x_1) · g_2^(x_2)], obtained
+        by setting [n = 0]. These wrappers are used by [NeqSigma]. *)
     Section Ins.
 
+      (** Commitment [g_1^(u_1) · g_2^(u_2)]. *)
       Definition okamoto_commitment
-        (gs : Vector.t G 2) (us : Vector.t F 2) : G := 
-        generalised_okamoto_commitment gs us. 
-        
-      
-      Definition okamoto_response         
-        (xs : Vector.t F 2) (us : Vector.t F 2) (c : F) : 
-        Vector.t F 2 := 
-        generalised_okamoto_response xs us c. 
+        (gs : Vector.t G 2) (us : Vector.t F 2) : G :=
+        generalised_okamoto_commitment gs us.
 
-      Definition okamoto_real_protocol 
-        (xs : Vector.t F 2) (gs : Vector.t G 2) 
+      (** Responses [(u_1 + c·x_1, u_2 + c·x_2)]. *)
+      Definition okamoto_response
+        (xs : Vector.t F 2) (us : Vector.t F 2) (c : F) :
+        Vector.t F 2 :=
+        generalised_okamoto_response xs us c.
+
+      (** Honest transcript of the two-generator protocol. *)
+      Definition okamoto_real_protocol
+        (xs : Vector.t F 2) (gs : Vector.t G 2)
         (h : G) (us : Vector.t F 2) (c : F) : @sigma_proto F G 1 1 2 :=
         @generalised_okamoto_real_protocol 0 xs gs h us c.
 
-      Definition okamoto_simulator_protocol_commitment 
-        (gs : Vector.t G 2) (h : G) (us : Vector.t F 2) 
-        (c : F) : G := generalised_okamoto_simulator_protocol_commitment 
+      (** Simulated commitment [g_1^(u_1) · g_2^(u_2) · h^(−c)]. *)
+      Definition okamoto_simulator_protocol_commitment
+        (gs : Vector.t G 2) (h : G) (us : Vector.t F 2)
+        (c : F) : G := generalised_okamoto_simulator_protocol_commitment
           gs h us c.
 
-      Definition okamoto_simulator_protocol 
-        (gs : Vector.t G 2) (h : G) (us : Vector.t F 2) (c : F) : 
-        @sigma_proto F G 1 1 2 := 
-        @generalised_okamoto_simulator_protocol _ gs h us c. 
+      (** Simulated transcript of the two-generator protocol. *)
+      Definition okamoto_simulator_protocol
+        (gs : Vector.t G 2) (h : G) (us : Vector.t F 2) (c : F) :
+        @sigma_proto F G 1 1 2 :=
+        @generalised_okamoto_simulator_protocol _ gs h us c.
 
-      
-      Definition okamoto_accepting_conversation 
+      (** Verifier of the two-generator protocol. *)
+      Definition okamoto_accepting_conversation
         (gs : Vector.t G 2) (h : G) (v : @sigma_proto F G 1 1 2) : bool :=
-        @generalised_okamoto_accepting_conversation _ gs h v. 
-        
+        @generalised_okamoto_accepting_conversation _ gs h v.
 
     End Ins.
 
-    Section Proofs.
-      
+    (** ** Security properties
 
-      Theorem generalised_okamoto_accepting_conversation_true : 
-        ∀ (n : nat)  (gs : Vector.t G (2 + n)) (h : G) 
+        Completeness, special soundness, special honest-verifier zero knowledge
+        and witness indistinguishability, for every number [2 + n] of
+        generators. All proofs are by induction on [n], destructing the
+        vectors coordinate by coordinate. *)
+    Section Proofs.
+
+      (** Specification of the verifier: it returns [true] exactly when the
+          verification equation [∏_i g_i^(r_i) = a_0 · h^(c_0)] holds. This
+          lemma does not need the vector-space axioms. *)
+      Theorem generalised_okamoto_accepting_conversation_true :
+        ∀ (n : nat)  (gs : Vector.t G (2 + n)) (h : G)
         (v : @sigma_proto F G 1 1 (2 + n)),
         @generalised_okamoto_accepting_conversation n gs h v = true <->
-        match v with 
-        | (a; c; rs) => 
-          Vector.fold_right (fun gr acc => gop gr acc) 
+        match v with
+        | (a; c; rs) =>
+          Vector.fold_right (fun gr acc => gop gr acc)
           (zip_with (fun g r => g^r) gs rs) gid = gop (hd a) (h ^ (hd c))
         end.
       Proof.
         intros *; split.
         intro ha.
-        refine 
-          (match v as v' in sigma_proto return v = v' -> _ 
-          with 
-          | (a; c; rs) => fun hb => _  
+        refine
+          (match v as v' in sigma_proto return v = v' -> _
+          with
+          | (a; c; rs) => fun hb => _
           end eq_refl).
         subst. unfold generalised_okamoto_accepting_conversation in ha.
         rewrite dec_true in ha. exact ha.
         intros ha.
-        refine 
-          (match v as v' in sigma_proto return v = v' -> _ 
-          with 
-          | (a; c; rs) => fun hb => _  
+        refine
+          (match v as v' in sigma_proto return v = v' -> _
+          with
+          | (a; c; rs) => fun hb => _
           end eq_refl); subst.
         unfold generalised_okamoto_accepting_conversation.
         rewrite dec_true.
         exact ha.
       Qed.
 
-
-
+      (** From here on [F] and [G] form a vector space: [G] is an abelian group
+          and exponentiation distributes over field addition and multiplication.
+          The [Add Field] command registers [F] with the [field] tactic. *)
       Context
-        {Hvec: @vector_space F (@eq F) zero one add mul sub 
+        {Hvec: @vector_space F (@eq F) zero one add mul sub
           div opp inv G (@eq G) gid ginv gop gpow}.
       Add Field field : (@field_theory_for_stdlib_tactic F
         eq zero one opp add mul sub inv div vector_space_field).
 
-      (* completeness *)
-      Theorem generalised_okamoto_real_accepting_conversation : 
-        ∀ (n : nat) (xs : Vector.t F (2 + n)) (gs : Vector.t G (2 + n)) 
-        (h : G) (us : Vector.t F (2 + n)) (c : F), 
-        h = Vector.fold_right 
+      (** *** Completeness
+
+          If [h = ∏_i g_i^(x_i)], then every honest transcript, for any randomness
+          [us] and challenge [c], is accepted: [∏_i g_i^(u_i + c·x_i) =
+          (∏_i g_i^(u_i)) · h^c].
+
+          Proof idea: induction on [n]. In the base case of two generators the
+          identity is direct algebra in the vector space. In the inductive step
+          the first generator is split off, the tail is handled by the induction
+          hypothesis with [h · g_1^(−x_1)] as the public value, and the result is
+          regrouped using commutativity. *)
+      Theorem generalised_okamoto_real_accepting_conversation :
+        ∀ (n : nat) (xs : Vector.t F (2 + n)) (gs : Vector.t G (2 + n))
+        (h : G) (us : Vector.t F (2 + n)) (c : F),
+        h = Vector.fold_right
           (fun '(g, x) acc => gop (g^x) acc) (zip_with pair gs xs) gid ->
-        @generalised_okamoto_accepting_conversation n 
+        @generalised_okamoto_accepting_conversation n
           gs h (@generalised_okamoto_real_protocol n
           xs gs h us c) = true.
       Proof.
@@ -232,7 +332,7 @@ Section Okamoto.
         revert n xs gs us h R.
         induction n as [|n ihn].
         +
-          intros *. 
+          intros *.
           destruct (vector_inv_S xs) as (xh & xst & ha).
           destruct (vector_inv_S xst) as (xsth & xstt & hb).
           pose proof (vector_inv_0 xstt) as hc.
@@ -245,12 +345,12 @@ Section Okamoto.
           subst. cbn. intro R.
           rewrite R, !right_identity.
           rewrite <-associative,
-           !smul_distributive_fadd, 
+           !smul_distributive_fadd,
            <-associative. f_equal.
           rewrite smul_distributive_vadd,
-          <-!smul_associative_fmul, 
+          <-!smul_associative_fmul,
           associative, associative.
-          f_equal. 
+          f_equal.
           rewrite commutative.
           f_equal.
           assert (ha : c * xh = xh * c) by field.
@@ -258,20 +358,21 @@ Section Okamoto.
           assert (ha : c * xsth = xsth * c) by field.
           rewrite ha. reflexivity.
         +
-          (* inductive case *)
+          (* Inductive step: peel off the first generator g_1 and apply the induction
+             hypothesis to the tail with public value h · g_1^(−x_1). *)
           intros * R.
           destruct (vector_inv_S xs) as (xh & xst & ha).
           destruct (vector_inv_S gs) as (gh & gst & hb).
           destruct (vector_inv_S us) as (uh & ust & hc).
           subst xs gs us. cbn. cbn in R.
           specialize (ihn xst gst ust (gop h (gh ^ (opp xh)))).
-          remember (fold_right (λ '(g, x) (acc : G), gop (g ^ x) acc) 
+          remember (fold_right (λ '(g, x) (acc : G), gop (g ^ x) acc)
           (zip_with pair gst xst) gid) as ret.
-          setoid_rewrite <-Heqret in ihn. 
+          setoid_rewrite <-Heqret in ihn.
           assert (ha : gop h (gh ^ opp xh) = ret).
           {
             rewrite R, commutative, associative,
-            <-smul_distributive_fadd. 
+            <-smul_distributive_fadd.
             assert (ha : opp xh + xh = zero) by field.
             rewrite ha, field_zero, left_identity.
             reflexivity.
@@ -280,17 +381,19 @@ Section Okamoto.
           rewrite ihn.
           clear ihn.
           remember (fold_right (λ '(g, u) (acc : G), gop (g ^ u) acc) (zip_with pair gst ust) gid) as retw.
-          rewrite R. 
+          rewrite R.
           rewrite !smul_distributive_vadd,
           <-!smul_associative_fmul,
           smul_distributive_fadd.
           rewrite <-!associative.
           f_equal.
-          assert (hb : gop retw (gop (gh ^ (xh * c)) (ret ^ c)) = 
+          (* Regroup the head and tail factors; then g_1^(−x_1·c) · g_1^(x_1·c)
+             cancels. *)
+          assert (hb : gop retw (gop (gh ^ (xh * c)) (ret ^ c)) =
             gop (gh ^ (xh * c)) (gop retw (ret ^ c))).
           {
             rewrite associative.
-            assert (hb : (gop retw (gh ^ (xh * c))) = 
+            assert (hb : (gop retw (gh ^ (xh * c))) =
               (gop (gh ^ (xh * c)) retw)).
             rewrite commutative. reflexivity.
             rewrite hb; clear hb.
@@ -311,14 +414,14 @@ Section Okamoto.
           rewrite vector_space_field_zero, right_identity.
           reflexivity.
       Qed.
-         
-          (* automation like field 
-            should discharge this goal. *)
 
+      (** The simulator always produces accepting transcripts, for every [h],
+          [us] and [c], whether or not [h] has a representation:
+          [∏_i g_i^(u_i) = (∏_i g_i^(u_i) · h^(−c)) · h^c]. *)
       Theorem generalised_okamoto_simulator_accepting_conversation :
-        ∀ (n : nat) (gs : Vector.t G (2 + n)) 
-        (h : G) (us : Vector.t F (2 + n)) (c : F), 
-        @generalised_okamoto_accepting_conversation n 
+        ∀ (n : nat) (gs : Vector.t G (2 + n))
+        (h : G) (us : Vector.t F (2 + n)) (c : F),
+        @generalised_okamoto_accepting_conversation n
           gs h (@generalised_okamoto_simulator_protocol n
           gs h us c) = true.
       Proof.
@@ -356,14 +459,18 @@ Section Okamoto.
           rewrite associative.
           reflexivity.
       Qed.
-      
-      Theorem ginv_fold_right_connection : 
+
+      (** *** Algebraic helper lemmas for special soundness
+
+          The inverse of a multi-exponentiation is the multi-exponentiation with
+          negated exponents: [(∏_i g_i^(r_i))⁻¹ = ∏_i g_i^(−r_i)]. *)
+      Theorem ginv_fold_right_connection :
         ∀ (n : nat) (gs : Vector.t G (2 + n))
         (rs : Vector.t F (2 + n)),
         ginv (fold_right (λ gr acc : G, gop gr acc)
-        (zip_with (λ (g : G) (r : F), g ^ r) gs rs) gid) = 
+        (zip_with (λ (g : G) (r : F), g ^ r) gs rs) gid) =
         (fold_right (λ gr acc : G, gop gr acc)
-        (zip_with (λ (g : G) (r : F), g ^ r) gs 
+        (zip_with (λ (g : G) (r : F), g ^ r) gs
         (Vector.map opp rs)) gid).
       Proof.
         induction n as [|n ihn].
@@ -377,7 +484,7 @@ Section Okamoto.
           pose proof (vector_inv_0 rstt) as hf.
           subst. cbn.
           rewrite !right_identity, group_inv_flip,
-          !connection_between_vopp_and_fopp, 
+          !connection_between_vopp_and_fopp,
           commutative; reflexivity.
         +
           intros *.
@@ -391,9 +498,11 @@ Section Okamoto.
           reflexivity.
       Qed.
 
-      Theorem zip_map_connection : 
+      (** Adding the negation of a vector is coordinate-wise subtraction written
+          with [opp]: [rs₁ + map opp rs₂ = (r₁_i + −r₂_i)_i]. *)
+      Theorem zip_map_connection :
         ∀ (n : nat) (rs₁ rs₂ : Vector.t F (2 + n)),
-        (zip_with (λ x y : F, x + y) rs₁ (map opp rs₂)) = 
+        (zip_with (λ x y : F, x + y) rs₁ (map opp rs₂)) =
         (zip_with (λ x y : F, x + opp y) rs₁ rs₂).
       Proof.
         induction n as [|n ihn].
@@ -415,10 +524,7 @@ Section Okamoto.
           now rewrite ihn.
       Qed.
 
-          
-
-
-
+      (** Rearrangement in an abelian group: [(a·b)·(c·d) = (a·c)·(b·d)]. *)
       Theorem gop_simp : ∀ (a b c d : G),
         gop (gop a b) (gop c d) = gop (gop a c) (gop b d).
       Proof.
@@ -430,14 +536,17 @@ Section Okamoto.
         reflexivity.
       Qed.
 
-      Theorem gop_fold_right_connection : 
+      (** The product of two multi-exponentiations over the same generators is
+          the multi-exponentiation of the sum of the exponent vectors:
+          [∏_i g_i^(r₁_i) · ∏_i g_i^(r₂_i) = ∏_i g_i^(r₁_i + r₂_i)]. *)
+      Theorem gop_fold_right_connection :
         ∀ (n : nat) (gs : Vector.t G (2 + n))
         (rs₁ rs₂ : Vector.t F (2 + n)),
         gop
         (fold_right (λ gr acc : G, gop gr acc)
         (zip_with (λ (g : G) (r : F), g ^ r) gs rs₁) gid)
         (fold_right (λ gr acc : G, gop gr acc)
-        (zip_with (λ (g : G) (r : F), g ^ r) gs rs₂) gid) = 
+        (zip_with (λ (g : G) (r : F), g ^ r) gs rs₂) gid) =
         fold_right (λ gr acc : G, gop gr acc)
         (zip_with (λ (g : G) (r : F), g ^ r) gs
           (zip_with (fun x y => x + y) rs₁ rs₂)) gid.
@@ -482,11 +591,13 @@ Section Okamoto.
           reflexivity.
       Qed.
 
-      Theorem fold_right_zip_connection : 
+      (** Two ways of writing the same multi-exponentiation (via [zip_with] with
+          exponentiation, or via pairs) are equal. *)
+      Theorem fold_right_zip_connection :
         ∀ (n : nat) (gs : Vector.t G (2 + n))
         (rs : Vector.t F (2 + n)),
         fold_right (λ gr acc : G, gop gr acc)
-        (zip_with (λ (g : G) (r : F), g ^ r) gs rs) gid = 
+        (zip_with (λ (g : G) (r : F), g ^ r) gs rs) gid =
         fold_right (λ '(g, x) (acc : G), gop (g ^ x) acc)
         (zip_with pair gs rs) gid.
       Proof.
@@ -510,35 +621,49 @@ Section Okamoto.
           reflexivity.
       Qed.
 
+      (** *** Special soundness
 
+          From two accepting transcripts [(a; c₁; rs₁)] and [(a; c₂; rs₂)] with
+          the same commitment [a] and [c₁ ≠ c₂], the witness
 
-      (* special soundness *)
-      Theorem generalised_okamoto_real_special_soundness : 
+          [[
+            xi_i = (c₁ − c₂)⁻¹ · (r₁_i − r₂_i)
+          ]]
+
+          satisfies [h = ∏_i g_i^(xi_i)]. The statement also gives the extracted
+          witness explicitly, which [NeqSigma] relies on.
+
+          Proof idea: dividing the two verification equations gives
+          [∏_i g_i^(r₁_i − r₂_i) = h^(c₁ − c₂)]; raising both sides to
+          [(c₁ − c₂)⁻¹], which exists because [c₁ ≠ c₂], isolates [h]; a final
+          induction on [n] distributes the scalar into the multi-exponentiation. *)
+      Theorem generalised_okamoto_real_special_soundness :
         ∀ (n : nat) (gs : Vector.t G (2 + n)) (h : G)
         (a : G) (c₁ c₂ : F) (rs₁ rs₂ : Vector.t F (2 + n)),
-        c₁ <> c₂ -> 
-        @generalised_okamoto_accepting_conversation n gs h 
+        c₁ <> c₂ ->
+        @generalised_okamoto_accepting_conversation n gs h
           ([a]; [c₁]; rs₁) = true ->
-        @generalised_okamoto_accepting_conversation n gs h 
+        @generalised_okamoto_accepting_conversation n gs h
           ([a]; [c₂]; rs₂) = true ->
-        ∃ (xi : Vector.t F (2 + n)), h = 
-        Vector.fold_right (fun '(g, x) acc => gop (g^x) acc) 
+        ∃ (xi : Vector.t F (2 + n)), h =
+        Vector.fold_right (fun '(g, x) acc => gop (g^x) acc)
         (zip_with pair gs xi) gid ∧
-        xi = (zip_with (λ x y : F, inv (c₁ + opp c₂) * (x + opp y)) 
-        rs₁ rs₂). (* needed for NEQ *)
+        xi = (zip_with (λ x y : F, inv (c₁ + opp c₂) * (x + opp y))
+        rs₁ rs₂).
       Proof.
-        intros * ha hb hc. cbn in hb, hc; 
+        intros * ha hb hc. cbn in hb, hc;
         rewrite dec_true in hb, hc.
-        eapply f_equal with (f := fun x => 
+        eapply f_equal with (f := fun x =>
             gop x (ginv (gop a (h ^ c₂))))
         in hb.
         rewrite <-hc in hb at 1.
         clear hc.
-        assert (hc : gop (gop a (h ^ c₁)) (ginv (gop a (h ^ c₂))) = 
+        (* The commitment a cancels: (a · h^c₁) · (a · h^c₂)⁻¹ = h^(c₁ − c₂). *)
+        assert (hc : gop (gop a (h ^ c₁)) (ginv (gop a (h ^ c₂))) =
           h ^ (c₁ + opp c₂)).
         {
-          
-          rewrite group_inv_flip, associative, commutative, 
+
+          rewrite group_inv_flip, associative, commutative,
           <-associative, associative.
           rewrite left_inverse, left_identity,
           connection_between_vopp_and_fopp.
@@ -552,20 +677,22 @@ Section Okamoto.
         setoid_rewrite gop_fold_right_connection in hb.
         rewrite zip_map_connection in hb.
         rewrite fold_right_zip_connection in hb.
-        eapply f_equal with (f := fun x => 
+        (* Raise both sides to the power (c₁ − c₂)⁻¹; c₁ − c₂ ≠ 0 by hypothesis. *)
+        eapply f_equal with (f := fun x =>
           x ^ (inv (c₁ + opp c₂))) in hb.
         rewrite <-smul_associative_fmul in hb.
-        assert (hc : c₁ + opp c₂ <> zero). 
+        assert (hc : c₁ + opp c₂ <> zero).
         intro hc. eapply ha.
-        eapply f_equal with (f := fun x => 
+        eapply f_equal with (f := fun x =>
           x + c₂) in hc.
         rewrite left_identity in hc.
-        rewrite <-hc. field. 
+        rewrite <-hc. field.
         assert (hd : ((c₁ + opp c₂) * inv (c₁ + opp c₂)) = one).
         field. exact hc.
         rewrite hd in hb; clear hc hd.
         setoid_rewrite field_one in hb.
-        exists (zip_with (λ x y : F, inv (c₁ + opp c₂) * (x + opp y)) 
+        (* The witness; it remains to push the scalar into each exponent. *)
+        exists (zip_with (λ x y : F, inv (c₁ + opp c₂) * (x + opp y))
         rs₁ rs₂); split; try reflexivity.
         rewrite <-hb.
         clear ha hb h a.
@@ -583,14 +710,14 @@ Section Okamoto.
           destruct (vector_inv_S rst₂) as (rsth₂ & rstt₂ & hh).
           pose proof (vector_inv_0 rstt₂) as hi.
           subst. cbn.
-          rewrite !right_identity, 
+          rewrite !right_identity,
           !smul_distributive_vadd,
           <-!smul_associative_fmul.
-          assert (ha : (rh₁ + opp rh₂) * inv (c₁ + opp c₂) = 
-          (inv (c₁ + opp c₂) * (rh₁ + opp rh₂))). 
+          assert (ha : (rh₁ + opp rh₂) * inv (c₁ + opp c₂) =
+          (inv (c₁ + opp c₂) * (rh₁ + opp rh₂))).
           rewrite commutative. reflexivity.
           rewrite ha; clear ha.
-          assert (ha : (rsth₁ + opp rsth₂) * inv (c₁ + opp c₂) = 
+          assert (ha : (rsth₁ + opp rsth₂) * inv (c₁ + opp c₂) =
           (inv (c₁ + opp c₂) * (rsth₁ + opp rsth₂))).
           rewrite commutative. reflexivity.
           rewrite ha. reflexivity.
@@ -602,41 +729,42 @@ Section Okamoto.
           subst. cbn.
           rewrite <-ihn.
           remember (fold_right (λ '(g, x) (acc : G), gop (g ^ x) acc)
-          (zip_with pair gst (zip_with (λ x y : F, x + opp y) 
+          (zip_with pair gst (zip_with (λ x y : F, x + opp y)
           rst₁ rst₂)) gid) as ret.
-          setoid_rewrite <-Heqret. 
+          setoid_rewrite <-Heqret.
           rewrite !smul_distributive_vadd,
           <-!smul_associative_fmul.
-          assert (ha : ((rh₁ + opp rh₂) * inv (c₁ + opp c₂)) = 
-          (inv (c₁ + opp c₂) * (rh₁ + opp rh₂))). 
+          assert (ha : ((rh₁ + opp rh₂) * inv (c₁ + opp c₂)) =
+          (inv (c₁ + opp c₂) * (rh₁ + opp rh₂))).
           rewrite commutative. reflexivity.
           rewrite ha. reflexivity.
       Qed.
 
+      (** *** Special honest-verifier zero knowledge
 
-      (* special honest-verifier zero-knowledge proof *)
-      (* honest verifier zero knowledge proof *)
-
+          Within this part, [p / q] denotes the probability [p/q] built with
+          [mk_prob]. *)
       #[local] Notation "p / q" := (mk_prob p (Pos.of_nat q)).
 
-      Lemma generalised_okamoto_real_distribution_transcript_accepting_generic {n : nat} : 
+      (** Every transcript in the support of [Bind l (honest prover)] is
+          accepting, for any distribution [l] of randomness, provided
+          [h = ∏_i g_i^(x_i)]. *)
+      Lemma generalised_okamoto_real_distribution_transcript_accepting_generic {n : nat} :
         forall (l : dist (Vector.t F (2 + n))) (xs : Vector.t F (2 + n))
         (gs : Vector.t G (2 + n)) (h : G)
         (trans : sigma_proto) (pr : prob) (c : F),
-        (* relationship between gs, h, and xs *)
-        h = fold_right (λ '(g, x) (acc : G), gop (g ^ x) acc) 
+        h = fold_right (λ '(g, x) (acc : G), gop (g ^ x) acc)
         (zip_with pair gs xs) gid ->
-        List.In (trans, pr) (Bind l (λ us : t F (2 + n), 
-            Ret (generalised_okamoto_real_protocol xs gs h us c))) → 
+        List.In (trans, pr) (Bind l (λ us : t F (2 + n),
+            Ret (generalised_okamoto_real_protocol xs gs h us c))) →
         generalised_okamoto_accepting_conversation gs h trans = true.
       Proof.
         induction l as [|(a, p) l IHl].
         +
           intros * Hrel Ha.
-          cbn in Ha; 
+          cbn in Ha;
           inversion Ha.
         +
-          (* destruct l *)
           destruct l as [|(la, lp) l].
           ++
             intros * Hrel Ha.
@@ -659,14 +787,16 @@ Section Okamoto.
               exact Hrel. exact Ha.
       Qed.
 
-      Lemma generalised_okamoto_real_distribution_transcript_probability_generic {n : nat} : 
+      (** If every element of the randomness distribution [l] has probability
+          [1/m], then so does every transcript of [Bind l (honest prover)]. *)
+      Lemma generalised_okamoto_real_distribution_transcript_probability_generic {n : nat} :
         forall (l : dist (Vector.t F (2 + n))) (xs : Vector.t F (2 + n))
         (gs : Vector.t G (2 + n)) (h : G)
         (trans : sigma_proto) (pr : prob) (c : F) (m : nat),
-        (∀ (trx : Vector.t F (2 + n)) (prx : prob), 
+        (∀ (trx : Vector.t F (2 + n)) (prx : prob),
           List.In (trx, prx) l → prx = 1 / m) ->
-        List.In (trans, pr) (Bind l (λ us : t F (2 + n), 
-          Ret (generalised_okamoto_real_protocol xs gs h us c))) → 
+        List.In (trans, pr) (Bind l (λ us : t F (2 + n),
+          Ret (generalised_okamoto_real_protocol xs gs h us c))) →
         pr = 1 / m.
       Proof.
         induction l as [|(a, p) l IHl].
@@ -676,9 +806,9 @@ Section Okamoto.
         + intros * Ha Hin.
           pose proof (Ha a p (or_introl eq_refl)).
           destruct Hin as [Hwa | Hwb].
-          inversion Hwa; subst; 
+          inversion Hwa; subst;
           clear Hwa.
-          unfold mul_prob, 
+          unfold mul_prob,
           Prob.one; simpl.
           f_equal.
           nia.
@@ -689,13 +819,13 @@ Section Okamoto.
           exact Hwb.
       Qed.
 
-
-      Lemma generalised_okamoto_real_distribution_transcript_generic {n : nat} : 
-        forall (lf : list F) (Hlf : lf <> List.nil) 
+      (** Each support element of [generalised_okamoto_real_distribution] is an
+          accepting transcript with probability [1 / |lf|^(2+n)]. *)
+      Lemma generalised_okamoto_real_distribution_transcript_generic {n : nat} :
+        forall (lf : list F) (Hlf : lf <> List.nil)
         (xs : Vector.t F (2 + n)) (gs : Vector.t G (2 + n)) (h : G)
         (a : sigma_proto) (b : prob) (c : F),
-        (* relationship between gs, h, and xs *)
-        h = fold_right (λ '(g, x) (acc : G), gop (g ^ x) acc) 
+        h = fold_right (λ '(g, x) (acc : G), gop (g ^ x) acc)
         (zip_with pair gs xs) gid ->
         List.In (a, b) (generalised_okamoto_real_distribution lf Hlf xs gs h c) ->
         generalised_okamoto_accepting_conversation gs h a = true ∧
@@ -714,21 +844,20 @@ Section Okamoto.
           exact Ha.
       Qed.
 
-
-       Lemma generalised_okamoto_simulator_distribution_transcript_accepting_generic {n : nat} : 
-        forall (l : dist (Vector.t F (2 + n))) 
+       (** Every transcript in the support of [Bind l (simulator)] is accepting. *)
+       Lemma generalised_okamoto_simulator_distribution_transcript_accepting_generic {n : nat} :
+        forall (l : dist (Vector.t F (2 + n)))
         (gs : Vector.t G (2 + n)) (h : G) (trans : sigma_proto) (pr : prob) (c : F),
-        List.In (trans, pr) (Bind l (λ us : t F (2 + n), 
-            Ret (generalised_okamoto_simulator_protocol gs h us c))) → 
+        List.In (trans, pr) (Bind l (λ us : t F (2 + n),
+            Ret (generalised_okamoto_simulator_protocol gs h us c))) →
         generalised_okamoto_accepting_conversation gs h trans = true.
       Proof.
         induction l as [|(a, p) l IHl].
         +
           intros * Ha.
-          cbn in Ha; 
+          cbn in Ha;
           inversion Ha.
         +
-          (* destruct l *)
           destruct l as [|(la, lp) l].
           ++
             intros * Ha.
@@ -749,15 +878,16 @@ Section Okamoto.
               exact Ha.
       Qed.
 
-
-      Lemma generalised_okamoto_simulator_distribution_transcript_probability_generic {n : nat} : 
-        forall (l : dist (Vector.t F (2 + n))) 
+      (** If every element of [l] has probability [1/m], then so does every
+          transcript of [Bind l (simulator)]. *)
+      Lemma generalised_okamoto_simulator_distribution_transcript_probability_generic {n : nat} :
+        forall (l : dist (Vector.t F (2 + n)))
         (gs : Vector.t G (2 + n)) (h : G)
         (trans : sigma_proto) (pr : prob) (c : F) (m : nat),
-        (∀ (trx : Vector.t F (2 + n)) (prx : prob), 
+        (∀ (trx : Vector.t F (2 + n)) (prx : prob),
           List.In (trx, prx) l → prx = 1 / m) ->
-        List.In (trans, pr) (Bind l (λ us : t F (2 + n), 
-          Ret (generalised_okamoto_simulator_protocol gs h us c))) → 
+        List.In (trans, pr) (Bind l (λ us : t F (2 + n),
+          Ret (generalised_okamoto_simulator_protocol gs h us c))) →
         pr = 1 / m.
       Proof.
         induction l as [|(a, p) l IHl].
@@ -767,9 +897,9 @@ Section Okamoto.
         + intros * Ha Hin.
           pose proof (Ha a p (or_introl eq_refl)).
           destruct Hin as [Hwa | Hwb].
-          inversion Hwa; subst; 
+          inversion Hwa; subst;
           clear Hwa.
-          unfold mul_prob, 
+          unfold mul_prob,
           Prob.one; simpl.
           f_equal.
           nia.
@@ -780,9 +910,10 @@ Section Okamoto.
           exact Hwb.
       Qed.
 
-
-       Lemma generalised_okamoto_simulator_distribution_transcript_generic {n : nat} : 
-        forall (lf : list F) (Hlf : lf <> List.nil) 
+       (** Each support element of [generalised_okamoto_simulator_distribution] is
+           an accepting transcript with probability [1 / |lf|^(2+n)]. *)
+       Lemma generalised_okamoto_simulator_distribution_transcript_generic {n : nat} :
+        forall (lf : list F) (Hlf : lf <> List.nil)
         (gs : Vector.t G (2 + n)) (h : G)
         (a : sigma_proto) (b : prob) (c : F),
         List.In (a, b) (generalised_okamoto_simulator_distribution lf Hlf gs h c) ->
@@ -802,24 +933,28 @@ Section Okamoto.
           exact Ha.
       Qed.
 
-
-      (* Two distributions are identical (information theoretic security)*)
-      Lemma generalised_okamoto_special_honest_verifier_zkp {n : nat} : 
-        forall (lf : list F) (Hlfn : lf <> List.nil) 
+      (** Special honest-verifier zero knowledge in the weak form used throughout
+          the library: after replacing each transcript by its acceptance bit, the
+          real and simulated distributions coincide (both lists have the same
+          length, all entries are accepting, and all have probability
+          [1 / |lf|^(2+n)]). This does not compare the transcripts themselves;
+          see [generalised_okamoto_special_honest_verifier_zkp_perm] for the
+          stronger statement. *)
+      Lemma generalised_okamoto_special_honest_verifier_zkp {n : nat} :
+        forall (lf : list F) (Hlfn : lf <> List.nil)
         (xs : Vector.t F (2 + n)) (gs : Vector.t G (2 + n)) (h : G) (c : F),
-        (* relationship between gs, h, and xs *)
-        h = fold_right (λ '(g, x) (acc : G), gop (g ^ x) acc) 
+        h = fold_right (λ '(g, x) (acc : G), gop (g ^ x) acc)
           (zip_with pair gs xs) gid ->
-        List.map (fun '(a, p) => 
+        List.map (fun '(a, p) =>
           (generalised_okamoto_accepting_conversation gs h a, p))
-          (@generalised_okamoto_real_distribution n lf Hlfn xs gs h c) = 
-        List.map (fun '(a, p) => 
+          (@generalised_okamoto_real_distribution n lf Hlfn xs gs h c) =
+        List.map (fun '(a, p) =>
           (generalised_okamoto_accepting_conversation gs h a, p))
           (@generalised_okamoto_simulator_distribution n lf Hlfn gs h c).
       Proof.
         intros * Hrel.
         eapply map_ext_eq.
-        + 
+        +
           unfold generalised_okamoto_real_distribution,
           generalised_okamoto_simulator_distribution; cbn.
           repeat rewrite distribution_length.
@@ -834,11 +969,9 @@ Section Okamoto.
           exact Ha.
       Qed.
 
+      (** *** Witness indistinguishability
 
-      (* witness indistinguishability *)
-
-    
-      
+          [inverse_transform] undoes [transform_us]. *)
       Lemma transform_inverse_foward {n : nat} :
         ∀ (xs₁ xs₂ : Vector.t F (2 + n)) (c : F) (us : Vector.t F (2 + n)),
         inverse_transform xs₁ xs₂ c (transform_us xs₁ xs₂ c us) = us.
@@ -875,6 +1008,9 @@ Section Okamoto.
           eapply ihn.
       Qed.
 
+      (** [transform_us] undoes [inverse_transform]; together with
+          [transform_inverse_foward] this shows [transform_us] is a bijection on
+          randomness vectors. *)
       Lemma transform_inverse_backward {n : nat} :
         ∀ (xs₁ xs₂ : Vector.t F (2 + n)) (c : F) (us : Vector.t F (2 + n)),
         transform_us xs₁ xs₂ c (inverse_transform xs₁ xs₂ c us) = us.
@@ -906,16 +1042,15 @@ Section Okamoto.
           eapply ihn.
       Qed.
 
+      (** The commitment is homomorphic in the exponents:
+          [com gs (us − vs) = com gs us · com gs (−vs)]. *)
       Lemma generalised_okamoto_commitment_homomorphic {n : nat} :
         ∀ (gs : Vector.t G (2+n)) (us vs : Vector.t F (2+n)),
-          generalised_okamoto_commitment gs 
+          generalised_okamoto_commitment gs
           (zip_with (λ x₁ x₂ : F, x₁ - x₂) us vs) =
-          gop (generalised_okamoto_commitment gs us) 
+          gop (generalised_okamoto_commitment gs us)
               (generalised_okamoto_commitment gs (map opp vs)).
       Proof.
-        (* By induction on vectors, using:
-          - g^(u+v) = g^u * g^v  (distributivity of scalar multiplication)
-          - Group is abelian (from vector_space structure) *)
         induction n as [|n ihn].
         +
           intros *.
@@ -930,7 +1065,7 @@ Section Okamoto.
           pose proof (vector_inv_0 vstt) as hi.
           subst; cbn.
           rewrite !right_identity.
-          rewrite gop_simp, 
+          rewrite gop_simp,
           <-!smul_distributive_fadd.
           assert (ha : uh + opp vh = uh - vh). field.
           rewrite ha; clear ha.
@@ -954,12 +1089,13 @@ Section Okamoto.
           reflexivity.
       Qed.
 
+      (** Negating all exponents inverts the commitment:
+          [com gs (−us) = (com gs us)⁻¹]. *)
       Lemma generalised_okamoto_commitment_inv {n : nat} :
         ∀ (gs : Vector.t G (2+n)) (us : Vector.t F (2+n)),
           generalised_okamoto_commitment gs (Vector.map opp us) =
           ginv (generalised_okamoto_commitment gs us).
       Proof.
-        (* Using: g^(-u) = (g^u)^{-1} *)
         induction n as [|n ihn].
         +
           intros *.
@@ -979,7 +1115,7 @@ Section Okamoto.
           destruct (vector_inv_S gs) as (gh & gst & ha).
           destruct (vector_inv_S us) as (uh & ust & hb).
           subst; cbn.
-          specialize (ihn gst ust). 
+          specialize (ihn gst ust).
           setoid_rewrite ihn.
           unfold generalised_okamoto_commitment.
           setoid_rewrite <-connection_between_vopp_and_fopp.
@@ -987,11 +1123,13 @@ Section Okamoto.
           reflexivity.
       Qed.
 
-      Theorem generalised_okamoto_commitment_connection {n : nat} : 
+      (** Two representations [xs₁], [xs₂] of the same [h] differ by a
+          representation of the identity: [com gs (xs₁ − xs₂) = gid]. *)
+      Theorem generalised_okamoto_commitment_connection {n : nat} :
         ∀ (gs : Vector.t G (2 + n)) (h : G) (xs₁ xs₂ : Vector.t F (2 + n)),
         h = generalised_okamoto_commitment gs xs₁ ->
         h = generalised_okamoto_commitment gs xs₂ ->
-        generalised_okamoto_commitment gs 
+        generalised_okamoto_commitment gs
           (zip_with (fun x₁ x₂ => x₁ - x₂) xs₁ xs₂) = gid.
       Proof.
         intros * ha hb.
@@ -1001,20 +1139,20 @@ Section Okamoto.
         rewrite right_inverse; reflexivity.
       Qed.
 
-
-
+      (** The commitment of the transformed randomness [transform_us xs₁ xs₂ c us]
+          factors as [com gs us · (com gs (xs₁ − xs₂))^c]. *)
       Theorem generalised_okamoto_commitment_tranform_connection {n : nat} :
         ∀ (gs : Vector.t G (2 + n)) (xs₁ xs₂ : Vector.t F (2 + n))
           (us : Vector.t F (2 + n)) (c : F),
         fold_right (λ '(g, u) (acc : G), gop (g ^ u) acc)
           (zip_with pair gs
           (zip_with (λ (u : F) '(x₁, x₂), u + c * (x₁ - x₂)) us
-          (zip_with pair xs₁ xs₂))) gid = 
-        gop 
+          (zip_with pair xs₁ xs₂))) gid =
+        gop
           (fold_right (λ '(g, u) (acc : G), gop (g ^ u) acc)
           (zip_with pair gs us) gid)
           ((fold_right (λ '(g, u) (acc : G), gop (g ^ u) acc)
-          (zip_with pair gs (zip_with (fun x₁ x₂ => (x₁ - x₂)) 
+          (zip_with pair gs (zip_with (fun x₁ x₂ => (x₁ - x₂))
             xs₁ xs₂)) gid) ^ c).
       Proof.
         induction n as [|n ihn].
@@ -1035,7 +1173,7 @@ Section Okamoto.
           subst; cbn.
           rewrite !right_identity, !smul_distributive_vadd,
           <-!smul_associative_fmul.
-          rewrite gop_simp, 
+          rewrite gop_simp,
           <-!smul_distributive_fadd.
           assert (ha : c * (xh₁ - xh₂) = (xh₁ - xh₂) * c). field.
           rewrite ha; clear ha.
@@ -1058,20 +1196,21 @@ Section Okamoto.
           setoid_rewrite <-Heqreta. setoid_rewrite <-Heqretb.
           rewrite  !smul_distributive_vadd,
           <-!smul_associative_fmul.
-          rewrite gop_simp, 
+          rewrite gop_simp,
           <-!smul_distributive_fadd.
           assert (ha : c * (xh₁ - xh₂) = (xh₁ - xh₂) * c). field.
           rewrite ha; clear ha.
           reflexivity.
       Qed.
 
-
-      Theorem zip_with_transform {n : nat} : 
-        ∀ (xs₁ xs₂ : Vector.t F (2 + n)) 
+      (** The responses agree: [us + c·xs₁ = transform_us xs₁ xs₂ c us + c·xs₂]
+          coordinate-wise. *)
+      Theorem zip_with_transform {n : nat} :
+        ∀ (xs₁ xs₂ : Vector.t F (2 + n))
         (us : Vector.t F (2 + n)) (c : F),
         zip_with (λ x u : F, u + c * x) xs₁ us =
         zip_with (λ x u : F, u + c * x) xs₂
-        (zip_with (λ (u : F) '(x₁, x₂), u + c * (x₁ - x₂)) us 
+        (zip_with (λ (u : F) '(x₁, x₂), u + c * (x₁ - x₂)) us
         (zip_with pair xs₁ xs₂)).
       Proof.
         induction n as [|n ihn].
@@ -1099,48 +1238,58 @@ Section Okamoto.
           eapply ihn.
       Qed.
 
+      (** Witness indistinguishability (perfect, transcript-level). Let [xs₁] and
+          [xs₂] be two representations of [h]. For every honest transcript
+          [(a; c; rs)] produced with witness [xs₁] and randomness [us], there is
+          exactly one randomness [us'] such that the honest prover with witness
+          [xs₂] produces the same transcript. Hence, for uniformly random
+          randomness, the transcript distribution does not depend on which
+          witness is used.
 
+          Proof idea: existence takes [us' = transform_us xs₁ xs₂ c us]; the
+          commitments agree because [com gs (xs₁ − xs₂) = gid]
+          ([generalised_okamoto_commitment_connection]) and the responses agree by
+          [zip_with_transform]. Uniqueness follows because the response map
+          [u ↦ u + c·x] is injective, shown by induction on [n]. *)
       Theorem generalised_okamoto_witness_indistinguishable {n : nat} :
         ∀ (gs : Vector.t G (2 + n)) (h : G) (xs₁ xs₂ : Vector.t F (2 + n)),
-        (* Both witnesses produce the same public key h *)
         h = generalised_okamoto_commitment gs xs₁ ->
         h = generalised_okamoto_commitment gs xs₂ ->
-        (* For every conversation (a, c, rs) from xs, there exists unique us' 
-          such that the same conversation is produced by xs' *)
         ∀ (us : Vector.t F (2 + n)) (a : G) (c : F) (rs : Vector.t F (2 + n)),
         ([a]; [c]; rs) = generalised_okamoto_real_protocol xs₁ gs h us c ->
-        (* Then there exists unique us' producing the same transcript for xs' *)
         exists! us' : Vector.t F (2 + n),
           ([a]; [c]; rs) = generalised_okamoto_real_protocol xs₂ gs h us' c.
       Proof.
         intros * ha hb * hc.
         unfold unique.
+        (* Existence: the transformed randomness reproduces the transcript. *)
         exists (transform_us xs₁ xs₂ c us).
         split.
         +
           rewrite hc; clear hc.
-          pose proof @generalised_okamoto_commitment_connection n 
-            gs h xs₁ xs₂ ha hb as hd.  
-          unfold generalised_okamoto_real_protocol, 
-          generalised_okamoto_commitment, 
+          pose proof @generalised_okamoto_commitment_connection n
+            gs h xs₁ xs₂ ha hb as hd.
+          unfold generalised_okamoto_real_protocol,
+          generalised_okamoto_commitment,
           generalised_okamoto_response,
           transform_us.
-          f_equal. 
+          f_equal.
           ++
             f_equal.
             unfold generalised_okamoto_commitment in hd.
             rewrite generalised_okamoto_commitment_tranform_connection.
-            remember (fold_right (λ '(g, u) (acc : G), gop (g ^ u) acc) 
+            remember (fold_right (λ '(g, u) (acc : G), gop (g ^ u) acc)
             (zip_with pair gs us) gid) as ret.
             rewrite hd.
             rewrite vid_identity, right_identity; reflexivity.
           ++
             eapply zip_with_transform.
         +
+          (* Uniqueness: equal responses force ys_i = u_i + c·(x₁_i − x₂_i). *)
           intros ys hd.
           rewrite hc in hd; clear hc.
-          unfold generalised_okamoto_real_protocol, 
-          generalised_okamoto_commitment, 
+          unfold generalised_okamoto_real_protocol,
+          generalised_okamoto_commitment,
           generalised_okamoto_response in hd.
           inversion hd as [[hu hv]]; clear hd.
           clear ha hb hu gs h a rs.
@@ -1163,19 +1312,19 @@ Section Okamoto.
             subst. cbn in haa |- *.
             inversion haa as [[haal haar]]; clear haa.
             f_equal.
-            eapply f_equal with (f := fun x => 
+            eapply f_equal with (f := fun x =>
                x - (c * xh₂)) in haal.
-            assert (ha : yh + c * xh₂ - c * xh₂ = 
+            assert (ha : yh + c * xh₂ - c * xh₂ =
               yh + (c * xh₂ - c * xh₂)). field.
             rewrite ha in haal; clear ha.
             assert (ha : c * xh₂ - c * xh₂ = zero). field.
-            rewrite ha in haal. 
-            rewrite right_identity in haal. 
+            rewrite ha in haal.
+            rewrite right_identity in haal.
             rewrite <-haal. field.
-            f_equal. 
-            apply f_equal with (f := fun x => 
+            f_equal.
+            apply f_equal with (f := fun x =>
                x - (c * xsth₂)) in haar.
-            assert (ha : ysth + c * xsth₂ - c * xsth₂ = 
+            assert (ha : ysth + c * xsth₂ - c * xsth₂ =
               ysth + (c * xsth₂ - c * xsth₂)). field.
             rewrite ha in haar; clear ha.
             assert (ha : (c * xsth₂ - c * xsth₂) = zero).
@@ -1189,43 +1338,48 @@ Section Okamoto.
             destruct (vector_inv_S us) as (uh & ust & hc).
             destruct (vector_inv_S ys) as (yh & yst & hd).
             subst. cbn in haa |- *.
-            eapply vec_inv in haa. 
+            eapply vec_inv in haa.
             destruct haa as [haal haar].
-            f_equal. 
-            eapply f_equal with (f := fun x => 
+            f_equal.
+            eapply f_equal with (f := fun x =>
               x - (c * xh₂)) in haal.
-            assert (ha : yh + c * xh₂ - c * xh₂ = 
+            assert (ha : yh + c * xh₂ - c * xh₂ =
               yh + (c * xh₂ - c * xh₂)). field.
             rewrite ha in haal; clear ha.
             assert (ha : c * xh₂ - c * xh₂ = zero). field.
-            rewrite ha in haal. 
-            rewrite right_identity in haal. 
+            rewrite ha in haal.
+            rewrite right_identity in haal.
             rewrite <-haal. field.
             eapply ihn. exact haar.
       Qed.
 
+      (** *** Equality of the real and simulated distributions
 
-      (* ---------------------------------------------------------------- *)
-      (* Special honest-verifier zero-knowledge as equality of distributions.
-        The real transcript for randomness us is the simulated transcript 
-        for the coordinatewise shifted randomness u_i ↦ u_i + c * x_i. *)
+          The real transcript with randomness [us] equals the simulated transcript
+          with the shifted randomness [u_i ↦ u_i + c·x_i]. If the sampling list is
+          closed under this shift, the two distributions are permutations of each
+          other.
 
+          The identity is fixed by exponentiation: [gid^k = gid]. *)
       Lemma gid_pow : forall k : F, gid ^ k = gid.
       Proof.
         intros k.
-        assert (ha : gid ^ k = (gid ^ zero) ^ k) by 
+        assert (ha : gid ^ k = (gid ^ zero) ^ k) by
           (rewrite vector_space_field_zero; reflexivity).
         rewrite ha, smul_pow_up.
         assert (hb : zero * k = zero) by field.
         rewrite hb; apply vector_space_field_zero.
       Qed.
 
+      (** Shift identity for commitments, for any length [m]:
+          [∏_i g_i^(u_i) = ∏_i g_i^(u_i + c·x_i) · (∏_i g_i^(x_i))^(−c)].
+          Built coordinate-wise from [Sigma.schnorr_commitment_shift]. *)
       Lemma okamoto_commitment_shift (c : F) :
         forall (m : nat) (gs : Vector.t G m) (xs us : Vector.t F m),
         fold_right (fun '(g, u) acc => gop (g ^ u) acc) (zip_with pair gs us) gid =
-        gop (fold_right (fun '(g, u) acc => gop (g ^ u) acc) 
+        gop (fold_right (fun '(g, u) acc => gop (g ^ u) acc)
                (zip_with pair gs (zip_with (fun x u => u + c * x) xs us)) gid)
-            ((fold_right (fun '(g, x) acc => gop (g ^ x) acc) 
+            ((fold_right (fun '(g, x) acc => gop (g ^ x) acc)
                (zip_with pair gs xs) gid) ^ (opp c)).
       Proof.
         induction m as [| m ih]; intros gs xs us.
@@ -1241,65 +1395,77 @@ Section Okamoto.
           apply (schnorr_commitment_shift x g (g ^ x) eq_refl).
       Qed.
 
-      Lemma okamoto_response_vec_apply (c : F) : 
+      (** The response vector [us + c·xs] written as a coordinate-wise function
+          application [vec_apply], the form expected by [repeat_uniform_perm]. *)
+      Lemma okamoto_response_vec_apply (c : F) :
         forall (m : nat) (xs us : Vector.t F m),
-        zip_with (fun x u => u + c * x) xs us = 
+        zip_with (fun x u => u + c * x) xs us =
         vec_apply (Vector.map (fun x u => u + c * x) xs) us.
-      Proof. 
+      Proof.
         induction m as [|m ih]; intros xs us.
         + rewrite (vector_inv_0 xs), (vector_inv_0 us); reflexivity.
         + destruct (vector_inv_S xs) as (x & xs' & hx).
           destruct (vector_inv_S us) as (u & us' & hu).
-          subst; cbn; f_equal; apply ih. 
+          subst; cbn; f_equal; apply ih.
       Qed.
 
-      Lemma construct_okamoto_shift {n : nat} (xs : Vector.t F (2 + n)) 
-        (gs : Vector.t G (2 + n)) (h : G) (c : F) 
+      (** If [h = ∏_i g_i^(x_i)], the honest transcript with randomness [us] is
+          the simulated transcript with randomness [us + c·xs]. *)
+      Lemma construct_okamoto_shift {n : nat} (xs : Vector.t F (2 + n))
+        (gs : Vector.t G (2 + n)) (h : G) (c : F)
         (R : h = fold_right (λ '(g, x) acc, gop (g ^ x) acc) (zip_with pair gs xs) gid) :
-        forall (us : Vector.t F (2 + n)), 
+        forall (us : Vector.t F (2 + n)),
         generalised_okamoto_real_protocol xs gs h us c =
-        generalised_okamoto_simulator_protocol gs h 
+        generalised_okamoto_simulator_protocol gs h
           (vec_apply (Vector.map (fun x u => u + c * x) xs) us) c.
       Proof.
         intros us.
-        unfold generalised_okamoto_real_protocol, 
+        unfold generalised_okamoto_real_protocol,
           generalised_okamoto_simulator_protocol,
-          generalised_okamoto_simulator_protocol_commitment, 
+          generalised_okamoto_simulator_protocol_commitment,
           generalised_okamoto_commitment, generalised_okamoto_response.
         rewrite <-okamoto_response_vec_apply, R.
         f_equal; f_equal.
         apply okamoto_commitment_shift.
       Qed.
 
+      (** Strong special HVZK: if [h = ∏_i g_i^(x_i)] and for every [x] the map
+          [u ↦ u + c·x] permutes the sampling list [lf], then the real transcript
+          distribution is a permutation of the simulated one (same transcripts
+          with the same probabilities). Proof: [bind_ret_perm] with the
+          coordinate-wise shift, which permutes the product distribution
+          ([repeat_uniform_perm]), and [construct_okamoto_shift]. *)
       Theorem generalised_okamoto_special_honest_verifier_zkp_perm {n : nat} :
-        forall (lf : list F) (Hlfn : lf <> List.nil) 
+        forall (lf : list F) (Hlfn : lf <> List.nil)
         (xs : Vector.t F (2 + n)) (gs : Vector.t G (2 + n)) (h : G) (c : F),
         h = fold_right (λ '(g, x) acc, gop (g ^ x) acc) (zip_with pair gs xs) gid ->
         (forall x : F, Permutation (List.map (fun u => u + c * x) lf) lf) ->
-        Permutation 
+        Permutation
           (@generalised_okamoto_real_distribution n lf Hlfn xs gs h c)
           (@generalised_okamoto_simulator_distribution n lf Hlfn gs h c).
       Proof.
         intros * R hp.
-        change (Permutation 
-          (Bind (repeat_dist_ntimes_vector (uniform_with_replacement lf Hlfn) (2 + n)) 
+        change (Permutation
+          (Bind (repeat_dist_ntimes_vector (uniform_with_replacement lf Hlfn) (2 + n))
             (fun us => Ret (generalised_okamoto_real_protocol xs gs h us c)))
-          (Bind (repeat_dist_ntimes_vector (uniform_with_replacement lf Hlfn) (2 + n)) 
+          (Bind (repeat_dist_ntimes_vector (uniform_with_replacement lf Hlfn) (2 + n))
             (fun us => Ret (generalised_okamoto_simulator_protocol gs h us c)))).
-        eapply bind_ret_perm with 
+        eapply bind_ret_perm with
           (phi := vec_apply (Vector.map (fun x u => u + c * x) xs)).
-        + apply repeat_uniform_perm; intros i. 
+        + apply repeat_uniform_perm; intros i.
           rewrite (nth_map _ _ i i eq_refl). apply hp.
         + intros us p _. apply construct_okamoto_shift; exact R.
       Qed.
 
-      (* Equality of distributions when lf enumerates the field. *)
+      (** Strong special HVZK when [lf] enumerates the field without duplicates:
+          then every shift [u ↦ u + c·x] permutes [lf] ([enumerates_perm_map]),
+          so [generalised_okamoto_special_honest_verifier_zkp_perm] applies. *)
       Theorem generalised_okamoto_special_honest_verifier_zkp_enum {n : nat} :
-        forall (lf : list F) (Hlfn : lf <> List.nil) 
+        forall (lf : list F) (Hlfn : lf <> List.nil)
         (xs : Vector.t F (2 + n)) (gs : Vector.t G (2 + n)) (h : G) (c : F),
         h = fold_right (λ '(g, x) acc, gop (g ^ x) acc) (zip_with pair gs xs) gid ->
         List.NoDup lf -> (forall y : F, List.In y lf) ->
-        Permutation 
+        Permutation
           (@generalised_okamoto_real_distribution n lf Hlfn xs gs h c)
           (@generalised_okamoto_simulator_distribution n lf Hlfn gs h c).
       Proof.
@@ -1310,8 +1476,6 @@ Section Okamoto.
         [exact hnd | exact hall | intros u; field | intros u; field].
       Qed.
 
-
     End Proofs.
   End WI.
-End Okamoto. 
- 
+End Okamoto.

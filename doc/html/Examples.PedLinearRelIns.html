@@ -1,0 +1,291 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<link href="coqdoc.css" rel="stylesheet" type="text/css" />
+<title>Examples.PedLinearRelIns</title>
+</head>
+
+<body>
+
+<div id="page">
+
+<div id="header">
+</div>
+
+<div id="main">
+
+<h1 class="libtitle">Library Examples.PedLinearRelIns</h1>
+
+<div class="code">
+</div>
+
+<div class="doc">
+<a id="lab415"></a><h1 class="section">Linear relation between Pedersen-committed values, toy instance</h1>
+
+<div class="paragraph"> </div>
+
+ A concrete instance of <span class="inlinecode"><span class="id" title="var">Crypto</span>/<span class="id" title="var">PedLinearRel.v</span></span>: for Pedersen
+commitments <span class="inlinecode"><span class="id" title="var">C</span>ᵢ</span> <span class="inlinecode">=</span> <span class="inlinecode"><span class="id" title="var">g</span>^<span class="id" title="var">v</span>ᵢ·<span class="id" title="var">h</span>^<span class="id" title="var">r</span>ᵢ</span> (<span class="inlinecode"><span class="id" title="var">i</span></span> <span class="inlinecode">=</span> <span class="inlinecode">1..3</span>), a proof of knowledge of all the
+openings <span class="inlinecode">(<span class="id" title="var">v</span>ᵢ,</span> <span class="inlinecode"><span class="id" title="var">r</span>ᵢ)</span> such that the committed values satisfy the public linear
+relation <span class="inlinecode"><span class="id" title="var">Σ</span>ᵢ</span> <span class="inlinecode"><span class="id" title="var">α</span>ᵢ·<span class="id" title="var">v</span>ᵢ</span> <span class="inlinecode">=</span> <span class="inlinecode"><span class="id" title="var">z</span></span>. The prover commits to <span class="inlinecode"><span class="id" title="var">g</span>^<span class="id" title="var">u</span>ᵢ·<span class="id" title="var">h</span>^<span class="id" title="var">w</span>ᵢ</span> for every <span class="inlinecode"><span class="id" title="var">i</span></span>
+and to <span class="inlinecode"><span class="id" title="var">g</span>^(<span class="id" title="var">Σ</span></span> <span class="inlinecode"><span class="id" title="var">α</span>ᵢ·<span class="id" title="var">u</span>ᵢ)</span>, receives <span class="inlinecode"><span class="id" title="var">c</span></span> and answers <span class="inlinecode"><span class="id" title="var">u</span>ᵢ</span> <span class="inlinecode">+</span> <span class="inlinecode"><span class="id" title="var">c</span>·<span class="id" title="var">v</span>ᵢ</span> and
+<span class="inlinecode"><span class="id" title="var">w</span>ᵢ</span> <span class="inlinecode">+</span> <span class="inlinecode"><span class="id" title="var">c</span>·<span class="id" title="var">r</span>ᵢ</span>. The verifier checks <span class="inlinecode"><span class="id" title="var">g</span>^(<span class="id" title="var">v</span>ᵢ')·<span class="id" title="var">h</span>^(<span class="id" title="var">r</span>ᵢ')</span> <span class="inlinecode">=</span> <span class="inlinecode"><span class="id" title="var">A</span>ᵢ·<span class="id" title="var">C</span>ᵢ^<span class="id" title="var">c</span></span> for every <span class="inlinecode"><span class="id" title="var">i</span></span>
+and <span class="inlinecode"><span class="id" title="var">g</span>^(<span class="id" title="var">Σ</span></span> <span class="inlinecode"><span class="id" title="var">α</span>ᵢ·<span class="id" title="var">v</span>ᵢ')</span> <span class="inlinecode">=</span> <span class="inlinecode"><span class="id" title="var">A</span>·<span class="id" title="var">g</span>^(<span class="id" title="var">c</span>·<span class="id" title="var">z</span>)</span>. The file is extracted to OCaml by
+<span class="inlinecode"><span class="id" title="var">src</span>/<span class="id" title="keyword">Extraction</span>/<span class="id" title="var">PedLinearRellib</span></span>.
+
+<div class="paragraph"> </div>
+
+The group is the order-<span class="inlinecode"><span class="id" title="var">q</span></span> subgroup of <span class="inlinecode"><span class="id" title="var">Z_p</span>^*</span> for the toy safe prime
+<span class="inlinecode"><span class="id" title="var">p</span></span> <span class="inlinecode">=</span> <span class="inlinecode">2<span class="id" title="var">q</span></span> <span class="inlinecode">+</span> <span class="inlinecode">1</span> <span class="inlinecode">=</span> <span class="inlinecode">5927</span> with <span class="inlinecode"><span class="id" title="var">q</span></span> <span class="inlinecode">=</span> <span class="inlinecode">2963</span> (from <span class="inlinecode"><span class="id" title="var">Utility</span>/<span class="id" title="var">Zpstar.v</span></span>: <span class="inlinecode"><span class="id" title="var">Zp</span></span> <span class="inlinecode"><span class="id" title="var">q</span></span> is
+the scalar field and <span class="inlinecode"><span class="id" title="var">Schnorr_group</span></span> <span class="inlinecode"><span class="id" title="var">p</span></span> <span class="inlinecode"><span class="id" title="var">q</span></span> the group of quadratic residues
+mod <span class="inlinecode"><span class="id" title="var">p</span></span>). The parameters are far too small to be secure; they are chosen so
+that primality can be proved by trial division (<span class="inlinecode"><span class="id" title="var">Examples</span>/<span class="id" title="var">Prime.v</span></span>) and
+the extracted code runs instantly.
+
+<div class="paragraph"> </div>
+
+The instance uses <span class="inlinecode"><span class="id" title="var">αs</span></span> <span class="inlinecode">=</span> <span class="inlinecode">(1,</span> <span class="inlinecode">-1,</span> <span class="inlinecode">-1)</span> and <span class="inlinecode"><span class="id" title="var">z</span></span> <span class="inlinecode">=</span> <span class="inlinecode">0</span>, that is
+<span class="inlinecode"><span class="id" title="var">v₁</span></span> <span class="inlinecode">=</span> <span class="inlinecode"><span class="id" title="var">v₂</span></span> <span class="inlinecode">+</span> <span class="inlinecode"><span class="id" title="var">v₃</span></span>. A typical application is a confidential transaction: the
+committed old balance equals the committed amount sent plus the committed
+new balance, so no value is created, while all three amounts stay hidden.
+For the binding property of the commitments the discrete logarithm of <span class="inlinecode"><span class="id" title="var">h</span></span>
+to the base <span class="inlinecode"><span class="id" title="var">g</span></span> must be unknown; here <span class="inlinecode"><span class="id" title="var">g</span></span> <span class="inlinecode">=</span> <span class="inlinecode">4</span> and <span class="inlinecode"><span class="id" title="var">h</span></span> <span class="inlinecode">=</span> <span class="inlinecode">7</span> are simply fixed
+small elements, not generated verifiably. 
+</div>
+<div class="code">
+<span class="id" title="keyword">From</span> <span class="id" title="var">Stdlib</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="library">Utf8</span> <span class="id" title="library">ZArith</span> <span class="id" title="library">Vector</span>.<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">Crypto</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <a class="idref" href="Crypto.Sigma.html#"><span class="id" title="library">Sigma</span></a><br/>
+&nbsp;&nbsp;<a class="idref" href="Crypto.PedLinearRel.html#"><span class="id" title="library">PedLinearRel</span></a>.<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">Utility</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <a class="idref" href="Utility.Zpstar.html#"><span class="id" title="library">Zpstar</span></a>.<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">Examples</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <a class="idref" href="Examples.Prime.html#"><span class="id" title="library">Prime</span></a>.<br/>
+<span class="id" title="keyword">Import</span> <a class="idref" href="Utility.Zpstar.html#Vspace"><span class="id" title="module">Vspace</span></a> <a class="idref" href="Utility.Zpstar.html#Schnorr"><span class="id" title="module">Schnorr</span></a> <a class="idref" href="Utility.Zpstar.html#Zpfield"><span class="id" title="module">Zpfield</span></a> <a class="idref" href="Utility.Zpstar.html#Zpgroup"><span class="id" title="module">Zpgroup</span></a><br/>
+&nbsp;&nbsp;<span class="id" title="module">VectorNotations</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<a id="lab416"></a><h2 class="section">Parameters and the instance</h2>
+
+</div>
+<div class="code">
+<span class="id" title="keyword">Section</span> <a id="Ins" class="idref" href="#Ins"><span class="id" title="section">Ins</span></a>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+The subgroup order <span class="inlinecode"><span class="id" title="var">q</span></span> <span class="inlinecode">=</span> <span class="inlinecode">2963</span>. 
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <a id="q" class="idref" href="#q"><span class="id" title="definition">q</span></a> : <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Numbers.BinNums.html#Z"><span class="id" title="inductive">Z</span></a> := 2963.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+The modulus <span class="inlinecode"><span class="id" title="var">p</span></span> <span class="inlinecode">=</span> <span class="inlinecode">2<span class="id" title="var">q</span></span> <span class="inlinecode">+</span> <span class="inlinecode">1</span> <span class="inlinecode">=</span> <span class="inlinecode">5927</span>, a safe prime. 
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <a id="p" class="idref" href="#p"><span class="id" title="definition">p</span></a> : <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Numbers.BinNums.html#Z"><span class="id" title="inductive">Z</span></a> := 2 <span class="id" title="notation">×</span> <a class="idref" href="Examples.PedLinearRelIns.html#q"><span class="id" title="definition">q</span></a> <span class="id" title="notation">+</span> 1.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<span class="inlinecode"><span class="id" title="var">q</span></span> is prime, by trial division (<span class="inlinecode"><span class="id" title="var">is_prime_sqrt_correct</span></span>). 
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Theorem</span> <a id="prime_q" class="idref" href="#prime_q"><span class="id" title="lemma">prime_q</span></a> : <span class="id" title="inductive">Znumtheory.prime</span> <a class="idref" href="Examples.PedLinearRelIns.html#q"><span class="id" title="definition">q</span></a> : <span class="id" title="keyword">Prop</span> : <span class="id" title="keyword">Type</span>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">eapply</span> <a class="idref" href="Examples.Prime.html#is_prime_sqrt_correct"><span class="id" title="lemma">is_prime_sqrt_correct</span></a>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">compute</span>; <span class="id" title="tactic">reflexivity</span>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Qed</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<span class="inlinecode"><span class="id" title="var">p</span></span> is prime, by trial division. 
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Theorem</span> <a id="prime_p" class="idref" href="#prime_p"><span class="id" title="lemma">prime_p</span></a> : <span class="id" title="inductive">Znumtheory.prime</span> <a class="idref" href="Examples.PedLinearRelIns.html#p"><span class="id" title="definition">p</span></a> : <span class="id" title="keyword">Prop</span> : <span class="id" title="keyword">Type</span>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">eapply</span> <a class="idref" href="Examples.Prime.html#is_prime_sqrt_correct"><span class="id" title="lemma">is_prime_sqrt_correct</span></a>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">compute</span>; <span class="id" title="tactic">reflexivity</span>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Qed</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<span class="inlinecode"><span class="id" title="var">p</span></span> <span class="inlinecode">=</span> <span class="inlinecode">2<span class="id" title="var">q</span></span> <span class="inlinecode">+</span> <span class="inlinecode">1</span>, the shape required by the <span class="inlinecode"><span class="id" title="var">Zpstar</span></span> group operations. 
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Theorem</span> <a id="safe_prime" class="idref" href="#safe_prime"><span class="id" title="lemma">safe_prime</span></a> : <a class="idref" href="Examples.PedLinearRelIns.html#p"><span class="id" title="definition">p</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Logic.html#6cd0f7b28b6092304087c7049437bb1a"><span class="id" title="notation">=</span></a> (2 <span class="id" title="notation">×</span> <a class="idref" href="Examples.PedLinearRelIns.html#q"><span class="id" title="definition">q</span></a> <span class="id" title="notation">+</span> 1)%<span class="id" title="var">Z</span>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>. <span class="id" title="tactic">compute</span>. <span class="id" title="tactic">exact</span> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Logic.html#eq_refl"><span class="id" title="constructor">eq_refl</span></a>. <span class="id" title="keyword">Qed</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+The generator <span class="inlinecode"><span class="id" title="var">g</span></span> <span class="inlinecode">=</span> <span class="inlinecode">4</span> <span class="inlinecode">=</span> <span class="inlinecode">2²</span>: a quadratic residue, hence of order <span class="inlinecode"><span class="id" title="var">q</span></span>;
+      membership (<span class="inlinecode">4^<span class="id" title="var">q</span></span> <span class="inlinecode"><span class="id" title="var">mod</span></span> <span class="inlinecode"><span class="id" title="var">p</span></span> <span class="inlinecode">=</span> <span class="inlinecode">1</span>) is checked by <span class="inlinecode"><span class="id" title="keyword">vm_compute</span></span>. 
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <a id="g" class="idref" href="#g"><span class="id" title="definition">g</span></a> : @<a class="idref" href="Utility.Zpstar.html#Schnorr.Schnorr_group"><span class="id" title="record">Schnorr_group</span></a> <a class="idref" href="Examples.PedLinearRelIns.html#p"><span class="id" title="definition">p</span></a> <a class="idref" href="Examples.PedLinearRelIns.html#q"><span class="id" title="definition">q</span></a>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">refine</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;{| <a class="idref" href="Utility.Zpstar.html#Schnorr.v"><span class="id" title="projection">Schnorr.v</span></a> := 4;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="Utility.Zpstar.html#Schnorr.Ha"><span class="id" title="projection">Ha</span></a> := <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Logic.html#conj"><span class="id" title="constructor">conj</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Logic.html#eq_refl"><span class="id" title="constructor">eq_refl</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Logic.html#eq_refl"><span class="id" title="constructor">eq_refl</span></a> : (0 <span class="id" title="notation">&lt;</span> 4 <span class="id" title="notation">&lt;</span> <a class="idref" href="Examples.PedLinearRelIns.html#p"><span class="id" title="definition">p</span></a>)%<span class="id" title="var">Z</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="Utility.Zpstar.html#Schnorr.Hb"><span class="id" title="projection">Hb</span></a> := <span class="id" title="var">_</span> |}.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">vm_cast_no_check</span> (<a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Logic.html#eq_refl"><span class="id" title="constructor">eq_refl</span></a> (<span class="id" title="definition">Zpow_facts.Zpow_mod</span> 4 <a class="idref" href="Examples.PedLinearRelIns.html#q"><span class="id" title="definition">q</span></a> <a class="idref" href="Examples.PedLinearRelIns.html#p"><span class="id" title="definition">p</span></a>)).<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Defined</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+The second Pedersen generator <span class="inlinecode"><span class="id" title="var">h</span></span> <span class="inlinecode">=</span> <span class="inlinecode">7</span>, an element of the order-<span class="inlinecode"><span class="id" title="var">q</span></span>
+      subgroup. 
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <a id="h" class="idref" href="#h"><span class="id" title="definition">h</span></a> : @<a class="idref" href="Utility.Zpstar.html#Schnorr.Schnorr_group"><span class="id" title="record">Schnorr_group</span></a> <a class="idref" href="Examples.PedLinearRelIns.html#p"><span class="id" title="definition">p</span></a> <a class="idref" href="Examples.PedLinearRelIns.html#q"><span class="id" title="definition">q</span></a>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">refine</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;{| <a class="idref" href="Utility.Zpstar.html#Schnorr.v"><span class="id" title="projection">Schnorr.v</span></a> := 7;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="Utility.Zpstar.html#Schnorr.Ha"><span class="id" title="projection">Ha</span></a> := <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Logic.html#conj"><span class="id" title="constructor">conj</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Logic.html#eq_refl"><span class="id" title="constructor">eq_refl</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Logic.html#eq_refl"><span class="id" title="constructor">eq_refl</span></a> : (0 <span class="id" title="notation">&lt;</span> 7 <span class="id" title="notation">&lt;</span> <a class="idref" href="Examples.PedLinearRelIns.html#p"><span class="id" title="definition">p</span></a>)%<span class="id" title="var">Z</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="Utility.Zpstar.html#Schnorr.Hb"><span class="id" title="projection">Hb</span></a> := <span class="id" title="var">_</span> |}.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">vm_cast_no_check</span> (<a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Logic.html#eq_refl"><span class="id" title="constructor">eq_refl</span></a> (<span class="id" title="definition">Zpow_facts.Zpow_mod</span> 7 <a class="idref" href="Examples.PedLinearRelIns.html#q"><span class="id" title="definition">q</span></a> <a class="idref" href="Examples.PedLinearRelIns.html#p"><span class="id" title="definition">p</span></a>)).<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Defined</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+The coefficients of the linear relation, <span class="inlinecode"><span class="id" title="var">αs</span></span> <span class="inlinecode">=</span> <span class="inlinecode">(1,</span> <span class="inlinecode">-1,</span> <span class="inlinecode">-1)</span>. 
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <a id="a31a42392cbcc5b0d6da21ee6643cee3" class="idref" href="#a31a42392cbcc5b0d6da21ee6643cee3"><span class="id" title="definition">αs</span></a> : <span class="id" title="inductive">Vector.t</span> (@<a class="idref" href="Utility.Zpstar.html#Zpfield.Zp"><span class="id" title="record">Zp</span></a> <a class="idref" href="Examples.PedLinearRelIns.html#q"><span class="id" title="definition">q</span></a>) 3.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">refine</span> (<span class="id" title="notation">[</span><a class="idref" href="Utility.Zpstar.html#Zpfield.one"><span class="id" title="definition">Zpfield.one</span></a><span class="id" title="notation">;</span> @<a class="idref" href="Utility.Zpstar.html#Zpfield.zp_opp"><span class="id" title="definition">zp_opp</span></a> <a class="idref" href="Examples.PedLinearRelIns.html#q"><span class="id" title="definition">q</span></a> <a class="idref" href="Examples.PedLinearRelIns.html#prime_q"><span class="id" title="lemma">prime_q</span></a> <a class="idref" href="Utility.Zpstar.html#Zpfield.one"><span class="id" title="definition">Zpfield.one</span></a><span class="id" title="notation">;</span> @<a class="idref" href="Utility.Zpstar.html#Zpfield.zp_opp"><span class="id" title="definition">zp_opp</span></a> <a class="idref" href="Examples.PedLinearRelIns.html#q"><span class="id" title="definition">q</span></a> <a class="idref" href="Examples.PedLinearRelIns.html#prime_q"><span class="id" title="lemma">prime_q</span></a> <a class="idref" href="Utility.Zpstar.html#Zpfield.one"><span class="id" title="definition">Zpfield.one</span></a><span class="id" title="notation">]</span>);<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">try</span> (<span class="id" title="tactic">exact</span> <a class="idref" href="Examples.PedLinearRelIns.html#prime_q"><span class="id" title="lemma">prime_q</span></a>).<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Defined</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+The right-hand side of the relation, <span class="inlinecode"><span class="id" title="var">z</span></span> <span class="inlinecode">=</span> <span class="inlinecode">0</span>. 
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <a id="z" class="idref" href="#z"><span class="id" title="definition">z</span></a> : @<a class="idref" href="Utility.Zpstar.html#Zpfield.Zp"><span class="id" title="record">Zp</span></a> <a class="idref" href="Examples.PedLinearRelIns.html#q"><span class="id" title="definition">q</span></a> := @<a class="idref" href="Utility.Zpstar.html#Zpfield.zero"><span class="id" title="definition">zero</span></a> <a class="idref" href="Examples.PedLinearRelIns.html#q"><span class="id" title="definition">q</span></a> <a class="idref" href="Examples.PedLinearRelIns.html#prime_q"><span class="id" title="lemma">prime_q</span></a>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+The four commitments: <span class="inlinecode"><span class="id" title="var">g</span>^<span class="id" title="var">u</span>ᵢ·<span class="id" title="var">h</span>^<span class="id" title="var">w</span>ᵢ</span> for <span class="inlinecode"><span class="id" title="var">i</span></span> <span class="inlinecode">=</span> <span class="inlinecode">1..3</span> and <span class="inlinecode"><span class="id" title="var">g</span>^(<span class="id" title="var">Σ</span></span> <span class="inlinecode"><span class="id" title="var">α</span>ᵢ·<span class="id" title="var">u</span>ᵢ)</span>,
+      from the six random scalars <span class="inlinecode"><span class="id" title="var">usws</span></span> <span class="inlinecode">=</span> <span class="inlinecode"><span class="id" title="var">us</span></span> <span class="inlinecode">++</span> <span class="inlinecode"><span class="id" title="var">ws</span></span>. 
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <a id="construct_pedersen_linear_relation_commitment_ins" class="idref" href="#construct_pedersen_linear_relation_commitment_ins"><span class="id" title="definition">construct_pedersen_linear_relation_commitment_ins</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<a id="usws:1" class="idref" href="#usws:1"><span class="id" title="binder">usws</span></a> : <span class="id" title="inductive">Vector.t</span> (@<a class="idref" href="Utility.Zpstar.html#Zpfield.Zp"><span class="id" title="record">Zp</span></a> <a class="idref" href="Examples.PedLinearRelIns.html#q"><span class="id" title="definition">q</span></a>) 6) : <span class="id" title="inductive">Vector.t</span> (@<a class="idref" href="Utility.Zpstar.html#Schnorr.Schnorr_group"><span class="id" title="record">Schnorr_group</span></a> <a class="idref" href="Examples.PedLinearRelIns.html#p"><span class="id" title="definition">p</span></a> <a class="idref" href="Examples.PedLinearRelIns.html#q"><span class="id" title="definition">q</span></a>) 4.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">refine</span>(@<a class="idref" href="Crypto.PedLinearRel.html#construct_pedersen_linear_relation_commitment"><span class="id" title="definition">construct_pedersen_linear_relation_commitment</span></a> (@<a class="idref" href="Utility.Zpstar.html#Zpfield.Zp"><span class="id" title="record">Zp</span></a> <a class="idref" href="Examples.PedLinearRelIns.html#q"><span class="id" title="definition">q</span></a>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(@<a class="idref" href="Utility.Zpstar.html#Zpfield.zero"><span class="id" title="definition">zero</span></a> <a class="idref" href="Examples.PedLinearRelIns.html#q"><span class="id" title="definition">q</span></a> <a class="idref" href="Examples.PedLinearRelIns.html#prime_q"><span class="id" title="lemma">prime_q</span></a>) <a class="idref" href="Utility.Zpstar.html#Zpfield.zp_add"><span class="id" title="definition">zp_add</span></a> <a class="idref" href="Utility.Zpstar.html#Zpfield.zp_mul"><span class="id" title="definition">zp_mul</span></a> (@<a class="idref" href="Utility.Zpstar.html#Schnorr.Schnorr_group"><span class="id" title="record">Schnorr_group</span></a> <a class="idref" href="Examples.PedLinearRelIns.html#p"><span class="id" title="definition">p</span></a> <a class="idref" href="Examples.PedLinearRelIns.html#q"><span class="id" title="definition">q</span></a>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(@<a class="idref" href="Utility.Zpstar.html#Schnorr.mul_schnorr_group"><span class="id" title="definition">mul_schnorr_group</span></a> <a class="idref" href="Examples.PedLinearRelIns.html#p"><span class="id" title="definition">p</span></a> <a class="idref" href="Examples.PedLinearRelIns.html#q"><span class="id" title="definition">q</span></a> <a class="idref" href="Examples.PedLinearRelIns.html#prime_p"><span class="id" title="lemma">prime_p</span></a> <a class="idref" href="Examples.PedLinearRelIns.html#prime_q"><span class="id" title="lemma">prime_q</span></a>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(@<a class="idref" href="Utility.Zpstar.html#Vspace.pow"><span class="id" title="definition">pow</span></a> 2 <a class="idref" href="Examples.PedLinearRelIns.html#p"><span class="id" title="definition">p</span></a> <a class="idref" href="Examples.PedLinearRelIns.html#q"><span class="id" title="definition">q</span></a> <a class="idref" href="Examples.PedLinearRelIns.html#safe_prime"><span class="id" title="lemma">safe_prime</span></a> <a class="idref" href="Examples.PedLinearRelIns.html#prime_p"><span class="id" title="lemma">prime_p</span></a> <a class="idref" href="Examples.PedLinearRelIns.html#prime_q"><span class="id" title="lemma">prime_q</span></a>) <span class="id" title="var">_</span> <a class="idref" href="Examples.PedLinearRelIns.html#g"><span class="id" title="definition">g</span></a> <a class="idref" href="Examples.PedLinearRelIns.html#h"><span class="id" title="definition">h</span></a> <a class="idref" href="Examples.PedLinearRelIns.html#a31a42392cbcc5b0d6da21ee6643cee3"><span class="id" title="definition">αs</span></a> <span class="id" title="var">usws</span>).<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Defined</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+The Pedersen commitments <span class="inlinecode"><span class="id" title="var">C</span>ᵢ</span> <span class="inlinecode">=</span> <span class="inlinecode"><span class="id" title="var">g</span>^<span class="id" title="var">v</span>ᵢ·<span class="id" title="var">h</span>^<span class="id" title="var">r</span>ᵢ</span> to the values <span class="inlinecode"><span class="id" title="var">vs</span></span> with
+      blinding factors <span class="inlinecode"><span class="id" title="var">rs</span></span>. 
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <a id="pedersen_commitment_vector_ins" class="idref" href="#pedersen_commitment_vector_ins"><span class="id" title="definition">pedersen_commitment_vector_ins</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<a id="vs:2" class="idref" href="#vs:2"><span class="id" title="binder">vs</span></a> <a id="rs:3" class="idref" href="#rs:3"><span class="id" title="binder">rs</span></a> : <span class="id" title="inductive">Vector.t</span> (@<a class="idref" href="Utility.Zpstar.html#Zpfield.Zp"><span class="id" title="record">Zp</span></a> <a class="idref" href="Examples.PedLinearRelIns.html#q"><span class="id" title="definition">q</span></a>) 3) : <span class="id" title="inductive">Vector.t</span> (@<a class="idref" href="Utility.Zpstar.html#Schnorr.Schnorr_group"><span class="id" title="record">Schnorr_group</span></a> <a class="idref" href="Examples.PedLinearRelIns.html#p"><span class="id" title="definition">p</span></a> <a class="idref" href="Examples.PedLinearRelIns.html#q"><span class="id" title="definition">q</span></a>) 3.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">refine</span>(@<a class="idref" href="Crypto.PedLinearRel.html#pedersen_commitment_vector"><span class="id" title="definition">pedersen_commitment_vector</span></a> (@<a class="idref" href="Utility.Zpstar.html#Zpfield.Zp"><span class="id" title="record">Zp</span></a> <a class="idref" href="Examples.PedLinearRelIns.html#q"><span class="id" title="definition">q</span></a>) (@<a class="idref" href="Utility.Zpstar.html#Schnorr.Schnorr_group"><span class="id" title="record">Schnorr_group</span></a> <a class="idref" href="Examples.PedLinearRelIns.html#p"><span class="id" title="definition">p</span></a> <a class="idref" href="Examples.PedLinearRelIns.html#q"><span class="id" title="definition">q</span></a>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(@<a class="idref" href="Utility.Zpstar.html#Schnorr.mul_schnorr_group"><span class="id" title="definition">mul_schnorr_group</span></a> <a class="idref" href="Examples.PedLinearRelIns.html#p"><span class="id" title="definition">p</span></a> <a class="idref" href="Examples.PedLinearRelIns.html#q"><span class="id" title="definition">q</span></a> <a class="idref" href="Examples.PedLinearRelIns.html#prime_p"><span class="id" title="lemma">prime_p</span></a> <a class="idref" href="Examples.PedLinearRelIns.html#prime_q"><span class="id" title="lemma">prime_q</span></a>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(@<a class="idref" href="Utility.Zpstar.html#Vspace.pow"><span class="id" title="definition">pow</span></a> 2 <a class="idref" href="Examples.PedLinearRelIns.html#p"><span class="id" title="definition">p</span></a> <a class="idref" href="Examples.PedLinearRelIns.html#q"><span class="id" title="definition">q</span></a> <a class="idref" href="Examples.PedLinearRelIns.html#safe_prime"><span class="id" title="lemma">safe_prime</span></a> <a class="idref" href="Examples.PedLinearRelIns.html#prime_p"><span class="id" title="lemma">prime_p</span></a> <a class="idref" href="Examples.PedLinearRelIns.html#prime_q"><span class="id" title="lemma">prime_q</span></a>) <span class="id" title="var">_</span> <a class="idref" href="Examples.PedLinearRelIns.html#g"><span class="id" title="definition">g</span></a> <a class="idref" href="Examples.PedLinearRelIns.html#h"><span class="id" title="definition">h</span></a> <span class="id" title="var">vs</span> <span class="id" title="var">rs</span>).<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Defined</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+The honest transcript: the four commitments, challenge <span class="inlinecode"><span class="id" title="var">c</span></span>, and the six
+      responses <span class="inlinecode"><span class="id" title="var">u</span>ᵢ</span> <span class="inlinecode">+</span> <span class="inlinecode"><span class="id" title="var">c</span>·<span class="id" title="var">v</span>ᵢ</span> followed by <span class="inlinecode"><span class="id" title="var">w</span>ᵢ</span> <span class="inlinecode">+</span> <span class="inlinecode"><span class="id" title="var">c</span>·<span class="id" title="var">r</span>ᵢ</span>. 
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <a id="construct_pedersen_linear_relation_generalised_real_proof_ins" class="idref" href="#construct_pedersen_linear_relation_generalised_real_proof_ins"><span class="id" title="definition">construct_pedersen_linear_relation_generalised_real_proof_ins</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<a id="vs:4" class="idref" href="#vs:4"><span class="id" title="binder">vs</span></a> <a id="rs:5" class="idref" href="#rs:5"><span class="id" title="binder">rs</span></a> : <span class="id" title="inductive">Vector.t</span> (@<a class="idref" href="Utility.Zpstar.html#Zpfield.Zp"><span class="id" title="record">Zp</span></a> <a class="idref" href="Examples.PedLinearRelIns.html#q"><span class="id" title="definition">q</span></a>) 3) (<a id="usws:6" class="idref" href="#usws:6"><span class="id" title="binder">usws</span></a> : <span class="id" title="inductive">Vector.t</span> (@<a class="idref" href="Utility.Zpstar.html#Zpfield.Zp"><span class="id" title="record">Zp</span></a> <a class="idref" href="Examples.PedLinearRelIns.html#q"><span class="id" title="definition">q</span></a>) 6) (<a id="c:7" class="idref" href="#c:7"><span class="id" title="binder">c</span></a> : (@<a class="idref" href="Utility.Zpstar.html#Zpfield.Zp"><span class="id" title="record">Zp</span></a> <a class="idref" href="Examples.PedLinearRelIns.html#q"><span class="id" title="definition">q</span></a>)) :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;@<a class="idref" href="Crypto.Sigma.html#sigma_proto"><span class="id" title="record">sigma_proto</span></a> (@<a class="idref" href="Utility.Zpstar.html#Zpfield.Zp"><span class="id" title="record">Zp</span></a> <a class="idref" href="Examples.PedLinearRelIns.html#q"><span class="id" title="definition">q</span></a>) (@<a class="idref" href="Utility.Zpstar.html#Schnorr.Schnorr_group"><span class="id" title="record">Schnorr_group</span></a> <a class="idref" href="Examples.PedLinearRelIns.html#p"><span class="id" title="definition">p</span></a> <a class="idref" href="Examples.PedLinearRelIns.html#q"><span class="id" title="definition">q</span></a>) 4 1 6.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">refine</span>(@<a class="idref" href="Crypto.PedLinearRel.html#construct_pedersen_linear_relation_generalised_real_proof"><span class="id" title="definition">construct_pedersen_linear_relation_generalised_real_proof</span></a> (@<a class="idref" href="Utility.Zpstar.html#Zpfield.Zp"><span class="id" title="record">Zp</span></a> <a class="idref" href="Examples.PedLinearRelIns.html#q"><span class="id" title="definition">q</span></a>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(@<a class="idref" href="Utility.Zpstar.html#Zpfield.zero"><span class="id" title="definition">zero</span></a> <a class="idref" href="Examples.PedLinearRelIns.html#q"><span class="id" title="definition">q</span></a> <a class="idref" href="Examples.PedLinearRelIns.html#prime_q"><span class="id" title="lemma">prime_q</span></a>) <a class="idref" href="Utility.Zpstar.html#Zpfield.zp_add"><span class="id" title="definition">zp_add</span></a> <a class="idref" href="Utility.Zpstar.html#Zpfield.zp_mul"><span class="id" title="definition">zp_mul</span></a> (@<a class="idref" href="Utility.Zpstar.html#Schnorr.Schnorr_group"><span class="id" title="record">Schnorr_group</span></a> <a class="idref" href="Examples.PedLinearRelIns.html#p"><span class="id" title="definition">p</span></a> <a class="idref" href="Examples.PedLinearRelIns.html#q"><span class="id" title="definition">q</span></a>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(@<a class="idref" href="Utility.Zpstar.html#Schnorr.mul_schnorr_group"><span class="id" title="definition">mul_schnorr_group</span></a> <a class="idref" href="Examples.PedLinearRelIns.html#p"><span class="id" title="definition">p</span></a> <a class="idref" href="Examples.PedLinearRelIns.html#q"><span class="id" title="definition">q</span></a> <a class="idref" href="Examples.PedLinearRelIns.html#prime_p"><span class="id" title="lemma">prime_p</span></a> <a class="idref" href="Examples.PedLinearRelIns.html#prime_q"><span class="id" title="lemma">prime_q</span></a>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(@<a class="idref" href="Utility.Zpstar.html#Vspace.pow"><span class="id" title="definition">pow</span></a> 2 <a class="idref" href="Examples.PedLinearRelIns.html#p"><span class="id" title="definition">p</span></a> <a class="idref" href="Examples.PedLinearRelIns.html#q"><span class="id" title="definition">q</span></a> <a class="idref" href="Examples.PedLinearRelIns.html#safe_prime"><span class="id" title="lemma">safe_prime</span></a> <a class="idref" href="Examples.PedLinearRelIns.html#prime_p"><span class="id" title="lemma">prime_p</span></a> <a class="idref" href="Examples.PedLinearRelIns.html#prime_q"><span class="id" title="lemma">prime_q</span></a>) <span class="id" title="var">_</span> <a class="idref" href="Examples.PedLinearRelIns.html#g"><span class="id" title="definition">g</span></a> <a class="idref" href="Examples.PedLinearRelIns.html#h"><span class="id" title="definition">h</span></a> <a class="idref" href="Examples.PedLinearRelIns.html#a31a42392cbcc5b0d6da21ee6643cee3"><span class="id" title="definition">αs</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">usws</span> <span class="id" title="var">vs</span> <span class="id" title="var">rs</span> <span class="id" title="var">c</span>).<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Defined</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+The non-interactive proof: <span class="inlinecode"><span class="id" title="var">c</span></span> is <span class="inlinecode"><span class="id" title="var">fn</span></span> applied to <span class="inlinecode">[<span class="id" title="var">p</span>;</span> <span class="inlinecode"><span class="id" title="var">q</span>;</span> <span class="inlinecode"><span class="id" title="var">g</span>;</span> <span class="inlinecode"><span class="id" title="var">h</span>]</span>, the
+       four announcements and the three commitments <span class="inlinecode"><span class="id" title="var">C</span>ᵢ</span>; <span class="inlinecode"><span class="id" title="var">fn</span></span> is a hash
+       function supplied by the OCaml caller (strong Fiat–Shamir). 
+</div>
+<div class="code">
+&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <a id="nizk_construct_pedersen_linear_relation_generalised_real_proof_ins" class="idref" href="#nizk_construct_pedersen_linear_relation_generalised_real_proof_ins"><span class="id" title="definition">nizk_construct_pedersen_linear_relation_generalised_real_proof_ins</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<a id="fn:9" class="idref" href="#fn:9"><span class="id" title="binder">fn</span></a>  : <span class="id" title="notation">∀</span> <span class="id" title="notation">{</span><a id="m:8" class="idref" href="#m:8"><span class="id" title="binder">m</span></a> : <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Datatypes.html#nat"><span class="id" title="inductive">nat</span></a><span class="id" title="notation">},</span> <span class="id" title="inductive">Vector.t</span> (<a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Numbers.BinNums.html#Z"><span class="id" title="inductive">Z</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Datatypes.html#e03f39daf98516fa530d3f6f5a1b4d92"><span class="id" title="notation">+</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Datatypes.html#e03f39daf98516fa530d3f6f5a1b4d92"><span class="id" title="notation">(</span></a>@<a class="idref" href="Utility.Zpstar.html#Schnorr.Schnorr_group"><span class="id" title="record">Schnorr_group</span></a> <a class="idref" href="Examples.PedLinearRelIns.html#p"><span class="id" title="definition">p</span></a> <a class="idref" href="Examples.PedLinearRelIns.html#q"><span class="id" title="definition">q</span></a><a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Datatypes.html#e03f39daf98516fa530d3f6f5a1b4d92"><span class="id" title="notation">)</span></a>) <a class="idref" href="Examples.PedLinearRelIns.html#m:8"><span class="id" title="variable">m</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Notations.html#::type_scope:x_'-&gt;'_x"><span class="id" title="notation">→</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Notations.html#::type_scope:x_'-&gt;'_x"><span class="id" title="notation">(</span></a>@<a class="idref" href="Utility.Zpstar.html#Zpfield.Zp"><span class="id" title="record">Zp</span></a> <a class="idref" href="Examples.PedLinearRelIns.html#q"><span class="id" title="definition">q</span></a><a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Notations.html#::type_scope:x_'-&gt;'_x"><span class="id" title="notation">)</span></a>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<a id="vs:10" class="idref" href="#vs:10"><span class="id" title="binder">vs</span></a> <a id="rs:11" class="idref" href="#rs:11"><span class="id" title="binder">rs</span></a> : <span class="id" title="inductive">Vector.t</span> (@<a class="idref" href="Utility.Zpstar.html#Zpfield.Zp"><span class="id" title="record">Zp</span></a> <a class="idref" href="Examples.PedLinearRelIns.html#q"><span class="id" title="definition">q</span></a>) 3) (<a id="usws:12" class="idref" href="#usws:12"><span class="id" title="binder">usws</span></a> : <span class="id" title="inductive">Vector.t</span> (@<a class="idref" href="Utility.Zpstar.html#Zpfield.Zp"><span class="id" title="record">Zp</span></a> <a class="idref" href="Examples.PedLinearRelIns.html#q"><span class="id" title="definition">q</span></a>) 6) :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;@<a class="idref" href="Crypto.Sigma.html#sigma_proto"><span class="id" title="record">sigma_proto</span></a> (@<a class="idref" href="Utility.Zpstar.html#Zpfield.Zp"><span class="id" title="record">Zp</span></a> <a class="idref" href="Examples.PedLinearRelIns.html#q"><span class="id" title="definition">q</span></a>) (@<a class="idref" href="Utility.Zpstar.html#Schnorr.Schnorr_group"><span class="id" title="record">Schnorr_group</span></a> <a class="idref" href="Examples.PedLinearRelIns.html#p"><span class="id" title="definition">p</span></a> <a class="idref" href="Examples.PedLinearRelIns.html#q"><span class="id" title="definition">q</span></a>) 4 1 6.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">set</span> (<span class="id" title="var">comm₁</span> := <a class="idref" href="Examples.PedLinearRelIns.html#construct_pedersen_linear_relation_commitment_ins"><span class="id" title="definition">construct_pedersen_linear_relation_commitment_ins</span></a> <span class="id" title="var">usws</span>).<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">set</span> (<span class="id" title="var">comm₂</span> := <a class="idref" href="Examples.PedLinearRelIns.html#pedersen_commitment_vector_ins"><span class="id" title="definition">pedersen_commitment_vector_ins</span></a> <span class="id" title="var">vs</span> <span class="id" title="var">rs</span>).<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">set</span> (<span class="id" title="var">c</span> := <span class="id" title="var">fn</span> <span class="id" title="var">_</span> (<span class="id" title="notation">[</span><a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Datatypes.html#inl"><span class="id" title="constructor">inl</span></a> <a class="idref" href="Examples.PedLinearRelIns.html#p"><span class="id" title="definition">p</span></a><span class="id" title="notation">;</span> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Datatypes.html#inl"><span class="id" title="constructor">inl</span></a> <a class="idref" href="Examples.PedLinearRelIns.html#q"><span class="id" title="definition">q</span></a><span class="id" title="notation">;</span> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Datatypes.html#inr"><span class="id" title="constructor">inr</span></a> <a class="idref" href="Examples.PedLinearRelIns.html#g"><span class="id" title="definition">g</span></a><span class="id" title="notation">;</span> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Datatypes.html#inr"><span class="id" title="constructor">inr</span></a> <a class="idref" href="Examples.PedLinearRelIns.html#h"><span class="id" title="definition">h</span></a><span class="id" title="notation">]</span> <span class="id" title="notation">++</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="definition">Vector.map</span> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Datatypes.html#inr"><span class="id" title="constructor">inr</span></a> (<span class="id" title="var">comm₁</span> <span class="id" title="notation">++</span> <span class="id" title="var">comm₂</span>))).<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">refine</span>(<a class="idref" href="Examples.PedLinearRelIns.html#construct_pedersen_linear_relation_generalised_real_proof_ins"><span class="id" title="definition">construct_pedersen_linear_relation_generalised_real_proof_ins</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">vs</span> <span class="id" title="var">rs</span> <span class="id" title="var">usws</span> <span class="id" title="var">c</span>).<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Defined</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+The verifier for commitments <span class="inlinecode"><span class="id" title="var">cs</span></span>: checks the three opening equations and
+      the linear-relation equation, with <span class="inlinecode"><span class="id" title="var">αs</span></span> and <span class="inlinecode"><span class="id" title="var">z</span></span> above. 
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <a id="verify_pedersen_linear_relation_generalised_proof_ins" class="idref" href="#verify_pedersen_linear_relation_generalised_proof_ins"><span class="id" title="definition">verify_pedersen_linear_relation_generalised_proof_ins</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<a id="cs:13" class="idref" href="#cs:13"><span class="id" title="binder">cs</span></a> : <span class="id" title="inductive">Vector.t</span> (@<a class="idref" href="Utility.Zpstar.html#Schnorr.Schnorr_group"><span class="id" title="record">Schnorr_group</span></a> <a class="idref" href="Examples.PedLinearRelIns.html#p"><span class="id" title="definition">p</span></a> <a class="idref" href="Examples.PedLinearRelIns.html#q"><span class="id" title="definition">q</span></a>) 3)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<a id="pf:14" class="idref" href="#pf:14"><span class="id" title="binder">pf</span></a> : @<a class="idref" href="Crypto.Sigma.html#sigma_proto"><span class="id" title="record">sigma_proto</span></a> (@<a class="idref" href="Utility.Zpstar.html#Zpfield.Zp"><span class="id" title="record">Zp</span></a> <a class="idref" href="Examples.PedLinearRelIns.html#q"><span class="id" title="definition">q</span></a>) (@<a class="idref" href="Utility.Zpstar.html#Schnorr.Schnorr_group"><span class="id" title="record">Schnorr_group</span></a> <a class="idref" href="Examples.PedLinearRelIns.html#p"><span class="id" title="definition">p</span></a> <a class="idref" href="Examples.PedLinearRelIns.html#q"><span class="id" title="definition">q</span></a>) 4 1 6) : <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Datatypes.html#bool"><span class="id" title="inductive">bool</span></a>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">refine</span>(@<a class="idref" href="Crypto.PedLinearRel.html#verify_pedersen_linear_relation_generalised_proof"><span class="id" title="definition">verify_pedersen_linear_relation_generalised_proof</span></a> (@<a class="idref" href="Utility.Zpstar.html#Zpfield.Zp"><span class="id" title="record">Zp</span></a> <a class="idref" href="Examples.PedLinearRelIns.html#q"><span class="id" title="definition">q</span></a>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(@<a class="idref" href="Utility.Zpstar.html#Zpfield.zero"><span class="id" title="definition">zero</span></a> <a class="idref" href="Examples.PedLinearRelIns.html#q"><span class="id" title="definition">q</span></a> <a class="idref" href="Examples.PedLinearRelIns.html#prime_q"><span class="id" title="lemma">prime_q</span></a>) <a class="idref" href="Utility.Zpstar.html#Zpfield.zp_add"><span class="id" title="definition">zp_add</span></a> <a class="idref" href="Utility.Zpstar.html#Zpfield.zp_mul"><span class="id" title="definition">zp_mul</span></a> (@<a class="idref" href="Utility.Zpstar.html#Schnorr.Schnorr_group"><span class="id" title="record">Schnorr_group</span></a> <a class="idref" href="Examples.PedLinearRelIns.html#p"><span class="id" title="definition">p</span></a> <a class="idref" href="Examples.PedLinearRelIns.html#q"><span class="id" title="definition">q</span></a>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(@<a class="idref" href="Utility.Zpstar.html#Schnorr.mul_schnorr_group"><span class="id" title="definition">mul_schnorr_group</span></a> <a class="idref" href="Examples.PedLinearRelIns.html#p"><span class="id" title="definition">p</span></a> <a class="idref" href="Examples.PedLinearRelIns.html#q"><span class="id" title="definition">q</span></a> <a class="idref" href="Examples.PedLinearRelIns.html#prime_p"><span class="id" title="lemma">prime_p</span></a> <a class="idref" href="Examples.PedLinearRelIns.html#prime_q"><span class="id" title="lemma">prime_q</span></a>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(@<a class="idref" href="Utility.Zpstar.html#Vspace.pow"><span class="id" title="definition">pow</span></a> 2 <a class="idref" href="Examples.PedLinearRelIns.html#p"><span class="id" title="definition">p</span></a> <a class="idref" href="Examples.PedLinearRelIns.html#q"><span class="id" title="definition">q</span></a> <a class="idref" href="Examples.PedLinearRelIns.html#safe_prime"><span class="id" title="lemma">safe_prime</span></a> <a class="idref" href="Examples.PedLinearRelIns.html#prime_p"><span class="id" title="lemma">prime_p</span></a> <a class="idref" href="Examples.PedLinearRelIns.html#prime_q"><span class="id" title="lemma">prime_q</span></a>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="Utility.Zpstar.html#Schnorr.dec_zpstar"><span class="id" title="lemma">Schnorr.dec_zpstar</span></a> <span class="id" title="var">_</span> <a class="idref" href="Examples.PedLinearRelIns.html#g"><span class="id" title="definition">g</span></a> <a class="idref" href="Examples.PedLinearRelIns.html#h"><span class="id" title="definition">h</span></a> <a class="idref" href="Examples.PedLinearRelIns.html#z"><span class="id" title="definition">z</span></a> <a class="idref" href="Examples.PedLinearRelIns.html#a31a42392cbcc5b0d6da21ee6643cee3"><span class="id" title="definition">αs</span></a> <span class="id" title="var">cs</span> <span class="id" title="var">pf</span>).<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Defined</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">End</span> <a class="idref" href="Examples.PedLinearRelIns.html#Ins"><span class="id" title="section">Ins</span></a>.<br/>
+</div>
+</div>
+
+<div id="footer">
+<hr/><a href="index_symbols.html">Index</a><hr/>This page has been generated by <a href="http://rocq-prover.org/">coqdoc</a>
+</div>
+
+</div>
+
+</body>
+</html>

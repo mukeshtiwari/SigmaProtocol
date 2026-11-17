@@ -1,0 +1,112 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<link href="coqdoc.css" rel="stylesheet" type="text/css" />
+<title>Algebra.Integral_domain</title>
+</head>
+
+<body>
+
+<div id="page">
+
+<div id="header">
+</div>
+
+<div id="main">
+
+<h1 class="libtitle">Library Algebra.Integral_domain</h1>
+
+<div class="code">
+</div>
+
+<div class="doc">
+<a id="lab12"></a><h1 class="section">Integral domains</h1>
+
+<div class="paragraph"> </div>
+
+ A short file connecting the <span class="inlinecode"><span class="id" title="var">integral_domain</span></span> class of <span class="inlinecode"><span class="id" title="var">Hierarchy.v</span></span>
+    to the standard library's <span class="inlinecode"><span class="id" title="var">Integral_domain.Integral_domain</span></span> class
+    (instance <span class="inlinecode"><span class="id" title="var">Intdom</span></span>), which is what the standard <span class="inlinecode"><span class="id" title="var">nsatz</span></span> tactic needs,
+    together with the non-zero-product characterisation
+    <span class="inlinecode"><span class="id" title="var">nonzero_product_iff_nonzero_factors</span></span>. <span class="inlinecode"><span class="id" title="var">Field.v</span></span> shows that every field
+    with decidable equality is an integral domain. 
+</div>
+<div class="code">
+<span class="id" title="keyword">From</span> <span class="id" title="var">Stdlib</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span><br/>
+&nbsp;&nbsp;<span class="id" title="library">Morphisms</span> <span class="id" title="library">Integral_domain</span><br/>
+&nbsp;&nbsp;<span class="id" title="library">Ncring</span> <span class="id" title="library">Cring</span>.<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">Algebra</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span><br/>
+&nbsp;&nbsp;<a class="idref" href="Algebra.Hierarchy.html#"><span class="id" title="library">Hierarchy</span></a> <a class="idref" href="Algebra.Monoid.html#"><span class="id" title="library">Monoid</span></a> <a class="idref" href="Algebra.Group.html#"><span class="id" title="library">Group</span></a><br/>
+&nbsp;&nbsp;<a class="idref" href="Algebra.Ring.html#"><span class="id" title="library">Ring</span></a>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<a id="lab13"></a><h2 class="section">Lemmas and the standard-library instance</h2>
+
+</div>
+<div class="code">
+<span class="id" title="keyword">Section</span> <a id="IntegralDomain" class="idref" href="#IntegralDomain"><span class="id" title="section">IntegralDomain</span></a>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+An arbitrary integral domain. 
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Context</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;{<a id="IntegralDomain.T" class="idref" href="#IntegralDomain.T"><span class="id" title="variable">T</span></a> <a id="IntegralDomain.eq" class="idref" href="#IntegralDomain.eq"><span class="id" title="variable">eq</span></a> <a id="IntegralDomain.zero" class="idref" href="#IntegralDomain.zero"><span class="id" title="variable">zero</span></a> <a id="IntegralDomain.one" class="idref" href="#IntegralDomain.one"><span class="id" title="variable">one</span></a> <a id="IntegralDomain.opp" class="idref" href="#IntegralDomain.opp"><span class="id" title="variable">opp</span></a> <a id="IntegralDomain.add" class="idref" href="#IntegralDomain.add"><span class="id" title="variable">add</span></a> <a id="IntegralDomain.sub" class="idref" href="#IntegralDomain.sub"><span class="id" title="variable">sub</span></a> <a id="IntegralDomain.mul" class="idref" href="#IntegralDomain.mul"><span class="id" title="variable">mul</span></a>}<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;{<a id="IntegralDomain.Hi" class="idref" href="#IntegralDomain.Hi"><span class="id" title="variable">Hi</span></a>:@<a class="idref" href="Algebra.Hierarchy.html#integral_domain"><span class="id" title="class">integral_domain</span></a> <a class="idref" href="Algebra.Integral_domain.html#T:1"><span class="id" title="variable">T</span></a> <a class="idref" href="Algebra.Integral_domain.html#eq:2"><span class="id" title="variable">eq</span></a> <a class="idref" href="Algebra.Integral_domain.html#zero:3"><span class="id" title="variable">zero</span></a> <a class="idref" href="Algebra.Integral_domain.html#one:4"><span class="id" title="variable">one</span></a> <a class="idref" href="Algebra.Integral_domain.html#opp:5"><span class="id" title="variable">opp</span></a> <a class="idref" href="Algebra.Integral_domain.html#add:6"><span class="id" title="variable">add</span></a> <a class="idref" href="Algebra.Integral_domain.html#sub:7"><span class="id" title="variable">sub</span></a> <a class="idref" href="Algebra.Integral_domain.html#mul:8"><span class="id" title="variable">mul</span></a>}.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+A product is non-zero iff both factors are non-zero; a restatement of
+      <span class="inlinecode"><span class="id" title="var">nonzero_product_iff_nonzero_factor</span></span> from <span class="inlinecode"><span class="id" title="var">Ring.v</span></span> in terms of the
+      integral-domain class. 
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <a id="nonzero_product_iff_nonzero_factors" class="idref" href="#nonzero_product_iff_nonzero_factors"><span class="id" title="lemma">nonzero_product_iff_nonzero_factors</span></a> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">∀</span> <a id="x:10" class="idref" href="#x:10"><span class="id" title="binder">x</span></a> <a id="y:11" class="idref" href="#y:11"><span class="id" title="binder">y</span></a> : <a class="idref" href="Algebra.Integral_domain.html#IntegralDomain.T"><span class="id" title="variable">T</span></a>,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Logic.html#63a68285c81db8f9bc456233bb9ed181"><span class="id" title="notation">¬</span></a><a class="idref" href="Algebra.Integral_domain.html#IntegralDomain.eq"><span class="id" title="variable">eq</span></a> (<a class="idref" href="Algebra.Integral_domain.html#IntegralDomain.mul"><span class="id" title="variable">mul</span></a> <a class="idref" href="Algebra.Integral_domain.html#x:10"><span class="id" title="variable">x</span></a> <a class="idref" href="Algebra.Integral_domain.html#y:11"><span class="id" title="variable">y</span></a>) <a class="idref" href="Algebra.Integral_domain.html#IntegralDomain.zero"><span class="id" title="variable">zero</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Logic.html#::type_scope:x_'&lt;-&gt;'_x"><span class="id" title="notation">↔</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Logic.html#63a68285c81db8f9bc456233bb9ed181"><span class="id" title="notation">¬</span></a><a class="idref" href="Algebra.Integral_domain.html#IntegralDomain.eq"><span class="id" title="variable">eq</span></a> <a class="idref" href="Algebra.Integral_domain.html#x:10"><span class="id" title="variable">x</span></a> <a class="idref" href="Algebra.Integral_domain.html#IntegralDomain.zero"><span class="id" title="variable">zero</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Logic.html#ba2b0e492d2b4675a0acf3ea92aabadd"><span class="id" title="notation">∧</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Logic.html#63a68285c81db8f9bc456233bb9ed181"><span class="id" title="notation">¬</span></a><a class="idref" href="Algebra.Integral_domain.html#IntegralDomain.eq"><span class="id" title="variable">eq</span></a> <a class="idref" href="Algebra.Integral_domain.html#y:11"><span class="id" title="variable">y</span></a> <a class="idref" href="Algebra.Integral_domain.html#IntegralDomain.zero"><span class="id" title="variable">zero</span></a>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">setoid_rewrite</span> <a class="idref" href="Algebra.Ring.html#ring_zero_product_iff_zero_factor"><span class="id" title="lemma">ring_zero_product_iff_zero_factor</span></a>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">intuition</span>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Qed</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+Every <span class="inlinecode"><span class="id" title="var">integral_domain</span></span> of the hierarchy is an integral domain in the
+      sense of the standard library (no zero divisors and <span class="inlinecode">1</span> <span class="inlinecode">≠</span> <span class="inlinecode">0</span>), on top
+      of the <span class="inlinecode"><span class="id" title="var">Cring</span></span> instance from <span class="inlinecode"><span class="id" title="var">Ring.v</span></span>. 
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Global Instance</span> <a id="Intdom" class="idref" href="#Intdom"><span class="id" title="instance">Intdom</span></a> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;@<span class="id" title="class">Integral_domain.Integral_domain</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="Algebra.Integral_domain.html#IntegralDomain.T"><span class="id" title="variable">T</span></a> <a class="idref" href="Algebra.Integral_domain.html#IntegralDomain.zero"><span class="id" title="variable">zero</span></a> <a class="idref" href="Algebra.Integral_domain.html#IntegralDomain.one"><span class="id" title="variable">one</span></a> <a class="idref" href="Algebra.Integral_domain.html#IntegralDomain.add"><span class="id" title="variable">add</span></a> <a class="idref" href="Algebra.Integral_domain.html#IntegralDomain.mul"><span class="id" title="variable">mul</span></a> <a class="idref" href="Algebra.Integral_domain.html#IntegralDomain.sub"><span class="id" title="variable">sub</span></a> <a class="idref" href="Algebra.Integral_domain.html#IntegralDomain.opp"><span class="id" title="variable">opp</span></a> <a class="idref" href="Algebra.Integral_domain.html#IntegralDomain.eq"><span class="id" title="variable">eq</span></a> <span class="id" title="var">_</span> <span class="id" title="var">_</span> <span class="id" title="var">_</span>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">split</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">apply</span> <a class="idref" href="Algebra.Hierarchy.html#zero_product_zero_factor"><span class="id" title="definition">zero_product_zero_factor</span></a>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">apply</span> <a class="idref" href="Algebra.Hierarchy.html#one_neq_zero"><span class="id" title="lemma">one_neq_zero</span></a>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Defined</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">End</span> <a class="idref" href="Algebra.Integral_domain.html#IntegralDomain"><span class="id" title="section">IntegralDomain</span></a>.<br/>
+</div>
+</div>
+
+<div id="footer">
+<hr/><a href="index_symbols.html">Index</a><hr/>This page has been generated by <a href="http://rocq-prover.org/">coqdoc</a>
+</div>
+
+</div>
+
+</body>
+</html>

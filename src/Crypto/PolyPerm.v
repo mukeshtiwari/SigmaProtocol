@@ -1,30 +1,57 @@
-(* Polynomials and permutations (Step 4.3 of plans/ZK_APPLICATIONS_PLAN.md):
-   the two facts that turn the product argument's conclusion of the
-   Bayer–Groth shuffle into a permutation.
+(** * From polynomial identities to permutations *)
 
-   - The root multiset lemma: if ∏_i (r_i − z) = ∏_i (s_i − z) for more
-     values of z than there are factors (z in a duplicate-free list), the
-     lists r and s are permutations of each other (prod_roots_perm). The
-     proof is by induction: the polynomials agree as coefficient lists
-     (SigmaK.agree_nth), so at z = r_0 some factor of the right-hand side
-     vanishes; cancelling it leaves the identity on all z ≠ r_0.
-   - The shuffle's identity: if ∏_i (y a_i + b_i − z) = ∏_i (y·i + x^i − z)
-     for all y in a set Y with |Y| > 2N² and all z in a set Z with |Z| > N,
-     then a is a permutation σ of 0..N−1 (as field elements) and
-     b_i = x^{σ(i)} (perm_of_products). The counting replaces
-     Schwartz–Zippel: each linear polynomial in y that is not identically
-     zero has at most one root, so a common non-root exists in Y
-     (PolyRoots.common_nonroot); it requires the field elements
-     0, 1, …, N−1 to be distinct (a hypothesis, true for prime fields of
-     order > N). *)
+(** This file proves the two algebraic facts that turn the conclusion of the
+    Bayer–Groth shuffle's product argument into an explicit permutation.
 
+    The first is the root multiset lemma [prod_roots_perm]: if
+
+    [[
+      ∏_i (r_i − z) = ∏_i (s_i − z)
+    ]]
+
+    holds for every [z] in a duplicate-free list [Zs] that is strictly longer
+    than [rs], and [rs] and [ss] have the same length, then [rs] is a
+    permutation of [ss]. The two products are polynomials in [z] of degree
+    [length rs], so agreement on more points forces equality as coefficient
+    lists ([SigmaK.agree_nth]) and hence everywhere; then [r_0] is a root of the
+    right-hand side, some [s_j = r_0], and cancelling that common factor at all
+    [z ≠ r_0] lets the induction continue.
+
+    The second is the shuffle identity [perm_of_products]: if
+
+    [[
+      ∏_i (y·a_i + b_i − z) = ∏_i (y·i + x^i − z)
+    ]]
+
+    for all [y] in a duplicate-free set [Y] with [|Y| > 2N²] and all [z] in a
+    duplicate-free set [Z] with [|Z| > N], then there is a permutation σ of
+    [0..N−1] with [a_i = σ(i)] (as a field element) and [b_i = x^σ(i)] for
+    all [i < N]. Instead of a probabilistic Schwartz–Zippel argument, the
+    proof counts roots of non-zero linear polynomials in [y]
+    ([PolyRoots.common_nonroot]). It needs the field images of [0, ..., N−1]
+    to be pairwise distinct, which is a hypothesis (true in a prime field of
+    order larger than [N]).
+
+    [perm_of_products] is used in [BayerGrothSound] (extraction of the
+    permutation from the product argument); the file is also imported by
+    [BayerGrothZK]. Reference: S. Bayer and J. Groth, Efficient zero-knowledge
+    argument for correctness of a shuffle, EUROCRYPT 2012. *)
 From Stdlib Require Import Utf8 List Lia Bool setoid_ring.Field Permutation PeanoNat Arith.
 From Algebra Require Import Hierarchy Group Monoid Field Integral_domain Ring Vector_space.
 From Crypto Require Import PolyRoots SigmaK.
 Import ListNotations.
 
+(** ** Setting
+
+    An arbitrary field with decidable equality. The local notations
+    specialise the polynomial operations of [PolyRoots] and [SigmaK]
+    ([eval], [fpow] = powers, [fnat] = the image of a natural number in
+    the field, [pmulF] = polynomial multiplication) and some field lemmas
+    from [SigmaK] to this field. *)
 Section PolyPerm.
 
+  (** The ambient field [F] with its operations, decidable equality [Fdec]
+      and field axioms [Hf]. *)
   Context
     {F : Type} {zero one : F} {add mul sub div : F -> F -> F} {opp inv : F -> F}
     {Fdec : forall x y : F, {x = y} + {x <> y}}
@@ -47,15 +74,17 @@ Section PolyPerm.
   Local Notation length_pmulF := (length_pmulF (zero := zero) (add := add) (mul := mul)).
   Local Notation eval_pmulF := (eval_pmulF (Hf := Hf)).
 
-  (* ---------------------------------------------------------------- *)
-  (* products of linear factors r − z                                  *)
-  (* ---------------------------------------------------------------- *)
+  (** ** Products of linear factors
 
+      [prodz rs z] is the field element [∏_(r ∈ rs) (r − z)]. *)
   Definition prodz (rs : list F) (z : F) : F := fold_right mul one (map (fun r => r - z) rs).
 
+  (** Unfolding [prodz] on a cons: [prodz (r :: rs) z = (r − z) · prodz rs z]. *)
   Lemma prodz_cons : forall r rs z, prodz (r :: rs) z = (r - z) * prodz rs z.
   Proof. reflexivity. Qed.
 
+  (** [prodz] depends only on the multiset of roots: permuting [rs] does not
+      change the product (commutativity of multiplication). *)
   Lemma prodz_perm : forall rs ss z, Permutation rs ss -> prodz rs z = prodz ss z.
   Proof.
     intros rs ss z hp; induction hp as [| a l l' hp ih | a b l | l l' l'' hp1 ih1 hp2 ih2].
@@ -65,6 +94,8 @@ Section PolyPerm.
     + rewrite ih1, ih2; reflexivity.
   Qed.
 
+  (** If [prodz rs z = 0] then [z] occurs in [rs]: a field has no zero
+      divisors, and the empty product is [one ≠ zero]. *)
   Lemma prodz_zero_in : forall rs z, prodz rs z = zero -> exists r, In r rs /\ r = z.
   Proof.
     induction rs as [| r rs ih]; intros z h.
@@ -75,10 +106,13 @@ Section PolyPerm.
       - destruct (ih z h') as (s & hs & e); exists s; split; [right; exact hs | exact e].
   Qed.
 
-  (* ∏ (r_i − z) as a polynomial in z *)
+  (** [prod_lin_neg rs] is the coefficient list of the polynomial
+      [∏_(r ∈ rs) (r − Z)] in the variable [Z], built by repeatedly multiplying
+      by the linear polynomial [[r; −1]]. *)
   Definition prod_lin_neg (rs : list F) : list F :=
     fold_right (fun r acc => pmulF [r; opp one] acc) [one] rs.
 
+  (** Evaluating [prod_lin_neg rs] at [z] gives [prodz rs z]. *)
   Lemma eval_prod_lin_neg : forall rs z, eval (prod_lin_neg rs) z = prodz rs z.
   Proof.
     induction rs as [| r rs ih]; intros z; [cbn; field |].
@@ -86,12 +120,14 @@ Section PolyPerm.
     cbn [eval]; field.
   Qed.
 
+  (** The coefficient list [prod_lin_neg rs] is never empty. *)
   Lemma prod_lin_neg_nonnil : forall rs, prod_lin_neg rs <> [].
   Proof.
     intros rs; destruct rs as [| r rs]; [discriminate |].
     unfold prod_lin_neg; cbn [fold_right pmulF]. destruct (fold_right _ _ _) as [| a l]; discriminate.
   Qed.
 
+  (** [prod_lin_neg rs] has exactly [length rs + 1] coefficients. *)
   Lemma length_prod_lin_neg : forall rs, length (prod_lin_neg rs) = S (length rs).
   Proof.
     induction rs as [| r rs ih]; [reflexivity |].
@@ -99,7 +135,10 @@ Section PolyPerm.
     unfold prod_lin_neg in ih; rewrite ih; cbn [length]; lia.
   Qed.
 
-  (* agreement on more than n points gives agreement everywhere *)
+  (** If two products [prodz rs] and [prodz ss] with [length rs = length ss]
+      agree on more than [length rs] distinct points [Zs], they agree at every
+      [z]. Both are polynomials with [length rs + 1] coefficients, so
+      [SigmaK.agree_nth] shows the coefficient lists are equal. *)
   Lemma prodz_agree_all : forall (Zs : list F) (rs ss : list F), NoDup Zs ->
     length rs = length ss -> (length rs < length Zs)%nat ->
     (forall z, In z Zs -> prodz rs z = prodz ss z) -> forall z, prodz rs z = prodz ss z.
@@ -113,7 +152,8 @@ Section PolyPerm.
     rewrite heq; reflexivity.
   Qed.
 
-  (* removing one value from a duplicate-free list loses at most one element *)
+  (** Removing all occurrences of a value [r] from a duplicate-free list [Zs]
+      removes at most one element. *)
   Lemma filter_neq_length : forall (Zs : list F) (r : F), NoDup Zs ->
     (length Zs <= S (length (filter (fun z => if Fdec z r then false else true) Zs)))%nat.
   Proof.
@@ -128,7 +168,18 @@ Section PolyPerm.
     + cbn [length]; lia.
   Qed.
 
-  (* the root multiset lemma *)
+  (** ** The root multiset lemma
+
+      If [length rs = length ss], [Zs] is duplicate-free with
+      [length rs < length Zs], and [prodz rs z = prodz ss z] for every
+      [z ∈ Zs], then [Permutation rs ss].
+
+      Proof idea: induction on [rs]. For [rs = r :: rs'], agreement everywhere
+      ([prodz_agree_all]) gives [prodz ss r = 0], so [ss = ss1 ++ r :: ss2]
+      ([prodz_zero_in]). On the points of [Zs] different from [r] (at least
+      [length rs' + 1] of them, by [filter_neq_length]) the factor [r − z] is
+      non-zero and can be cancelled, giving the hypothesis for [rs'] and
+      [ss1 ++ ss2]. *)
   Theorem prod_roots_perm : forall (rs ss : list F) (Zs : list F), NoDup Zs ->
     length rs = length ss -> (length rs < length Zs)%nat ->
     (forall z, In z Zs -> prodz rs z = prodz ss z) -> Permutation rs ss.
@@ -136,13 +187,11 @@ Section PolyPerm.
     induction rs as [| r rs ih]; intros ss Zs hnd hl hlen hag.
     + destruct ss; [constructor | discriminate].
     + pose proof (prodz_agree_all Zs (r :: rs) ss hnd hl hlen hag) as hall.
-      (* r is a root of the right-hand side *)
       assert (hr : prodz ss r = zero).
       { rewrite <-hall, prodz_cons. assert (e : r - r = zero) by field. rewrite e; field. }
       destruct (prodz_zero_in ss r hr) as (s & hs & ->).
       destruct (in_split _ _ hs) as (ss1 & ss2 & ->).
       assert (hperm : Permutation (r :: ss1 ++ ss2) (ss1 ++ r :: ss2)) by apply Permutation_middle.
-      (* cancel the common factor on z ≠ r *)
       set (S' := filter (fun z => if Fdec z r then false else true) Zs).
       assert (hS' : NoDup S') by (apply NoDup_filter; exact hnd).
       assert (hlenS' : (length rs < length S')%nat).
@@ -158,10 +207,10 @@ Section PolyPerm.
       eapply Permutation_trans; [apply perm_skip; exact ih | exact hperm].
   Qed.
 
-  (* ---------------------------------------------------------------- *)
-  (* from the product identity to a permutation                        *)
-  (* ---------------------------------------------------------------- *)
+  (** ** From the product identity to a permutation
 
+      Indexing helper: the [i]-th element of [map f (seq 0 n)] is [f i] for
+      [i < n]. *)
   Lemma nth_map_seq : forall {A : Type} (f : nat -> A) (n i : nat) (d : A), (i < n)%nat ->
     nth i (map f (seq 0 n)) d = f i.
   Proof.
@@ -170,17 +219,22 @@ Section PolyPerm.
     rewrite map_nth, seq_nth by exact hi; reflexivity.
   Qed.
 
-  (* a linear polynomial c1·y + c0 that is not identically zero *)
+  (** The linear polynomial [[c0; c1]] (meaning [c0 + c1·y]) is not identically
+      zero unless both coefficients are zero. *)
   Lemma linear_nonzero : forall c0 c1 : F, ~ (c1 = zero /\ c0 = zero) -> ~ pzero (zero := zero) [c0; c1].
   Proof.
     intros c0 c1 h hz. inversion hz as [| ? ? h0 hz']; subst. inversion hz' as [| ? ? h1 _]; subst.
     apply h; split; (assumption || reflexivity).
   Qed.
 
+  (** Evaluation of a linear polynomial: [eval [c0; c1] y = c1·y + c0]. *)
   Lemma eval_linear2 : forall c0 c1 y, eval [c0; c1] y = c1 * y + c0.
   Proof. intros; cbn; field. Qed.
 
-  (* the multiset equality at one y *)
+  (** For one fixed [y]: if the products [∏_(i<N) (y·a_i + b_i − z)] and
+      [∏_(i<N) (y·i + x^i − z)] agree on more than [N] distinct values [z],
+      then the lists of values [y·a_i + b_i] and [y·i + x^i] are permutations of
+      each other. A direct instance of [prod_roots_perm]. *)
   Lemma products_perm : forall (N : nat) (a b : list F) (x y : F) (Z : list F),
     NoDup Z -> (N < length Z)%nat ->
     (forall z, In z Z ->
@@ -193,6 +247,34 @@ Section PolyPerm.
     intros z hz; unfold prodz; rewrite !map_map; apply hag; exact hz.
   Qed.
 
+  (** Main theorem. Let [a], [b] have length [N], assume the field images
+      [fnat 0, ..., fnat (N−1)] are pairwise distinct, let [Y] and [Z] be
+      duplicate-free with [2·N² < |Y|] and [N < |Z|], and suppose
+
+      [[
+        ∏_(i<N) (y·a_i + b_i − z) = ∏_(i<N) (y·fnat i + x^i − z)
+      ]]
+
+      for all [y ∈ Y], [z ∈ Z]. Then there is a list [σ] that is a permutation
+      of [seq 0 N] such that, for all [i < N], [a_i = fnat σ(i)] and
+      [b_i = x^σ(i)].
+
+      Proof idea:
+
+      - Step 1: for every [y ∈ Y] the values [y·a_i + b_i] are a permutation of
+        the values [y·j + x^j] ([products_perm]).
+      - Step 2: every pair [(a_i, b_i)] equals some [(fnat j, x^j)]. Otherwise
+        the [N] linear polynomials [(a_i − j)·y + (b_i − x^j)] are all non-zero,
+        so [common_nonroot] gives [y ∈ Y] at which none vanishes, contradicting
+        Step 1 at that [y].
+      - Step 3: for some [y ∈ Y] the right-hand values [y·j + x^j] are pairwise
+        distinct, again by [common_nonroot] applied to the at most [N²]
+        polynomials [(j − j')·y + (x^j − x^j')] with [j ≠ j'], which are
+        non-zero because the [fnat j] are distinct.
+      - Step 4: at that [y] the left-hand values are also pairwise distinct
+        (they are a permutation of a duplicate-free list), so [i ↦ σ(i)],
+        defined by searching for the [j] of Step 2, is injective on [0..N−1]
+        and therefore a permutation. *)
   Theorem perm_of_products : forall (N : nat) (a b : list F) (x : F) (Y Z : list F),
     length a = N -> length b = N ->
     (forall i j, (i < N)%nat -> (j < N)%nat -> fnat i = fnat j -> i = j) ->
@@ -204,18 +286,19 @@ Section PolyPerm.
       forall i, (i < N)%nat -> nth i a zero = fnat (nth i σ 0%nat) /\ nth i b zero = fpow x (nth i σ 0%nat).
   Proof.
     intros N a b x Y Z hla hlb hinj hndY hndZ hlZ hlY hag.
-    (* the multiset equality, for every y ∈ Y *)
+    (* Step 1: the multiset equality at every y ∈ Y. *)
     assert (hperm : forall y, In y Y ->
       Permutation (map (fun i => y * nth i a zero + nth i b zero) (seq 0 N)) (map (fun i => y * fnat i + fpow x i) (seq 0 N))).
     { intros y hy; apply (products_perm N a b x y Z hndZ hlZ); intros z hz; apply hag; assumption. }
-    (* step 2: every (a_i, b_i) is some (j, x^j) *)
+    (* Step 2: each (a_i, b_i) is some (fnat j, x^j). *)
     assert (hsome : forall i, (i < N)%nat -> exists j, (j < N)%nat /\ nth i a zero = fnat j /\ nth i b zero = fpow x j).
     { intros i hi.
       destruct (Exists_dec (fun j => nth i a zero = fnat j /\ nth i b zero = fpow x j) (seq 0 N)) as [hex | hnex].
       { intro j; destruct (Fdec (nth i a zero) (fnat j)), (Fdec (nth i b zero) (fpow x j)); tauto. }
       + apply Exists_exists in hex; destruct hex as (j & hj & hj'); apply in_seq in hj; exists j; split; [lia | exact hj'].
       + exfalso.
-        (* the N linear polynomials (a_i − j)·y + (b_i − x^j) are all non-zero *)
+        (* Otherwise the N linear polynomials (a_i − j)·y + (b_i − x^j) are all
+           non-zero and have a common non-root y ∈ Y ... *)
         set (ps := map (fun j => [nth i b zero - fpow x j; nth i a zero - fnat j]) (seq 0 N)).
         assert (hps : forall p, In p ps -> ~ pzero (zero := zero) p /\ (length p <= 2)%nat).
         { intros p hp; unfold ps in hp; apply in_map_iff in hp; destruct hp as (j & <- & hj); split; [| reflexivity].
@@ -223,7 +306,7 @@ Section PolyPerm.
           split; apply sub_eq_zero; assumption. }
         assert (hbound : (length ps * 2 < length Y)%nat) by (unfold ps; rewrite length_map, length_seq; nia).
         destruct (common_nonroot (Fdec := Fdec) (Hf := Hf) Y ps 2 hndY hps hbound) as (y & hy & hnr).
-        (* but y a_i + b_i is some y j + x^j *)
+        (* ... but at that y, y·a_i + b_i is one of the y·j + x^j: contradiction. *)
         specialize (hperm y hy).
         assert (hin : In (y * nth i a zero + nth i b zero) (map (fun i => y * fnat i + fpow x i) (seq 0 N))).
         { eapply Permutation_in; [exact hperm |]. apply in_map_iff; exists i; split; [reflexivity | apply in_seq; lia]. }
@@ -234,7 +317,7 @@ Section PolyPerm.
           assert (e : (nth i a zero - fnat j) * y + (nth i b zero - fpow x j) =
             (y * nth i a zero + nth i b zero) - (y * fnat j + fpow x j)) by field.
           rewrite e, <-he; field. }
-    (* step 3: at some y ∈ Y the right-hand values are pairwise distinct *)
+    (* Step 3: a y ∈ Y at which the values y·j + x^j are pairwise distinct. *)
     assert (hdist : exists y, In y Y /\ forall j j', (j < N)%nat -> (j' < N)%nat -> j <> j' ->
       y * fnat j + fpow x j <> y * fnat j' + fpow x j').
     { set (pairs := filter (fun p => negb (Nat.eqb (fst p) (snd p))) (list_prod (seq 0 N) (seq 0 N))).
@@ -259,7 +342,8 @@ Section PolyPerm.
       + rewrite eval_linear2. assert (e : (fnat j - fnat j') * y + (fpow x j - fpow x j') = (y * fnat j + fpow x j) - (y * fnat j' + fpow x j')) by field.
         rewrite e, he; field. }
     destruct hdist as (y & hy & hdist).
-    (* injectivity of i ↦ y a_i + b_i *)
+    (* Step 4: at that y the left-hand values are distinct too, so i ↦ σ(i) is
+       injective. *)
     assert (hinjL : forall i i', (i < N)%nat -> (i' < N)%nat ->
       y * nth i a zero + nth i b zero = y * nth i' a zero + nth i' b zero -> i = i').
     { intros i i' hi hi' he.
@@ -271,7 +355,7 @@ Section PolyPerm.
       { eapply Permutation_NoDup; [apply Permutation_sym; apply hperm; exact hy | exact hndR]. }
       pose proof (proj1 (NoDup_nth _ zero) hndL) as h. rewrite length_map, length_seq in h.
       apply h; [exact hi | exact hi' | rewrite !nth_map_seq by assumption; exact he]. }
-    (* the permutation *)
+    (* Define σ(i) as the first j found by Step 2, by a decidable search. *)
     set (test := fun i j => if Fdec (nth i a zero) (fnat j) then (if Fdec (nth i b zero) (fpow x j) then true else false) else false).
     set (σat := fun i => match find (test i) (seq 0 N) with Some j => j | None => 0%nat end).
     assert (hσ : forall i, (i < N)%nat -> (σat i < N)%nat /\ nth i a zero = fnat (σat i) /\ nth i b zero = fpow x (σat i)).
@@ -285,6 +369,7 @@ Section PolyPerm.
         pose proof (find_none _ _ hf j ltac:(apply in_seq; lia)) as h.
         unfold test in h. destruct (Fdec (nth i a zero) (fnat j)); [| contradiction].
         destruct (Fdec (nth i b zero) (fpow x j)); [discriminate | contradiction]. }
+    (* σ is an injective map from 0..N−1 into 0..N−1, hence a permutation. *)
     exists (map σat (seq 0 N)). split.
     + apply NoDup_Permutation_bis.
       - apply (proj2 (NoDup_nth _ 0%nat)). rewrite length_map, length_seq. intros i i' hi hi' e.

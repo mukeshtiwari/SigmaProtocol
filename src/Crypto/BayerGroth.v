@@ -1,36 +1,73 @@
-(* The Bayer–Groth argument for the correctness of a shuffle (S. Bayer,
-   J. Groth, "Efficient Zero-Knowledge Argument for Correctness of a
-   Shuffle", EUROCRYPT 2012), in the variant of the Swiss Post Voting System
-   ("Cryptographic Primitives of the Swiss Post Voting System", pseudocode
-   specification version 1.6.0, Section 9: Algorithms 9.7–9.26), built from
-   the library's algebra.
+(** * The Bayer–Groth shuffle argument: provers, verifiers and completeness
 
-   The shuffle argument is the composition of five sub-arguments over
-   Pedersen commitments com(a; r) = h^r ∏ g_i^{a_i} to vectors of Z_q and
-   ElGamal ciphertexts of the multi-recipient form (g^r, pk_1^r m_1, …):
+    This file formalises the interactive zero-knowledge argument for the
+    correctness of a shuffle of ElGamal ciphertexts by S. Bayer and J. Groth
+    (_Efficient Zero-Knowledge Argument for Correctness of a Shuffle_,
+    EUROCRYPT 2012), in the concrete variant fixed by the Swiss Post Voting
+    System specification (_Cryptographic Primitives of the Swiss Post Voting
+    System_, pseudocode version 1.6.0, Section 9, Algorithms 9.7–9.26), which
+    is also the variant implemented by Verificatum-style mix-nets.
 
-     single value product   ∏ a_i = b for a committed vector a          (9.25/9.26)
-     zero                   Σ_i a_i ⋆ b_{i−1} = 0 for committed matrices  (9.22/9.23)
-     Hadamard               b = a_0 ∘ ⋯ ∘ a_{m−1} for committed columns   (9.20/9.21)
-     product                ∏_{i,j} a_{i,j} = b for a committed matrix    (9.18/9.19)
-     multi-exponentiation   C = Enc(1; ρ) ∏_i C_i^{a_i} for committed a  (9.15/9.16)
+    The statement of the shuffle argument is a pair of ciphertext lists
+    [Cs] and [Cs'] of length [N = m·n]. The prover knows a permutation π and
+    randomisers ρ with [C'_i = Enc(1; ρ_i) · C_π(i)]. All vectors are
+    committed with the generalised Pedersen commitment
+    [com h gs a r = h^r · ∏ g_i^(a_i)] ([com]); a ciphertext with [l]
+    recipients is a vector of [l+1] group elements, i.e. an element of the
+    product vector space of [Vector_product_space.v]. The shuffle argument is
+    built from five sub-arguments:
 
-   and the shuffle argument itself (9.11/9.12): commit to the permutation,
-   receive x, commit to x^{π(i)}, receive y, z, and prove with the product
-   argument that ∏ (y·π(i) + x^{π(i)} − z) = ∏ (y·i + x^i − z) and with the
-   multi-exponentiation argument that ∏ C_i^{x^i} = Enc(1; ρ) ∏ C'_i^{x^{π(i)}}.
+    - _single value product_ (Alg. 9.25/9.26): for a commitment [c_a] and a
+      scalar [b], [∏_i a_i = b] ([svp_prove], [svp_verify]);
+    - _zero_ (Alg. 9.22/9.23): for commitments to the rows of [A] and [B],
+      [Σ_i A_i ⋆_y B_i = 0], where [a ⋆_y b = Σ_j a_j b_j y^(j+1)] is the
+      bilinear map [star] ([zero_prove], [zero_verify]);
+    - _Hadamard_ (Alg. 9.20/9.21): for commitments to columns [A_0 … A_(m-1)]
+      and to [b], [b = A_0 ∘ … ∘ A_(m-1)] (entrywise product); it reduces to
+      a zero argument ([hadamard_prove], [hadamard_verify]);
+    - _product_ (Alg. 9.18/9.19): [∏_(i,j) A_(i,j) = b], by a Hadamard
+      argument followed by a single value product argument, or only the
+      latter when [m = 1] ([product_prove], [product_verify]);
+    - _multi-exponentiation_ (Alg. 9.15/9.16/9.17): for committed vectors
+      [A_i] and ciphertext rows [C_i], [C = Enc(1; ρ) · ∏_i C_i^(A_i)]
+      ([multiexp_prove], [multiexp_verify]).
 
-   Vectors of Z_q and of group elements are lists; a ciphertext with ℓ
-   recipients is a vector of ℓ + 1 group elements, so that the ciphertext
-   space is the product vector space of Algebra/Vector_product_space.v and
-   the multi-exponentiation of ciphertexts is the same fold as the one of
-   group elements. The challenges are parameters of the verifiers (the
-   protocols are interactive here; Backend/BayerGrothVerifier.v adds the
-   Fiat–Shamir challenges as oracles). This file contains, for each
-   sub-argument, the verifier of the specification, the prover with its
-   randomness as parameters, and the completeness theorem: the honest
-   prover's argument is accepted for every challenge. *)
+    The shuffle argument (Alg. 9.11/9.12, [shuffle_prove], [shuffle_verify])
+    commits to [a = π] (as field elements), receives [x], commits to
+    [b = (x^π(i))_i], receives [y] and [z], and then proves with the product
+    argument that [∏_i (y·π(i) + x^π(i) − z) = ∏_i (y·i + x^i − z)] and with the
+    multi-exponentiation argument that
+    [∏_i C_i^(x^i) = Enc(1; ρ) · ∏_i C'_i^(b_i)].
 
+    The protocols are kept interactive: every challenge is an explicit
+    argument of the prover and of the verifier, and every random choice of
+    the prover is an explicit parameter as well, so that each prover is a
+    deterministic function. [BayerGrothVerifier.v] in the backend supplies the
+    challenges as Fiat–Shamir oracles.
+
+    _What is proved here._ This file contains only the verifiers, the honest
+    provers and their _completeness_ theorems: [svp_completeness],
+    [zero_completeness], [hadamard_completeness], [multiexp_completeness],
+    [product_completeness] and [shuffle_completeness]. Each says that the
+    honest prover's message is accepted for every choice of challenges
+    (with non-zero Hadamard challenges) and of prover randomness, provided
+    the witness relation and the length side conditions hold. Soundness
+    (special soundness from trees of accepting transcripts, up to a break of
+    the binding property of the commitment) is proved in [BayerGrothSound.v]
+    for all five sub-arguments and the shuffle; perfect special
+    honest-verifier zero knowledge is proved in [BayerGrothZK.v] for the
+    zero, single value product, Hadamard and product arguments for all
+    ciphertext widths, and for the multi-exponentiation and shuffle arguments
+    only for single-recipient ciphertexts ([l = 1]); those ZK results assume
+    the commitment key lies in the subgroup generated by [h] and a finite
+    field enumerated by a list. No result in this file is admitted.
+
+    Generic list machinery used throughout: multi-exponentiation [lmexp] and
+    polynomial evaluation [veval] over an arbitrary vector space,
+    coefficientwise polynomial product [pmul] with a bilinear coefficient map,
+    and the scalar helpers [lscale], [ladd], [padd], [lpows] and [fpow] of
+    [SigmaK.v]. [PolyRoots.v] provides the scalar polynomial evaluation
+    [eval]. *)
 From Stdlib Require Import Utf8 Vector Fin Lia Bool setoid_ring.Field Permutation List Arith
   RelationClasses Morphisms.
 From Algebra Require Import Hierarchy Group Monoid Field Integral_domain Ring
@@ -39,6 +76,13 @@ From Crypto Require Import Sigma MultiExp OkamotoRows PolyRoots SigmaK.
 From Utility Require Import Util.
 Import ListNotations.
 
+(** ** Parameters
+
+    [F] is the scalar field (in practice [Z_q]) and [G] a group written
+    multiplicatively, presented as an [F]-vector space [Hvec] with group
+    operation [gop], identity [gid] and exponentiation [gpow] (written
+    [^]). Equality on [F] and on [G] is decidable ([Fdec], [Gdec]); the
+    verifiers use these decisions to compare group elements and scalars. *)
 Section BayerGroth.
 
   Context
@@ -57,7 +101,6 @@ Section BayerGroth.
   Local Infix "*" := mul.
   Local Infix "-" := sub.
 
-  (* the scalar helpers of Crypto/SigmaK.v at the operations of the context *)
   Local Notation lscale := (lscale (mul := mul)).
   Local Notation ladd := (ladd (add := add)).
   Local Notation fpow := (fpow (one := one) (mul := mul)).
@@ -90,10 +133,13 @@ Section BayerGroth.
   Local Notation gop4 := (gop4 (Hvec := Hvec)).
   Local Notation gid_pow := (smul_vid (HV := Hvec)).
 
-  (* ---------------------------------------------------------------- *)
-  (* The field as a vector space over itself                          *)
-  (* ---------------------------------------------------------------- *)
+  (** ** The field as a vector space over itself
 
+      The lemmas [Fadd_assoc] … [Fmul_vadd] are the field axioms in the shape
+      needed by the algebraic hierarchy; each is proved by [field]. They are
+      packaged into [F_vspace], so that the generic list lemmas of section
+      [LMexp] can be instantiated with scalars as well as with group elements
+      and ciphertexts. *)
   Lemma Fadd_assoc : forall x y z : F, x + (y + z) = (x + y) + z. Proof. intros; field. Qed.
   Lemma Fadd_id_l : forall x : F, zero + x = x. Proof. intros; field. Qed.
   Lemma Fadd_id_r : forall x : F, x + zero = x. Proof. intros; field. Qed.
@@ -109,36 +155,47 @@ Section BayerGroth.
   Lemma Fmul_fadd : forall (r1 r2 x : F), x * (r1 + r2) = x * r1 + x * r2. Proof. intros; field. Qed.
   Lemma Fmul_vadd : forall (r x y : F), (x + y) * r = x * r + y * r. Proof. intros; field. Qed.
 
+  (** [F_monoid], [F_group] and the instance [F_comm_group]: [(F, +, 0, opp)]
+      as a commutative group. *)
   Definition F_monoid : @monoid F (@eq F) add zero :=
     @Build_monoid F (@eq F) add zero Fadd_assoc Fadd_id_l Fadd_id_r Fadd_proper eq_equivalence.
   Definition F_group : @group F (@eq F) add zero opp :=
     @Build_group F (@eq F) add zero opp F_monoid Fadd_opp_l Fadd_opp_r Fopp_proper.
   Local Instance F_comm_group : @commutative_group F (@eq F) add zero opp :=
     @Build_commutative_group F (@eq F) add zero opp F_group Fadd_comm.
+  (** [F_vspace]: [F] as a vector space over itself, with scalar
+      multiplication [mul]. *)
   Local Instance F_vspace :
     @vector_space F (@eq F) zero one add mul sub div opp inv F (@eq F) zero opp add mul :=
     @Build_vector_space F (@eq F) zero one add mul sub div opp inv F (@eq F) zero opp add mul
       F_comm_group (@vector_space_field _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ Hvec)
       Fmul_one_r Fmul_zero_r Fmul_assoc Fmul_fadd Fmul_vadd Fmul_proper.
 
-  (* ---------------------------------------------------------------- *)
-  (* Lists over a vector space: multi-exponentiation and evaluation    *)
-  (* ---------------------------------------------------------------- *)
-
+  (** [padd xs []] is [xs]: padding addition with the empty polynomial. *)
   Lemma padd_nil_r : forall xs, padd xs [] = xs.
   Proof. intros xs; destruct xs; reflexivity. Qed.
 
+  (** The zero-padded sum is as long as its longer argument. *)
   Lemma padd_length : forall xs ys, length (padd xs ys) = Nat.max (length xs) (length ys).
   Proof.
     induction xs as [| a xs ih]; intros ys; [reflexivity |].
     destruct ys as [| b ys]; [reflexivity | cbn; rewrite ih; reflexivity].
   Qed.
 
+  (** [lpows x k = [1; x; …; x^(k-1)]] has length [k]. *)
   Lemma lpows_length : forall x k, length (lpows x k) = k.
   Proof. intros x k; induction k as [| k ih]; [reflexivity | cbn; unfold SigmaK.lscale; rewrite map_length, ih; reflexivity]. Qed.
 
+  (** ** Multi-exponentiation and polynomial evaluation over a vector space
+
+      This section works over an arbitrary [F]-vector space [V] (operations
+      [vadd], [vid], [smul]). It is instantiated three times below: with the
+      group [G] (multi-exponentiation of commitment keys, evaluation of
+      committed polynomials), with [F] itself (scalar polynomials) and with
+      the ciphertext space [G^(l+1)] (multi-exponentiation of ciphertexts). *)
   Section LMexp.
 
+    (** The vector space [V] over [F]. *)
     Context
       {V : Type} {vid : V} {vopp : V -> V} {vadd : V -> V -> V} {smul : V -> F -> V}
       {HV : @vector_space F (@eq F) zero one add mul sub div opp inv V (@eq V) vid vopp vadd smul}.
@@ -164,6 +221,9 @@ Section BayerGroth.
     Local Notation vone := (@vector_space_field_one F (@eq F) zero one add mul sub div
       opp inv V (@eq V) vid vopp vadd smul HV).
 
+    (** Readable names for the vector-space axioms of [V]: [smul_add],
+        [smul_mul], [vadd_smul], [smul_one], and the rearrangement [vadd4]
+        [(a+b)+(c+d) = (a+c)+(b+d)]. *)
     Lemma smul_add : forall (v : V) (r s : F), smul v (r + s) = vadd (smul v r) (smul v s).
     Proof. intros; apply vfadd. Qed.
     Lemma smul_mul : forall (v : V) (r s : F), smul v (r * s) = smul (smul v r) s.
@@ -179,10 +239,14 @@ Section BayerGroth.
         (vassoc a c (vadd b d)); reflexivity.
     Qed.
 
-    (* ∏ gs_i^{xs_i} over the common prefix of the two lists *)
+    (** [lmexp gs xs] is the multi-exponentiation [Σ_i xs_i · gs_i] (in
+        multiplicative notation [∏_i gs_i^(xs_i)]) over the common prefix of
+        the two lists. With [V = G] this is the vector part of a Pedersen
+        commitment. *)
     Definition lmexp (gs : list V) (xs : list F) : V :=
       fold_right (fun p acc => vadd (smul (fst p) (snd p)) acc) vid (combine gs xs).
 
+    (** Unfolding equations for [lmexp] on empty and non-empty lists. *)
     Lemma lmexp_nil_l : forall xs, lmexp [] xs = vid.
     Proof. reflexivity. Qed.
     Lemma lmexp_nil_r : forall gs, lmexp gs [] = vid.
@@ -190,6 +254,8 @@ Section BayerGroth.
     Lemma lmexp_cons : forall g gs x xs, lmexp (g :: gs) (x :: xs) = vadd (smul g x) (lmexp gs xs).
     Proof. reflexivity. Qed.
 
+    (** [lmexp] splits over concatenation when the first parts have equal
+        length. *)
     Lemma lmexp_app : forall gs1 gs2 xs1 xs2, length gs1 = length xs1 ->
       lmexp (gs1 ++ gs2) (xs1 ++ xs2) = vadd (lmexp gs1 xs1) (lmexp gs2 xs2).
     Proof.
@@ -199,6 +265,8 @@ Section BayerGroth.
         rewrite vassoc; reflexivity.
     Qed.
 
+    (** Linearity in the exponent vector: [lmexp gs (xs + ys) = lmexp gs xs +
+        lmexp gs ys] for equal-length [xs], [ys]. *)
     Lemma lmexp_add : forall gs xs ys, length xs = length ys ->
       lmexp gs (ladd xs ys) = vadd (lmexp gs xs) (lmexp gs ys).
     Proof.
@@ -209,6 +277,7 @@ Section BayerGroth.
         rewrite ih; [| cbn in hl; lia]. rewrite smul_add, vadd4; reflexivity.
     Qed.
 
+    (** Homogeneity: [lmexp gs (c·xs) = c · lmexp gs xs]. *)
     Lemma lmexp_scale : forall gs xs c, lmexp gs (lscale c xs) = smul (lmexp gs xs) c.
     Proof.
       induction gs as [| g gs ih]; intros xs c.
@@ -218,6 +287,7 @@ Section BayerGroth.
         replace (c * x) with (x * c) by field; reflexivity.
     Qed.
 
+    (** Multi-exponentiation of identity bases is the identity. *)
     Lemma lmexp_repeat_vid : forall k xs, lmexp (repeat vid k) xs = vid.
     Proof.
       induction k as [| k ih]; intros xs; [reflexivity |].
@@ -225,7 +295,8 @@ Section BayerGroth.
       cbn [repeat]; rewrite lmexp_cons, ih, (smul_vid (HV := HV)), vid_l; reflexivity.
     Qed.
 
-    (* the bases combined pointwise *)
+    (** Linearity in the bases: combining two equal-length base lists
+        pointwise combines the multi-exponentiations. *)
     Lemma lmexp_map2_vadd : forall gs hs xs, length gs = length hs ->
       lmexp (map (fun p => vadd (fst p) (snd p)) (combine gs hs)) xs = vadd (lmexp gs xs) (lmexp hs xs).
     Proof.
@@ -237,9 +308,13 @@ Section BayerGroth.
         rewrite vadd_smul, vadd4; reflexivity.
     Qed.
 
-    (* evaluation of a "polynomial" with coefficients in V: Σ_i cs_i x^i *)
+    (** [veval cs x = Σ_i x^i · cs_i] evaluates a polynomial with coefficients
+        in [V] at the scalar [x]. For [V = G] and commitments [cs] this is
+        [∏_i cs_i^(x^i)], the combination the verifiers compute. *)
     Definition veval (cs : list V) (x : F) : V := lmexp cs (lpows x (length cs)).
 
+    (** Horner form of [veval]: [veval [] x = 0] and
+        [veval (c :: cs) x = c + x · veval cs x]. *)
     Lemma veval_nil : forall x, veval [] x = vid.
     Proof. reflexivity. Qed.
 
@@ -248,6 +323,7 @@ Section BayerGroth.
       intros; unfold veval; cbn [length SigmaK.lpows]; rewrite lmexp_cons, smul_one, lmexp_scale; reflexivity.
     Qed.
 
+    (** Prefixing [s] zero coefficients multiplies the value by [x^s]. *)
     Lemma veval_shift : forall s cs x, veval (repeat vid s ++ cs) x = smul (veval cs x) (fpow x s).
     Proof.
       induction s as [| s ih]; intros cs x.
@@ -256,6 +332,7 @@ Section BayerGroth.
         replace (fpow x s * x) with (x * fpow x s) by field; reflexivity.
     Qed.
 
+    (** Evaluation is additive in the coefficient list (equal lengths). *)
     Lemma veval_map2 : forall u v x, length u = length v ->
       veval (map (fun p => vadd (fst p) (snd p)) (combine u v)) x = vadd (veval u x) (veval v x).
     Proof.
@@ -264,6 +341,7 @@ Section BayerGroth.
       apply lmexp_map2_vadd; exact hl.
     Qed.
 
+    (** Scaling every coefficient by [c] scales the value by [c]. *)
     Lemma veval_scale_coeffs : forall (cs : list V) (c : F) x,
       veval (map (fun v => smul v c) cs) x = smul (veval cs x) c.
     Proof.
@@ -275,13 +353,15 @@ Section BayerGroth.
         replace (c * p) with (p * c) by field; reflexivity.
     Qed.
 
-
+    (** [smul_zero]: [0 · v] is the identity. *)
     Local Notation vzero := (@vector_space_field_zero F (@eq F) zero one add mul sub div
       opp inv V (@eq V) vid vopp vadd smul HV).
 
     Lemma smul_zero : forall v : V, smul v zero = vid.
     Proof. intros; apply vzero. Qed.
 
+    (** Multi-exponentiation with an all-zero exponent vector is the
+        identity. *)
     Lemma lmexp_repeat_zero : forall gs n, lmexp gs (repeat zero n) = vid.
     Proof.
       induction gs as [| g gs ih]; intros n; [apply lmexp_nil_l |].
@@ -289,6 +369,8 @@ Section BayerGroth.
       cbn [repeat]; rewrite lmexp_cons, ih, smul_zero, vid_l; reflexivity.
     Qed.
 
+    (** Linearity of [lmexp] with respect to the zero-padded sum [padd] (no
+        length condition needed). *)
     Lemma lmexp_padd : forall gs xs ys, lmexp gs (padd xs ys) = vadd (lmexp gs xs) (lmexp gs ys).
     Proof.
       induction gs as [| g gs ih]; intros xs ys; [rewrite !lmexp_nil_l, vid_l; reflexivity |].
@@ -297,7 +379,8 @@ Section BayerGroth.
       cbn [SigmaK.padd]; rewrite !lmexp_cons, ih, smul_add, vadd4; reflexivity.
     Qed.
 
-    (* zero-padded pointwise sum of coefficient lists *)
+    (** [vpadd] is the zero-padded pointwise sum of two lists of vectors, the
+        sum of two polynomials with coefficients in [V]. *)
     Fixpoint vpadd (xs ys : list V) : list V :=
       match xs, ys with
       | [], _ => ys
@@ -305,12 +388,14 @@ Section BayerGroth.
       | x :: xs', y :: ys' => vadd x y :: vpadd xs' ys'
       end.
 
+    (** The padded sum is as long as the longer list. *)
     Lemma vpadd_length : forall xs ys, length (vpadd xs ys) = Nat.max (length xs) (length ys).
     Proof.
       induction xs as [| a xs ih]; intros ys; [reflexivity |].
       destruct ys as [| b ys]; [reflexivity | cbn; rewrite ih; reflexivity].
     Qed.
 
+    (** Evaluation is a homomorphism for the padded sum. *)
     Lemma veval_vpadd : forall xs ys x, veval (vpadd xs ys) x = vadd (veval xs x) (veval ys x).
     Proof.
       induction xs as [| a xs ih]; intros ys x; [cbn [vpadd]; rewrite veval_nil, vid_l; reflexivity |].
@@ -318,10 +403,14 @@ Section BayerGroth.
       cbn [vpadd]; rewrite !veval_cons, ih, vadd_smul, vadd4; reflexivity.
     Qed.
 
+    (** A zero constant coefficient: [veval (0 :: cs) x = x · veval cs x]. *)
     Lemma veval_cons_vid : forall cs x, veval (vid :: cs) x = smul (veval cs x) x.
     Proof. intros; rewrite veval_cons, vid_l; reflexivity. Qed.
 
-    (* Σ x^i f(u_i) for f linear *)
+    (** Evaluation commutes with a linear map: if [f] maps a structure [A]
+        (with zero [fz], addition [fadd], scaling [fscale]) linearly into
+        [V], then [Σ_i x^i f(u_i) = f(Σ_i x^i u_i)], where the right-hand sum
+        is computed by Horner's rule in [A]. *)
     Lemma veval_map_linear : forall {A : Type} (f : A -> V) (fz : A) (fadd : A -> A -> A)
       (fscale : F -> A -> A),
       f fz = vid -> (forall u v, f (fadd u v) = vadd (f u) (f v)) ->
@@ -334,14 +423,18 @@ Section BayerGroth.
       + cbn [map fold_right]; rewrite veval_cons, ih, hadd, hscale; reflexivity.
     Qed.
 
-    (* the polynomial product with a bilinear coefficient map:
-      (pmul f u v)_k = Σ_{i+j=k} f u_i v_j *)
+    (** [pmul f u v] is the coefficient list of the product of the
+        polynomials [Σ_i u_i X^i] and [Σ_j v_j X^j], where coefficients are
+        multiplied with the map [f : A → B → V]:
+        [(pmul f u v)_k = Σ_(i+j=k) f u_i v_j]. With [f = star y] this
+        computes the vector [d] of the zero argument. *)
     Fixpoint pmul {A B : Type} (f : A -> B -> V) (u : list A) (v : list B) : list V :=
       match u with
       | [] => []
       | u0 :: u' => vpadd (map (f u0) v) (vid :: pmul f u' v)
       end.
 
+    (** For non-empty [u], [v] the product has [|u| + |v| − 1] coefficients. *)
     Lemma pmul_length : forall {A B : Type} (f : A -> B -> V) (u : list A) (v : list B),
       u <> [] -> v <> [] -> length (pmul f u v) = (length u + length v - 1)%nat.
     Proof.
@@ -352,8 +445,9 @@ Section BayerGroth.
       + rewrite ih by discriminate; cbn [length]; destruct v; [contradiction | cbn; lia].
     Qed.
 
-    (* Σ_k x^k (pmul f u v)_k = f (Σ x^i u_i) (Σ x^j v_j) for f bilinear with
-      respect to the given Horner operations *)
+    (** Evaluation of a product: if [f] is bilinear, then
+        [Σ_k x^k (pmul f u v)_k = f (Σ_i x^i u_i) (Σ_j x^j v_j)]. This is
+        the identity behind the last check of the zero argument. *)
     Lemma veval_pmul : forall {A B : Type} (f : A -> B -> V)
       (az : A) (aadd : A -> A -> A) (ascale : F -> A -> A)
       (bz : B) (badd : B -> B -> B) (bscale : F -> B -> B),
@@ -373,14 +467,16 @@ Section BayerGroth.
         rewrite hadd, hscale; reflexivity.
     Qed.
 
-    (* the coefficients of a product, as a recursion: Σ_{i ≤ k} f u_i v_{k−i}
-      with out-of-range entries read as the defaults *)
+    (** [conv_coeff f dB u v k = Σ_(i ≤ k) f u_i v_(k−i)] (missing entries of
+        [v] read as [dB]), the [k]-th convolution coefficient as an explicit
+        recursion. *)
     Fixpoint conv_coeff {A B : Type} (f : A -> B -> V) (dB : B) (u : list A) (v : list B) (k : nat) : V :=
       match u with
       | [] => vid
       | u0 :: u' => vadd (f u0 (nth k v dB)) (match k with 0 => vid | S k' => conv_coeff f dB u' v k' end)
       end.
 
+    (** The [k]-th entry of a padded sum is the sum of the [k]-th entries. *)
     Lemma nth_vpadd : forall xs ys k, nth k (vpadd xs ys) vid = vadd (nth k xs vid) (nth k ys vid).
     Proof.
       induction xs as [| a xs ih]; intros ys k.
@@ -389,6 +485,8 @@ Section BayerGroth.
         destruct k as [| k]; [reflexivity | cbn [vpadd nth]; apply ih].
     Qed.
 
+    (** The [k]-th coefficient of [pmul f u v] is [conv_coeff f dB u v k],
+        provided [f a dB] is the identity. *)
     Lemma nth_pmul : forall {A B : Type} (f : A -> B -> V) (dB : B),
       (forall a, f a dB = vid) ->
       forall (u : list A) (v : list B) (k : nat),
@@ -404,7 +502,8 @@ Section BayerGroth.
         rewrite hm; destruct k as [| k]; [reflexivity | cbn [nth]; rewrite ih; reflexivity].
     Qed.
 
-    (* only the first k + 1 entries of v matter *)
+    (** The [k]-th convolution coefficient only reads the first [k+1]
+        entries of [v]. *)
     Lemma conv_coeff_app : forall {A B : Type} (f : A -> B -> V) (dB : B) (u : list A) (v w : list B) (k : nat),
       (k < length v)%nat -> conv_coeff f dB u (v ++ w) k = conv_coeff f dB u v k.
     Proof.
@@ -413,8 +512,7 @@ Section BayerGroth.
       destruct k as [| k]; [reflexivity | rewrite ih by lia; reflexivity].
     Qed.
 
-
-    (* the fold of a permuted list *)
+    (** Summing a list is invariant under permutation (commutativity). *)
     Lemma fold_vadd_perm : forall (l1 l2 : list V), Permutation l1 l2 ->
       fold_right vadd vid l1 = fold_right vadd vid l2.
     Proof.
@@ -425,6 +523,7 @@ Section BayerGroth.
       + rewrite ih1; exact ih2.
     Qed.
 
+    (** [lmexp] as a sum of the mapped list of terms [smul g x]. *)
     Lemma lmexp_as_fold : forall gs xs,
       lmexp gs xs = fold_right vadd vid (map (fun p => smul (fst p) (snd p)) (combine gs xs)).
     Proof.
@@ -432,6 +531,7 @@ Section BayerGroth.
       induction l as [| p l ih]; [reflexivity | cbn [fold_right map]; rewrite ih; reflexivity].
     Qed.
 
+    (** The sum of pointwise sums is the sum of the two sums. *)
     Lemma fold_map_vadd : forall {A : Type} (f g : A -> V) (L : list A),
       fold_right vadd vid (map (fun a => vadd (f a) (g a)) L) =
       vadd (fold_right vadd vid (map f L)) (fold_right vadd vid (map g L)).
@@ -440,7 +540,8 @@ Section BayerGroth.
       cbn [map fold_right]; rewrite ih, vadd4; reflexivity.
     Qed.
 
-
+    (** Exported names for associativity and the left identity law of [V],
+        used outside the section through the instances [Hvec] and [CTvs]. *)
     Lemma vadd_assoc : forall a b c : V, vadd a (vadd b c) = vadd (vadd a b) c.
     Proof. intros; apply vassoc. Qed.
     Lemma vadd_vid_l : forall a : V, vadd vid a = a.
@@ -448,29 +549,37 @@ Section BayerGroth.
 
   End LMexp.
 
-  (* the instances used below: group elements, and scalars *)
+  (** The instances used below: [gmexp], [geval] in the group [G]
+      (multiplicatively: [∏ g_i^(x_i)] and [∏ c_i^(x^i)]) and [fmexp],
+      [feval] in the field (inner product and polynomial evaluation). *)
   Local Notation gmexp := (lmexp (vid := gid) (vadd := gop) (smul := gpow)).
   Local Notation geval := (veval (vid := gid) (vadd := gop) (smul := gpow)).
   Local Notation fmexp := (lmexp (vid := zero) (vadd := add) (smul := mul)).
   Local Notation feval := (veval (vid := zero) (vadd := add) (smul := mul)).
 
-  (* scalar evaluation is the Horner evaluation of Crypto/PolyRoots.v *)
+  (** [feval] agrees with the Horner evaluation [eval] of [PolyRoots.v]. *)
   Lemma feval_eval : forall (cs : list F) (x : F), feval cs x = eval (add := add) (mul := mul) (zero := zero) cs x.
   Proof.
     induction cs as [| c cs ih]; intros x; [reflexivity |].
     rewrite (veval_cons (HV := F_vspace)); cbn [eval]; rewrite ih; field.
   Qed.
 
+  (** [x^(a+b) = x^a · x^b] for natural exponents. *)
   Lemma fpow_add : forall x a b, fpow x (a + b)%nat = fpow x a * fpow x b.
   Proof. induction a as [| a ih]; intros b; cbn [SigmaK.fpow Nat.add]; [field | rewrite ih; field]. Qed.
 
-  (* ---------------------------------------------------------------- *)
-  (* Pedersen commitments (Algorithm 9.7)                              *)
-  (* ---------------------------------------------------------------- *)
+  (** ** Pedersen commitments
 
-  (* com(a; r) = h^r ∏ g_i^{a_i}, over the first length(a) generators *)
+      [com h gs a r = h^r · ∏_i gs_i^(a_i)] is the generalised Pedersen
+      commitment to the vector [a] with randomness [r] under the key
+      [(h, gs)] (Alg. 9.7 of the Swiss Post specification). Only the first
+      [min |gs| |a|] entries are committed; the verifiers check response
+      lengths against [|gs|] for that reason. The commitment is additively
+      homomorphic ([com_add], [com_padd]) and homogeneous ([com_scale]). *)
   Definition com (h : G) (gs : list G) (a : list F) (r : F) : G := gop (h ^ r) (gmexp gs a).
 
+  (** Homomorphism: [com(a; r) · com(b; s) = com(a + b; r + s)] for
+      equal-length [a], [b]. *)
   Lemma com_add : forall h gs a b r s, length a = length b ->
     com h gs (ladd a b) (r + s) = gop (com h gs a r) (com h gs b s).
   Proof.
@@ -478,16 +587,19 @@ Section BayerGroth.
     rewrite gop4; reflexivity.
   Qed.
 
+  (** Homogeneity: [com(a; r)^c = com(c·a; c·r)]. *)
   Lemma com_scale : forall h gs a r c, com h gs (lscale c a) (c * r) = (com h gs a r) ^ c.
   Proof.
     intros; unfold com; rewrite (lmexp_scale (HV := Hvec)), gop_pow, <-gpow_mul.
     replace (r * c) with (c * r) by field; reflexivity.
   Qed.
 
-  (* ---------------------------------------------------------------- *)
-  (* List helpers                                                       *)
-  (* ---------------------------------------------------------------- *)
+  (** ** List helpers
 
+      Index arithmetic for [map f (seq 0 n)], [ladd] and [lscale], used by
+      the completeness proofs to compare the honest responses entrywise. *)
+
+  (** [nth i (map f (seq 0 n)) = f i] for [i < n]. *)
   Lemma nth_map_seq : forall {A : Type} (f : nat -> A) (d : A) (n i : nat),
     (i < n)%nat -> nth i (map f (seq 0 n)) d = f i.
   Proof.
@@ -496,6 +608,7 @@ Section BayerGroth.
     rewrite map_nth, seq_nth by exact hi; reflexivity.
   Qed.
 
+  (** [ladd] and [lscale] of mapped lists are mapped lists. *)
   Lemma ladd_map : forall {A : Type} (f g : A -> F) (l : list A),
     ladd (map f l) (map g l) = map (fun i => f i + g i) l.
   Proof. intros A f g l; induction l as [| a l ih]; [reflexivity | cbn; rewrite <-ih; reflexivity]. Qed.
@@ -504,6 +617,7 @@ Section BayerGroth.
     lscale c (map f l) = map (fun i => c * f i) l.
   Proof. intros; unfold SigmaK.lscale; rewrite map_map; reflexivity. Qed.
 
+  (** Length and entries of [ladd] and [lscale]. *)
   Lemma ladd_length : forall xs ys, length xs = length ys -> length (ladd xs ys) = length xs.
   Proof. intros; unfold SigmaK.ladd; rewrite map_length, combine_length; lia. Qed.
 
@@ -521,23 +635,33 @@ Section BayerGroth.
     destruct i as [| i]; [reflexivity | cbn [SigmaK.ladd combine map nth fst snd]; apply ih; cbn in *; lia].
   Qed.
 
-  (* closes a goal (if dec a b then true else false) = true by proving a = b *)
+  (** [dec_true] turns a goal [(if d then true else false) = true] into the
+      equation decided by [d]. *)
   Local Ltac dec_true := match goal with
     | |- (if ?d then true else false) = true => destruct d as [_ | hne]; [reflexivity | exfalso; apply hne]
     end.
 
-  (* ---------------------------------------------------------------- *)
-  (* Single value product argument (Algorithms 9.25, 9.26)             *)
-  (* ---------------------------------------------------------------- *)
+  (** ** Single value product argument (Alg. 9.25, 9.26)
 
+      Statement: a commitment [c_a = com(a; r)] to a vector [a] of length
+      [n ≥ 2] and a scalar [b]. Witness: [a], [r] with [∏_i a_i = b]. The
+      prover picks random [d] and [δ] (with [δ_0 = d_0] and [δ_(n−1) = 0]),
+      commits to [d], to [δ'] and to the cross terms [Δ], receives [x], and answers
+      with [ã = x·a + d] and [b̃ = x·b' + δ], where [b'_k = ∏_(i ≤ k) a_i]
+      are the prefix products. The verifier checks the two commitment
+      equations, [b̃_0 = ã_0] and [b̃_(n−1) = x·b]. *)
   Section SingleValueProduct.
 
-    (* the argument (c_d, c_δ, c_Δ, ã, b̃, r̃, s̃) *)
+    (** The prover's messages [(c_d, c_δ, c_Δ, ã, b̃, r̃, s̃)]. *)
     Record svp_argument : Type := mk_svp {
       svp_cd : G; svp_cdelta : G; svp_cDelta : G;
       svp_a : list F; svp_b : list F; svp_r : F; svp_s : F }.
 
-    (* Algorithm 9.26, statement (c_a, b), challenge x *)
+    (** Alg. 9.26: the verifier for statement [(ca, b)] and challenge [x].
+        Accepts iff [n = |ã| ≥ 2], [|b̃| = n], [ca^x · c_d = com(ã; r̃)],
+        [c_Δ^x · c_δ = com(e; s̃)] with
+        [e_i = x·b̃_(i+1) − b̃_i·ã_(i+1)] for [i < n−1], [b̃_0 = ã_0],
+        [b̃_(n−1) = x·b], and [|ã| = |gs|]. *)
     Definition svp_verify (h : G) (gs : list G) (ca : G) (b : F) (x : F) (arg : svp_argument) : bool :=
       let n := length (svp_a arg) in
       let at_ := svp_a arg in let bt := svp_b arg in
@@ -549,11 +673,14 @@ Section BayerGroth.
       (if Fdec (nth (n - 1) bt zero) (x * b) then true else false) &&
       (length at_ =? length gs).
 
-    (* the prefix products b_k = ∏_{i ≤ k} a_i *)
+    (** [prefix_prod a k = ∏_(i ≤ k) a_i], the [k]-th prefix product. *)
     Definition prefix_prod (a : list F) (k : nat) : F := fold_right mul one (firstn (S k) a).
 
-    (* Algorithm 9.25 with its randomness as parameters: d (length n), r_d,
-      δ_1..δ_{n−2} (dmid), s_0, s_x *)
+    (** Alg. 9.25 with its randomness as parameters: [d] (length [n]),
+        [rd], the middle values [δ_1 … δ_(n−2)] ([dmid]), and [s0], [sx]
+        (the randomness of [c_δ] and [c_Δ]); [x] is the challenge. The
+        vector [δ] is [d_0 :: dmid ++ [0]]; [δ'_k = −δ_k d_(k+1)] and
+        [Δ_k = δ_(k+1) − a_(k+1) δ_k − b'_k d_(k+1)]. *)
     Definition svp_prove (h : G) (gs : list G) (a : list F) (r : F)
       (d : list F) (rd : F) (dmid : list F) (s0 sx : F) (x : F) : svp_argument :=
       let n := length a in
@@ -568,6 +695,9 @@ Section BayerGroth.
         (map (fun k => x * bf k + delta k) (seq 0 n))
         (x * r + rd) (x * sx + s0).
 
+    (** Arithmetic of prefix products: [firstn_S_nth], [fold_right_mul_init],
+        [prefix_prod_S] ([b'_(k+1) = b'_k · a_(k+1)]) and [prefix_prod_last]
+        (the last prefix product is the full product). *)
     Lemma firstn_S_nth : forall (l : list F) (k : nat), (k < length l)%nat ->
       firstn (S k) l = firstn k l ++ [nth k l zero].
     Proof.
@@ -596,11 +726,18 @@ Section BayerGroth.
       rewrite firstn_all; reflexivity.
     Qed.
 
-    (* nth of the honest responses *)
+    (** Entries of an honest response vector [x·f(k) + g(k)]. *)
     Lemma nth_resp : forall (f g : nat -> F) x n i, (i < n)%nat ->
       nth i (map (fun k => x * f k + g k) (seq 0 n)) zero = x * f i + g i.
     Proof. intros f g x n i hi; exact (nth_map_seq (fun k => x * f k + g k) zero n i hi). Qed.
 
+    (** Completeness of the single value product argument: for every
+        challenge [x] and every choice of prover randomness of the right
+        lengths, the honest argument for [com(a; r)] and [b = ∏ a_i] is
+        accepted, provided [2 ≤ |a| = |gs|]. The proof checks the six
+        conjuncts; the second commitment equation reduces to the identity
+        [x·b̃_(k+1) − b̃_k·ã_(k+1) = x²·0 + x·Δ_k + δ'_k] using
+        [b'_(k+1) = b'_k·a_(k+1)]. *)
     Theorem svp_completeness : forall (h : G) (gs : list G) (a : list F) (r : F)
       (d : list F) (rd : F) (dmid : list F) (s0 sx x : F),
       (2 <= length a)%nat -> length d = length a -> length dmid = (length a - 2)%nat -> length a = length gs ->
@@ -614,7 +751,8 @@ Section BayerGroth.
         [apply andb_true_iff; split; [apply andb_true_iff; split |] |] |] |].
       + apply Nat.leb_le; exact hn.
       + apply Nat.eqb_eq; reflexivity.
-      + (* c_a^x c_d = com(ã; r̃) *)
+      +
+        (* [ca^x · c_d = com(x·a + d; x·r + rd)] by the homomorphism. *)
         dec_true.
         rewrite <-com_scale, <-com_add; [| unfold SigmaK.lscale; rewrite map_length; exact (eq_sym hd)].
         f_equal. apply (nth_ext _ _ zero zero).
@@ -626,18 +764,22 @@ Section BayerGroth.
           rewrite nth_map_seq by exact hi.
           rewrite nth_ladd by (unfold SigmaK.lscale; rewrite map_length; lia).
           rewrite nth_lscale by exact hi; reflexivity.
-      + (* c_Δ^x c_δ = com(e; s̃) *)
+      +
+        (* [c_Δ^x · c_δ = com(e; s̃)]: entrywise, the [x²] terms cancel by
+           [prefix_prod_S]. *)
         dec_true.
         rewrite <-com_scale, <-com_add; [| unfold SigmaK.lscale; rewrite !map_length, !seq_length; reflexivity].
         f_equal; unfold SigmaK.lscale; rewrite map_map, ladd_map.
         apply map_ext_in; intros k hk; apply in_seq in hk; destruct hk as (_ & hk).
         repeat (rewrite nth_map_seq by lia).
         rewrite (prefix_prod_S a k) by lia; field.
-      + (* b̃_0 = ã_0 *)
+      +
+        (* [b̃_0 = x·a_0 + d_0 = ã_0]. *)
         dec_true.
         repeat (rewrite nth_map_seq by lia).
         unfold prefix_prod; destruct a as [| a0 a']; [cbn in hn; lia |]; cbn [firstn fold_right nth]; field.
-      + (* b̃_{n−1} = x·b *)
+      +
+        (* [b̃_(n−1) = x·∏ a + δ_(n−1)] and [δ_(n−1) = 0]. *)
         dec_true.
         repeat (rewrite nth_map_seq by lia).
         rewrite prefix_prod_last by (destruct a; [cbn in hn; lia | discriminate]).
@@ -648,38 +790,48 @@ Section BayerGroth.
 
   End SingleValueProduct.
 
-  (* ---------------------------------------------------------------- *)
-  (* Scalar polynomials, the bilinear map ⋆, Horner sums of vectors    *)
-  (* ---------------------------------------------------------------- *)
+  (** ** Scalar polynomials and the bilinear map ⋆
 
+      The zero argument works with polynomials whose coefficients are
+      vectors, combined with the bilinear map [a ⋆_y b]; this part provides
+      the bilinearity lemmas and the commitment of Horner sums. [fpmul] and
+      [fconv] are [pmul] and [conv_coeff] with scalar results. *)
   Local Notation fpmul := (pmul (vid := zero) (vadd := add)).
   Local Notation fconv := (conv_coeff (vid := zero) (vadd := add)).
 
+  (** Horner equations for scalar evaluation. *)
   Lemma feval_cons : forall c cs x, feval (c :: cs) x = c + x * feval cs x.
   Proof. intros; rewrite (veval_cons (HV := F_vspace)); field. Qed.
   Lemma feval_nil : forall x, feval [] x = zero.
   Proof. reflexivity. Qed.
 
-  (* the F-instance of vpadd is padd *)
+  (** On scalars, [vpadd] is the [padd] of [SigmaK.v]. *)
   Lemma vpadd_padd : forall xs ys, vpadd (vadd := add) xs ys = padd xs ys.
   Proof.
     induction xs as [| a xs ih]; intros ys; [reflexivity |].
     destruct ys as [| b ys]; [reflexivity | cbn [vpadd SigmaK.padd]; rewrite ih; reflexivity].
   Qed.
 
-  (* a ⋆ b = Σ_j a_j b_j y^{j+1} (Algorithm 9.10), with the running weight w *)
+  (** [star_w w y a b = Σ_j a_j b_j w y^j], the map ⋆ with a running weight
+      [w]; it stops at the shorter list. *)
   Fixpoint star_w (w y : F) (a b : list F) : F :=
     match a, b with
     | a0 :: a', b0 :: b' => a0 * b0 * w + star_w (w * y) y a' b'
     | _, _ => zero
     end.
+  (** [star y a b = a ⋆_y b = Σ_j a_j b_j y^(j+1)], the bilinear map of the
+      zero argument (Alg. 9.10 of the specification). *)
   Definition star (y : F) (a b : list F) : F := star_w y y a b.
 
+  (** ⋆ with an empty right argument is zero. *)
   Lemma star_w_nil_r : forall w y a, star_w w y a [] = zero.
   Proof. intros w y a; destruct a; reflexivity. Qed.
   Lemma star_nil_r : forall y a, star y a [] = zero.
   Proof. intros; apply star_w_nil_r. Qed.
 
+  (** Bilinearity of [star_w]: additive and homogeneous in each argument,
+      with respect to [padd] and [lscale] ([star_w_padd_l],
+      [star_w_lscale_l], [star_w_padd_r], [star_w_lscale_r]). *)
   Lemma star_w_padd_l : forall w y a a' b, star_w w y (padd a a') b = star_w w y a b + star_w w y a' b.
   Proof.
     intros w y a; revert w; induction a as [| a0 a ih]; intros w a' b; [cbn [SigmaK.padd star_w]; field |].
@@ -710,13 +862,18 @@ Section BayerGroth.
     unfold SigmaK.lscale; cbn [map star_w]; fold (lscale c b); rewrite ih; field.
   Qed.
 
-  (* Σ_i x^i A_i for a list of vectors (Horner, zero-padded) *)
+  (** [lveval As x = Σ_i x^i As_i], the evaluation of a polynomial with
+      vector coefficients by Horner's rule and zero-padded addition. This is
+      the response [ã] (and [b̃]) of the zero argument. *)
   Definition lveval (As : list (list F)) (x : F) : list F :=
     fold_right (fun a acc => padd a (lscale x acc)) [] As.
 
+  (** Horner step for [lveval]. *)
   Lemma lveval_cons : forall a As x, lveval (a :: As) x = padd a (lscale x (lveval As x)).
   Proof. reflexivity. Qed.
 
+  (** If all coefficient vectors have length [n] (and there is at least one),
+      so does [lveval As x]. *)
   Lemma lveval_length : forall (As : list (list F)) x n, As <> [] -> (forall v, In v As -> length v = n) ->
     length (lveval As x) = n.
   Proof.
@@ -726,8 +883,8 @@ Section BayerGroth.
     rewrite ih by (discriminate || (intros v hv; apply hlen; right; exact hv)); lia.
   Qed.
 
-
-  (* the Horner sum of singletons is the singleton of the scalar sum *)
+  (** The Horner sum of the singleton vectors [[d_k]] is the singleton
+      [[Σ_k x^k d_k]]. *)
   Lemma lveval_singletons : forall (d : list F) (x : F), d <> [] ->
     lveval (map (fun dk => [dk]) d) x = [feval d x].
   Proof.
@@ -738,7 +895,8 @@ Section BayerGroth.
       rewrite (feval_cons d0 (d1 :: d) x); reflexivity.
   Qed.
 
-  (* Σ_k x^k (pmul ⋆ u v)_k = (Σ x^i u_i) ⋆ (Σ x^j v_j) *)
+  (** Evaluation of the ⋆-product of two vector polynomials:
+      [Σ_k x^k (fpmul ⋆ u v)_k = (Σ_i x^i u_i) ⋆ (Σ_j x^j v_j)]. *)
   Lemma feval_pmul_star : forall y (u v : list (list F)) x,
     feval (fpmul (star y) u v) x = star y (lveval u x) (lveval v x).
   Proof.
@@ -752,21 +910,25 @@ Section BayerGroth.
     + intros; unfold star; rewrite star_w_lscale_r; field.
   Qed.
 
-  (* ---- commitments of Horner sums ---- *)
-
+  (** [com] is a homomorphism for [padd] (no length condition). *)
   Lemma com_padd : forall h gs a b r s, com h gs (padd a b) (r + s) = gop (com h gs a r) (com h gs b s).
   Proof. intros; unfold com; rewrite gpow_add, (lmexp_padd (HV := Hvec)), gop4; reflexivity. Qed.
 
+  (** [com_list h gs As rs] commits to each row [As_i] with randomness
+      [rs_i]. *)
   Definition com_list (h : G) (gs : list G) (As : list (list F)) (rs : list F) : list G :=
     map (fun p => com h gs (fst p) (snd p)) (combine As rs).
 
+  (** Structural lemmas on [com_list]: cons, length. *)
   Lemma com_list_cons : forall h gs a As r rs, com_list h gs (a :: As) (r :: rs) = com h gs a r :: com_list h gs As rs.
   Proof. reflexivity. Qed.
 
   Lemma com_list_length : forall h gs As rs, length (com_list h gs As rs) = Nat.min (length As) (length rs).
   Proof. intros; unfold com_list; rewrite map_length, combine_length; reflexivity. Qed.
 
-  (* ∏_i com(A_i; r_i)^{x^i} = com(Σ x^i A_i; Σ x^i r_i) *)
+  (** Commitments of Horner sums: [∏_i com(A_i; r_i)^(x^i) =
+      com(Σ_i x^i A_i; Σ_i x^i r_i)]. This is how the verifier's evaluation of
+      committed polynomials matches the prover's responses. *)
   Lemma geval_com_list : forall h gs As rs x, length As = length rs ->
     geval (com_list h gs As rs) x = com h gs (lveval As x) (feval rs x).
   Proof.
@@ -779,6 +941,8 @@ Section BayerGroth.
       replace (x * feval rs x) with (feval rs x * x) by field; reflexivity.
   Qed.
 
+  (** [combine] distributes over [app] and commutes with [rev] for
+      equal-length lists. *)
   Lemma combine_app_eq : forall {A B : Type} (l1 l1' : list A) (l2 l2' : list B), length l1 = length l2 ->
     combine (l1 ++ l1') (l2 ++ l2') = combine l1 l2 ++ combine l1' l2'.
   Proof.
@@ -794,10 +958,12 @@ Section BayerGroth.
     rewrite combine_app_eq by (rewrite !rev_length; cbn in hl; lia); reflexivity.
   Qed.
 
+  (** Reversing commitments reverses rows and randomness. *)
   Lemma com_list_rev : forall h gs As rs, length As = length rs ->
     rev (com_list h gs As rs) = com_list h gs (rev As) (rev rs).
   Proof. intros; unfold com_list; rewrite <-map_rev, combine_rev by assumption; reflexivity. Qed.
 
+  (** The [k]-th commitment of a [com_list]. *)
   Lemma nth_com_list : forall h gs As rs k, length As = length rs -> (k < length As)%nat ->
     nth k (com_list h gs As rs) gid = com h gs (nth k As []) (nth k rs zero).
   Proof.
@@ -808,13 +974,17 @@ Section BayerGroth.
     rewrite (combine_nth As rs k [] zero hl); reflexivity.
   Qed.
 
+  (** [com([0]; 0)] is the identity. *)
   Lemma com_zero_single : forall h gs, com h gs [zero] zero = gid.
   Proof.
     intros; unfold com; rewrite gpow_zero, gid_l.
     change [zero] with (repeat zero 1); apply (lmexp_repeat_zero (HV := Hvec)).
   Qed.
 
-  (* the middle coefficient of the zero argument's d: Σ_i a_i ⋆ b_{i−1} *)
+  (** The distinguished coefficient of the zero argument's [d]: the
+      convolution coefficient of index [m] of [(A_0, …, A_(m−1))] and
+      [(b_m, B_(m−1), …, B_0)] is [Σ_i A_i ⋆ B_i]. With the extra leading row
+      [a_0] this becomes the coefficient of index [m+1] of [d]. *)
   Lemma conv_middle : forall y (A B : list (list F)) (bm : list F), length A = length B ->
     fconv (star y) [] A (bm :: rev B) (length B) =
     fold_right add zero (map (fun p => star y (fst p) (snd p)) (combine A B)).
@@ -829,17 +999,31 @@ Section BayerGroth.
     rewrite ih by (cbn in hl; lia); reflexivity.
   Qed.
 
-  (* ---------------------------------------------------------------- *)
-  (* Zero argument (Algorithms 9.22, 9.23)                             *)
-  (* ---------------------------------------------------------------- *)
+  (** ** Zero argument (Alg. 9.22, 9.23)
 
+      Statement: commitments [cA] to the rows [A_0 … A_(m−1)] and [cB] to the
+      rows [B_0 … B_(m−1)] (lists of equal length [m ≥ 1]), and the challenge
+      [y] fixing ⋆. Witness: the openings, with [Σ_i A_i ⋆_y B_i = 0]. The
+      prover adds random rows [a_0] and [b_m], forms the polynomials
+      [a_0 + X A_0 + … + X^m A_(m−1)] and [b_m + X B_(m−1) + … + X^m B_0]
+      (note the reversal), commits to the [2m+1] coefficients [d_k] of their
+      ⋆-product, and answers a challenge [x] with the evaluations. The
+      coefficient of index [m+1] (zero-based) is exactly [Σ_i A_i ⋆ B_i];
+      its commitment is opened to [0] with randomness [0], so the verifier
+      checks that it is the identity. *)
   Section ZeroArgument.
 
+    (** The prover's messages [(c_A0, c_Bm, c_d, ã, b̃, r̃, s̃, t̃)]. *)
     Record zero_argument : Type := mk_zero {
       za_cA0 : G; za_cBm : G; za_cd : list G;
       za_a : list F; za_b : list F; za_r : F; za_s : F; za_t : F }.
 
-    (* Algorithm 9.23; statement cA = (c_{A1}, …, c_{Am}), cB = (c_{B0}, …, c_{B(m−1)}), y *)
+    (** Alg. 9.23: the verifier for [(cA, cB, y)] and challenge [x]. Accepts
+        iff [m = |cA| ≥ 1], [|cB| = m], [|c_d| = 2m+1], the commitment
+        of zero-based index [m+1] in [c_d] is the identity, and
+        [∏ (c_A0 :: cA)^(x^i) = com(ã; r̃)],
+        [∏ (c_Bm :: rev cB)^(x^i) = com(b̃; s̃)],
+        [∏ c_d,k^(x^k) = com([ã ⋆_y b̃]; t̃)], with [|ã| = |b̃| = |gs|]. *)
     Definition zero_verify (h : G) (gs : list G) (cA cB : list G) (y x : F) (arg : zero_argument) : bool :=
       let m := length cA in
       (1 <=? m) && (length cB =? m) && (length (za_cd arg) =? 2 * m + 1) &&
@@ -849,8 +1033,10 @@ Section BayerGroth.
       (if Gdec (geval (za_cd arg) x) (com h gs [star y (za_a arg) (za_b arg)] (za_t arg)) then true else false) &&
       (length (za_a arg) =? length gs) && (length (za_b arg) =? length gs).
 
-    (* Algorithm 9.22 with its randomness as parameters: a_0, b_m, r_0, s_m and
-      t = t1 ++ 0 :: t2 (t_{m+1} = 0) *)
+    (** Alg. 9.22 with its randomness as parameters: the extra rows [a0],
+        [bm] with randomness [r0], [sm], and the randomness [t = t1 ++ 0 :: t2]
+        of the [c_d] commitments, whose middle entry is [0] so that the
+        middle commitment is [com([0]; 0) = 1]. *)
     Definition zero_prove (h : G) (gs : list G) (A B : list (list F)) (r s : list F) (y : F)
       (a0 bm : list F) (r0 sm : F) (t1 t2 : list F) (x : F) : zero_argument :=
       let As := a0 :: A in
@@ -860,6 +1046,12 @@ Section BayerGroth.
       mk_zero (com h gs a0 r0) (com h gs bm sm) (com_list h gs (map (fun dk => [dk]) d) tz)
         (lveval As x) (lveval Bs x) (feval (r0 :: r) x) (feval (sm :: rev s) x) (feval tz x).
 
+    (** Completeness of the zero argument: if [Σ_i A_i ⋆_y B_i = 0], all rows
+        (including [a0], [bm]) have length [|gs|], [m ≥ 1], and the
+        randomness lists have the stated lengths, then the honest argument
+        is accepted for every [x]. The check on [c_d,(m+1)] uses
+        [nth_pmul] and [conv_middle]; the three evaluation checks are
+        [geval_com_list] and [feval_pmul_star]. *)
     Theorem zero_completeness : forall (h : G) (gs : list G) (A B : list (list F)) (r s : list F) (y : F)
       (a0 bm : list F) (r0 sm : F) (t1 t2 : list F) (x : F),
       (1 <= length A)%nat -> length B = length A -> length r = length A -> length s = length A ->
@@ -887,7 +1079,9 @@ Section BayerGroth.
       + apply Nat.leb_le; exact hm.
       + apply Nat.eqb_eq; reflexivity.
       + apply Nat.eqb_eq; reflexivity.
-      + (* c_{d,m+1} = 1 *)
+      +
+        (* [c_d,(m+1)] commits to the coefficient of index [m+1], which is
+           [Σ A_i ⋆ B_i = 0], with randomness [0]. *)
         dec_true.
         rewrite nth_com_list by (rewrite map_length; lia).
         rewrite (nth_indep (map (fun dk : F => [dk]) _) [] ((fun dk : F => [dk]) zero)) by (rewrite map_length; lia).
@@ -898,12 +1092,15 @@ Section BayerGroth.
         rewrite star_nil_r.
         replace m with (length B) by (unfold m; lia).
         rewrite conv_middle by lia; rewrite hzero, Fadd_id_l; apply com_zero_single.
-      + (* prodCa *)
+      +
+        (* Evaluation of [c_A0 :: cA]. *)
         dec_true; rewrite <-com_list_cons, geval_com_list by (cbn; lia); reflexivity.
-      + (* prodCb *)
+      +
+        (* Evaluation of [c_Bm :: rev cB]. *)
         dec_true; rewrite com_list_rev by lia; rewrite <-com_list_cons, geval_com_list
           by (cbn; rewrite !rev_length; lia); reflexivity.
-      + (* prodCd *)
+      +
+        (* Evaluation of [c_d] gives [com([ã ⋆ b̃]; t̃)] by [feval_pmul_star]. *)
         dec_true; rewrite geval_com_list by (rewrite map_length; lia).
         rewrite lveval_singletons by (intro e; apply (f_equal (@length F)) in e; cbn in e; lia).
         rewrite feval_pmul_star; reflexivity.
@@ -911,21 +1108,28 @@ Section BayerGroth.
 
   End ZeroArgument.
 
-  (* ---------------------------------------------------------------- *)
-  (* Hadamard argument (Algorithms 9.20, 9.21)                         *)
-  (* ---------------------------------------------------------------- *)
+  (** ** Hadamard product argument (Alg. 9.20, 9.21)
 
+      Statement: commitments [cA] to columns [A_0, …, A_(m−1)] (vectors of
+      length [n], [m ≥ 2]) and a commitment [c_b] to [b]. Witness: openings
+      with [b = A_0 ∘ A_1 ∘ … ∘ A_(m−1)]. The prover commits to the prefix
+      products [B_j = A_0 ∘ … ∘ A_j] ([c_B0 = c_A0], [c_B(m−1) = c_b]),
+      receives challenges [x], [y], and runs a zero argument for the
+      identity [Σ_(i<m−1) A_(i+1) ⋆_y (x^(i+1) B_i) − 1 ⋆_y (Σ_i x^(i+1) B_(i+1)) = 0],
+      which holds because [A_(i+1) ⋆ B_i = 1 ⋆ B_(i+1)]. *)
   Section Hadamard.
 
-    (* the entry-wise product and the prefix products b_j = a_0 ∘ ⋯ ∘ a_j *)
+    (** [hmul a b] is the entrywise (Hadamard) product [a ∘ b]. *)
     Definition hmul (a b : list F) : list F := map (fun p => fst p * snd p) (combine a b).
 
+    (** [hprefix A j = A_0 ∘ … ∘ A_j], the [j]-th Hadamard prefix product. *)
     Definition hprefix (A : list (list F)) (j : nat) : list F :=
       match firstn (S j) A with
       | [] => []
       | a :: rest => fold_left hmul rest a
       end.
 
+    (** Length of [a ∘ b]; [1 ∘ a = a]. *)
     Lemma hmul_length : forall a b, length (hmul a b) = Nat.min (length a) (length b).
     Proof. intros; unfold hmul; rewrite map_length, combine_length; reflexivity. Qed.
 
@@ -936,6 +1140,8 @@ Section BayerGroth.
       rewrite ih by (cbn in hl; lia); f_equal; field.
     Qed.
 
+    (** Algebra of ⋆ with ∘: [a ⋆ (b ∘ c) = (a ∘ b) ⋆ c], commutativity of
+        ⋆, and homogeneity in each argument. *)
     Lemma star_w_hmul : forall w y a b c, star_w w y a (hmul b c) = star_w w y (hmul a b) c.
     Proof.
       intros w y a; revert w; induction a as [| a0 a ih]; intros w b c; [destruct b, c; reflexivity |].
@@ -955,6 +1161,7 @@ Section BayerGroth.
     Lemma star_lscale_r : forall y c a b, star y a (lscale c b) = c * star y a b.
     Proof. intros; apply star_w_lscale_r. Qed.
 
+    (** Polymorphic version of [firstn_S_nth]. *)
     Lemma firstn_S_nth_gen : forall {X : Type} (d : X) (l : list X) (k : nat), (k < length l)%nat ->
       firstn (S k) l = firstn k l ++ [nth k l d].
     Proof.
@@ -964,6 +1171,8 @@ Section BayerGroth.
       rewrite ih; [reflexivity | cbn in hk; lia].
     Qed.
 
+    (** Recursion for prefix products: [hprefix A 0 = A_0] and
+        [hprefix A (j+1) = hprefix A j ∘ A_(j+1)]; all have length [n]. *)
     Lemma hprefix_0 : forall A, A <> [] -> hprefix A 0 = nth 0 A [].
     Proof. intros A hA; destruct A; [contradiction | reflexivity]. Qed.
 
@@ -987,7 +1196,8 @@ Section BayerGroth.
         rewrite Forall_forall in hA; rewrite (hA (nth (S j) A [])) by (apply nth_In; exact hj); apply Nat.min_id.
     Qed.
 
-    (* a_{j+1} ⋆ b_j = 1 ⋆ b_{j+1} for the prefix products *)
+    (** The key identity of the Hadamard argument:
+        [A_(j+1) ⋆ B_j = 1 ⋆ B_(j+1)] for the prefix products [B]. *)
     Lemma star_ones_hprefix : forall n y A j, Forall (fun a => length a = n) A -> (S j < length A)%nat ->
       star y (nth (S j) A []) (hprefix A j) = star y (repeat one n) (hprefix A (S j)).
     Proof.
@@ -996,10 +1206,11 @@ Section BayerGroth.
       apply star_w_comm.
     Qed.
 
+    (** [(−1, …, −1) = −1 · (1, …, 1)]. *)
     Lemma neg_ones : forall n, repeat (opp one) n = lscale (opp one) (repeat one n).
     Proof. induction n as [| n ih]; [reflexivity | cbn [repeat]; unfold SigmaK.lscale; cbn [map]; fold (lscale (opp one) (repeat one n)); rewrite <-ih; f_equal; field]. Qed.
 
-    (* ⋆ with a fixed left argument is linear in the Horner sum *)
+    (** ⋆ with a fixed left argument commutes with Horner evaluation. *)
     Lemma star_lveval_r : forall y a Bs x, feval (map (star y a) Bs) x = star y a (lveval Bs x).
     Proof.
       intros; unfold lveval.
@@ -1009,6 +1220,8 @@ Section BayerGroth.
       + intros; unfold star; rewrite star_w_lscale_r; field.
     Qed.
 
+    (** Reindexing sums of powers: [Σ_(i<k) w x^i g_i = w · Σ_(i<k) x^i g_i] and
+        [Σ_(i<k) x^(i+1) g_i = x · Σ_(i<k) x^i g_i]. *)
     Lemma sum_pow_feval_w : forall (g : nat -> F) (x w : F) (k : nat),
       fold_right add zero (map (fun i => w * fpow x i * g i) (seq 0 k)) = w * feval (map g (seq 0 k)) x.
     Proof.
@@ -1019,7 +1232,6 @@ Section BayerGroth.
       rewrite (ih (fun i => g (S i)) (w * x)); cbn [SigmaK.fpow]; field.
     Qed.
 
-    (* Σ_{i<k} x^{i+1} g_i = x · Σ_{i<k} x^i g_i *)
     Lemma sum_pow_feval : forall (g : nat -> F) (x : F) (k : nat),
       fold_right add zero (map (fun i => fpow x (S i) * g i) (seq 0 k)) = x * feval (map g (seq 0 k)) x.
     Proof.
@@ -1029,6 +1241,8 @@ Section BayerGroth.
       apply sum_pow_feval_w.
     Qed.
 
+    (** Small list lemmas: [com_list] over [app] and [tl], [nth] and [In] on
+        [tl], sums over [app], and the length of [tl]. *)
     Lemma com_list_app : forall h gs As As' rs rs', length As = length rs ->
       com_list h gs (As ++ As') (rs ++ rs') = com_list h gs As rs ++ com_list h gs As' rs'.
     Proof. intros; unfold com_list; rewrite combine_app_eq by assumption; apply map_app. Qed.
@@ -1052,14 +1266,18 @@ Section BayerGroth.
     Lemma tl_len : forall {X : Type} (l : list X), length (tl l) = (length l - 1)%nat.
     Proof. intros X l; destruct l; cbn; lia. Qed.
 
+    (** [len_tac] discharges the length side conditions. *)
     Local Ltac len_tac := rewrite ?app_length, ?tl_len, ?map_length, ?seq_length; cbn [length]; lia.
 
+    (** The prover's messages: the commitments [cB] to the prefix products
+        and the embedded zero argument. *)
     Record hadamard_argument : Type := mk_had { ha_cB : list G; ha_zero : zero_argument }.
 
-    (* Algorithm 9.21; statement (cA = (c_{A0}, …, c_{A(m−1)}), c_b), vectors of
-      length n; challenges x, y of the Hadamard argument and xz of its zero argument *)
-    (* the statement of the zero argument inside the Hadamard argument:
-      ((c_{A1}, …, c_{A(m−1)}, c_{−1}), (c_{D0}, …, c_{D(m−2)}, c_D)) *)
+    (** The statement of the embedded zero argument, computed by the
+        verifier from [cA], [cB] and [x]:
+        [((c_A1, …, c_A(m−1), c_(−1)), (c_B0^x, …, c_B(m−2)^(x^(m−1)), c_D))]
+        with [c_(−1) = com((−1, …, −1); 0)] and
+        [c_D = (∏_i c_B(i+1)^(x^i))^x]. *)
     Definition hadamard_zero_stmt (h : G) (gs : list G) (n : nat) (cA cB : list G) (x : F) : list G * list G :=
       let m := length cA in
       let cDs := map (fun i => (nth i cB gid) ^ (fpow x (S i))) (seq 0 (m - 1)) in
@@ -1067,6 +1285,11 @@ Section BayerGroth.
       let cneg := com h gs (repeat (opp one) n) zero in
       (tl cA ++ [cneg], cDs ++ [cD]).
 
+    (** Alg. 9.21: the verifier for [(cA, c_b)], with Hadamard challenges
+        [x], [y] and zero-argument challenge [xz]. Accepts iff [m ≥ 2],
+        [|cB| = m], [c_B0 = c_A0], [c_B(m−1) = c_b], the embedded zero
+        argument verifies, and [x ≠ 0], [y ≠ 0] (the latter two checks are
+        what the soundness proof needs). *)
     Definition hadamard_verify (h : G) (gs : list G) (n : nat) (cA : list G) (cb : G) (x y xz : F)
       (arg : hadamard_argument) : bool :=
       let m := length cA in
@@ -1078,8 +1301,13 @@ Section BayerGroth.
        zero_verify h gs (fst st) (snd st) y xz (ha_zero arg)) &&
       (if Fdec x zero then false else true) && (if Fdec y zero then false else true).
 
-    (* Algorithm 9.20 with its randomness as parameters: s_1..s_{m−2} (smid) and
-      the zero argument's a_0, b_m, r_0, s_m, t *)
+    (** Alg. 9.20 with its randomness as parameters: the randomness [smid]
+        of the intermediate commitments [c_B1 … c_B(m−2)] ([c_B0] reuses
+        [r_0], [c_B(m−1)] reuses [s]) and the randomness of the zero argument
+        ([a0z], [bmz], [r0z], [smz], [t1], [t2]); [x], [y], [xz] are the
+        challenges. The witness of the zero argument is
+        [(A_1, …, A_(m−1), −1)] and [(x B_0, …, x^(m−1) B_(m−2), d)] with
+        [d = x · Σ_i x^i B_(i+1)]. *)
     Definition hadamard_prove (h : G) (gs : list G) (n : nat) (A : list (list F)) (r : list F) (s : F)
       (smid : list F) (x y : F) (a0z bmz : list F) (r0z smz : F) (t1 t2 : list F) (xz : F) : hadamard_argument :=
       let m := length A in
@@ -1093,6 +1321,14 @@ Section BayerGroth.
       mk_had cB (zero_prove h gs (tl A ++ [repeat (opp one) n]) (ds ++ [d]) (tl r ++ [zero]) (ts ++ [t])
         y a0z bmz r0z smz t1 t2 xz).
 
+    (** Completeness of the Hadamard argument: if [2 ≤ m], all columns have
+        length [n = |gs|], the randomness has the stated lengths, and
+        [x ≠ 0], [y ≠ 0], then the honest argument for
+        [cA = com_list A r] and [c_b = com(A_0 ∘ … ∘ A_(m−1); s)] is accepted.
+        The proof shows that the verifier's zero statement equals the
+        commitments of the prover's zero witness ([hzA], [hzB]) and then
+        applies [zero_completeness]; the zero relation is
+        [Σ_i x^(i+1) (1 ⋆ B_(i+1)) − 1 ⋆ (x Σ_i x^i B_(i+1)) = 0]. *)
     Theorem hadamard_completeness : forall (h : G) (gs : list G) (n : nat) (A : list (list F)) (r : list F)
       (s : F) (smid : list F) (x y : F) (a0z bmz : list F) (r0z smz : F) (t1 t2 : list F) (xz : F),
       (2 <= length A)%nat -> Forall (fun a => length a = n) A -> length r = length A ->
@@ -1118,24 +1354,27 @@ Section BayerGroth.
         [apply andb_true_iff; split |] |] |].
       + apply Nat.leb_le; exact hm.
       + apply Nat.eqb_eq; reflexivity.
-      + (* c_{B0} = c_{A0} *)
+      +
+        (* [c_B0 = c_A0]: both commit to [A_0] with randomness [r_0]. *)
         dec_true.
         rewrite (nth_com_list h gs (map (hprefix A) (seq 0 m)) (nth 0 r zero :: smid ++ [s]) 0);
           [| rewrite hBs, hss; reflexivity | rewrite hBs; lia].
         rewrite (nth_com_list h gs A r 0); [| lia | lia].
         rewrite nth_map_seq by lia; rewrite hprefix_0 by exact hA0; reflexivity.
-      + (* c_{B(m−1)} = c_b *)
+      +
+        (* [c_B(m−1) = c_b]: both commit to the full product with [s]. *)
         dec_true.
         rewrite (nth_com_list h gs (map (hprefix A) (seq 0 m)) (nth 0 r zero :: smid ++ [s]) (m - 1));
           [| rewrite hBs, hss; reflexivity | rewrite hBs; lia].
         rewrite nth_map_seq by lia.
         rewrite app_comm_cons; replace (m - 1)%nat with (length (nth 0 r zero :: smid)) at 2 by (cbn; lia).
         rewrite nth_middle; reflexivity.
-      + (* the zero argument *)
-        (* the statement lists are commitment lists *)
+      +
+        (* The zero statement is a commitment list: first component. *)
         assert (hzA : tl (com_list h gs A r) ++ [com h gs (repeat (opp one) n) zero] =
           com_list h gs (tl A ++ [repeat (opp one) n]) (tl r ++ [zero])).
         { rewrite com_list_app by (destruct A, r; cbn in *; lia); rewrite com_list_tl; reflexivity. }
+        (* Second component: [c_Bi^(x^(i+1))] and [c_D] by homomorphism. *)
         assert (hzB : map (fun i => (nth i (com_list h gs (map (hprefix A) (seq 0 m)) (nth 0 r zero :: smid ++ [s])) gid) ^ (fpow x (S i))) (seq 0 (m - 1))
             ++ [(geval (tl (com_list h gs (map (hprefix A) (seq 0 m)) (nth 0 r zero :: smid ++ [s]))) x) ^ x] =
           com_list h gs (map (fun i => lscale (fpow x (S i)) (hprefix A i)) (seq 0 (m - 1)) ++ [lscale x (lveval (tl (map (hprefix A) (seq 0 m))) x)])
@@ -1156,6 +1395,8 @@ Section BayerGroth.
           - rewrite com_list_tl, htl; cbn [tl].
             rewrite geval_com_list by (rewrite map_length, seq_length, app_length; cbn; lia).
             unfold com_list; cbn [combine map fst snd]; rewrite com_scale; reflexivity. }
+        (* Apply zero completeness; remaining goals are lengths and the
+           zero relation. *)
         rewrite hzA, hzB.
         apply zero_completeness.
         * len_tac.
@@ -1164,11 +1405,13 @@ Section BayerGroth.
         * len_tac.
         * len_tac.
         * len_tac.
-        * (* the rows of (a_0, a_1, …, a_{m−1}, −1) have the key's length *)
+        *
+          (* Rows [a0z, A_1, …, A_(m−1), −1] have the key's length. *)
           constructor; [exact ha0z |]. apply Forall_app; split.
           - rewrite Forall_forall in hA |- *; intros v hv; rewrite <-hng; apply hA, in_tl; exact hv.
           - constructor; [rewrite repeat_length; exact hng | constructor].
-        * (* the rows of (b_m, x b_0, …, x^{m−1} b_{m−2}, d) have the key's length *)
+        *
+          (* Rows [bmz, x B_0, …, x^(m−1) B_(m−2), d] have the key's length. *)
           constructor; [exact hbmz |]. apply Forall_app; split.
           - rewrite Forall_forall; intros v hv; apply in_map_iff in hv; destruct hv as (i & <- & hi); apply in_seq in hi.
             unfold SigmaK.lscale; rewrite length_map, <-hng; apply (hprefix_length n A i hA); lia.
@@ -1177,7 +1420,8 @@ Section BayerGroth.
             { rewrite htl; intro e; apply (f_equal (@length (list F))) in e; rewrite map_length, seq_length in e; cbn in e; lia. }
             rewrite htl; intros v hv; apply in_map_iff in hv; destruct hv as (i & <- & hi); apply in_seq in hi.
             rewrite <-hng; apply (hprefix_length n A (S i) hA); lia.
-        * (* Σ_{i<m−1} a_{i+1} ⋆ (x^{i+1} b_i) + (−1) ⋆ d = 0 *)
+        *
+          (* The zero relation, via [star_ones_hprefix] term by term. *)
           rewrite combine_app_eq by (rewrite map_length, seq_length; destruct A; [contradiction | cbn; lia]).
           rewrite map_app, sum_app; cbn [combine map fold_right fst snd].
           set (S_ := fun i => star y (repeat one n) (hprefix A (S i))).
@@ -1201,13 +1445,20 @@ Section BayerGroth.
 
   End Hadamard.
 
-  (* ---------------------------------------------------------------- *)
-  (* Multi-exponentiation argument (Algorithms 9.15, 9.16, 9.17)       *)
-  (* ---------------------------------------------------------------- *)
+  (** ** Multi-exponentiation argument (Alg. 9.15, 9.16, 9.17)
 
+      Ciphertexts for [l] recipients are vectors [(γ, φ_0, …, φ_(l−1))] in
+      [G^(l+1)] with componentwise operations ([cmul], [cpow]); [cmexp] and
+      [ceval] are [lmexp] and [veval] in that space. Statement: an [m × n]
+      matrix [Cs] of ciphertexts (rows [C_1 … C_m]), a ciphertext [C], and
+      commitments [cA] to vectors [A_1 … A_m]. Witness: openings and [ρ]
+      with [C = Enc(1; ρ) · ∏_i C_i^(A_i)]. The prover commits to a random
+      row [a_0], to scalars [b_k] (with [b_m = 0]) and sends the diagonal
+      products [E_k = Enc(g^(b_k); τ_k) · D_k], [k < 2m], with [E_m = C]. *)
   Section MultiExponentiation.
 
-    (* ciphertexts with l recipients: (γ, φ_0, …, φ_{l−1}), the product vector space *)
+    (** [l] is the number of message components; ciphertexts have [l + 1]
+        group elements. *)
     Context {l : nat}.
     Local Notation CT := (Vector.t G (S l)).
     Local Notation cone := (vec_id (V := G) (vid := gid) (S l)).
@@ -1219,13 +1470,17 @@ Section BayerGroth.
     Local Notation cpadd := (vpadd (vadd := cmul)).
     Local Notation cprod := (fold_right cmul cone).
 
-    (* Algorithm 8.6: Enc(m; r) = (g^r, pk_j^r m_j) *)
+    (** Multi-recipient ElGamal encryption (Alg. 8.6):
+        [Enc(ms; r) = (g^r, pk_0^r ms_0, …, pk_(l−1)^r ms_(l−1))]. *)
     Definition enc (g : G) (pk : Vector.t G l) (ms : Vector.t G l) (r : F) : CT :=
       Vector.cons G (g ^ r) l (Vector.map2 (fun y m => gop (y ^ r) m) pk ms).
 
-    (* Enc(g^b, …, g^b; τ) *)
+    (** [encg g pk b τ = Enc((g^b, …, g^b); τ)], the encryption of the
+        constant message [g^b] used to mask the diagonals. *)
     Definition encg (g : G) (pk : Vector.t G l) (b τ : F) : CT := enc g pk (Vector.const (g ^ b) l) τ.
 
+    (** [encg] is a homomorphism: products and powers of [encg] ciphertexts
+        are [encg] ciphertexts of sums and products of exponents. *)
     Lemma encg_mul : forall g pk b1 τ1 b2 τ2,
       cmul (encg g pk b1 τ1) (encg g pk b2 τ2) = encg g pk (b1 + b2) (τ1 + τ2).
     Proof.
@@ -1250,7 +1505,7 @@ Section BayerGroth.
         rewrite gop_pow, <-!gpow_mul; reflexivity.
     Qed.
 
-    (* Σ_k x^k Enc(g^{b_k}; τ_k) = Enc(g^{Σ x^k b_k}; Σ x^k τ_k) *)
+    (** [∏_k encg(b_k; τ_k)^(x^k) = encg(Σ x^k b_k; Σ x^k τ_k)]. *)
     Lemma ceval_encg : forall g pk (bs τs : list F) x, length bs = length τs ->
       ceval (map (fun p => encg g pk (fst p) (snd p)) (combine bs τs)) x = encg g pk (feval bs x) (feval τs x).
     Proof.
@@ -1268,16 +1523,18 @@ Section BayerGroth.
         replace (feval τs x * x) with (x * feval τs x) by field; reflexivity.
     Qed.
 
-    (* ---- diagonal products via shifted evaluation ---- *)
-
-    (* the row i contributes C_i^{a_0}, …, C_i^{a_m} shifted by m − i − 1 places *)
+    (** Row [i] of the diagonal table: the list [C_i^(a_0), …, C_i^(a_m)],
+        shifted right by [m − i − 1] places, where [As = (a_0, A_1, …, A_m)]. *)
     Definition diag_row (m : nat) (As : list (list F)) (p : nat * list CT) : list CT :=
       repeat cone (m - fst p - 1) ++ map (fun a => cmexp (snd p) a) As.
 
-    (* the products of the diagonals D_0, …, D_{2m−1} (Algorithm 9.17) *)
+    (** [diagonals m Cs As] sums the shifted rows: entry [k] is the
+        diagonal product [D_k = ∏_i C_i^(As_(k−m+i+1))] over the rows [i]
+        whose index is in range (Alg. 9.17), for [k < 2m]. *)
     Definition diagonals (m : nat) (Cs : list (list CT)) (As : list (list F)) : list CT :=
       fold_right (fun row acc => cpadd row acc) [] (map (diag_row m As) (combine (seq 0 m) Cs)).
 
+    (** Evaluation, entries and length of a padded sum of rows. *)
     Lemma ceval_fold_cpadd : forall (L : list (list CT)) x,
       ceval (fold_right (fun row acc => cpadd row acc) [] L) x = cprod (map (fun row => ceval row x) L).
     Proof.
@@ -1299,7 +1556,8 @@ Section BayerGroth.
       inversion hL as [| ? ? hrow hL']; subst; cbn [fold_right]; rewrite vpadd_length; specialize (ih b hL'); lia.
     Qed.
 
-    (* C^{Σ x^i a_i} as an evaluation *)
+    (** [Σ_k x^k C^(A_k) = C^(Σ_k x^k A_k)], i.e. [cmexp] is linear in its
+        exponent vector. *)
     Lemma ceval_map_cmexp : forall (Ci : list CT) (As : list (list F)) x,
       ceval (map (fun a => cmexp Ci a) As) x = cmexp Ci (lveval As x).
     Proof.
@@ -1310,6 +1568,8 @@ Section BayerGroth.
       + intros; apply (lmexp_scale (HV := CTvs)).
     Qed.
 
+    (** Evaluating row [i] of the table gives [C_i^(x^(m−i−1) · ã)] where
+        [ã = Σ_k x^k a_k]. *)
     Lemma ceval_diag_row : forall m As x (p : nat * list CT),
       ceval (diag_row m As p) x = cmexp (snd p) (lscale (fpow x (m - fst p - 1)) (lveval As x)).
     Proof.
@@ -1317,12 +1577,16 @@ Section BayerGroth.
       reflexivity.
     Qed.
 
-    (* ---- the argument ---- *)
-
+    (** The prover's messages [(c_A0, c_B, E, ã, r̃, b̃, s̃, τ̃)]. *)
     Record multiexp_argument : Type := mk_mexp {
       me_cA0 : G; me_cB : list G; me_E : list CT; me_a : list F; me_r : F; me_b : F; me_s : F; me_tau : F }.
 
-    (* Algorithm 9.16; statement (rows Cs, C, cA); challenge x *)
+    (** Alg. 9.16: the verifier for statement [(Cs, C, cA)] and challenge [x]
+        (public key [pk], generator [g]). Accepts iff [m = |cA| ≥ 1],
+        [|Cs| = m], [|c_B| = |E| = 2m], [c_B,m = 1], [E_m = C],
+        [∏ (c_A0 :: cA)^(x^i) = com(ã; r̃)], [∏ c_B,k^(x^k) = com([b̃]; s̃)],
+        [∏ E_k^(x^k) = encg(b̃; τ̃) · ∏_i C_i^(x^(m−i−1) ã)], and
+        [|ã| = |gs|]. *)
     Definition multiexp_verify (h : G) (gs : list G) (g : G) (pk : Vector.t G l)
       (Cs : list (list CT)) (C : CT) (cA : list G) (x : F) (arg : multiexp_argument) : bool :=
       let m := length cA in
@@ -1336,10 +1600,11 @@ Section BayerGroth.
        if vec_dec Gdec (ceval E x) (cmul (encg g pk (me_b arg) (me_tau arg)) prodC) then true else false) &&
       (length a =? length gs).
 
-    (* set the m-th entry of a list *)
+    (** [set_nth k v xs] replaces the [k]-th entry of [xs] by [v]. *)
     Definition set_nth (k : nat) (v : F) (xs : list F) : list F :=
       map (fun p => if Nat.eqb (fst p) k then v else snd p) (combine (seq 0 (length xs)) xs).
 
+    (** Length and entries of [set_nth]. *)
     Lemma set_nth_length : forall k v xs, length (set_nth k v xs) = length xs.
     Proof. intros; unfold set_nth; rewrite map_length, combine_length, seq_length; lia. Qed.
 
@@ -1354,8 +1619,10 @@ Section BayerGroth.
       rewrite seq_nth by exact hi; reflexivity.
     Qed.
 
-    (* Algorithm 9.15 with its randomness as parameters: a_0, r_0, and the
-      2m values b_k, s_k, τ_k (whose m-th entries are replaced by 0, 0, ρ) *)
+    (** Alg. 9.15 with its randomness as parameters: [a0], [r0], and [2m]
+        values each of [bs], [ss], [τs]; their [m]-th entries are overridden
+        by [0], [0] and [ρ] respectively, so that [c_B,m = 1] and
+        [E_m = Enc(1; ρ) · D_m = C]. *)
     Definition multiexp_prove (h : G) (gs : list G) (g : G) (pk : Vector.t G l)
       (Cs : list (list CT)) (A : list (list F)) (r : list F) (ρ : F)
       (a0 : list F) (r0 : F) (bs ss τs : list F) (x : F) : multiexp_argument :=
@@ -1369,6 +1636,8 @@ Section BayerGroth.
       mk_mexp (com h gs a0 r0) (com_list h gs (map (fun bk => [bk]) bz) sz) E
         (lveval As x) (feval (r0 :: r) x) (feval bz x) (feval sz x) (feval τz x).
 
+    (** Entry [m] of row [i] of the table is [C_i^(As_(i+1))], i.e. row [i]
+        of [Cs] raised to the [i]-th vector of [A]. *)
     Lemma nth_diag_row_m : forall m As i (Ci : list CT), (i < m)%nat -> (length As = S m) ->
       nth m (diag_row m As (i, Ci)) cone = cmexp Ci (nth (S i) As []).
     Proof.
@@ -1379,6 +1648,11 @@ Section BayerGroth.
       apply map_nth.
     Qed.
 
+    (** Completeness of the multi-exponentiation argument: for any [l], if
+        [m = |A| ≥ 1], [|Cs| = m], all rows of [a0 :: A] have length [|gs|]
+        and the randomness lists have the stated lengths, then the honest
+        argument for [C = Enc(1; ρ) · ∏_i C_i^(A_i)] and [cA = com_list A r]
+        is accepted for every challenge [x]. *)
     Theorem multiexp_completeness : forall (h : G) (gs : list G) (g : G) (pk : Vector.t G l)
       (Cs : list (list CT)) (A : list (list F)) (r : list F) (ρ : F) (a0 : list F) (r0 : F) (bs ss τs : list F) (x : F),
       (1 <= length A)%nat -> length Cs = length A -> length r = length A ->
@@ -1406,7 +1680,8 @@ Section BayerGroth.
       + apply Nat.eqb_eq; reflexivity.
       + apply Nat.eqb_eq; lia.
       + apply Nat.eqb_eq; reflexivity.
-      + (* c_{Bm} = 1 *)
+      +
+        (* [c_B,m = com([0]; 0) = 1]. *)
         dec_true.
         rewrite (nth_com_list h gs (map (fun bk => [bk]) (set_nth m zero bs)) (set_nth m zero ss) m);
           [| rewrite map_length, !set_nth_length; lia | rewrite map_length, set_nth_length; lia].
@@ -1414,7 +1689,9 @@ Section BayerGroth.
           by (rewrite map_length, set_nth_length; lia).
         rewrite (map_nth (fun bk : F => [bk])), !nth_set_nth by lia; rewrite Nat.eqb_refl.
         apply com_zero_single.
-      + (* E_m = C *)
+      +
+        (* [E_m = Enc(1; ρ) · D_m], and [D_m = ∏_i C_i^(nth i A)], so
+           [E_m] is the statement's [C]. *)
         dec_true.
         rewrite (nth_vpadd (HV := CTvs)).
         rewrite (nth_indep (map _ (combine _ _)) cone ((fun p => encg g pk (fst p) (snd p)) (zero, zero)))
@@ -1428,36 +1705,46 @@ Section BayerGroth.
         - f_equal; apply map_ext_in; intros (i & Ci) hp.
           apply in_combine_l in hp; apply in_seq in hp; cbn [fst snd].
           rewrite nth_diag_row_m by (cbn; lia); cbn [nth]; reflexivity.
-      + (* c_{A0} ∏ c_{Ai}^{x^i} = com(a; r) *)
+      +
+        (* Evaluation of [c_A0 :: cA]. *)
         dec_true; rewrite <-com_list_cons, geval_com_list by (cbn; lia); reflexivity.
-      + (* c_{B0} ∏ c_{Bk}^{x^k} = com(b; s) *)
+      +
+        (* Evaluation of [c_B]. *)
         dec_true; rewrite geval_com_list by (rewrite map_length, !set_nth_length; lia).
         rewrite lveval_singletons; [reflexivity |].
         intro e; apply (f_equal (@length F)) in e; rewrite set_nth_length in e; cbn in e; lia.
-      + (* E_0 ∏ E_k^{x^k} = Enc(g^b; τ) ∏_i C_i^{x^{m−i−1} a} *)
+      +
+        (* Evaluation of [E] splits into the [encg] part and the diagonals. *)
         dec_true.
         rewrite (veval_vpadd (HV := CTvs)), ceval_encg by (rewrite !set_nth_length; lia).
         f_equal.
         unfold diagonals; rewrite ceval_fold_cpadd, map_map.
         f_equal; apply map_ext_in; intros (i & Ci) hp; rewrite ceval_diag_row; reflexivity.
-      + (* the response has the key's length *)
+      +
         apply Nat.eqb_eq; apply lveval_length; [discriminate | rewrite Forall_forall in hAn; exact hAn].
     Qed.
 
   End MultiExponentiation.
 
-  (* ---------------------------------------------------------------- *)
-  (* Product argument (Algorithms 9.18, 9.19)                          *)
-  (* ---------------------------------------------------------------- *)
+  (** ** Product argument (Alg. 9.18, 9.19)
 
+      Statement: commitments [cA] to the columns [A_1 … A_m] of an [n × m]
+      matrix and a scalar [b]. Witness: openings with
+      [∏_(i,j) A_(i,j) = b]. For [m > 1] the prover commits to
+      [b' = A_1 ∘ … ∘ A_m], proves [b'] correct by a Hadamard argument and
+      then [∏ b' = b] by a single value product argument; for [m = 1] only
+      the single value product argument on [c_A1] is used. *)
   Section ProductArgument.
 
+    (** The prover's messages: [c_b] (unused, set to [1], when [m = 1]), the
+        optional Hadamard argument and the single value product argument. *)
     Record product_argument : Type := mk_prod {
       pa_cb : G; pa_had : option hadamard_argument; pa_svp : svp_argument }.
 
-    (* Algorithm 9.19; statement (cA = (c_{A1}, …, c_{Am}), b), vectors of length n;
-      challenges xh, yh, xz for the Hadamard and zero arguments, xs for the
-      single value product argument *)
+    (** Alg. 9.19: the verifier, with challenges [xh], [yh] (Hadamard), [xz]
+        (its zero argument) and [xs] (single value product). For [m > 1] it
+        requires a Hadamard argument for [(cA, c_b)] and an SVP argument for
+        [(c_b, b)]; for [m ≤ 1] only an SVP argument for [(c_A1, b)]. *)
     Definition product_verify (h : G) (gs : list G) (n : nat) (cA : list G) (b : F) (xh yh xz xs : F)
       (arg : product_argument) : bool :=
       let m := length cA in
@@ -1468,7 +1755,8 @@ Section BayerGroth.
         end
       else svp_verify h gs (nth 0 cA gid) b xs (pa_svp arg).
 
-    (* Algorithm 9.18 with its randomness as parameters *)
+    (** Alg. 9.18 with its randomness as parameters (that of the commitment
+        [c_b], of the Hadamard argument and of the SVP argument). *)
     Definition product_prove (h : G) (gs : list G) (n : nat) (A : list (list F)) (r : list F)
       (s : F) (smid : list F) (a0z bmz : list F) (r0z smz : F) (t1 t2 : list F)
       (d : list F) (rd : F) (dmid : list F) (s0 sx : F) (xh yh xz xs : F) : product_argument :=
@@ -1480,6 +1768,11 @@ Section BayerGroth.
       else
         mk_prod gid None (svp_prove h gs (nth 0 A []) (nth 0 r zero) d rd dmid s0 sx xs).
 
+    (** Completeness of the product argument: if [m ≥ 1], [n = |gs| ≥ 2],
+        all columns have length [n], the randomness lists have the stated
+        lengths, and (for [m > 1]) [xh ≠ 0], [yh ≠ 0], the honest argument for
+        [cA = com_list A r] and [b = ∏ (A_1 ∘ … ∘ A_m)] is accepted. It
+        combines [hadamard_completeness] and [svp_completeness]. *)
     Theorem product_completeness : forall (h : G) (gs : list G) (n : nat) (A : list (list F)) (r : list F)
       (s : F) (smid : list F) (a0z bmz : list F) (r0z smz : F) (t1 t2 : list F)
       (d : list F) (rd : F) (dmid : list F) (s0 sx : F) (xh yh xz xs : F),
@@ -1511,10 +1804,12 @@ Section BayerGroth.
 
   End ProductArgument.
 
-  (* ---------------------------------------------------------------- *)
-  (* The shuffle argument (Algorithms 9.11, 9.12)                      *)
-  (* ---------------------------------------------------------------- *)
+  (** ** Helpers for the shuffle argument
 
+      Products over permuted lists, matrices stored as chunks of a flat
+      list, and the product of all entries of a matrix. *)
+
+  (** A product is invariant under permutation. *)
   Lemma fold_mul_perm : forall (l1 l2 : list F), Permutation l1 l2 ->
     fold_right mul one l1 = fold_right mul one l2.
   Proof.
@@ -1525,10 +1820,13 @@ Section BayerGroth.
     + rewrite ih1; exact ih2.
   Qed.
 
+  (** [combine] of two maps over the same list. *)
   Lemma combine_map_same : forall {A B C : Type} (f : A -> B) (g : A -> C) (l : list A),
     combine (map f l) (map g l) = map (fun a => (f a, g a)) l.
   Proof. induction l as [| a l ih]; [reflexivity | cbn; rewrite ih; reflexivity]. Qed.
 
+  (** [map (fun i => f (nth i l d)) (seq 0 |l|) = map f l], and the variant
+      with an explicit length. *)
   Lemma map_nth_seq : forall {A B : Type} (f : A -> B) (d : A) (l : list A),
     map (fun i => f (nth i l d)) (seq 0 (length l)) = map f l.
   Proof.
@@ -1541,6 +1839,7 @@ Section BayerGroth.
     map (fun i => f (nth i l d)) (seq 0 N) = map f l.
   Proof. intros * hl; rewrite <-hl; apply map_nth_seq. Qed.
 
+  (** [lpows x N = map (fpow x) (seq 0 N)]. *)
   Lemma lpows_map : forall x N, lpows x N = map (fpow x) (seq 0 N).
   Proof.
     intros x N; induction N as [| N ih]; [reflexivity |].
@@ -1548,6 +1847,7 @@ Section BayerGroth.
     f_equal; apply map_ext; intro i; cbn [SigmaK.fpow]; reflexivity.
   Qed.
 
+  (** Entries of [skipn], [firstn] and [repeat]. *)
   Lemma nth_skipn' : forall {X : Type} (l : list X) k i (d : X), nth i (skipn k l) d = nth (k + i) l d.
   Proof.
     intros X l k; revert l; induction k as [| k ih]; intros l i d; [reflexivity |].
@@ -1567,11 +1867,14 @@ Section BayerGroth.
     destruct i as [| i]; [reflexivity | cbn [repeat nth]; apply ih; lia].
   Qed.
 
-  (* m chunks of n consecutive entries (Algorithm 9.13, the rows; the
-    transposed exponent matrices have the same chunks as columns) *)
+  (** [chunk n m xs] splits [xs] into [m] consecutive blocks of [n] entries:
+      the rows of the [m × n] matrix stored row-major in [xs] (Alg. 9.13). *)
   Fixpoint chunk {X : Type} (n m : nat) (xs : list X) : list (list X) :=
     match m with 0 => [] | S m' => firstn n xs :: chunk n m' (skipn n xs) end.
 
+  (** [chunk] has [m] blocks, concatenating them gives back [xs] (when
+      [|xs| = m·n]), every block has length [n], and block [j] is
+      [firstn n (skipn (j·n) xs)]. *)
   Lemma chunk_length : forall {X : Type} n m (xs : list X), length (chunk n m xs) = m.
   Proof. intros X n m; revert n; induction m as [| m ih]; intros n xs; [reflexivity | cbn; rewrite ih; reflexivity]. Qed.
 
@@ -1599,11 +1902,12 @@ Section BayerGroth.
     cbn [chunk nth]; rewrite ih by lia; rewrite skipn_skipn; f_equal; f_equal; lia.
   Qed.
 
+  (** Entry [t] of block [k]. *)
   Lemma nth_firstn_skipn : forall {X : Type} n k (xs : list X) t (d : X), (t < n)%nat ->
     nth t (firstn n (skipn k xs)) d = nth (k + t) xs d.
   Proof. intros; rewrite nth_firstn' by assumption; apply nth_skipn'. Qed.
 
-  (* the product of all entries of a matrix is the product of its Hadamard product *)
+  (** [∏ (a ∘ b) = ∏ a · ∏ b] for equal-length [a], [b]. *)
   Lemma fold_mul_hmul : forall a b, length a = length b ->
     fold_right mul one (hmul a b) = fold_right mul one a * fold_right mul one b.
   Proof.
@@ -1611,6 +1915,7 @@ Section BayerGroth.
     unfold hmul; cbn [combine map fst snd fold_right]; fold (hmul a b); rewrite ih by (cbn in hl; lia); field.
   Qed.
 
+  (** Generalisation of [fold_mul_hmul] to a fold of Hadamard products. *)
   Lemma fold_mul_fold_left_hmul : forall n (cs : list (list F)) (c : list F),
     Forall (fun c => length c = n) cs -> length c = n ->
     fold_right mul one (fold_left hmul cs c) = fold_right mul one c * fold_right mul one (concat cs).
@@ -1621,6 +1926,8 @@ Section BayerGroth.
     rewrite fold_mul_hmul by lia; rewrite fold_right_app, (fold_right_mul_init c1 (fold_right mul one (concat cs))); field.
   Qed.
 
+  (** The product of the entries of [A_1 ∘ … ∘ A_m] is the product of all
+      entries of the matrix [A]. *)
   Lemma prod_hprefix_concat : forall n (A : list (list F)), A <> [] -> Forall (fun a => length a = n) A ->
     fold_right mul one (hprefix A (length A - 1)) = fold_right mul one (concat A).
   Proof.
@@ -1631,9 +1938,14 @@ Section BayerGroth.
     rewrite (fold_mul_fold_left_hmul n) by assumption; rewrite fold_right_app, (fold_right_mul_init a0 (fold_right mul one (concat A))); field.
   Qed.
 
-  (* the natural number i as a field element *)
+  (** ** The shuffle argument (Alg. 9.11, 9.12)
+
+      Statement: ciphertext lists [Cs], [Cs'] of length [N = m·n] (with
+      [m ≥ 1], [n ≥ 2]). Witness: a permutation [π] of [0 … N−1] and
+      randomisers [ρ] with [C'_i = Enc(1; ρ_i) · C_π(i)]. *)
   Section Shuffle.
 
+    (** Ciphertexts have [l + 1] components; [enc1 g pk ρ = Enc(1; ρ)]. *)
     Context {l : nat}.
     Local Notation CT := (Vector.t G (S l)).
     Local Notation cone := (vec_id (V := G) (vid := gid) (S l)).
@@ -1644,6 +1956,8 @@ Section BayerGroth.
     Local Notation cprod := (fold_right cmul cone).
     Local Notation enc1 g pk := (encg (l := l) g pk zero).
 
+    (** [Enc(1; 0)] is the identity ciphertext, and [enc1] is [enc] of the
+        all-ones message. *)
     Lemma encg_zero_zero : forall g pk, encg (l := l) g pk zero zero = cone.
     Proof.
       intros; unfold encg, enc, vec_id; apply Vector.eq_nth_iff; intros j ? <-.
@@ -1656,7 +1970,7 @@ Section BayerGroth.
     Lemma enc1_ones : forall g pk ρ, enc1 g pk ρ = enc (l := l) g pk (Vector.const gid l) ρ.
     Proof. intros; unfold encg; rewrite gpow_zero; reflexivity. Qed.
 
-    (* ∏_i Enc(g^0; f_i) = Enc(g^0; Σ f_i) *)
+    (** [∏_i Enc(1; f_i) = Enc(1; Σ_i f_i)]. *)
     Lemma cprod_enc1 : forall g pk (f : nat -> F) (L : list nat),
       cprod (map (fun i => enc1 g pk (f i)) L) = enc1 g pk (fold_right add zero (map f L)).
     Proof.
@@ -1664,7 +1978,9 @@ Section BayerGroth.
       cbn [map fold_right]; rewrite ih, encg_mul; f_equal; field.
     Qed.
 
-    (* the multi-exponentiation of the rows with the columns is the flat one *)
+    (** The multi-exponentiation of the rows of [Cs] with the rows of [b] is
+        the flat multi-exponentiation [∏_i C_i^(b_i)]; [cmexp_chunks] is the
+        indexed form used by [multiexp_verify]. *)
     Lemma cmexp_chunks_pairs : forall n m (Cs : list CT) (b : list F), length Cs = (m * n)%nat -> length b = (m * n)%nat ->
       cprod (map (fun p => cmexp (fst p) (snd p)) (combine (chunk n m Cs) (chunk n m b))) = cmexp Cs b.
     Proof.
@@ -1693,22 +2009,31 @@ Section BayerGroth.
         rewrite combine_nth by (rewrite !chunk_length; reflexivity); reflexivity.
     Qed.
 
+    (** The prover's messages: [cA] (commitments to the rows of [π]), [cB]
+        (commitments to the rows of [x^π(i)]), the product argument and the
+        multi-exponentiation argument. *)
     Record shuffle_argument : Type := mk_shuffle {
       sh_cA : list G; sh_cB : list G; sh_prod : product_argument; sh_mexp : multiexp_argument (l := l) }.
 
-    (* Algorithm 9.12; statement (Cs, Cs') with N = m·n; challenges x, y, z of the
-      shuffle argument, xh, yh, xz, xs of the product argument and xm of the
-      multi-exponentiation argument *)
-    (* the statement of the product argument: the commitments c_D c_{−z} and the
-      product ∏_i (y·i + x^i − z) *)
+    (** The statement of the embedded product argument: the commitments
+        [c_A,i^y · c_B,i · c_(−z)] with [c_(−z) = com((−z, …, −z); 0)], which
+        commit to the rows of [d = y·a + b − z], and the public value
+        [∏_(i<N) (y·i + x^i − z)]. *)
     Definition shuffle_product_stmt (h : G) (gs : list G) (n N : nat) (cA cB : list G) (x y z : F) : list G * F :=
       let cneg := com h gs (repeat (opp z) n) zero in
       let cD := map (fun p => gop ((fst p) ^ y) (snd p)) (combine cA cB) in
       (map (fun c => gop c cneg) cD, fold_right mul one (map (fun i => y * fnat i + fpow x i - z) (seq 0 N))).
 
-    (* the ciphertext C = ∏_i C_i^{x^i} of the multi-exponentiation statement *)
+    (** The ciphertext [C = ∏_i C_i^(x^i)] of the multi-exponentiation
+        statement. *)
     Definition shuffle_mexp_C (Cs : list CT) (x : F) (N : nat) : CT := cmexp Cs (lpows x N).
 
+    (** Alg. 9.12: the shuffle verifier. Challenges: [x], [y], [z] of the
+        shuffle, [xh], [yh], [xz], [xs] of the product argument, [xm] of the
+        multi-exponentiation argument. Accepts iff [m ≥ 1], [n ≥ 2],
+        [|Cs| = |Cs'| = N], [|cA| = |cB| = m], the product argument for
+        [shuffle_product_stmt] verifies, and the multi-exponentiation argument
+        for the rows of [Cs'], [C = ∏ C_i^(x^i)] and [cB] verifies. *)
     Definition shuffle_verify (h : G) (gs : list G) (g : G) (pk : Vector.t G l) (m n : nat)
       (Cs Cs' : list CT) (x y z xh yh xz xs xm : F) (arg : shuffle_argument) : bool :=
       let N := (m * n)%nat in
@@ -1718,8 +2043,12 @@ Section BayerGroth.
        product_verify h gs n (fst st) (snd st) xh yh xz xs (sh_prod arg)) &&
       multiexp_verify h gs g pk (chunk n m Cs') (shuffle_mexp_C Cs x N) cB xm (sh_mexp arg).
 
-    (* Algorithm 9.11 with the witness (π as the list of its values, ρ) and the
-      randomness of every sub-argument as parameters *)
+    (** Alg. 9.11 with the witness ([perm], the list of values [π(i)], and
+        [ρs]) and all randomness as parameters: [r], [s] for [cA], [cB];
+        [sp] … [sx] for the product argument; [a0] … [τs] for the
+        multi-exponentiation argument. Internally [a = π], [b = (x^π(i))],
+        [d = y a + b − z], [t = y r + s], and the multi-exponentiation
+        randomness [ρ = −Σ_i ρ_i b_i]. *)
     Definition shuffle_prove (h : G) (gs : list G) (g : G) (pk : Vector.t G l) (m n : nat)
       (Cs' : list CT) (perm : list nat) (ρs : list F) (r s : list F)
       (sp : F) (smid : list F) (a0z bmz : list F) (r0z smz : F) (t1 t2 : list F)
@@ -1737,6 +2066,19 @@ Section BayerGroth.
         (product_prove h gs n (chunk n m dz) t sp smid a0z bmz r0z smz t1 t2 d rd dmid s0 sx xh yh xz xs)
         (multiexp_prove h gs g pk (chunk n m Cs') B s ρ a0 r0 bs ss τs xm).
 
+    (** Completeness of the shuffle argument: for any [l], if [perm] is a
+        permutation of [0 … N−1], [C'_i = Enc(1; ρs_i) · C_perm(i)] for every
+        [i < N], [m ≥ 1], [n = |gs| ≥ 2], all randomness has the stated
+        lengths and (for [m > 1]) [xh ≠ 0], [yh ≠ 0], then the honest argument
+        is accepted for every [x], [y], [z], [xz], [xs], [xm].
+
+        Proof: the product statement is [com_list] of the rows of [d] with
+        randomness [t] ([hcD]), and [∏ (y·i + x^i − z)] equals the product of
+        all entries of [d] since [perm] is a permutation ([hprod]); then
+        [product_completeness]. For the multi-exponentiation,
+        [∏ C'_i^(b_i) = Enc(1; Σ ρ_i b_i) · ∏ C_i^(x^i)] ([hmexp]), hence
+        [∏ C_i^(x^i) = Enc(1; ρ) · ∏ C'_i^(b_i)] ([hC0]); then
+        [multiexp_completeness]. *)
     Theorem shuffle_completeness : forall (h : G) (gs : list G) (g : G) (pk : Vector.t G l) (m n : nat)
       (Cs Cs' : list CT) (perm : list nat) (ρs : list F) (r s : list F)
       (sp : F) (smid : list F) (a0z bmz : list F) (r0z smz : F) (t1 t2 : list F)
@@ -1781,7 +2123,9 @@ Section BayerGroth.
       + apply Nat.eqb_eq; exact hC'.
       + apply Nat.eqb_eq; reflexivity.
       + apply Nat.eqb_eq; reflexivity.
-      + (* the product argument *)
+      +
+        (* The product statement commits to the rows of [d] with randomness
+           [t = y r + s]. *)
         assert (hcD : map (fun c => gop c (com h gs (repeat (opp z) n) zero))
             (map (fun p => gop ((fst p) ^ y) (snd p)) (combine (com_list h gs (chunk n m a) r) (com_list h gs (chunk n m b) s))) =
           com_list h gs (chunk n m dz) t).
@@ -1818,6 +2162,8 @@ Section BayerGroth.
         rewrite hcD.
         assert (hne : chunk n m dz <> []).
         { intro e; apply (f_equal (@length (list F))) in e; rewrite chunk_length in e; cbn in e; lia. }
+        (* The public product equals the product of the entries of [d],
+           because [perm] permutes [0 … N−1]. *)
         assert (hprod : fold_right mul one (map (fun i => y * fnat i + fpow x i - z) (seq 0 (m * n)%nat)) =
           fold_right mul one (hprefix (chunk n m dz) (length (chunk n m dz) - 1))).
         { rewrite (prod_hprefix_concat n) by (assumption || (apply chunk_forall_length; lia)).
@@ -1827,7 +2173,8 @@ Section BayerGroth.
         rewrite hprod.
         apply product_completeness; rewrite ?chunk_length; try assumption; try lia.
         apply chunk_forall_length; lia.
-      + (* the multi-exponentiation argument *)
+      +
+        (* Multi-exponentiation: rewrite [Cs'] by the re-encryption relation. *)
         set (inner := fold_right add zero (map (fun p => fst p * snd p) (combine ρs b))).
         assert (hmexp : cmexp Cs' b = cmul (enc1 g pk inner) (cmexp Cs (lpows x (m * n)%nat))).
         { rewrite !lmexp_as_fold.
@@ -1847,7 +2194,7 @@ Section BayerGroth.
                  rewrite (vadd_smul (HV := CTvs)); reflexivity. }
           rewrite (fold_map_vadd (HV := CTvs)).
           f_equal.
-          - (* the randomness *)
+          -
             rewrite (map_ext (fun i => cpow (enc1 g pk (nth i ρs zero)) (fpow x (nth i perm 0%nat)))
               (fun i => enc1 g pk (nth i ρs zero * fpow x (nth i perm 0%nat))))
               by (intro i; rewrite encg_pow; f_equal; field).
@@ -1861,7 +2208,7 @@ Section BayerGroth.
               rewrite (map_nth (fun p => fst p * snd p)), combine_nth by lia; cbn [fst snd].
               unfold b; rewrite (nth_indep (map _ perm) zero ((fun i => fpow x i) 0%nat)) by (rewrite map_length; lia).
               rewrite (map_nth (fun i => fpow x i)); reflexivity.
-          - (* the permuted product *)
+          -
             rewrite (map_nth_seq' (fun j => cpow (nth j Cs cone) (fpow x j)) 0%nat perm (m * n)%nat hpl).
             rewrite (fold_vadd_perm (HV := CTvs) _ _ (Permutation_map _ hperm)).
             f_equal; rewrite lpows_map.
@@ -1875,6 +2222,7 @@ Section BayerGroth.
               rewrite (map_nth (fun p => cpow (fst p) (snd p))), combine_nth by (rewrite map_length, seq_length; lia); cbn [fst snd].
               rewrite (nth_indep (map _ (seq 0 (m * n)%nat)) zero ((fun i => fpow x i) 0%nat)) by (rewrite map_length, seq_length; lia).
               rewrite (map_nth (fun i => fpow x i)), seq_nth by exact hj; reflexivity. }
+        (* Move the [Enc(1; Σ ρ_i b_i)] factor to the other side. *)
         assert (hC0 : cmexp Cs (lpows x (m * n)%nat) =
           cmul (enc g pk (Vector.const gid l) (opp inner))
             (cprod (map (fun p => cmexp (snd p) (nth (fst p) (chunk n m b) [])) (combine (seq 0 (length (chunk n m b))) (chunk n m Cs'))))).

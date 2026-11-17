@@ -1,16 +1,31 @@
-(* The library at P-256: Schnorr proofs, Chaum-Pedersen proofs and
-   approval-voting ballots (individual 0/1 proofs and the overall proof)
-   over the P-256 curve group, with Z/nZ as the scalar field. Everything is
-   an instance of the generic definitions; the only P-256-specific inputs
-   are the vector-space instance P256.Wp.p256_vspace_fast and the base
-   point P256.Wp.B. Mirrors Examples/Ed25519Ins.v.
+(** * Schnorr, Chaum–Pedersen and approval ballots at P-256 *)
 
-   As everywhere in this development the proofs are interactive: the
-   challenges are computed by the OCaml driver (Executable/P256code)
-   from the announcements, and the *_ins functions receive them. The
-   serialisation helpers at the end expose points and scalars as
-   integers so that the driver can hash them. *)
+(** The library at the NIST P-256 curve (secp256r1, FIPS 186-4 and
+SEC 2): the group is the prime-order group of curve points
+([Curve/P256.v], module [Wp]) and the scalar field is [Z/nZ] for the group
+order [n] (module [Zn]). The file mirrors [Ed25519Ins.v].
 
+Everything is an instance of the generic definitions of [Crypto/Sigma.v],
+[Crypto/ChaumPedersen.v], [Crypto/EncProof.v] and [Frontend/Approval.v];
+the only curve-specific inputs are the group operations, the fast
+scalar multiplication and the base point. The file provides
+
+- Schnorr proofs of knowledge of [x] with [h = g^x];
+- Chaum–Pedersen proofs of [c₁ = g^x ∧ c₂ = h^x];
+- approval-voting ballots: exponential ElGamal encryptions of 0/1 votes
+  under [h], each with a disjunctive proof that it encrypts [g^0] or [g^1],
+  and an overall proof that the product of the ciphertexts encrypts
+  [g^k] for some [k] between [0] and the number of candidates.
+
+The interactive provers take their randomness and challenges as
+arguments. In the non-interactive ballot the challenges are produced by
+hash functions supplied by the OCaml driver ([Executable/P256code]), and the
+helpers at the end of the file flatten announcements so they can be
+hashed. The file is extracted by [src/Extraction/P256lib] and used for
+tests and benchmarks.
+
+Group elements are points in Weierstrass form; [point_to_Z] returns their
+affine coordinates or [None] for the point at infinity. *)
 From Stdlib Require Import Utf8 ZArith Zmod Vector Lia.
 From Crypto Require Import Sigma ChaumPedersen EncProof.
 From Frontend Require Import Approval.
@@ -22,74 +37,88 @@ Section P256Ins.
 
   Import P256.
 
+  (** [F] is the scalar field and [G] the prime-order group of the curve; the
+      third notation names the group order. *)
   Local Notation F := Zn.F.
   Local Notation G := Wp.G.
   Local Notation n := P256.n.
 
-  (* ---------------------------------------------------------------- *)
-  (* scalars and points as integers, for the driver                   *)
-  (* ---------------------------------------------------------------- *)
+  (** ** Conversions for the driver
 
+      [of_Z] reduces an integer modulo the group order into [F]. *)
   Definition of_Z (z : Z) : F := Zmod.of_Z n z.
+  (** The canonical integer representative of a scalar. *)
   Definition to_Z (k : F) : Z := Zmod.unsigned k.
-  (* the affine coordinates, or None for the point at infinity *)
+  (** The affine coordinates of a point, or [None] for the point at
+      infinity. *)
   Definition point_to_Z (P : G) : option (Z * Z) := Wp.coords (proj1_sig P).
 
-  (* the base point, and a keypair *)
+  (** ** Keys
+
+      The standard base point of the curve. *)
   Definition g : G := Wp.B.
+  (** A fixed test secret key, [x = 3]. *)
   Definition x : F := of_Z 3.
+  (** The corresponding public key [h = g^x]. *)
   Definition h : G := Wp.gpow_fast g x.
 
-  (* ---------------------------------------------------------------- *)
-  (* Schnorr: knowledge of x with h = g^x                              *)
-  (* ---------------------------------------------------------------- *)
+  (** ** Schnorr: knowledge of [x] with [h = g^x]
 
+      The prover's first message [g^u]. *)
   Definition schnorr_protocol_commitment_ins (u : F) : G :=
     @schnorr_protocol_commitment F G Wp.gpow_fast g u.
 
+  (** The honest transcript [(g^u, c, u + c·x)]. *)
   Definition schnorr_protocol_construction_ins (u c : F) :
     @sigma_proto F G 1 1 1 :=
     @schnorr_protocol F Zn.add Zn.mul G Wp.gpow_fast x g u c.
 
+  (** The verifier: accepts [(a, c, r)] iff [g^r = a·h^c]. *)
   Definition schnorr_protocol_verification_ins
     (t : @sigma_proto F G 1 1 1) : bool :=
     @accepting_conversation F G Wp.gop Wp.gpow_fast Wp.Gdec g h t.
 
-  (* ---------------------------------------------------------------- *)
-  (* Chaum-Pedersen: c₁ = g^x ∧ c₂ = h^x                                *)
-  (* ---------------------------------------------------------------- *)
+  (** ** Chaum–Pedersen: [c₁ = g^x ∧ c₂ = h^x]
 
+      The first public value [c₁ = g^x]. *)
   Definition c₁ : G := Wp.gpow_fast g x.
+  (** The second public value [c₂ = h^x]. *)
   Definition c₂ : G := Wp.gpow_fast h x.
 
+  (** The commitment pair [[g^u; h^u]]. *)
   Definition construct_cp_conversations_schnorr_commitment_ins (u : F) :
     Vector.t G 2 :=
     @construct_cp_conversations_schnorr_commitment F G Wp.gpow_fast g h u.
 
+  (** The honest transcript [([g^u; h^u], c, u + c·x)]. *)
   Definition construct_cp_conversations_schnorr_ins (u c : F) :
     @sigma_proto F G 2 1 1 :=
     @construct_cp_conversations_schnorr F Zn.add Zn.mul G Wp.gpow_fast x g h u c.
 
+  (** The verifier: [g^r = a₁·c₁^c] and [h^r = a₂·c₂^c]. *)
   Definition generalised_cp_accepting_conversations_ins
     (t : @sigma_proto F G 2 1 1) : bool :=
     @generalised_cp_accepting_conversations F G Wp.gop Wp.gpow_fast Wp.Gdec
       g h c₁ c₂ t.
 
-  (* ---------------------------------------------------------------- *)
-  (* Approval voting: ElGamal ballots with 0/1 proofs and the overall  *)
-  (* proof, as in ApprovalIns.v                                        *)
-  (* ---------------------------------------------------------------- *)
+  (** ** Approval ballots
 
+      Encrypts each vote [mᵢ] as [(g^rᵢ, g^mᵢ·h^rᵢ)] with randomness [rᵢ]. *)
   Definition encrypt_ballot_ins {n : nat} (rs ms : Vector.t F n) :
     Vector.t (G * G) n :=
     @encrypt_ballot F G Wp.gop Wp.gpow_fast n g h rs ms.
 
+  (** The announcements of the per-vote 0/1 proofs, from the prover
+      randomness [uscs] (for each vote, two commitment exponents and one
+      simulated challenge). *)
   Definition generate_ballot_commitment_ins {n : nat}
     (rs ms : Vector.t F n) (uscs : Vector.t (Vector.t F 3) n) :
     Vector.t (Vector.t (G * G) 2) n :=
     @generate_ballot_commitment F Zn.zero Zn.one Zn.opp Zn.Fdec
       G Wp.ginv Wp.gop Wp.gpow_fast n g h rs ms uscs.
 
+  (** Encrypts every vote and attaches its 0/1 disjunctive proof, given the
+      vector [c] of per-vote challenges. *)
   Definition encrypt_ballot_and_generate_enc_proof_ins {n : nat}
     (rs ms : Vector.t F n) (uscs : Vector.t (Vector.t F 3) n)
     (c : Vector.t F n) :
@@ -97,30 +126,40 @@ Section P256Ins.
     @encrypt_ballot_and_generate_enc_proof F Zn.zero Zn.one Zn.add Zn.mul
       Zn.sub Zn.opp Zn.Fdec G Wp.ginv Wp.gop Wp.gpow_fast n g h rs ms uscs c.
 
+  (** Checks every per-vote 0/1 proof of a ballot. *)
   Definition verify_encryption_ballot_proof_ins {n : nat}
     (proof : Vector.t (G * G * @sigma_proto F (G * G) 2 3 2) n) : bool :=
     @verify_encryption_ballot_proof F Zn.zero Zn.one Zn.add Zn.Fdec
       G Wp.ginv Wp.gop Wp.gpow_fast Wp.Gdec n g h proof.
 
+  (** The overall proof for [n + 1] votes: the product of the ciphertexts
+      encrypts [g^k] with [k] the number of ones, as an [(n + 2)]-branch
+      disjunctive proof over [g^0, …, g^(n+1)] with witness [Σ rᵢ]. *)
   Definition generate_overall_proof_ins {n : nat}
     (rs ms : Vector.t F (S n)) (uscs : Vector.t F ((2 + n) + (1 + n))) (c : F) :
     @sigma_proto F (G * G) (2 + n) (1 + (2 + n)) (2 + n) :=
     @generate_overall_proof F Zn.zero Zn.one Zn.add Zn.mul Zn.sub Zn.opp Zn.Fdec
       G Wp.gid Wp.ginv Wp.gop Wp.gpow_fast n g h rs ms uscs c.
 
+  (** Checks the overall proof against the product of the ciphertexts [cps]. *)
   Definition verify_overall_proof_ins {n : nat}
     (cps : Vector.t (G * G) n)
     (pf : @sigma_proto F (G * G) (S n) (S (S n)) (S n)) : bool :=
     @verify_overall_proof F Zn.zero Zn.add Zn.Fdec
       G Wp.gid Wp.ginv Wp.gop Wp.gpow_fast Wp.Gdec n g h cps pf.
 
+  (** Accepts a full ballot iff all per-vote proofs and the overall proof are
+      accepting. *)
   Definition verify_ballot_ins {n : nat}
     (b : Vector.t (G * G * @sigma_proto F (G * G) 2 3 2) n *
          @sigma_proto F (G * G) (S n) (S (S n)) (S n)) : bool :=
     @verify_ballot F Zn.zero Zn.one Zn.add Zn.Fdec
       G Wp.gid Wp.ginv Wp.gop Wp.gpow_fast Wp.Gdec n g h b.
 
-  (* the announcements of a ballot, flattened for the random oracle *)
+  (** ** Non-interactive ballots
+
+      Flattens the per-vote announcements, two pairs of points per vote, into
+      a vector of [4·n] points for hashing. *)
   Definition vector_unfold : ∀ {n : nat}, Vector.t (Vector.t (G * G) 2) n ->
     Vector.t G (4 * n).
   Proof.
@@ -139,14 +178,17 @@ Section P256Ins.
     exact (vha :: vhb :: vhta :: vhtb :: ret).
   Defined.
 
+  (** Flattens a vector of announcement pairs into a list of points. *)
   Definition announcement_to_list {k : nat} (a : Vector.t (G * G) k) : list G :=
     Vector.fold_right (fun '(u, v) acc => (u :: v :: acc)%list) a List.nil.
 
-  (* Non-interactive ballot. fn returns the n challenges of the individual
-    proofs from the public parameters and their announcements; fo returns
-    the challenge of the overall proof from the public parameters and its
-    announcement, which does not depend on the challenge (so it is computed
-    first with the challenge zero). *)
+  (** The non-interactive ballot. [fn] returns the [n + 1] per-vote challenges
+      from [g], [h] and all per-vote announcements; [fo] returns the overall
+      challenge from [g], [h] and the overall proof's announcement. That
+      announcement does not depend on the challenge, so it is first computed
+      with the challenge zero ([pf0]) and the proof is then recomputed with
+      the real challenge. Note that neither hash input includes the
+      ciphertexts themselves. *)
   Definition nizk_encrypt_ballot_with_overall_proof_ins {n : nat}
     (fn : ∀ {m : nat}, Vector.t G m -> Vector.t F (S n))
     (fo : ∀ {m : nat}, Vector.t G m -> F)

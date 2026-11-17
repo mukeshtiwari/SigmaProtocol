@@ -1,0 +1,707 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<link href="coqdoc.css" rel="stylesheet" type="text/css" />
+<title>Algebra.Hierarchy</title>
+</head>
+
+<body>
+
+<div id="page">
+
+<div id="header">
+</div>
+
+<div id="main">
+
+<h1 class="libtitle">Library Algebra.Hierarchy</h1>
+
+<div class="code">
+</div>
+
+<div class="doc">
+<a id="lab6"></a><h1 class="section">Algebraic hierarchy: monoids, groups, rings, fields and vector spaces</h1>
+
+<div class="paragraph"> </div>
+
+ This file defines the setoid-based algebraic hierarchy on which the
+    whole development rests. Every structure is a type class parameterised by
+    a carrier <span class="inlinecode"><span class="id" title="var">T</span></span>, an equivalence relation <span class="inlinecode"><span class="id" title="var">eq</span></span> used in place of Leibniz
+    equality, and the operations of the structure. The design follows the
+    algebra hierarchy of fiat-crypto (the vendored copy lives under
+    <span class="inlinecode"><span class="id" title="var">src</span>/<span class="id" title="var">Fiat</span>/<span class="id" title="var">Algebra</span></span>): each axiom is its own singleton class
+    (<span class="inlinecode"><span class="id" title="var">is_associative</span></span>, <span class="inlinecode"><span class="id" title="var">is_left_inverse</span></span>, ...) and each structure bundles
+    the axioms together with <span class="inlinecode"><span class="id" title="var">Proper</span></span> morphism facts for its operations, so
+    that <span class="inlinecode"><span class="id" title="tactic">setoid_rewrite</span></span> works with respect to <span class="inlinecode"><span class="id" title="var">eq</span></span>.
+
+<div class="paragraph"> </div>
+
+    The chain of structures is
+
+<div class="paragraph"> </div>
+
+<ul class="doclist">
+<li> <span class="inlinecode"><span class="id" title="var">monoid</span></span>: associative operation with a two-sided identity;
+
+</li>
+<li> <span class="inlinecode"><span class="id" title="var">group</span></span> and <span class="inlinecode"><span class="id" title="var">commutative_group</span></span>: a monoid with two-sided inverses;
+
+</li>
+<li> <span class="inlinecode"><span class="id" title="tactic">ring</span></span>, <span class="inlinecode"><span class="id" title="var">commutative_ring</span></span>, <span class="inlinecode"><span class="id" title="var">integral_domain</span></span> and <span class="inlinecode"><span class="id" title="tactic">field</span></span> over one
+      carrier with two operations;
+
+</li>
+<li> <span class="inlinecode"><span class="id" title="var">vector_space</span></span>: a commutative group <span class="inlinecode"><span class="id" title="var">V</span></span> together with a field <span class="inlinecode"><span class="id" title="var">F</span></span> and
+      a scalar action <span class="inlinecode"><span class="id" title="var">smul</span></span> <span class="inlinecode">:</span> <span class="inlinecode"><span class="id" title="var">V</span></span> <span class="inlinecode">→</span> <span class="inlinecode"><span class="id" title="var">F</span></span> <span class="inlinecode">→</span> <span class="inlinecode"><span class="id" title="var">V</span></span>.
+
+</li>
+</ul>
+
+<div class="paragraph"> </div>
+
+    The vector-space class is the central abstraction for the cryptography in
+    <span class="inlinecode"><span class="id" title="var">src</span>/<span class="id" title="var">Crypto</span></span>: a cyclic group <span class="inlinecode"><span class="id" title="var">G</span></span> of prime order <span class="inlinecode"><span class="id" title="var">q</span></span> is treated as a
+    vector space over <span class="inlinecode"><span class="id" title="var">Z_q</span></span>, with <span class="inlinecode"><span class="id" title="var">vadd</span></span> the group operation and <span class="inlinecode"><span class="id" title="var">smul</span></span> <span class="inlinecode"><span class="id" title="var">g</span></span> <span class="inlinecode"><span class="id" title="var">x</span></span>
+    the exponentiation <span class="inlinecode"><span class="id" title="var">g</span></span> <span class="inlinecode">^</span> <span class="inlinecode"><span class="id" title="var">x</span></span>. Note the argument order: the vector comes
+    first and the scalar second, matching the notation <span class="inlinecode"><span class="id" title="var">g</span></span> <span class="inlinecode">^</span> <span class="inlinecode"><span class="id" title="var">x</span></span>.
+
+<div class="paragraph"> </div>
+
+    Elementary consequences of these axioms are proved in <span class="inlinecode"><span class="id" title="var">Monoid.v</span></span>,
+    <span class="inlinecode"><span class="id" title="var">Group.v</span></span>, <span class="inlinecode"><span class="id" title="var">Ring.v</span></span>, <span class="inlinecode"><span class="id" title="var">Integral_domain.v</span></span>, <span class="inlinecode"><span class="id" title="var">Field.v</span></span> and <span class="inlinecode"><span class="id" title="var">Vector_space.v</span></span>;
+    product constructions are in <span class="inlinecode"><span class="id" title="var">Product_space.v</span></span> and
+    <span class="inlinecode"><span class="id" title="var">Vector_product_space.v</span></span>. Concrete instances include prime fields and
+    Schnorr groups (<span class="inlinecode"><span class="id" title="var">src</span>/<span class="id" title="var">Examples</span></span>) and the elliptic curves of
+    <span class="inlinecode"><span class="id" title="var">src</span>/<span class="id" title="var">Curve</span>/<span class="id" title="var">Ed25519.v</span></span> and <span class="inlinecode"><span class="id" title="var">src</span>/<span class="id" title="var">Curve</span>/<span class="id" title="var">P256.v</span></span>. 
+</div>
+<div class="code">
+
+<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">Stdlib</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span><br/>
+&nbsp;&nbsp;<span class="id" title="library">Morphisms</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Local Close</span> <span class="id" title="keyword">Scope</span> <span class="id" title="var">nat_scope</span>.<br/>
+<span class="id" title="keyword">Local Close</span> <span class="id" title="keyword">Scope</span> <span class="id" title="var">type_scope</span>.<br/>
+<span class="id" title="keyword">Local Close</span> <span class="id" title="keyword">Scope</span> <span class="id" title="var">core_scope</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<a id="lab7"></a><h2 class="section">Structures</h2>
+
+</div>
+<div class="code">
+
+<br/>
+<span class="id" title="keyword">Section</span> <a id="Algebra" class="idref" href="#Algebra"><span class="id" title="section">Algebra</span></a>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<a id="lab8"></a><h3 class="section">One carrier, one operation</h3>
+
+
+<div class="paragraph"> </div>
+
+      Monoids and groups over a carrier <span class="inlinecode"><span class="id" title="var">T</span></span> with equivalence <span class="inlinecode"><span class="id" title="var">eq</span></span>, binary
+      operation <span class="inlinecode"><span class="id" title="var">op</span></span>, identity <span class="inlinecode"><span class="id" title="var">id</span></span> and (for groups) inverse <span class="inlinecode"><span class="id" title="var">inv</span></span>. 
+</div>
+<div class="code">
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Section</span> <a id="Algebra.OneTypeOneOp" class="idref" href="#Algebra.OneTypeOneOp"><span class="id" title="section">OneTypeOneOp</span></a>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+The carrier, its equivalence, the operation and the identity
+        element. All are implicit so that they are inferred from the class
+        instance at use sites. 
+</div>
+<div class="code">
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Context</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{<a id="Algebra.OneTypeOneOp.T" class="idref" href="#Algebra.OneTypeOneOp.T"><span class="id" title="variable">T</span></a> : <span class="id" title="keyword">Type</span>}<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{<a id="Algebra.OneTypeOneOp.eq" class="idref" href="#Algebra.OneTypeOneOp.eq"><span class="id" title="variable">eq</span></a> : <a class="idref" href="Algebra.Hierarchy.html#T:1"><span class="id" title="variable">T</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Notations.html#::type_scope:x_'-&gt;'_x"><span class="id" title="notation">→</span></a> <a class="idref" href="Algebra.Hierarchy.html#T:1"><span class="id" title="variable">T</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Notations.html#::type_scope:x_'-&gt;'_x"><span class="id" title="notation">→</span></a> <span class="id" title="keyword">Prop</span>}<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{<a id="Algebra.OneTypeOneOp.op" class="idref" href="#Algebra.OneTypeOneOp.op"><span class="id" title="variable">op</span></a> : <a class="idref" href="Algebra.Hierarchy.html#T:1"><span class="id" title="variable">T</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Notations.html#::type_scope:x_'-&gt;'_x"><span class="id" title="notation">→</span></a> <a class="idref" href="Algebra.Hierarchy.html#T:1"><span class="id" title="variable">T</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Notations.html#::type_scope:x_'-&gt;'_x"><span class="id" title="notation">→</span></a> <a class="idref" href="Algebra.Hierarchy.html#T:1"><span class="id" title="variable">T</span></a>}<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{<a id="Algebra.OneTypeOneOp.id" class="idref" href="#Algebra.OneTypeOneOp.id"><span class="id" title="variable">id</span></a> : <a class="idref" href="Algebra.Hierarchy.html#T:1"><span class="id" title="variable">T</span></a>}.<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Local Infix</span> <a id="9440f97c115cec0bc8a948f451d6d19c" class="idref" href="#9440f97c115cec0bc8a948f451d6d19c"><span class="id" title="notation">&quot;</span></a>=" := <a class="idref" href="Algebra.Hierarchy.html#Algebra.OneTypeOneOp.eq"><span class="id" title="variable">eq</span></a> : <span class="id" title="var">type_scope</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Local Notation</span> <a id="Algebra.OneTypeOneOp.::type_scope:x_'&lt;&gt;'_x" class="idref" href="#Algebra.OneTypeOneOp.::type_scope:x_'&lt;&gt;'_x"><span class="id" title="notation">&quot;</span></a>a &lt;&gt; b" := (<a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Logic.html#not"><span class="id" title="definition">not</span></a> (<span class="id" title="var">a</span> <a class="idref" href="Algebra.Hierarchy.html#9440f97c115cec0bc8a948f451d6d19c"><span class="id" title="notation">=</span></a> <span class="id" title="var">b</span>)) : <span class="id" title="var">type_scope</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+Associativity: <span class="inlinecode"><span class="id" title="var">op</span></span> <span class="inlinecode"><span class="id" title="var">x</span></span> <span class="inlinecode">(<span class="id" title="var">op</span></span> <span class="inlinecode"><span class="id" title="var">y</span></span> <span class="inlinecode"><span class="id" title="var">z</span>)</span> <span class="inlinecode">=</span> <span class="inlinecode"><span class="id" title="var">op</span></span> <span class="inlinecode">(<span class="id" title="var">op</span></span> <span class="inlinecode"><span class="id" title="var">x</span></span> <span class="inlinecode"><span class="id" title="var">y</span>)</span> <span class="inlinecode"><span class="id" title="var">z</span></span>. 
+</div>
+<div class="code">
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Class</span> <a id="is_associative" class="idref" href="#is_associative"><span class="id" title="inductive, record"><span id="is_associative" class="id">is_associative</span></span></a> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a id="associative" class="idref" href="#associative"><span class="id" title="constructor, projection"><span id="associative" class="id">associative</span></span></a> : <span class="id" title="keyword">∀</span> <a id="x:6" class="idref" href="#x:6"><span class="id" title="binder">x</span></a> <a id="y:7" class="idref" href="#y:7"><span class="id" title="binder">y</span></a> <a id="z:8" class="idref" href="#z:8"><span class="id" title="binder">z</span></a>,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="Algebra.Hierarchy.html#Algebra.OneTypeOneOp.op"><span class="id" title="variable">op</span></a> <a class="idref" href="Algebra.Hierarchy.html#x:6"><span class="id" title="variable">x</span></a> (<a class="idref" href="Algebra.Hierarchy.html#Algebra.OneTypeOneOp.op"><span class="id" title="variable">op</span></a> <a class="idref" href="Algebra.Hierarchy.html#y:7"><span class="id" title="variable">y</span></a> <a class="idref" href="Algebra.Hierarchy.html#z:8"><span class="id" title="variable">z</span></a>) <a class="idref" href="Algebra.Hierarchy.html#9440f97c115cec0bc8a948f451d6d19c"><span class="id" title="notation">=</span></a> <a class="idref" href="Algebra.Hierarchy.html#Algebra.OneTypeOneOp.op"><span class="id" title="variable">op</span></a> (<a class="idref" href="Algebra.Hierarchy.html#Algebra.OneTypeOneOp.op"><span class="id" title="variable">op</span></a> <a class="idref" href="Algebra.Hierarchy.html#x:6"><span class="id" title="variable">x</span></a> <a class="idref" href="Algebra.Hierarchy.html#y:7"><span class="id" title="variable">y</span></a>) <a class="idref" href="Algebra.Hierarchy.html#z:8"><span class="id" title="variable">z</span></a>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<span class="inlinecode"><span class="id" title="var">id</span></span> is a left identity: <span class="inlinecode"><span class="id" title="var">op</span></span> <span class="inlinecode"><span class="id" title="var">id</span></span> <span class="inlinecode"><span class="id" title="var">x</span></span> <span class="inlinecode">=</span> <span class="inlinecode"><span class="id" title="var">x</span></span>. 
+</div>
+<div class="code">
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Class</span> <a id="is_left_identity" class="idref" href="#is_left_identity"><span class="id" title="inductive, record"><span id="is_left_identity" class="id">is_left_identity</span></span></a> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a id="left_identity" class="idref" href="#left_identity"><span class="id" title="constructor, projection"><span id="left_identity" class="id">left_identity</span></span></a> : <span class="id" title="keyword">∀</span> <a id="x:11" class="idref" href="#x:11"><span class="id" title="binder">x</span></a>, <a class="idref" href="Algebra.Hierarchy.html#Algebra.OneTypeOneOp.op"><span class="id" title="variable">op</span></a> <a class="idref" href="Algebra.Hierarchy.html#Algebra.OneTypeOneOp.id"><span class="id" title="variable">id</span></a> <a class="idref" href="Algebra.Hierarchy.html#x:11"><span class="id" title="variable">x</span></a> <a class="idref" href="Algebra.Hierarchy.html#9440f97c115cec0bc8a948f451d6d19c"><span class="id" title="notation">=</span></a> <a class="idref" href="Algebra.Hierarchy.html#x:11"><span class="id" title="variable">x</span></a>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<span class="inlinecode"><span class="id" title="var">id</span></span> is a right identity: <span class="inlinecode"><span class="id" title="var">op</span></span> <span class="inlinecode"><span class="id" title="var">x</span></span> <span class="inlinecode"><span class="id" title="var">id</span></span> <span class="inlinecode">=</span> <span class="inlinecode"><span class="id" title="var">x</span></span>. 
+</div>
+<div class="code">
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Class</span> <a id="is_right_identity" class="idref" href="#is_right_identity"><span class="id" title="inductive, record"><span id="is_right_identity" class="id">is_right_identity</span></span></a> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a id="right_identity" class="idref" href="#right_identity"><span class="id" title="constructor, projection"><span id="right_identity" class="id">right_identity</span></span></a> : <span class="id" title="keyword">∀</span> <a id="x:14" class="idref" href="#x:14"><span class="id" title="binder">x</span></a>, <a class="idref" href="Algebra.Hierarchy.html#Algebra.OneTypeOneOp.op"><span class="id" title="variable">op</span></a> <a class="idref" href="Algebra.Hierarchy.html#x:14"><span class="id" title="variable">x</span></a> <a class="idref" href="Algebra.Hierarchy.html#Algebra.OneTypeOneOp.id"><span class="id" title="variable">id</span></a> <a class="idref" href="Algebra.Hierarchy.html#9440f97c115cec0bc8a948f451d6d19c"><span class="id" title="notation">=</span></a> <a class="idref" href="Algebra.Hierarchy.html#x:14"><span class="id" title="variable">x</span></a>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+A monoid: an associative operation with a two-sided identity,
+        where <span class="inlinecode"><span class="id" title="var">eq</span></span> is an equivalence relation and <span class="inlinecode"><span class="id" title="var">op</span></span> respects it. The
+        field name <span class="inlinecode"><span class="id" title="var">monoid_is_left_idenity</span></span> carries a historical typo and is
+        kept for compatibility. 
+</div>
+<div class="code">
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Class</span> <a id="monoid" class="idref" href="#monoid"><span class="id" title="record">monoid</span></a> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;{<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a id="monoid_is_associative" class="idref" href="#monoid_is_associative"><span class="id" title="projection">monoid_is_associative</span></a> : <a class="idref" href="Algebra.Hierarchy.html#is_associative"><span class="id" title="class">is_associative</span></a>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a id="monoid_is_left_idenity" class="idref" href="#monoid_is_left_idenity"><span class="id" title="projection">monoid_is_left_idenity</span></a> : <a class="idref" href="Algebra.Hierarchy.html#is_left_identity"><span class="id" title="class">is_left_identity</span></a>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a id="monoid_is_right_identity" class="idref" href="#monoid_is_right_identity"><span class="id" title="projection">monoid_is_right_identity</span></a> : <a class="idref" href="Algebra.Hierarchy.html#is_right_identity"><span class="id" title="class">is_right_identity</span></a>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a id="monoid_op_Proper" class="idref" href="#monoid_op_Proper"><span class="id" title="projection">monoid_op_Proper</span></a>: <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Classes.Morphisms.html#Proper"><span class="id" title="class">Proper</span></a> (<a class="idref" href="Algebra.Hierarchy.html#Algebra.OneTypeOneOp.eq"><span class="id" title="variable">eq</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Classes.Morphisms.html#8dc5652698a6e16f72dd37bd17d3b973"><span class="id" title="notation">==&gt;</span></a> <a class="idref" href="Algebra.Hierarchy.html#Algebra.OneTypeOneOp.eq"><span class="id" title="variable">eq</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Classes.Morphisms.html#8dc5652698a6e16f72dd37bd17d3b973"><span class="id" title="notation">==&gt;</span></a> <a class="idref" href="Algebra.Hierarchy.html#Algebra.OneTypeOneOp.eq"><span class="id" title="variable">eq</span></a>) <a class="idref" href="Algebra.Hierarchy.html#Algebra.OneTypeOneOp.op"><span class="id" title="variable">op</span></a>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a id="monoid_Equivalence" class="idref" href="#monoid_Equivalence"><span class="id" title="projection">monoid_Equivalence</span></a> : <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Classes.RelationClasses.html#Equivalence"><span class="id" title="class">Equivalence</span></a> <a class="idref" href="Algebra.Hierarchy.html#Algebra.OneTypeOneOp.eq"><span class="id" title="variable">eq</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;}.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+The monoid fields are registered as instances so that, for example,
+        <span class="inlinecode"><span class="id" title="var">Equivalence</span></span> <span class="inlinecode"><span class="id" title="var">eq</span></span> and <span class="inlinecode"><span class="id" title="var">Proper</span></span> facts are found automatically from a
+        <span class="inlinecode"><span class="id" title="var">monoid</span></span> hypothesis. 
+</div>
+<div class="code">
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Global Existing Instance</span> <a class="idref" href="Algebra.Hierarchy.html#monoid_is_associative"><span class="id" title="method">monoid_is_associative</span></a>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Global Existing Instance</span> <a class="idref" href="Algebra.Hierarchy.html#monoid_is_left_idenity"><span class="id" title="method">monoid_is_left_idenity</span></a>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Global Existing Instance</span> <a class="idref" href="Algebra.Hierarchy.html#monoid_is_right_identity"><span class="id" title="method">monoid_is_right_identity</span></a>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Global Existing Instance</span> <a class="idref" href="Algebra.Hierarchy.html#monoid_op_Proper"><span class="id" title="method">monoid_op_Proper</span></a>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Global Existing Instance</span> <a class="idref" href="Algebra.Hierarchy.html#monoid_Equivalence"><span class="id" title="method">monoid_Equivalence</span></a>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+The inverse operation, used by the group classes below. 
+</div>
+<div class="code">
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Context</span> {<a id="Algebra.OneTypeOneOp.inv" class="idref" href="#Algebra.OneTypeOneOp.inv"><span class="id" title="variable">inv</span></a> : <a class="idref" href="Algebra.Hierarchy.html#Algebra.OneTypeOneOp.T"><span class="id" title="variable">T</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Notations.html#::type_scope:x_'-&gt;'_x"><span class="id" title="notation">→</span></a> <a class="idref" href="Algebra.Hierarchy.html#Algebra.OneTypeOneOp.T"><span class="id" title="variable">T</span></a>}.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<span class="inlinecode"><span class="id" title="var">inv</span></span> is a left inverse: <span class="inlinecode"><span class="id" title="var">op</span></span> <span class="inlinecode">(<span class="id" title="var">inv</span></span> <span class="inlinecode"><span class="id" title="var">x</span>)</span> <span class="inlinecode"><span class="id" title="var">x</span></span> <span class="inlinecode">=</span> <span class="inlinecode"><span class="id" title="var">id</span></span>. 
+</div>
+<div class="code">
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Class</span> <a id="is_left_inverse" class="idref" href="#is_left_inverse"><span class="id" title="inductive, record"><span id="is_left_inverse" class="id">is_left_inverse</span></span></a> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a id="left_inverse" class="idref" href="#left_inverse"><span class="id" title="constructor, projection"><span id="left_inverse" class="id">left_inverse</span></span></a> : <span class="id" title="keyword">∀</span> <a id="x:24" class="idref" href="#x:24"><span class="id" title="binder">x</span></a>, <a class="idref" href="Algebra.Hierarchy.html#Algebra.OneTypeOneOp.op"><span class="id" title="variable">op</span></a> (<a class="idref" href="Algebra.Hierarchy.html#Algebra.OneTypeOneOp.inv"><span class="id" title="variable">inv</span></a> <a class="idref" href="Algebra.Hierarchy.html#x:24"><span class="id" title="variable">x</span></a>) <a class="idref" href="Algebra.Hierarchy.html#x:24"><span class="id" title="variable">x</span></a> <a class="idref" href="Algebra.Hierarchy.html#9440f97c115cec0bc8a948f451d6d19c"><span class="id" title="notation">=</span></a> <a class="idref" href="Algebra.Hierarchy.html#Algebra.OneTypeOneOp.id"><span class="id" title="variable">id</span></a>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<span class="inlinecode"><span class="id" title="var">inv</span></span> is a right inverse: <span class="inlinecode"><span class="id" title="var">op</span></span> <span class="inlinecode"><span class="id" title="var">x</span></span> <span class="inlinecode">(<span class="id" title="var">inv</span></span> <span class="inlinecode"><span class="id" title="var">x</span>)</span> <span class="inlinecode">=</span> <span class="inlinecode"><span class="id" title="var">id</span></span>. 
+</div>
+<div class="code">
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Class</span> <a id="is_right_inverse" class="idref" href="#is_right_inverse"><span class="id" title="inductive, record"><span id="is_right_inverse" class="id">is_right_inverse</span></span></a> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a id="right_inverse" class="idref" href="#right_inverse"><span class="id" title="constructor, projection"><span id="right_inverse" class="id">right_inverse</span></span></a> : <span class="id" title="keyword">∀</span> <a id="x:27" class="idref" href="#x:27"><span class="id" title="binder">x</span></a>, <a class="idref" href="Algebra.Hierarchy.html#Algebra.OneTypeOneOp.op"><span class="id" title="variable">op</span></a> <a class="idref" href="Algebra.Hierarchy.html#x:27"><span class="id" title="variable">x</span></a> (<a class="idref" href="Algebra.Hierarchy.html#Algebra.OneTypeOneOp.inv"><span class="id" title="variable">inv</span></a> <a class="idref" href="Algebra.Hierarchy.html#x:27"><span class="id" title="variable">x</span></a>) <a class="idref" href="Algebra.Hierarchy.html#9440f97c115cec0bc8a948f451d6d19c"><span class="id" title="notation">=</span></a> <a class="idref" href="Algebra.Hierarchy.html#Algebra.OneTypeOneOp.id"><span class="id" title="variable">id</span></a>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+A group: a monoid in which every element has a two-sided inverse
+        and <span class="inlinecode"><span class="id" title="var">inv</span></span> respects <span class="inlinecode"><span class="id" title="var">eq</span></span>. 
+</div>
+<div class="code">
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Class</span> <a id="group" class="idref" href="#group"><span class="id" title="record">group</span></a> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;{<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a id="group_monoid" class="idref" href="#group_monoid"><span class="id" title="projection">group_monoid</span></a> : <a class="idref" href="Algebra.Hierarchy.html#monoid"><span class="id" title="class">monoid</span></a>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a id="group_is_left_inverse" class="idref" href="#group_is_left_inverse"><span class="id" title="projection">group_is_left_inverse</span></a> : <a class="idref" href="Algebra.Hierarchy.html#is_left_inverse"><span class="id" title="class">is_left_inverse</span></a>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a id="group_is_right_inverse" class="idref" href="#group_is_right_inverse"><span class="id" title="projection">group_is_right_inverse</span></a> : <a class="idref" href="Algebra.Hierarchy.html#is_right_inverse"><span class="id" title="class">is_right_inverse</span></a>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a id="group_inv_Proper" class="idref" href="#group_inv_Proper"><span class="id" title="projection">group_inv_Proper</span></a> : <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Classes.Morphisms.html#Proper"><span class="id" title="class">Proper</span></a> (<a class="idref" href="Algebra.Hierarchy.html#Algebra.OneTypeOneOp.eq"><span class="id" title="variable">eq</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Classes.Morphisms.html#8dc5652698a6e16f72dd37bd17d3b973"><span class="id" title="notation">==&gt;</span></a> <a class="idref" href="Algebra.Hierarchy.html#Algebra.OneTypeOneOp.eq"><span class="id" title="variable">eq</span></a>) <a class="idref" href="Algebra.Hierarchy.html#Algebra.OneTypeOneOp.inv"><span class="id" title="variable">inv</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;}.<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Global Existing Instance</span> <a class="idref" href="Algebra.Hierarchy.html#group_monoid"><span class="id" title="method">group_monoid</span></a>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Global Existing Instance</span> <a class="idref" href="Algebra.Hierarchy.html#group_is_left_inverse"><span class="id" title="method">group_is_left_inverse</span></a>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Global Existing Instance</span> <a class="idref" href="Algebra.Hierarchy.html#group_is_right_inverse"><span class="id" title="method">group_is_right_inverse</span></a>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Global Existing Instance</span> <a class="idref" href="Algebra.Hierarchy.html#group_inv_Proper"><span class="id" title="method">group_inv_Proper</span></a>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+Commutativity of <span class="inlinecode"><span class="id" title="var">op</span></span>: <span class="inlinecode"><span class="id" title="var">op</span></span> <span class="inlinecode"><span class="id" title="var">x</span></span> <span class="inlinecode"><span class="id" title="var">y</span></span> <span class="inlinecode">=</span> <span class="inlinecode"><span class="id" title="var">op</span></span> <span class="inlinecode"><span class="id" title="var">y</span></span> <span class="inlinecode"><span class="id" title="var">x</span></span>. 
+</div>
+<div class="code">
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Class</span> <a id="is_commutative" class="idref" href="#is_commutative"><span class="id" title="inductive, record"><span id="is_commutative" class="id">is_commutative</span></span></a> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a id="commutative" class="idref" href="#commutative"><span class="id" title="constructor, projection"><span id="commutative" class="id">commutative</span></span></a> : <span class="id" title="keyword">∀</span> <a id="x:35" class="idref" href="#x:35"><span class="id" title="binder">x</span></a> <a id="y:36" class="idref" href="#y:36"><span class="id" title="binder">y</span></a>, <a class="idref" href="Algebra.Hierarchy.html#Algebra.OneTypeOneOp.op"><span class="id" title="variable">op</span></a> <a class="idref" href="Algebra.Hierarchy.html#x:35"><span class="id" title="variable">x</span></a> <a class="idref" href="Algebra.Hierarchy.html#y:36"><span class="id" title="variable">y</span></a> <a class="idref" href="Algebra.Hierarchy.html#9440f97c115cec0bc8a948f451d6d19c"><span class="id" title="notation">=</span></a> <a class="idref" href="Algebra.Hierarchy.html#Algebra.OneTypeOneOp.op"><span class="id" title="variable">op</span></a> <a class="idref" href="Algebra.Hierarchy.html#y:36"><span class="id" title="variable">y</span></a> <a class="idref" href="Algebra.Hierarchy.html#x:35"><span class="id" title="variable">x</span></a>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+An abelian group. In the cryptographic files this is the group <span class="inlinecode"><span class="id" title="var">G</span></span>
+        in which commitments and ciphertexts live. 
+</div>
+<div class="code">
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Class</span> <a id="commutative_group" class="idref" href="#commutative_group"><span class="id" title="record">commutative_group</span></a> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;{<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a id="commutative_group_group" class="idref" href="#commutative_group_group"><span class="id" title="projection">commutative_group_group</span></a> : <a class="idref" href="Algebra.Hierarchy.html#group"><span class="id" title="class">group</span></a>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a id="commutative_group_is_commutative" class="idref" href="#commutative_group_is_commutative"><span class="id" title="projection">commutative_group_is_commutative</span></a> : <a class="idref" href="Algebra.Hierarchy.html#is_commutative"><span class="id" title="class">is_commutative</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;}.<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Global Existing Instance</span> <a class="idref" href="Algebra.Hierarchy.html#commutative_group_group"><span class="id" title="method">commutative_group_group</span></a>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Global Existing Instance</span> <a class="idref" href="Algebra.Hierarchy.html#commutative_group_is_commutative"><span class="id" title="method">commutative_group_is_commutative</span></a>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">End</span> <a class="idref" href="Algebra.Hierarchy.html#Algebra.OneTypeOneOp"><span class="id" title="section">OneTypeOneOp</span></a>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<a id="lab9"></a><h3 class="section">One carrier, two operations</h3>
+
+
+<div class="paragraph"> </div>
+
+      Rings, commutative rings, integral domains and fields. The additive
+      structure is a <span class="inlinecode"><span class="id" title="var">commutative_group</span></span> and the multiplicative one a
+      <span class="inlinecode"><span class="id" title="var">monoid</span></span>; subtraction and division are separate operations tied to
+      <span class="inlinecode"><span class="id" title="var">opp</span></span> and <span class="inlinecode"><span class="id" title="var">inv</span></span> by defining equations, which keeps them computable
+      in concrete instances. 
+</div>
+<div class="code">
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Section</span> <a id="Algebra.OneTypeTwoOp" class="idref" href="#Algebra.OneTypeTwoOp"><span class="id" title="section">OneTypeTwoOp</span></a>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+Carrier, equivalence, constants and operations of a ring. 
+</div>
+<div class="code">
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Context</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{<a id="Algebra.OneTypeTwoOp.T" class="idref" href="#Algebra.OneTypeTwoOp.T"><span class="id" title="variable">T</span></a> : <span class="id" title="keyword">Type</span>}<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{<a id="Algebra.OneTypeTwoOp.eq" class="idref" href="#Algebra.OneTypeTwoOp.eq"><span class="id" title="variable">eq</span></a> : <a class="idref" href="Algebra.Hierarchy.html#T:41"><span class="id" title="variable">T</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Notations.html#::type_scope:x_'-&gt;'_x"><span class="id" title="notation">→</span></a> <a class="idref" href="Algebra.Hierarchy.html#T:41"><span class="id" title="variable">T</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Notations.html#::type_scope:x_'-&gt;'_x"><span class="id" title="notation">→</span></a> <span class="id" title="keyword">Prop</span>}<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{<a id="Algebra.OneTypeTwoOp.zero" class="idref" href="#Algebra.OneTypeTwoOp.zero"><span class="id" title="variable">zero</span></a> <a id="Algebra.OneTypeTwoOp.one" class="idref" href="#Algebra.OneTypeTwoOp.one"><span class="id" title="variable">one</span></a> : <a class="idref" href="Algebra.Hierarchy.html#T:41"><span class="id" title="variable">T</span></a>}<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{<a id="Algebra.OneTypeTwoOp.opp" class="idref" href="#Algebra.OneTypeTwoOp.opp"><span class="id" title="variable">opp</span></a> : <a class="idref" href="Algebra.Hierarchy.html#T:41"><span class="id" title="variable">T</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Notations.html#::type_scope:x_'-&gt;'_x"><span class="id" title="notation">→</span></a> <a class="idref" href="Algebra.Hierarchy.html#T:41"><span class="id" title="variable">T</span></a>}<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{<a id="Algebra.OneTypeTwoOp.add" class="idref" href="#Algebra.OneTypeTwoOp.add"><span class="id" title="variable">add</span></a> : <a class="idref" href="Algebra.Hierarchy.html#T:41"><span class="id" title="variable">T</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Notations.html#::type_scope:x_'-&gt;'_x"><span class="id" title="notation">→</span></a> <a class="idref" href="Algebra.Hierarchy.html#T:41"><span class="id" title="variable">T</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Notations.html#::type_scope:x_'-&gt;'_x"><span class="id" title="notation">→</span></a> <a class="idref" href="Algebra.Hierarchy.html#T:41"><span class="id" title="variable">T</span></a>}<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{<a id="Algebra.OneTypeTwoOp.sub" class="idref" href="#Algebra.OneTypeTwoOp.sub"><span class="id" title="variable">sub</span></a> : <a class="idref" href="Algebra.Hierarchy.html#T:41"><span class="id" title="variable">T</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Notations.html#::type_scope:x_'-&gt;'_x"><span class="id" title="notation">→</span></a> <a class="idref" href="Algebra.Hierarchy.html#T:41"><span class="id" title="variable">T</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Notations.html#::type_scope:x_'-&gt;'_x"><span class="id" title="notation">→</span></a> <a class="idref" href="Algebra.Hierarchy.html#T:41"><span class="id" title="variable">T</span></a>}<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{<a id="Algebra.OneTypeTwoOp.mul" class="idref" href="#Algebra.OneTypeTwoOp.mul"><span class="id" title="variable">mul</span></a> : <a class="idref" href="Algebra.Hierarchy.html#T:41"><span class="id" title="variable">T</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Notations.html#::type_scope:x_'-&gt;'_x"><span class="id" title="notation">→</span></a> <a class="idref" href="Algebra.Hierarchy.html#T:41"><span class="id" title="variable">T</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Notations.html#::type_scope:x_'-&gt;'_x"><span class="id" title="notation">→</span></a> <a class="idref" href="Algebra.Hierarchy.html#T:41"><span class="id" title="variable">T</span></a>}.<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Local Infix</span> <a id="d50afddab29e2905aeda884da22b3839" class="idref" href="#d50afddab29e2905aeda884da22b3839"><span class="id" title="notation">&quot;</span></a>=" := <a class="idref" href="Algebra.Hierarchy.html#Algebra.OneTypeTwoOp.eq"><span class="id" title="variable">eq</span></a> : <span class="id" title="var">type_scope</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Local Notation</span> <a id="Algebra.OneTypeTwoOp.::type_scope:x_'&lt;&gt;'_x" class="idref" href="#Algebra.OneTypeTwoOp.::type_scope:x_'&lt;&gt;'_x"><span class="id" title="notation">&quot;</span></a>a &lt;&gt; b" := (<a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Logic.html#not"><span class="id" title="definition">not</span></a> (<span class="id" title="var">a</span> <a class="idref" href="Algebra.Hierarchy.html#d50afddab29e2905aeda884da22b3839"><span class="id" title="notation">=</span></a> <span class="id" title="var">b</span>)) : <span class="id" title="var">type_scope</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Local Notation</span> <a id="Algebra.OneTypeTwoOp.:::'0'" class="idref" href="#Algebra.OneTypeTwoOp.:::'0'"><span class="id" title="notation">&quot;</span></a>0" := <a class="idref" href="Algebra.Hierarchy.html#Algebra.OneTypeTwoOp.zero"><span class="id" title="variable">zero</span></a>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Local Notation</span> <a id="Algebra.OneTypeTwoOp.:::'1'" class="idref" href="#Algebra.OneTypeTwoOp.:::'1'"><span class="id" title="notation">&quot;</span></a>1" := <a class="idref" href="Algebra.Hierarchy.html#Algebra.OneTypeTwoOp.one"><span class="id" title="variable">one</span></a>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Local Notation</span> <a id="Algebra.OneTypeTwoOp.:::'-'_x" class="idref" href="#Algebra.OneTypeTwoOp.:::'-'_x"><span class="id" title="notation">&quot;</span></a>- x" := (<a class="idref" href="Algebra.Hierarchy.html#Algebra.OneTypeTwoOp.opp"><span class="id" title="variable">opp</span></a> <span class="id" title="var">x</span>).<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Local Infix</span> <a id="8c314e39f273e35458065913b9b8b727" class="idref" href="#8c314e39f273e35458065913b9b8b727"><span class="id" title="notation">&quot;</span></a>+" := <a class="idref" href="Algebra.Hierarchy.html#Algebra.OneTypeTwoOp.add"><span class="id" title="variable">add</span></a>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Local Infix</span> <a id="Algebra.OneTypeTwoOp.:::x_'-'_x" class="idref" href="#Algebra.OneTypeTwoOp.:::x_'-'_x"><span class="id" title="notation">&quot;</span></a>-" := <a class="idref" href="Algebra.Hierarchy.html#Algebra.OneTypeTwoOp.sub"><span class="id" title="variable">sub</span></a>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Local Infix</span> <a id="8c6d3922969a2ee96f2292141e2ad8b9" class="idref" href="#8c6d3922969a2ee96f2292141e2ad8b9"><span class="id" title="notation">&quot;</span></a>×" := <a class="idref" href="Algebra.Hierarchy.html#Algebra.OneTypeTwoOp.mul"><span class="id" title="variable">mul</span></a>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+Left distributivity: <span class="inlinecode"><span class="id" title="var">x</span></span> <span class="inlinecode">×</span> <span class="inlinecode">(<span class="id" title="var">y</span></span> <span class="inlinecode">+</span> <span class="inlinecode"><span class="id" title="var">z</span>)</span> <span class="inlinecode">=</span> <span class="inlinecode"><span class="id" title="var">x</span></span> <span class="inlinecode">×</span> <span class="inlinecode"><span class="id" title="var">y</span></span> <span class="inlinecode">+</span> <span class="inlinecode"><span class="id" title="var">x</span></span> <span class="inlinecode">×</span> <span class="inlinecode"><span class="id" title="var">z</span></span>. 
+</div>
+<div class="code">
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Class</span> <a id="is_left_distributive" class="idref" href="#is_left_distributive"><span class="id" title="inductive, record"><span id="is_left_distributive" class="id">is_left_distributive</span></span></a> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a id="left_distributive" class="idref" href="#left_distributive"><span class="id" title="constructor, projection"><span id="left_distributive" class="id">left_distributive</span></span></a> : <span class="id" title="keyword">∀</span> <a id="x:50" class="idref" href="#x:50"><span class="id" title="binder">x</span></a> <a id="y:51" class="idref" href="#y:51"><span class="id" title="binder">y</span></a> <a id="z:52" class="idref" href="#z:52"><span class="id" title="binder">z</span></a>,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="Algebra.Hierarchy.html#x:50"><span class="id" title="variable">x</span></a> <a class="idref" href="Algebra.Hierarchy.html#8c6d3922969a2ee96f2292141e2ad8b9"><span class="id" title="notation">×</span></a> <a class="idref" href="Algebra.Hierarchy.html#8c6d3922969a2ee96f2292141e2ad8b9"><span class="id" title="notation">(</span></a><a class="idref" href="Algebra.Hierarchy.html#y:51"><span class="id" title="variable">y</span></a> <a class="idref" href="Algebra.Hierarchy.html#8c314e39f273e35458065913b9b8b727"><span class="id" title="notation">+</span></a> <a class="idref" href="Algebra.Hierarchy.html#z:52"><span class="id" title="variable">z</span></a><a class="idref" href="Algebra.Hierarchy.html#8c6d3922969a2ee96f2292141e2ad8b9"><span class="id" title="notation">)</span></a> <a class="idref" href="Algebra.Hierarchy.html#d50afddab29e2905aeda884da22b3839"><span class="id" title="notation">=</span></a> <a class="idref" href="Algebra.Hierarchy.html#x:50"><span class="id" title="variable">x</span></a> <a class="idref" href="Algebra.Hierarchy.html#8c6d3922969a2ee96f2292141e2ad8b9"><span class="id" title="notation">×</span></a> <a class="idref" href="Algebra.Hierarchy.html#y:51"><span class="id" title="variable">y</span></a> <a class="idref" href="Algebra.Hierarchy.html#8c314e39f273e35458065913b9b8b727"><span class="id" title="notation">+</span></a> <a class="idref" href="Algebra.Hierarchy.html#x:50"><span class="id" title="variable">x</span></a> <a class="idref" href="Algebra.Hierarchy.html#8c6d3922969a2ee96f2292141e2ad8b9"><span class="id" title="notation">×</span></a> <a class="idref" href="Algebra.Hierarchy.html#z:52"><span class="id" title="variable">z</span></a>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+Right distributivity: <span class="inlinecode">(<span class="id" title="var">y</span></span> <span class="inlinecode">+</span> <span class="inlinecode"><span class="id" title="var">z</span>)</span> <span class="inlinecode">×</span> <span class="inlinecode"><span class="id" title="var">x</span></span> <span class="inlinecode">=</span> <span class="inlinecode"><span class="id" title="var">y</span></span> <span class="inlinecode">×</span> <span class="inlinecode"><span class="id" title="var">x</span></span> <span class="inlinecode">+</span> <span class="inlinecode"><span class="id" title="var">z</span></span> <span class="inlinecode">×</span> <span class="inlinecode"><span class="id" title="var">x</span></span>. 
+</div>
+<div class="code">
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Class</span> <a id="is_right_distributive" class="idref" href="#is_right_distributive"><span class="id" title="inductive, record"><span id="is_right_distributive" class="id">is_right_distributive</span></span></a> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a id="right_distributive" class="idref" href="#right_distributive"><span class="id" title="constructor, projection"><span id="right_distributive" class="id">right_distributive</span></span></a> : <span class="id" title="keyword">∀</span> <a id="x:55" class="idref" href="#x:55"><span class="id" title="binder">x</span></a> <a id="y:56" class="idref" href="#y:56"><span class="id" title="binder">y</span></a> <a id="z:57" class="idref" href="#z:57"><span class="id" title="binder">z</span></a>, <a class="idref" href="Algebra.Hierarchy.html#8c6d3922969a2ee96f2292141e2ad8b9"><span class="id" title="notation">(</span></a><a class="idref" href="Algebra.Hierarchy.html#y:56"><span class="id" title="variable">y</span></a> <a class="idref" href="Algebra.Hierarchy.html#8c314e39f273e35458065913b9b8b727"><span class="id" title="notation">+</span></a> <a class="idref" href="Algebra.Hierarchy.html#z:57"><span class="id" title="variable">z</span></a><a class="idref" href="Algebra.Hierarchy.html#8c6d3922969a2ee96f2292141e2ad8b9"><span class="id" title="notation">)</span></a> <a class="idref" href="Algebra.Hierarchy.html#8c6d3922969a2ee96f2292141e2ad8b9"><span class="id" title="notation">×</span></a> <a class="idref" href="Algebra.Hierarchy.html#x:55"><span class="id" title="variable">x</span></a> <a class="idref" href="Algebra.Hierarchy.html#d50afddab29e2905aeda884da22b3839"><span class="id" title="notation">=</span></a> <a class="idref" href="Algebra.Hierarchy.html#y:56"><span class="id" title="variable">y</span></a> <a class="idref" href="Algebra.Hierarchy.html#8c6d3922969a2ee96f2292141e2ad8b9"><span class="id" title="notation">×</span></a> <a class="idref" href="Algebra.Hierarchy.html#x:55"><span class="id" title="variable">x</span></a> <a class="idref" href="Algebra.Hierarchy.html#8c314e39f273e35458065913b9b8b727"><span class="id" title="notation">+</span></a> <a class="idref" href="Algebra.Hierarchy.html#z:57"><span class="id" title="variable">z</span></a> <a class="idref" href="Algebra.Hierarchy.html#8c6d3922969a2ee96f2292141e2ad8b9"><span class="id" title="notation">×</span></a> <a class="idref" href="Algebra.Hierarchy.html#x:55"><span class="id" title="variable">x</span></a>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+A (not necessarily commutative) ring with unit: an abelian group
+        under <span class="inlinecode"><span class="id" title="var">add</span></span>, a monoid under <span class="inlinecode"><span class="id" title="var">mul</span></span>, both distributive laws, the
+        defining equation <span class="inlinecode"><span class="id" title="var">x</span></span> <span class="inlinecode">-</span> <span class="inlinecode"><span class="id" title="var">y</span></span> <span class="inlinecode">=</span> <span class="inlinecode"><span class="id" title="var">x</span></span> <span class="inlinecode">+</span> <span class="inlinecode"><span class="id" title="var">opp</span></span> <span class="inlinecode"><span class="id" title="var">y</span></span>, and compatibility of <span class="inlinecode"><span class="id" title="var">mul</span></span>
+        and <span class="inlinecode"><span class="id" title="var">sub</span></span> with <span class="inlinecode"><span class="id" title="var">eq</span></span>. 
+</div>
+<div class="code">
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Class</span> <a id="ring" class="idref" href="#ring"><span class="id" title="record">ring</span></a> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;{<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a id="ring_commutative_group_add" class="idref" href="#ring_commutative_group_add"><span class="id" title="projection">ring_commutative_group_add</span></a> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="Algebra.Hierarchy.html#commutative_group"><span class="id" title="class">commutative_group</span></a> (<span class="id" title="var">eq</span> := <a class="idref" href="Algebra.Hierarchy.html#Algebra.OneTypeTwoOp.eq"><span class="id" title="variable">eq</span></a>) (<span class="id" title="var">op</span> := <a class="idref" href="Algebra.Hierarchy.html#Algebra.OneTypeTwoOp.add"><span class="id" title="variable">add</span></a>) (<span class="id" title="var">id</span> := <a class="idref" href="Algebra.Hierarchy.html#Algebra.OneTypeTwoOp.zero"><span class="id" title="variable">zero</span></a>) (<span class="id" title="var">inv</span> := <a class="idref" href="Algebra.Hierarchy.html#Algebra.OneTypeTwoOp.opp"><span class="id" title="variable">opp</span></a>);<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a id="ring_monoid_mul" class="idref" href="#ring_monoid_mul"><span class="id" title="projection">ring_monoid_mul</span></a> : <a class="idref" href="Algebra.Hierarchy.html#monoid"><span class="id" title="class">monoid</span></a> (<span class="id" title="var">eq</span> := <a class="idref" href="Algebra.Hierarchy.html#Algebra.OneTypeTwoOp.eq"><span class="id" title="variable">eq</span></a>) (<span class="id" title="var">op</span> := <a class="idref" href="Algebra.Hierarchy.html#Algebra.OneTypeTwoOp.mul"><span class="id" title="variable">mul</span></a>) (<span class="id" title="var">id</span> := <a class="idref" href="Algebra.Hierarchy.html#Algebra.OneTypeTwoOp.one"><span class="id" title="variable">one</span></a>);<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a id="ring_is_left_distributive" class="idref" href="#ring_is_left_distributive"><span class="id" title="projection">ring_is_left_distributive</span></a> : <a class="idref" href="Algebra.Hierarchy.html#is_left_distributive"><span class="id" title="class">is_left_distributive</span></a>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a id="ring_is_right_distributive" class="idref" href="#ring_is_right_distributive"><span class="id" title="projection">ring_is_right_distributive</span></a> : <a class="idref" href="Algebra.Hierarchy.html#is_right_distributive"><span class="id" title="class">is_right_distributive</span></a>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a id="ring_sub_definition" class="idref" href="#ring_sub_definition"><span class="id" title="projection">ring_sub_definition</span></a> : <span class="id" title="keyword">∀</span> <a id="x:64" class="idref" href="#x:64"><span class="id" title="binder">x</span></a> <a id="y:65" class="idref" href="#y:65"><span class="id" title="binder">y</span></a>, <a class="idref" href="Algebra.Hierarchy.html#x:64"><span class="id" title="variable">x</span></a> <a class="idref" href="Algebra.Hierarchy.html#Algebra.OneTypeTwoOp.:::x_'-'_x"><span class="id" title="notation">-</span></a> <a class="idref" href="Algebra.Hierarchy.html#y:65"><span class="id" title="variable">y</span></a> <a class="idref" href="Algebra.Hierarchy.html#d50afddab29e2905aeda884da22b3839"><span class="id" title="notation">=</span></a> <a class="idref" href="Algebra.Hierarchy.html#x:64"><span class="id" title="variable">x</span></a> <a class="idref" href="Algebra.Hierarchy.html#8c314e39f273e35458065913b9b8b727"><span class="id" title="notation">+</span></a> <a class="idref" href="Algebra.Hierarchy.html#Algebra.OneTypeTwoOp.opp"><span class="id" title="variable">opp</span></a> <a class="idref" href="Algebra.Hierarchy.html#y:65"><span class="id" title="variable">y</span></a>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a id="ring_mul_Proper" class="idref" href="#ring_mul_Proper"><span class="id" title="projection">ring_mul_Proper</span></a> : <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Classes.Morphisms.html#Proper"><span class="id" title="class">Proper</span></a> (<a class="idref" href="Algebra.Hierarchy.html#Algebra.OneTypeTwoOp.eq"><span class="id" title="variable">eq</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Classes.Morphisms.html#8dc5652698a6e16f72dd37bd17d3b973"><span class="id" title="notation">==&gt;</span></a> <a class="idref" href="Algebra.Hierarchy.html#Algebra.OneTypeTwoOp.eq"><span class="id" title="variable">eq</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Classes.Morphisms.html#8dc5652698a6e16f72dd37bd17d3b973"><span class="id" title="notation">==&gt;</span></a> <a class="idref" href="Algebra.Hierarchy.html#Algebra.OneTypeTwoOp.eq"><span class="id" title="variable">eq</span></a>) <a class="idref" href="Algebra.Hierarchy.html#Algebra.OneTypeTwoOp.mul"><span class="id" title="variable">mul</span></a>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a id="ring_sub_Proper" class="idref" href="#ring_sub_Proper"><span class="id" title="projection">ring_sub_Proper</span></a> : <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Classes.Morphisms.html#Proper"><span class="id" title="class">Proper</span></a> (<a class="idref" href="Algebra.Hierarchy.html#Algebra.OneTypeTwoOp.eq"><span class="id" title="variable">eq</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Classes.Morphisms.html#8dc5652698a6e16f72dd37bd17d3b973"><span class="id" title="notation">==&gt;</span></a> <a class="idref" href="Algebra.Hierarchy.html#Algebra.OneTypeTwoOp.eq"><span class="id" title="variable">eq</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Classes.Morphisms.html#8dc5652698a6e16f72dd37bd17d3b973"><span class="id" title="notation">==&gt;</span></a> <a class="idref" href="Algebra.Hierarchy.html#Algebra.OneTypeTwoOp.eq"><span class="id" title="variable">eq</span></a>) <a class="idref" href="Algebra.Hierarchy.html#Algebra.OneTypeTwoOp.sub"><span class="id" title="variable">sub</span></a><br/>
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;}.<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Global Existing Instance</span> <a class="idref" href="Algebra.Hierarchy.html#ring_commutative_group_add"><span class="id" title="method">ring_commutative_group_add</span></a>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Global Existing Instance</span> <a class="idref" href="Algebra.Hierarchy.html#ring_monoid_mul"><span class="id" title="method">ring_monoid_mul</span></a>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Global Existing Instance</span> <a class="idref" href="Algebra.Hierarchy.html#ring_is_left_distributive"><span class="id" title="method">ring_is_left_distributive</span></a>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Global Existing Instance</span> <a class="idref" href="Algebra.Hierarchy.html#ring_is_right_distributive"><span class="id" title="method">ring_is_right_distributive</span></a>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Global Existing Instance</span> <a class="idref" href="Algebra.Hierarchy.html#ring_mul_Proper"><span class="id" title="method">ring_mul_Proper</span></a>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Global Existing Instance</span> <a class="idref" href="Algebra.Hierarchy.html#ring_sub_Proper"><span class="id" title="method">ring_sub_Proper</span></a>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+A ring whose multiplication is commutative. 
+</div>
+<div class="code">
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Class</span> <a id="commutative_ring" class="idref" href="#commutative_ring"><span class="id" title="record">commutative_ring</span></a> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;{<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a id="commutative_ring_ring" class="idref" href="#commutative_ring_ring"><span class="id" title="projection">commutative_ring_ring</span></a> : <a class="idref" href="Algebra.Hierarchy.html#ring"><span class="id" title="class">ring</span></a>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a id="commutative_ring_is_commutative" class="idref" href="#commutative_ring_is_commutative"><span class="id" title="projection">commutative_ring_is_commutative</span></a> : <a class="idref" href="Algebra.Hierarchy.html#is_commutative"><span class="id" title="class">is_commutative</span></a> (<span class="id" title="var">eq</span> := <a class="idref" href="Algebra.Hierarchy.html#Algebra.OneTypeTwoOp.eq"><span class="id" title="variable">eq</span></a>) (<span class="id" title="var">op</span> := <a class="idref" href="Algebra.Hierarchy.html#Algebra.OneTypeTwoOp.mul"><span class="id" title="variable">mul</span></a>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;}.<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Global Existing Instance</span> <a class="idref" href="Algebra.Hierarchy.html#commutative_ring_ring"><span class="id" title="method">commutative_ring_ring</span></a>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Global Existing Instance</span> <a class="idref" href="Algebra.Hierarchy.html#commutative_ring_is_commutative"><span class="id" title="method">commutative_ring_is_commutative</span></a>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+No zero divisors: <span class="inlinecode"><span class="id" title="var">x</span></span> <span class="inlinecode">×</span> <span class="inlinecode"><span class="id" title="var">y</span></span> <span class="inlinecode">=</span> <span class="inlinecode">0</span> <span class="inlinecode">→</span> <span class="inlinecode"><span class="id" title="var">x</span></span> <span class="inlinecode">=</span> <span class="inlinecode">0</span> <span class="inlinecode">∨</span> <span class="inlinecode"><span class="id" title="var">y</span></span> <span class="inlinecode">=</span> <span class="inlinecode">0</span>. 
+</div>
+<div class="code">
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Class</span> <a id="is_zero_product_zero_factor" class="idref" href="#is_zero_product_zero_factor"><span class="id" title="inductive, record"><span id="is_zero_product_zero_factor" class="id">is_zero_product_zero_factor</span></span></a> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a id="zero_product_zero_factor" class="idref" href="#zero_product_zero_factor"><span class="id" title="constructor, projection"><span id="zero_product_zero_factor" class="id">zero_product_zero_factor</span></span></a> : <span class="id" title="keyword">∀</span> <a id="x:73" class="idref" href="#x:73"><span class="id" title="binder">x</span></a> <a id="y:74" class="idref" href="#y:74"><span class="id" title="binder">y</span></a>, <a class="idref" href="Algebra.Hierarchy.html#x:73"><span class="id" title="variable">x</span></a> <a class="idref" href="Algebra.Hierarchy.html#8c6d3922969a2ee96f2292141e2ad8b9"><span class="id" title="notation">×</span></a> <a class="idref" href="Algebra.Hierarchy.html#y:74"><span class="id" title="variable">y</span></a> <a class="idref" href="Algebra.Hierarchy.html#d50afddab29e2905aeda884da22b3839"><span class="id" title="notation">=</span></a> 0 <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Notations.html#::type_scope:x_'-&gt;'_x"><span class="id" title="notation">→</span></a> <a class="idref" href="Algebra.Hierarchy.html#x:73"><span class="id" title="variable">x</span></a> <a class="idref" href="Algebra.Hierarchy.html#d50afddab29e2905aeda884da22b3839"><span class="id" title="notation">=</span></a> 0 <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Logic.html#f031fe1957c4a4a8e217aa46af2b4e25"><span class="id" title="notation">∨</span></a> <a class="idref" href="Algebra.Hierarchy.html#y:74"><span class="id" title="variable">y</span></a> <a class="idref" href="Algebra.Hierarchy.html#d50afddab29e2905aeda884da22b3839"><span class="id" title="notation">=</span></a> 0.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+Non-triviality: <span class="inlinecode"><span class="id" title="var">zero</span></span> <span class="inlinecode">≠</span> <span class="inlinecode"><span class="id" title="var">one</span></span>. 
+</div>
+<div class="code">
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Class</span> <a id="is_zero_neq_one" class="idref" href="#is_zero_neq_one"><span class="id" title="inductive, record"><span id="is_zero_neq_one" class="id">is_zero_neq_one</span></span></a> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a id="zero_neq_one" class="idref" href="#zero_neq_one"><span class="id" title="constructor, projection"><span id="zero_neq_one" class="id">zero_neq_one</span></span></a> : <a class="idref" href="Algebra.Hierarchy.html#Algebra.OneTypeTwoOp.zero"><span class="id" title="variable">zero</span></a> <a class="idref" href="Algebra.Hierarchy.html#Algebra.OneTypeTwoOp.::type_scope:x_'&lt;&gt;'_x"><span class="id" title="notation">≠</span></a> <a class="idref" href="Algebra.Hierarchy.html#Algebra.OneTypeTwoOp.one"><span class="id" title="variable">one</span></a>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+An integral domain: a non-trivial commutative ring without zero
+        divisors. Every <span class="inlinecode"><span class="id" title="tactic">field</span></span> is one (see <span class="inlinecode"><span class="id" title="var">Field.v</span></span>). 
+</div>
+<div class="code">
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Class</span> <a id="integral_domain" class="idref" href="#integral_domain"><span class="id" title="record">integral_domain</span></a> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;{<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a id="integral_domain_commutative_ring" class="idref" href="#integral_domain_commutative_ring"><span class="id" title="projection">integral_domain_commutative_ring</span></a> : <a class="idref" href="Algebra.Hierarchy.html#commutative_ring"><span class="id" title="class">commutative_ring</span></a>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a id="integral_domain_is_zero_product_zero_factor" class="idref" href="#integral_domain_is_zero_product_zero_factor"><span class="id" title="projection">integral_domain_is_zero_product_zero_factor</span></a> : <a class="idref" href="Algebra.Hierarchy.html#is_zero_product_zero_factor"><span class="id" title="class">is_zero_product_zero_factor</span></a>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a id="integral_domain_is_zero_neq_one" class="idref" href="#integral_domain_is_zero_neq_one"><span class="id" title="projection">integral_domain_is_zero_neq_one</span></a> : <a class="idref" href="Algebra.Hierarchy.html#is_zero_neq_one"><span class="id" title="class">is_zero_neq_one</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;}.<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Global Existing Instance</span> <a class="idref" href="Algebra.Hierarchy.html#integral_domain_commutative_ring"><span class="id" title="method">integral_domain_commutative_ring</span></a>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Global Existing Instance</span> <a class="idref" href="Algebra.Hierarchy.html#integral_domain_is_zero_product_zero_factor"><span class="id" title="method">integral_domain_is_zero_product_zero_factor</span></a>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Global Existing Instance</span> <a class="idref" href="Algebra.Hierarchy.html#integral_domain_is_zero_neq_one"><span class="id" title="method">integral_domain_is_zero_neq_one</span></a>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+Multiplicative inverse and division, used by <span class="inlinecode"><span class="id" title="tactic">field</span></span>. <span class="inlinecode"><span class="id" title="var">inv</span></span> is a
+        total function; its value at <span class="inlinecode">0</span> is unconstrained. 
+</div>
+<div class="code">
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Context</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{<a id="Algebra.OneTypeTwoOp.inv" class="idref" href="#Algebra.OneTypeTwoOp.inv"><span class="id" title="variable">inv</span></a> : <a class="idref" href="Algebra.Hierarchy.html#Algebra.OneTypeTwoOp.T"><span class="id" title="variable">T</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Notations.html#::type_scope:x_'-&gt;'_x"><span class="id" title="notation">→</span></a> <a class="idref" href="Algebra.Hierarchy.html#Algebra.OneTypeTwoOp.T"><span class="id" title="variable">T</span></a>}<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{<a id="Algebra.OneTypeTwoOp.div" class="idref" href="#Algebra.OneTypeTwoOp.div"><span class="id" title="variable">div</span></a> : <a class="idref" href="Algebra.Hierarchy.html#Algebra.OneTypeTwoOp.T"><span class="id" title="variable">T</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Notations.html#::type_scope:x_'-&gt;'_x"><span class="id" title="notation">→</span></a> <a class="idref" href="Algebra.Hierarchy.html#Algebra.OneTypeTwoOp.T"><span class="id" title="variable">T</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Notations.html#::type_scope:x_'-&gt;'_x"><span class="id" title="notation">→</span></a> <a class="idref" href="Algebra.Hierarchy.html#Algebra.OneTypeTwoOp.T"><span class="id" title="variable">T</span></a>}.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+Every non-zero element has a left multiplicative inverse:
+        <span class="inlinecode"><span class="id" title="var">x</span></span> <span class="inlinecode">≠</span> <span class="inlinecode">0</span> <span class="inlinecode">→</span> <span class="inlinecode"><span class="id" title="var">inv</span></span> <span class="inlinecode"><span class="id" title="var">x</span></span> <span class="inlinecode">×</span> <span class="inlinecode"><span class="id" title="var">x</span></span> <span class="inlinecode">=</span> <span class="inlinecode">1</span>. 
+</div>
+<div class="code">
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Class</span> <a id="is_left_multiplicative_inverse" class="idref" href="#is_left_multiplicative_inverse"><span class="id" title="inductive, record"><span id="is_left_multiplicative_inverse" class="id">is_left_multiplicative_inverse</span></span></a> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a id="left_multiplicative_inverse" class="idref" href="#left_multiplicative_inverse"><span class="id" title="constructor, projection"><span id="left_multiplicative_inverse" class="id">left_multiplicative_inverse</span></span></a> : <span class="id" title="keyword">∀</span> <a id="x:85" class="idref" href="#x:85"><span class="id" title="binder">x</span></a>, <a class="idref" href="Algebra.Hierarchy.html#x:85"><span class="id" title="variable">x</span></a> <a class="idref" href="Algebra.Hierarchy.html#Algebra.OneTypeTwoOp.::type_scope:x_'&lt;&gt;'_x"><span class="id" title="notation">≠</span></a> 0 <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Notations.html#::type_scope:x_'-&gt;'_x"><span class="id" title="notation">→</span></a> <a class="idref" href="Algebra.Hierarchy.html#8c6d3922969a2ee96f2292141e2ad8b9"><span class="id" title="notation">(</span></a><a class="idref" href="Algebra.Hierarchy.html#Algebra.OneTypeTwoOp.inv"><span class="id" title="variable">inv</span></a> <a class="idref" href="Algebra.Hierarchy.html#x:85"><span class="id" title="variable">x</span></a><a class="idref" href="Algebra.Hierarchy.html#8c6d3922969a2ee96f2292141e2ad8b9"><span class="id" title="notation">)</span></a> <a class="idref" href="Algebra.Hierarchy.html#8c6d3922969a2ee96f2292141e2ad8b9"><span class="id" title="notation">×</span></a> <a class="idref" href="Algebra.Hierarchy.html#x:85"><span class="id" title="variable">x</span></a> <a class="idref" href="Algebra.Hierarchy.html#d50afddab29e2905aeda884da22b3839"><span class="id" title="notation">=</span></a> 1.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+A field: a non-trivial commutative ring in which every non-zero
+        element is invertible, with <span class="inlinecode"><span class="id" title="var">div</span></span> <span class="inlinecode"><span class="id" title="var">x</span></span> <span class="inlinecode"><span class="id" title="var">y</span></span> <span class="inlinecode">=</span> <span class="inlinecode"><span class="id" title="var">x</span></span> <span class="inlinecode">×</span> <span class="inlinecode"><span class="id" title="var">inv</span></span> <span class="inlinecode"><span class="id" title="var">y</span></span> and <span class="inlinecode"><span class="id" title="var">inv</span></span>, <span class="inlinecode"><span class="id" title="var">div</span></span>
+        compatible with <span class="inlinecode"><span class="id" title="var">eq</span></span>. In the cryptographic files the field is
+        <span class="inlinecode"><span class="id" title="var">Z_q</span></span>, the exponent (scalar) field of a prime-order group. 
+</div>
+<div class="code">
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Class</span> <a id="field" class="idref" href="#field"><span class="id" title="record">field</span></a> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;{<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a id="field_commutative_ring" class="idref" href="#field_commutative_ring"><span class="id" title="projection">field_commutative_ring</span></a> : <a class="idref" href="Algebra.Hierarchy.html#commutative_ring"><span class="id" title="class">commutative_ring</span></a>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a id="field_is_left_multiplicative_inverse" class="idref" href="#field_is_left_multiplicative_inverse"><span class="id" title="projection">field_is_left_multiplicative_inverse</span></a> : <a class="idref" href="Algebra.Hierarchy.html#is_left_multiplicative_inverse"><span class="id" title="class">is_left_multiplicative_inverse</span></a>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a id="field_is_zero_neq_one" class="idref" href="#field_is_zero_neq_one"><span class="id" title="projection">field_is_zero_neq_one</span></a> : <a class="idref" href="Algebra.Hierarchy.html#is_zero_neq_one"><span class="id" title="class">is_zero_neq_one</span></a>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a id="field_div_definition" class="idref" href="#field_div_definition"><span class="id" title="projection">field_div_definition</span></a> : <span class="id" title="keyword">∀</span> <a id="x:91" class="idref" href="#x:91"><span class="id" title="binder">x</span></a> <a id="y:92" class="idref" href="#y:92"><span class="id" title="binder">y</span></a> , <a class="idref" href="Algebra.Hierarchy.html#Algebra.OneTypeTwoOp.div"><span class="id" title="variable">div</span></a> <a class="idref" href="Algebra.Hierarchy.html#x:91"><span class="id" title="variable">x</span></a> <a class="idref" href="Algebra.Hierarchy.html#y:92"><span class="id" title="variable">y</span></a> <a class="idref" href="Algebra.Hierarchy.html#d50afddab29e2905aeda884da22b3839"><span class="id" title="notation">=</span></a> <a class="idref" href="Algebra.Hierarchy.html#x:91"><span class="id" title="variable">x</span></a> <a class="idref" href="Algebra.Hierarchy.html#8c6d3922969a2ee96f2292141e2ad8b9"><span class="id" title="notation">×</span></a> <a class="idref" href="Algebra.Hierarchy.html#Algebra.OneTypeTwoOp.inv"><span class="id" title="variable">inv</span></a> <a class="idref" href="Algebra.Hierarchy.html#y:92"><span class="id" title="variable">y</span></a>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a id="field_inv_Proper" class="idref" href="#field_inv_Proper"><span class="id" title="projection">field_inv_Proper</span></a> : <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Classes.Morphisms.html#Proper"><span class="id" title="class">Proper</span></a> (<a class="idref" href="Algebra.Hierarchy.html#Algebra.OneTypeTwoOp.eq"><span class="id" title="variable">eq</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Classes.Morphisms.html#8dc5652698a6e16f72dd37bd17d3b973"><span class="id" title="notation">==&gt;</span></a> <a class="idref" href="Algebra.Hierarchy.html#Algebra.OneTypeTwoOp.eq"><span class="id" title="variable">eq</span></a>) <a class="idref" href="Algebra.Hierarchy.html#Algebra.OneTypeTwoOp.inv"><span class="id" title="variable">inv</span></a>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a id="field_div_Proper" class="idref" href="#field_div_Proper"><span class="id" title="projection">field_div_Proper</span></a> : <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Classes.Morphisms.html#Proper"><span class="id" title="class">Proper</span></a> (<a class="idref" href="Algebra.Hierarchy.html#Algebra.OneTypeTwoOp.eq"><span class="id" title="variable">eq</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Classes.Morphisms.html#8dc5652698a6e16f72dd37bd17d3b973"><span class="id" title="notation">==&gt;</span></a> <a class="idref" href="Algebra.Hierarchy.html#Algebra.OneTypeTwoOp.eq"><span class="id" title="variable">eq</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Classes.Morphisms.html#8dc5652698a6e16f72dd37bd17d3b973"><span class="id" title="notation">==&gt;</span></a> <a class="idref" href="Algebra.Hierarchy.html#Algebra.OneTypeTwoOp.eq"><span class="id" title="variable">eq</span></a>) <a class="idref" href="Algebra.Hierarchy.html#Algebra.OneTypeTwoOp.div"><span class="id" title="variable">div</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;}.<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Global Existing Instance</span> <a class="idref" href="Algebra.Hierarchy.html#field_commutative_ring"><span class="id" title="method">field_commutative_ring</span></a>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Global Existing Instance</span> <a class="idref" href="Algebra.Hierarchy.html#field_is_left_multiplicative_inverse"><span class="id" title="method">field_is_left_multiplicative_inverse</span></a>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Global Existing Instance</span> <a class="idref" href="Algebra.Hierarchy.html#field_is_zero_neq_one"><span class="id" title="method">field_is_zero_neq_one</span></a>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Global Existing Instance</span> <a class="idref" href="Algebra.Hierarchy.html#field_inv_Proper"><span class="id" title="method">field_inv_Proper</span></a>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Global Existing Instance</span> <a class="idref" href="Algebra.Hierarchy.html#field_div_Proper"><span class="id" title="method">field_div_Proper</span></a>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">End</span> <a class="idref" href="Algebra.Hierarchy.html#Algebra.OneTypeTwoOp"><span class="id" title="section">OneTypeTwoOp</span></a>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<a id="lab10"></a><h3 class="section">Vector spaces</h3>
+
+
+<div class="paragraph"> </div>
+
+      A vector space <span class="inlinecode"><span class="id" title="var">V</span></span> over a field <span class="inlinecode"><span class="id" title="var">F</span></span>. The scalar action is written
+      <span class="inlinecode"><span class="id" title="var">v</span></span> <span class="inlinecode">×<span class="id" title="var">s</span></span> <span class="inlinecode"><span class="id" title="var">r</span></span> with the vector on the left. In cryptographic use <span class="inlinecode"><span class="id" title="var">V</span></span> is a
+      prime-order group <span class="inlinecode"><span class="id" title="var">G</span></span> written multiplicatively, <span class="inlinecode"><span class="id" title="var">vadd</span></span> is the group
+      product and <span class="inlinecode"><span class="id" title="var">v</span></span> <span class="inlinecode">×<span class="id" title="var">s</span></span> <span class="inlinecode"><span class="id" title="var">r</span></span> is the exponentiation <span class="inlinecode"><span class="id" title="var">v</span></span> <span class="inlinecode">^</span> <span class="inlinecode"><span class="id" title="var">r</span></span>; the axioms below
+      then read <span class="inlinecode"><span class="id" title="var">g</span></span> <span class="inlinecode">^</span> <span class="inlinecode">1</span> <span class="inlinecode">=</span> <span class="inlinecode"><span class="id" title="var">g</span></span>, <span class="inlinecode"><span class="id" title="var">g</span></span> <span class="inlinecode">^</span> <span class="inlinecode">0</span> <span class="inlinecode">=</span> <span class="inlinecode">1</span>, <span class="inlinecode"><span class="id" title="var">g</span></span> <span class="inlinecode">^</span> <span class="inlinecode">(<span class="id" title="var">r1</span></span> <span class="inlinecode"><span class="id" title="var">r2</span>)</span> <span class="inlinecode">=</span> <span class="inlinecode">(<span class="id" title="var">g</span></span> <span class="inlinecode">^</span> <span class="inlinecode"><span class="id" title="var">r1</span>)</span> <span class="inlinecode">^</span> <span class="inlinecode"><span class="id" title="var">r2</span></span>,
+      <span class="inlinecode"><span class="id" title="var">g</span></span> <span class="inlinecode">^</span> <span class="inlinecode">(<span class="id" title="var">r1</span></span> <span class="inlinecode">+</span> <span class="inlinecode"><span class="id" title="var">r2</span>)</span> <span class="inlinecode">=</span> <span class="inlinecode"><span class="id" title="var">g</span></span> <span class="inlinecode">^</span> <span class="inlinecode"><span class="id" title="var">r1</span></span> <span class="inlinecode">·</span> <span class="inlinecode"><span class="id" title="var">g</span></span> <span class="inlinecode">^</span> <span class="inlinecode"><span class="id" title="var">r2</span></span> and <span class="inlinecode">(<span class="id" title="var">g</span></span> <span class="inlinecode"><span class="id" title="var">h</span>)</span> <span class="inlinecode">^</span> <span class="inlinecode"><span class="id" title="var">r</span></span> <span class="inlinecode">=</span> <span class="inlinecode"><span class="id" title="var">g</span></span> <span class="inlinecode">^</span> <span class="inlinecode"><span class="id" title="var">r</span></span> <span class="inlinecode">·</span> <span class="inlinecode"><span class="id" title="var">h</span></span> <span class="inlinecode">^</span> <span class="inlinecode"><span class="id" title="var">r</span></span>. 
+</div>
+<div class="code">
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Section</span> <a id="Algebra.VectorSpace" class="idref" href="#Algebra.VectorSpace"><span class="id" title="section">VectorSpace</span></a>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+The scalar field and its operations. 
+</div>
+<div class="code">
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Context</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{<a id="Algebra.VectorSpace.F" class="idref" href="#Algebra.VectorSpace.F"><span class="id" title="variable">F</span></a> : <span class="id" title="keyword">Type</span>}<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{<a id="Algebra.VectorSpace.eqf" class="idref" href="#Algebra.VectorSpace.eqf"><span class="id" title="variable">eqf</span></a> : <a class="idref" href="Algebra.Hierarchy.html#F:96"><span class="id" title="variable">F</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Notations.html#::type_scope:x_'-&gt;'_x"><span class="id" title="notation">→</span></a> <a class="idref" href="Algebra.Hierarchy.html#F:96"><span class="id" title="variable">F</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Notations.html#::type_scope:x_'-&gt;'_x"><span class="id" title="notation">→</span></a> <span class="id" title="keyword">Prop</span>}<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{<a id="Algebra.VectorSpace.zero" class="idref" href="#Algebra.VectorSpace.zero"><span class="id" title="variable">zero</span></a> <a id="Algebra.VectorSpace.one" class="idref" href="#Algebra.VectorSpace.one"><span class="id" title="variable">one</span></a> : <a class="idref" href="Algebra.Hierarchy.html#F:96"><span class="id" title="variable">F</span></a>}<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{<a id="Algebra.VectorSpace.add" class="idref" href="#Algebra.VectorSpace.add"><span class="id" title="variable">add</span></a> <a id="Algebra.VectorSpace.mul" class="idref" href="#Algebra.VectorSpace.mul"><span class="id" title="variable">mul</span></a> <a id="Algebra.VectorSpace.sub" class="idref" href="#Algebra.VectorSpace.sub"><span class="id" title="variable">sub</span></a> <a id="Algebra.VectorSpace.div" class="idref" href="#Algebra.VectorSpace.div"><span class="id" title="variable">div</span></a> : <a class="idref" href="Algebra.Hierarchy.html#F:96"><span class="id" title="variable">F</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Notations.html#::type_scope:x_'-&gt;'_x"><span class="id" title="notation">→</span></a> <a class="idref" href="Algebra.Hierarchy.html#F:96"><span class="id" title="variable">F</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Notations.html#::type_scope:x_'-&gt;'_x"><span class="id" title="notation">→</span></a> <a class="idref" href="Algebra.Hierarchy.html#F:96"><span class="id" title="variable">F</span></a>}<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{<a id="Algebra.VectorSpace.opp" class="idref" href="#Algebra.VectorSpace.opp"><span class="id" title="variable">opp</span></a> <a id="Algebra.VectorSpace.inv" class="idref" href="#Algebra.VectorSpace.inv"><span class="id" title="variable">inv</span></a> : <a class="idref" href="Algebra.Hierarchy.html#F:96"><span class="id" title="variable">F</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Notations.html#::type_scope:x_'-&gt;'_x"><span class="id" title="notation">→</span></a> <a class="idref" href="Algebra.Hierarchy.html#F:96"><span class="id" title="variable">F</span></a>}.<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Local Notation</span> <a id="Algebra.VectorSpace.:::'0'" class="idref" href="#Algebra.VectorSpace.:::'0'"><span class="id" title="notation">&quot;</span></a>0" := <a class="idref" href="Algebra.Hierarchy.html#Algebra.VectorSpace.zero"><span class="id" title="variable">zero</span></a>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Local Notation</span> <a id="Algebra.VectorSpace.:::'1'" class="idref" href="#Algebra.VectorSpace.:::'1'"><span class="id" title="notation">&quot;</span></a>1" := <a class="idref" href="Algebra.Hierarchy.html#Algebra.VectorSpace.one"><span class="id" title="variable">one</span></a>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Local Notation</span> <a id="Algebra.VectorSpace.:::'-'_x" class="idref" href="#Algebra.VectorSpace.:::'-'_x"><span class="id" title="notation">&quot;</span></a>- x" := (<a class="idref" href="Algebra.Hierarchy.html#Algebra.VectorSpace.opp"><span class="id" title="variable">opp</span></a> <span class="id" title="var">x</span>).<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Local Infix</span> <a id="84ce5e81cf954a496396cf0a66f34aa9" class="idref" href="#84ce5e81cf954a496396cf0a66f34aa9"><span class="id" title="notation">&quot;</span></a>+" := <a class="idref" href="Algebra.Hierarchy.html#Algebra.VectorSpace.add"><span class="id" title="variable">add</span></a>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Local Infix</span> <a id="7df6f7358b36cd3592568abe14434571" class="idref" href="#7df6f7358b36cd3592568abe14434571"><span class="id" title="notation">&quot;</span></a>×" := <a class="idref" href="Algebra.Hierarchy.html#Algebra.VectorSpace.mul"><span class="id" title="variable">mul</span></a>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Local Infix</span> <a id="Algebra.VectorSpace.:::x_'-'_x" class="idref" href="#Algebra.VectorSpace.:::x_'-'_x"><span class="id" title="notation">&quot;</span></a>-" := <a class="idref" href="Algebra.Hierarchy.html#Algebra.VectorSpace.sub"><span class="id" title="variable">sub</span></a>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Local Infix</span> <a id="d81553e956ac37139821845a489f89c3" class="idref" href="#d81553e956ac37139821845a489f89c3"><span class="id" title="notation">&quot;</span></a>/" := <a class="idref" href="Algebra.Hierarchy.html#Algebra.VectorSpace.div"><span class="id" title="variable">div</span></a>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+The vectors: carrier <span class="inlinecode"><span class="id" title="var">V</span></span>, equivalence <span class="inlinecode"><span class="id" title="var">eqv</span></span>, zero vector <span class="inlinecode"><span class="id" title="var">vid</span></span>,
+        negation <span class="inlinecode"><span class="id" title="var">vopp</span></span>, addition <span class="inlinecode"><span class="id" title="var">vadd</span></span> and scalar action <span class="inlinecode"><span class="id" title="var">smul</span></span>. 
+</div>
+<div class="code">
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Context</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{<a id="Algebra.VectorSpace.V" class="idref" href="#Algebra.VectorSpace.V"><span class="id" title="variable">V</span></a> : <span class="id" title="keyword">Type</span>}<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{<a id="Algebra.VectorSpace.eqv" class="idref" href="#Algebra.VectorSpace.eqv"><span class="id" title="variable">eqv</span></a> : <a class="idref" href="Algebra.Hierarchy.html#V:106"><span class="id" title="variable">V</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Notations.html#::type_scope:x_'-&gt;'_x"><span class="id" title="notation">→</span></a> <a class="idref" href="Algebra.Hierarchy.html#V:106"><span class="id" title="variable">V</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Notations.html#::type_scope:x_'-&gt;'_x"><span class="id" title="notation">→</span></a> <span class="id" title="keyword">Prop</span>}<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{<a id="Algebra.VectorSpace.vid" class="idref" href="#Algebra.VectorSpace.vid"><span class="id" title="variable">vid</span></a> : <a class="idref" href="Algebra.Hierarchy.html#V:106"><span class="id" title="variable">V</span></a>}<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{<a id="Algebra.VectorSpace.vopp" class="idref" href="#Algebra.VectorSpace.vopp"><span class="id" title="variable">vopp</span></a> : <a class="idref" href="Algebra.Hierarchy.html#V:106"><span class="id" title="variable">V</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Notations.html#::type_scope:x_'-&gt;'_x"><span class="id" title="notation">→</span></a> <a class="idref" href="Algebra.Hierarchy.html#V:106"><span class="id" title="variable">V</span></a>}<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{<a id="Algebra.VectorSpace.vadd" class="idref" href="#Algebra.VectorSpace.vadd"><span class="id" title="variable">vadd</span></a> : <a class="idref" href="Algebra.Hierarchy.html#V:106"><span class="id" title="variable">V</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Notations.html#::type_scope:x_'-&gt;'_x"><span class="id" title="notation">→</span></a> <a class="idref" href="Algebra.Hierarchy.html#V:106"><span class="id" title="variable">V</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Notations.html#::type_scope:x_'-&gt;'_x"><span class="id" title="notation">→</span></a> <a class="idref" href="Algebra.Hierarchy.html#V:106"><span class="id" title="variable">V</span></a>}<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{<a id="Algebra.VectorSpace.smul" class="idref" href="#Algebra.VectorSpace.smul"><span class="id" title="variable">smul</span></a> : <a class="idref" href="Algebra.Hierarchy.html#V:106"><span class="id" title="variable">V</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Notations.html#::type_scope:x_'-&gt;'_x"><span class="id" title="notation">→</span></a> <a class="idref" href="Algebra.Hierarchy.html#Algebra.VectorSpace.F"><span class="id" title="variable">F</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Notations.html#::type_scope:x_'-&gt;'_x"><span class="id" title="notation">→</span></a> <a class="idref" href="Algebra.Hierarchy.html#V:106"><span class="id" title="variable">V</span></a>}.<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Local Infix</span> <a id="ae2091771a17417dc0b1af19a4cbee96" class="idref" href="#ae2091771a17417dc0b1af19a4cbee96"><span class="id" title="notation">&quot;</span></a>=" := <a class="idref" href="Algebra.Hierarchy.html#Algebra.VectorSpace.eqv"><span class="id" title="variable">eqv</span></a> : <span class="id" title="var">type_scope</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Local Notation</span> <a id="Algebra.VectorSpace.::type_scope:x_'&lt;&gt;'_x" class="idref" href="#Algebra.VectorSpace.::type_scope:x_'&lt;&gt;'_x"><span class="id" title="notation">&quot;</span></a>a &lt;&gt; b" := (<a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Logic.html#not"><span class="id" title="definition">not</span></a> (<span class="id" title="var">a</span> <a class="idref" href="Algebra.Hierarchy.html#ae2091771a17417dc0b1af19a4cbee96"><span class="id" title="notation">=</span></a> <span class="id" title="var">b</span>)) : <span class="id" title="var">type_scope</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Local Infix</span> <a id="034fb5f9f522c752df3e4128377ec16a" class="idref" href="#034fb5f9f522c752df3e4128377ec16a"><span class="id" title="notation">&quot;</span></a>*s" := <a class="idref" href="Algebra.Hierarchy.html#Algebra.VectorSpace.smul"><span class="id" title="variable">smul</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="tactic">at</span> <span class="id" title="keyword">level</span> 40).<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Local Infix</span> <a id="9960714968e22b75683cd2750a5dfd12" class="idref" href="#9960714968e22b75683cd2750a5dfd12"><span class="id" title="notation">&quot;</span></a>+v" := <a class="idref" href="Algebra.Hierarchy.html#Algebra.VectorSpace.vadd"><span class="id" title="variable">vadd</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="tactic">at</span> <span class="id" title="keyword">level</span> 50).<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+Scaling by the field's one is the identity: <span class="inlinecode"><span class="id" title="var">v</span></span> <span class="inlinecode">×<span class="id" title="var">s</span></span> <span class="inlinecode">1</span> <span class="inlinecode">=</span> <span class="inlinecode"><span class="id" title="var">v</span></span>. 
+</div>
+<div class="code">
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Class</span> <a id="is_field_one" class="idref" href="#is_field_one"><span class="id" title="inductive, record"><span id="is_field_one" class="id">is_field_one</span></span></a> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a id="field_one" class="idref" href="#field_one"><span class="id" title="constructor, projection"><span id="field_one" class="id">field_one</span></span></a> : <span class="id" title="keyword">∀</span> <a id="v:113" class="idref" href="#v:113"><span class="id" title="binder">v</span></a>, <a class="idref" href="Algebra.Hierarchy.html#v:113"><span class="id" title="variable">v</span></a> <a class="idref" href="Algebra.Hierarchy.html#034fb5f9f522c752df3e4128377ec16a"><span class="id" title="notation">×</span></a><a class="idref" href="Algebra.Hierarchy.html#034fb5f9f522c752df3e4128377ec16a"><span class="id" title="notation">s</span></a> 1 <a class="idref" href="Algebra.Hierarchy.html#ae2091771a17417dc0b1af19a4cbee96"><span class="id" title="notation">=</span></a> <a class="idref" href="Algebra.Hierarchy.html#v:113"><span class="id" title="variable">v</span></a>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+Scaling by the field's zero gives the zero vector: <span class="inlinecode"><span class="id" title="var">v</span></span> <span class="inlinecode">×<span class="id" title="var">s</span></span> <span class="inlinecode">0</span> <span class="inlinecode">=</span> <span class="inlinecode"><span class="id" title="var">vid</span></span>.
+        This follows from the other axioms but is included for convenience. 
+</div>
+<div class="code">
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Class</span> <a id="is_field_zero" class="idref" href="#is_field_zero"><span class="id" title="inductive, record"><span id="is_field_zero" class="id">is_field_zero</span></span></a> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a id="field_zero" class="idref" href="#field_zero"><span class="id" title="constructor, projection"><span id="field_zero" class="id">field_zero</span></span></a> : <span class="id" title="keyword">∀</span> <a id="v:116" class="idref" href="#v:116"><span class="id" title="binder">v</span></a>, <a class="idref" href="Algebra.Hierarchy.html#v:116"><span class="id" title="variable">v</span></a> <a class="idref" href="Algebra.Hierarchy.html#034fb5f9f522c752df3e4128377ec16a"><span class="id" title="notation">×</span></a><a class="idref" href="Algebra.Hierarchy.html#034fb5f9f522c752df3e4128377ec16a"><span class="id" title="notation">s</span></a> 0 <a class="idref" href="Algebra.Hierarchy.html#ae2091771a17417dc0b1af19a4cbee96"><span class="id" title="notation">=</span></a> <a class="idref" href="Algebra.Hierarchy.html#Algebra.VectorSpace.vid"><span class="id" title="variable">vid</span></a>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+Compatibility of the action with field multiplication:
+        <span class="inlinecode"><span class="id" title="var">v</span></span> <span class="inlinecode">×<span class="id" title="var">s</span></span> <span class="inlinecode">(<span class="id" title="var">r1</span></span> <span class="inlinecode">×</span> <span class="inlinecode"><span class="id" title="var">r2</span>)</span> <span class="inlinecode">=</span> <span class="inlinecode">(<span class="id" title="var">v</span></span> <span class="inlinecode">×<span class="id" title="var">s</span></span> <span class="inlinecode"><span class="id" title="var">r1</span>)</span> <span class="inlinecode">×<span class="id" title="var">s</span></span> <span class="inlinecode"><span class="id" title="var">r2</span></span>. 
+</div>
+<div class="code">
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Class</span> <a id="is_smul_associative_fmul" class="idref" href="#is_smul_associative_fmul"><span class="id" title="inductive, record"><span id="is_smul_associative_fmul" class="id">is_smul_associative_fmul</span></span></a> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a id="smul_associative_fmul" class="idref" href="#smul_associative_fmul"><span class="id" title="constructor, projection"><span id="smul_associative_fmul" class="id">smul_associative_fmul</span></span></a> : <span class="id" title="keyword">∀</span> <a id="r1:119" class="idref" href="#r1:119"><span class="id" title="binder">r1</span></a> <a id="r2:120" class="idref" href="#r2:120"><span class="id" title="binder">r2</span></a> <a id="v:121" class="idref" href="#v:121"><span class="id" title="binder">v</span></a>,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="Algebra.Hierarchy.html#v:121"><span class="id" title="variable">v</span></a> <a class="idref" href="Algebra.Hierarchy.html#034fb5f9f522c752df3e4128377ec16a"><span class="id" title="notation">×</span></a><a class="idref" href="Algebra.Hierarchy.html#034fb5f9f522c752df3e4128377ec16a"><span class="id" title="notation">s</span></a> <a class="idref" href="Algebra.Hierarchy.html#034fb5f9f522c752df3e4128377ec16a"><span class="id" title="notation">(</span></a><a class="idref" href="Algebra.Hierarchy.html#r1:119"><span class="id" title="variable">r1</span></a> <a class="idref" href="Algebra.Hierarchy.html#7df6f7358b36cd3592568abe14434571"><span class="id" title="notation">×</span></a> <a class="idref" href="Algebra.Hierarchy.html#r2:120"><span class="id" title="variable">r2</span></a><a class="idref" href="Algebra.Hierarchy.html#034fb5f9f522c752df3e4128377ec16a"><span class="id" title="notation">)</span></a> <a class="idref" href="Algebra.Hierarchy.html#ae2091771a17417dc0b1af19a4cbee96"><span class="id" title="notation">=</span></a> <a class="idref" href="Algebra.Hierarchy.html#034fb5f9f522c752df3e4128377ec16a"><span class="id" title="notation">(</span></a><a class="idref" href="Algebra.Hierarchy.html#v:121"><span class="id" title="variable">v</span></a> <a class="idref" href="Algebra.Hierarchy.html#034fb5f9f522c752df3e4128377ec16a"><span class="id" title="notation">×</span></a><a class="idref" href="Algebra.Hierarchy.html#034fb5f9f522c752df3e4128377ec16a"><span class="id" title="notation">s</span></a> <a class="idref" href="Algebra.Hierarchy.html#r1:119"><span class="id" title="variable">r1</span></a><a class="idref" href="Algebra.Hierarchy.html#034fb5f9f522c752df3e4128377ec16a"><span class="id" title="notation">)</span></a> <a class="idref" href="Algebra.Hierarchy.html#034fb5f9f522c752df3e4128377ec16a"><span class="id" title="notation">×</span></a><a class="idref" href="Algebra.Hierarchy.html#034fb5f9f522c752df3e4128377ec16a"><span class="id" title="notation">s</span></a> <a class="idref" href="Algebra.Hierarchy.html#r2:120"><span class="id" title="variable">r2</span></a>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+Distributivity over field addition:
+        <span class="inlinecode"><span class="id" title="var">v</span></span> <span class="inlinecode">×<span class="id" title="var">s</span></span> <span class="inlinecode">(<span class="id" title="var">r1</span></span> <span class="inlinecode">+</span> <span class="inlinecode"><span class="id" title="var">r2</span>)</span> <span class="inlinecode">=</span> <span class="inlinecode"><span class="id" title="var">v</span></span> <span class="inlinecode">×<span class="id" title="var">s</span></span> <span class="inlinecode"><span class="id" title="var">r1</span></span> <span class="inlinecode">+<span class="id" title="var">v</span></span> <span class="inlinecode"><span class="id" title="var">v</span></span> <span class="inlinecode">×<span class="id" title="var">s</span></span> <span class="inlinecode"><span class="id" title="var">r2</span></span>. 
+</div>
+<div class="code">
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Class</span> <a id="is_smul_distributive_fadd" class="idref" href="#is_smul_distributive_fadd"><span class="id" title="inductive, record"><span id="is_smul_distributive_fadd" class="id">is_smul_distributive_fadd</span></span></a> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a id="smul_distributive_fadd" class="idref" href="#smul_distributive_fadd"><span class="id" title="constructor, projection"><span id="smul_distributive_fadd" class="id">smul_distributive_fadd</span></span></a> : <span class="id" title="keyword">∀</span> <a id="r1:124" class="idref" href="#r1:124"><span class="id" title="binder">r1</span></a> <a id="r2:125" class="idref" href="#r2:125"><span class="id" title="binder">r2</span></a> <a id="v:126" class="idref" href="#v:126"><span class="id" title="binder">v</span></a>,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="Algebra.Hierarchy.html#v:126"><span class="id" title="variable">v</span></a> <a class="idref" href="Algebra.Hierarchy.html#034fb5f9f522c752df3e4128377ec16a"><span class="id" title="notation">×</span></a><a class="idref" href="Algebra.Hierarchy.html#034fb5f9f522c752df3e4128377ec16a"><span class="id" title="notation">s</span></a> <a class="idref" href="Algebra.Hierarchy.html#034fb5f9f522c752df3e4128377ec16a"><span class="id" title="notation">(</span></a><a class="idref" href="Algebra.Hierarchy.html#r1:124"><span class="id" title="variable">r1</span></a> <a class="idref" href="Algebra.Hierarchy.html#84ce5e81cf954a496396cf0a66f34aa9"><span class="id" title="notation">+</span></a> <a class="idref" href="Algebra.Hierarchy.html#r2:125"><span class="id" title="variable">r2</span></a><a class="idref" href="Algebra.Hierarchy.html#034fb5f9f522c752df3e4128377ec16a"><span class="id" title="notation">)</span></a> <a class="idref" href="Algebra.Hierarchy.html#ae2091771a17417dc0b1af19a4cbee96"><span class="id" title="notation">=</span></a> <a class="idref" href="Algebra.Hierarchy.html#9960714968e22b75683cd2750a5dfd12"><span class="id" title="notation">(</span></a><a class="idref" href="Algebra.Hierarchy.html#v:126"><span class="id" title="variable">v</span></a> <a class="idref" href="Algebra.Hierarchy.html#034fb5f9f522c752df3e4128377ec16a"><span class="id" title="notation">×</span></a><a class="idref" href="Algebra.Hierarchy.html#034fb5f9f522c752df3e4128377ec16a"><span class="id" title="notation">s</span></a> <a class="idref" href="Algebra.Hierarchy.html#r1:124"><span class="id" title="variable">r1</span></a><a class="idref" href="Algebra.Hierarchy.html#9960714968e22b75683cd2750a5dfd12"><span class="id" title="notation">)</span></a> <a class="idref" href="Algebra.Hierarchy.html#9960714968e22b75683cd2750a5dfd12"><span class="id" title="notation">+</span></a><a class="idref" href="Algebra.Hierarchy.html#9960714968e22b75683cd2750a5dfd12"><span class="id" title="notation">v</span></a> <a class="idref" href="Algebra.Hierarchy.html#9960714968e22b75683cd2750a5dfd12"><span class="id" title="notation">(</span></a><a class="idref" href="Algebra.Hierarchy.html#v:126"><span class="id" title="variable">v</span></a> <a class="idref" href="Algebra.Hierarchy.html#034fb5f9f522c752df3e4128377ec16a"><span class="id" title="notation">×</span></a><a class="idref" href="Algebra.Hierarchy.html#034fb5f9f522c752df3e4128377ec16a"><span class="id" title="notation">s</span></a> <a class="idref" href="Algebra.Hierarchy.html#r2:125"><span class="id" title="variable">r2</span></a><a class="idref" href="Algebra.Hierarchy.html#9960714968e22b75683cd2750a5dfd12"><span class="id" title="notation">)</span></a>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+Distributivity over vector addition:
+        <span class="inlinecode">(<span class="id" title="var">v1</span></span> <span class="inlinecode">+<span class="id" title="var">v</span></span> <span class="inlinecode"><span class="id" title="var">v2</span>)</span> <span class="inlinecode">×<span class="id" title="var">s</span></span> <span class="inlinecode"><span class="id" title="var">r</span></span> <span class="inlinecode">=</span> <span class="inlinecode"><span class="id" title="var">v1</span></span> <span class="inlinecode">×<span class="id" title="var">s</span></span> <span class="inlinecode"><span class="id" title="var">r</span></span> <span class="inlinecode">+<span class="id" title="var">v</span></span> <span class="inlinecode"><span class="id" title="var">v2</span></span> <span class="inlinecode">×<span class="id" title="var">s</span></span> <span class="inlinecode"><span class="id" title="var">r</span></span>. 
+</div>
+<div class="code">
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Class</span> <a id="is_smul_distributive_vadd" class="idref" href="#is_smul_distributive_vadd"><span class="id" title="inductive, record"><span id="is_smul_distributive_vadd" class="id">is_smul_distributive_vadd</span></span></a> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a id="smul_distributive_vadd" class="idref" href="#smul_distributive_vadd"><span class="id" title="constructor, projection"><span id="smul_distributive_vadd" class="id">smul_distributive_vadd</span></span></a> : <span class="id" title="keyword">∀</span> <a id="r:129" class="idref" href="#r:129"><span class="id" title="binder">r</span></a> <a id="v1:130" class="idref" href="#v1:130"><span class="id" title="binder">v1</span></a> <a id="v2:131" class="idref" href="#v2:131"><span class="id" title="binder">v2</span></a>,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="Algebra.Hierarchy.html#034fb5f9f522c752df3e4128377ec16a"><span class="id" title="notation">(</span></a><a class="idref" href="Algebra.Hierarchy.html#v1:130"><span class="id" title="variable">v1</span></a> <a class="idref" href="Algebra.Hierarchy.html#9960714968e22b75683cd2750a5dfd12"><span class="id" title="notation">+</span></a><a class="idref" href="Algebra.Hierarchy.html#9960714968e22b75683cd2750a5dfd12"><span class="id" title="notation">v</span></a> <a class="idref" href="Algebra.Hierarchy.html#v2:131"><span class="id" title="variable">v2</span></a><a class="idref" href="Algebra.Hierarchy.html#034fb5f9f522c752df3e4128377ec16a"><span class="id" title="notation">)</span></a> <a class="idref" href="Algebra.Hierarchy.html#034fb5f9f522c752df3e4128377ec16a"><span class="id" title="notation">×</span></a><a class="idref" href="Algebra.Hierarchy.html#034fb5f9f522c752df3e4128377ec16a"><span class="id" title="notation">s</span></a> <a class="idref" href="Algebra.Hierarchy.html#r:129"><span class="id" title="variable">r</span></a> <a class="idref" href="Algebra.Hierarchy.html#ae2091771a17417dc0b1af19a4cbee96"><span class="id" title="notation">=</span></a> <a class="idref" href="Algebra.Hierarchy.html#9960714968e22b75683cd2750a5dfd12"><span class="id" title="notation">(</span></a><a class="idref" href="Algebra.Hierarchy.html#v1:130"><span class="id" title="variable">v1</span></a> <a class="idref" href="Algebra.Hierarchy.html#034fb5f9f522c752df3e4128377ec16a"><span class="id" title="notation">×</span></a><a class="idref" href="Algebra.Hierarchy.html#034fb5f9f522c752df3e4128377ec16a"><span class="id" title="notation">s</span></a> <a class="idref" href="Algebra.Hierarchy.html#r:129"><span class="id" title="variable">r</span></a><a class="idref" href="Algebra.Hierarchy.html#9960714968e22b75683cd2750a5dfd12"><span class="id" title="notation">)</span></a> <a class="idref" href="Algebra.Hierarchy.html#9960714968e22b75683cd2750a5dfd12"><span class="id" title="notation">+</span></a><a class="idref" href="Algebra.Hierarchy.html#9960714968e22b75683cd2750a5dfd12"><span class="id" title="notation">v</span></a> <a class="idref" href="Algebra.Hierarchy.html#9960714968e22b75683cd2750a5dfd12"><span class="id" title="notation">(</span></a><a class="idref" href="Algebra.Hierarchy.html#v2:131"><span class="id" title="variable">v2</span></a> <a class="idref" href="Algebra.Hierarchy.html#034fb5f9f522c752df3e4128377ec16a"><span class="id" title="notation">×</span></a><a class="idref" href="Algebra.Hierarchy.html#034fb5f9f522c752df3e4128377ec16a"><span class="id" title="notation">s</span></a> <a class="idref" href="Algebra.Hierarchy.html#r:129"><span class="id" title="variable">r</span></a><a class="idref" href="Algebra.Hierarchy.html#9960714968e22b75683cd2750a5dfd12"><span class="id" title="notation">)</span></a>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+A vector space: an abelian group of vectors, a field of scalars,
+        the five action axioms above and compatibility of <span class="inlinecode"><span class="id" title="var">smul</span></span> with both
+        equivalences. This is the class that the Sigma-protocol files assume
+        of the group <span class="inlinecode"><span class="id" title="var">G</span></span> and the exponent field <span class="inlinecode"><span class="id" title="var">F</span></span>. 
+</div>
+<div class="code">
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Class</span> <a id="vector_space" class="idref" href="#vector_space"><span class="id" title="record">vector_space</span></a> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;{<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a id="vector_space_commutative_group" class="idref" href="#vector_space_commutative_group"><span class="id" title="projection">vector_space_commutative_group</span></a> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="Algebra.Hierarchy.html#commutative_group"><span class="id" title="class">commutative_group</span></a> (<span class="id" title="var">eq</span> := <a class="idref" href="Algebra.Hierarchy.html#Algebra.VectorSpace.eqv"><span class="id" title="variable">eqv</span></a>) (<span class="id" title="var">op</span> := <a class="idref" href="Algebra.Hierarchy.html#Algebra.VectorSpace.vadd"><span class="id" title="variable">vadd</span></a>) (<span class="id" title="var">id</span> := <a class="idref" href="Algebra.Hierarchy.html#Algebra.VectorSpace.vid"><span class="id" title="variable">vid</span></a>) (<span class="id" title="var">inv</span> := <a class="idref" href="Algebra.Hierarchy.html#Algebra.VectorSpace.vopp"><span class="id" title="variable">vopp</span></a>);<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a id="vector_space_field" class="idref" href="#vector_space_field"><span class="id" title="projection">vector_space_field</span></a> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="Algebra.Hierarchy.html#field"><span class="id" title="class">field</span></a> (<span class="id" title="var">eq</span> := <a class="idref" href="Algebra.Hierarchy.html#Algebra.VectorSpace.eqf"><span class="id" title="variable">eqf</span></a>) (<span class="id" title="var">zero</span> := <a class="idref" href="Algebra.Hierarchy.html#Algebra.VectorSpace.zero"><span class="id" title="variable">zero</span></a>) (<span class="id" title="var">one</span> := <a class="idref" href="Algebra.Hierarchy.html#Algebra.VectorSpace.one"><span class="id" title="variable">one</span></a>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">opp</span> := <a class="idref" href="Algebra.Hierarchy.html#Algebra.VectorSpace.opp"><span class="id" title="variable">opp</span></a>) (<span class="id" title="var">add</span> := <a class="idref" href="Algebra.Hierarchy.html#Algebra.VectorSpace.add"><span class="id" title="variable">add</span></a>) (<span class="id" title="var">sub</span> := <a class="idref" href="Algebra.Hierarchy.html#Algebra.VectorSpace.sub"><span class="id" title="variable">sub</span></a>) (<span class="id" title="var">mul</span> := <a class="idref" href="Algebra.Hierarchy.html#Algebra.VectorSpace.mul"><span class="id" title="variable">mul</span></a>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">inv</span> := <a class="idref" href="Algebra.Hierarchy.html#Algebra.VectorSpace.inv"><span class="id" title="variable">inv</span></a>) (<span class="id" title="var">div</span> := <a class="idref" href="Algebra.Hierarchy.html#Algebra.VectorSpace.div"><span class="id" title="variable">div</span></a>);<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a id="vector_space_field_one" class="idref" href="#vector_space_field_one"><span class="id" title="projection">vector_space_field_one</span></a> : <a class="idref" href="Algebra.Hierarchy.html#is_field_one"><span class="id" title="class">is_field_one</span></a>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a id="vector_space_field_zero" class="idref" href="#vector_space_field_zero"><span class="id" title="projection">vector_space_field_zero</span></a> : <a class="idref" href="Algebra.Hierarchy.html#is_field_zero"><span class="id" title="class">is_field_zero</span></a>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a id="vector_space_smul_associative_fmul" class="idref" href="#vector_space_smul_associative_fmul"><span class="id" title="projection">vector_space_smul_associative_fmul</span></a> : <a class="idref" href="Algebra.Hierarchy.html#is_smul_associative_fmul"><span class="id" title="class">is_smul_associative_fmul</span></a>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a id="vector_space_smul_distributive_fadd" class="idref" href="#vector_space_smul_distributive_fadd"><span class="id" title="projection">vector_space_smul_distributive_fadd</span></a> : <a class="idref" href="Algebra.Hierarchy.html#is_smul_distributive_fadd"><span class="id" title="class">is_smul_distributive_fadd</span></a>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a id="vector_space_smul_distributive_vadd" class="idref" href="#vector_space_smul_distributive_vadd"><span class="id" title="projection">vector_space_smul_distributive_vadd</span></a> : <a class="idref" href="Algebra.Hierarchy.html#is_smul_distributive_vadd"><span class="id" title="class">is_smul_distributive_vadd</span></a>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a id="vector_space_smul_Proper" class="idref" href="#vector_space_smul_Proper"><span class="id" title="projection">vector_space_smul_Proper</span></a> : <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Classes.Morphisms.html#Proper"><span class="id" title="class">Proper</span></a> (<a class="idref" href="Algebra.Hierarchy.html#Algebra.VectorSpace.eqv"><span class="id" title="variable">eqv</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Classes.Morphisms.html#8dc5652698a6e16f72dd37bd17d3b973"><span class="id" title="notation">==&gt;</span></a> <a class="idref" href="Algebra.Hierarchy.html#Algebra.VectorSpace.eqf"><span class="id" title="variable">eqf</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Classes.Morphisms.html#8dc5652698a6e16f72dd37bd17d3b973"><span class="id" title="notation">==&gt;</span></a> <a class="idref" href="Algebra.Hierarchy.html#Algebra.VectorSpace.eqv"><span class="id" title="variable">eqv</span></a>) <a class="idref" href="Algebra.Hierarchy.html#Algebra.VectorSpace.smul"><span class="id" title="variable">smul</span></a>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;}.<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Global Existing Instance</span> <a class="idref" href="Algebra.Hierarchy.html#vector_space_commutative_group"><span class="id" title="method">vector_space_commutative_group</span></a>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Global Existing Instance</span> <a class="idref" href="Algebra.Hierarchy.html#vector_space_field"><span class="id" title="method">vector_space_field</span></a>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Global Existing Instance</span> <a class="idref" href="Algebra.Hierarchy.html#vector_space_field_one"><span class="id" title="method">vector_space_field_one</span></a>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Global Existing Instance</span> <a class="idref" href="Algebra.Hierarchy.html#vector_space_field_zero"><span class="id" title="method">vector_space_field_zero</span></a>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Global Existing Instance</span> <a class="idref" href="Algebra.Hierarchy.html#vector_space_smul_associative_fmul"><span class="id" title="method">vector_space_smul_associative_fmul</span></a>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Global Existing Instance</span> <a class="idref" href="Algebra.Hierarchy.html#vector_space_smul_distributive_fadd"><span class="id" title="method">vector_space_smul_distributive_fadd</span></a>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Global Existing Instance</span> <a class="idref" href="Algebra.Hierarchy.html#vector_space_smul_distributive_vadd"><span class="id" title="method">vector_space_smul_distributive_vadd</span></a>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Global Existing Instance</span> <a class="idref" href="Algebra.Hierarchy.html#vector_space_smul_Proper"><span class="id" title="method">vector_space_smul_Proper</span></a>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">End</span> <a class="idref" href="Algebra.Hierarchy.html#Algebra.VectorSpace"><span class="id" title="section">VectorSpace</span></a>.<br/>
+
+<br/>
+<span class="id" title="keyword">End</span> <a class="idref" href="Algebra.Hierarchy.html#Algebra"><span class="id" title="section">Algebra</span></a>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<a id="lab11"></a><h2 class="section">A derived fact</h2>
+
+</div>
+<div class="code">
+
+<br/>
+<span class="id" title="keyword">Section</span> <a id="ZeroNeqOne" class="idref" href="#ZeroNeqOne"><span class="id" title="section">ZeroNeqOne</span></a>.<br/>
+</div>
+
+<div class="doc">
+Any carrier with an equivalence <span class="inlinecode"><span class="id" title="var">eq</span></span> and <span class="inlinecode"><span class="id" title="var">zero</span></span> <span class="inlinecode">≠</span> <span class="inlinecode"><span class="id" title="var">one</span></span>. 
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Context</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;{<a id="ZeroNeqOne.T" class="idref" href="#ZeroNeqOne.T"><span class="id" title="variable">T</span></a> <a id="ZeroNeqOne.eq" class="idref" href="#ZeroNeqOne.eq"><span class="id" title="variable">eq</span></a> <a id="ZeroNeqOne.zero" class="idref" href="#ZeroNeqOne.zero"><span class="id" title="variable">zero</span></a> <a id="ZeroNeqOne.one" class="idref" href="#ZeroNeqOne.one"><span class="id" title="variable">one</span></a>}<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;{<a id="ZeroNeqOne.Hne" class="idref" href="#ZeroNeqOne.Hne"><span class="id" title="variable">Hne</span></a>: @<a class="idref" href="Algebra.Hierarchy.html#is_zero_neq_one"><span class="id" title="class">is_zero_neq_one</span></a> <a class="idref" href="Algebra.Hierarchy.html#T:142"><span class="id" title="variable">T</span></a> <a class="idref" href="Algebra.Hierarchy.html#eq:143"><span class="id" title="variable">eq</span></a> <a class="idref" href="Algebra.Hierarchy.html#zero:144"><span class="id" title="variable">zero</span></a> <a class="idref" href="Algebra.Hierarchy.html#one:145"><span class="id" title="variable">one</span></a>}<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;{<a id="ZeroNeqOne.He" class="idref" href="#ZeroNeqOne.He"><span class="id" title="variable">He</span></a> : @<a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Classes.RelationClasses.html#Equivalence"><span class="id" title="class">Equivalence</span></a> <a class="idref" href="Algebra.Hierarchy.html#T:142"><span class="id" title="variable">T</span></a> <a class="idref" href="Algebra.Hierarchy.html#eq:143"><span class="id" title="variable">eq</span></a>}.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+The symmetric form of <span class="inlinecode"><span class="id" title="var">zero_neq_one</span></span>: <span class="inlinecode"><span class="id" title="var">one</span></span> is not equivalent to
+      <span class="inlinecode"><span class="id" title="var">zero</span></span>. 
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <a id="one_neq_zero" class="idref" href="#one_neq_zero"><span class="id" title="lemma">one_neq_zero</span></a> : <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Logic.html#not"><span class="id" title="definition">not</span></a> (<a class="idref" href="Algebra.Hierarchy.html#ZeroNeqOne.eq"><span class="id" title="variable">eq</span></a> <a class="idref" href="Algebra.Hierarchy.html#ZeroNeqOne.one"><span class="id" title="variable">one</span></a> <a class="idref" href="Algebra.Hierarchy.html#ZeroNeqOne.zero"><span class="id" title="variable">zero</span></a>).<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">intro</span> <span class="id" title="var">HH</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">symmetry</span> <span class="id" title="tactic">in</span> <span class="id" title="var">HH</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">auto</span> <span class="id" title="keyword">using</span> <a class="idref" href="Algebra.Hierarchy.html#zero_neq_one"><span class="id" title="definition">zero_neq_one</span></a>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Qed</span>.<br/>
+<span class="id" title="keyword">End</span> <a class="idref" href="Algebra.Hierarchy.html#ZeroNeqOne"><span class="id" title="section">ZeroNeqOne</span></a>.<br/>
+</div>
+</div>
+
+<div id="footer">
+<hr/><a href="index_symbols.html">Index</a><hr/>This page has been generated by <a href="http://rocq-prover.org/">coqdoc</a>
+</div>
+
+</div>
+
+</body>
+</html>

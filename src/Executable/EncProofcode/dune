@@ -1,3 +1,9 @@
 (executable
  (name main)
+ (modules main)
+ (libraries EncProoflib cryptokit hacl-star))
+
+(test
+ (name fs_binding_test)
+ (modules fs_binding_test)
  (libraries EncProoflib cryptokit hacl-star))

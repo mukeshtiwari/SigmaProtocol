@@ -1,42 +1,79 @@
-(* Fiat–Shamir verification of Bayer–Groth shuffle arguments in the format of
-   the Swiss Post e-voting system (crypto-primitives specification 1.6.0:
-   Algorithms 9.12 VerifyShuffleArgument, 9.16, 9.19, 9.21, 9.23, 9.26 for
-   the sub-arguments), linked to the interactive verifiers of
-   Crypto/BayerGroth.v.
+(** * Fiat–Shamir verifier for Bayer–Groth shuffle arguments *)
 
-   The interactive verifiers take the challenges as arguments. The Swiss Post
-   verifier computes them with RecursiveHash (SHA3-256, Section 3) over the
-   group parameters p, q, the public key pk, the commitment key ck, the
-   statement and the announcements of the argument, in a fixed order. This
-   file receives these hash functions as an oracle record whose fields are
-   closures over the group parameters and the statement, supplied by the
-   driver (Executable/Bgverifier); each field takes the announcements in the
-   order in which the specification hashes them:
+(** This file makes the interactive Bayer–Groth shuffle argument of
+    [Crypto.BayerGroth] (S. Bayer and J. Groth, ‘Efficient zero-knowledge
+    argument for correctness of a shuffle’, EUROCRYPT 2012) non-interactive,
+    in the format of the Swiss Post e-voting system (crypto-primitives
+    specification 1.6.0: Algorithm 9.12 VerifyShuffleArgument and
+    Algorithms 9.16, 9.19, 9.21, 9.23, 9.26 for the sub-arguments). The
+    extracted verifier ([Examples.BayerGrothIns]) is driven by
+    src/Executable/Bgverifier on the Swiss Post test vectors (3072-bit group
+    [p = 2q + 1], [g = 2]) and in differential testing
+    (bench/swisspost-diff).
 
-     x  = H(p, q, pk, ck, C, C', c_A)                          o_x c_A
-     y  = H(c_B, p, q, pk, ck, C, C', c_A)                     o_y c_A c_B
-     z  = H("1", c_B, p, q, pk, ck, C, C', c_A)                o_z c_A c_B
-     Hadamard:   x = H(p, q, pk, ck, c_A, c_b, c_B)            o_xh c_A c_b c_B
-                 y = H("1", p, q, pk, ck, c_A, c_b, c_B)       o_yh c_A c_b c_B
-     zero:       x = H(p, q, pk, ck, c_A0, c_Bm, c_d, c_B, c_A)  o_xz c_A0 c_Bm c_d c_B c_A
-     single value product:
-                 x = H(p, q, pk, ck, c_Δ, c_δ, c_d, b, c_a)    o_xs c_Δ c_δ c_d b c_a
-     multi-exponentiation:
-                 x = H(p, q, pk, ck, C_matrix, C, c_A, c_A0, c_B, E)
-                                                               o_xm C_matrix C c_A c_A0 c_B E
+    The argument is a tree of sub-arguments: the shuffle argument consists
+    of a product argument and a multi-exponentiation argument; the product
+    argument consists (for [m > 1]) of a Hadamard argument and a single
+    value product (SVP) argument; the Hadamard argument ends in a zero
+    argument. Each interactive verifier in [Crypto.BayerGroth] takes its
+    challenges as arguments.
 
-   The statements of the sub-arguments (the product argument inside the
-   shuffle argument, the zero argument inside the Hadamard argument, the
-   single value product argument for m = 1 and m > 1) are recomputed here
-   exactly as the interactive verifiers compute them, so that each
-   Fiat–Shamir verifier is by definition the interactive verifier at the
-   oracle's challenges (the *_verify_fs_spec theorems). The honest provers
-   are made non-interactive the same way (the *_prove_fs functions): they query the
-   oracle on their announcements stage by stage, and *_fs_completeness
-   states that the Fiat–Shamir verifier accepts their arguments, from the
-   completeness theorems of the interactive arguments. As everywhere in this
-   development the security theorems are about the interactive protocols. *)
+    How the challenges are derived. Swiss Post computes every challenge with
+    RecursiveHash (SHA3-256) over the group parameters [p, q], the public key,
+    the commitment key, the statement and the announcements, in a fixed
+    order. Here the hash functions are a record [oracles] of closures over
+    the group parameters and statement, supplied by the OCaml driver; each
+    field takes the announcements in the order the specification hashes
+    them:
 
+    - [o_x c_A] for [x = H(p, q, pk, ck, C, C', c_A)];
+    - [o_y c_A c_B] and [o_z c_A c_B] for [y] and [z] (the latter with
+      prefix ‘1’);
+    - [o_xh] and [o_yh] for the Hadamard challenges over [(c_A, c_b, c_B)];
+    - [o_xz] for the zero argument over [(c_A0, c_Bm, c_d, c_B, c_A)];
+    - [o_xs] for the SVP argument over [(c_Δ, c_δ, c_d, b, c_a)];
+    - [o_xm] for the multi-exponentiation argument over
+      [(C_matrix, C, c_A, c_A0, c_B, E)].
+
+    The verifier recomputes the statements of the inner sub-arguments exactly
+    as the interactive verifiers do, so each [*_verify_fs] is, by definition,
+    the interactive verifier at the oracle's challenges ([*_verify_fs_spec],
+    proved by [reflexivity]).
+
+    Main results:
+
+    - Completeness: [svp_fs_completeness], [zero_fs_completeness],
+      [hadamard_fs_completeness], [multiexp_fs_completeness],
+      [product_fs_completeness], [shuffle_fs_completeness]. The honest
+      provers ([*_prove_fs]) query the oracle on their announcements stage
+      by stage; since announcements never depend on later challenges
+      (the [*_indep] lemmas), the challenges the prover used are the ones
+      the verifier recomputes ([shuffle_challenges_prove]). The Hadamard
+      completeness needs oracles whose Hadamard challenges are never zero.
+    - Soundness in rewinding form, [shuffle_fs_soundness]: if the
+      Fiat–Shamir verifier accepts the proofs of a whole tree of
+      reprogrammed oracles (one per index of challenge choices, each
+      returning prescribed distinct challenges on the announcements of its
+      proof), then either the output ciphertexts are a re-encryption and
+      permutation of the inputs or the commitment key is broken
+      ([binding_break]). It is a direct consequence of [shuffle_soundness]
+      in [Crypto.BayerGrothSound].
+    - One-query soundness error for single-challenge arguments:
+      [zero_fs_soundness_error], [svp_fs_soundness_error],
+      [multiexp_fs_soundness_error], via [k_special_soundness_error] from
+      [Crypto.SigmaK]: for a prover with fixed announcements answering the
+      challenge [c] with responses [resp c], either a witness exists, or the
+      binding is broken, or the acceptance probability over a uniform [c] is
+      at most [(k − 1)/|lf|].
+
+    What is NOT verified. The probabilistic analysis of the forking
+    (rewinding) argument, i.e. the loss in the number of oracle queries, is
+    not formalised; [shuffle_fs_soundness] is its deterministic core. The
+    hash encoding (RecursiveHash, SHA3-256), the parsing of the input files,
+    the subgroup-membership and range checks of the inputs, and the
+    derivation of the commitment key are done by the unverified OCaml
+    driver. Hardness of breaking commitment binding is not
+    formalised; it appears only as the disjunct [binding_break]. *)
 From Stdlib Require Import Utf8 Vector Fin Lia Bool List Permutation PArith setoid_ring.Field.
 From Stdlib Require Import PeanoNat.
 From Algebra Require Import Hierarchy Group Monoid Field Integral_domain Ring
@@ -46,6 +83,13 @@ From Probability Require Import Prob Distr.
 From Utility Require Import Util.
 Import ListNotations.
 
+(** ** Setting *)
+
+(** The field [F] and prime-order group [G] (an [F]-vector space). [l] is
+    the number of message components of a ciphertext; a ciphertext [CT] is
+    a vector of [l + 1] group elements (randomness component and message
+    components), with componentwise product [cmul], power [cpow], identity
+    [cone], multi-exponentiation [cmexp] and product of a list [cprod]. *)
 Section BayerGrothVerifier.
 
   Context
@@ -56,7 +100,6 @@ Section BayerGrothVerifier.
     {Hvec : @vector_space F (@eq F) zero one add mul sub div opp inv
       G (@eq G) gid ginv gop gpow}.
 
-  (* ciphertexts with l message components *)
   Context {l : nat}.
   Local Notation CT := (Vector.t G (S l)).
   Local Notation cone := (vec_id (V := G) (vid := gid) (S l)).
@@ -65,7 +108,9 @@ Section BayerGrothVerifier.
   Local Notation cmexp := (lmexp (vid := cone) (vadd := cmul) (smul := cpow)).
   Local Notation cprod := (fold_right cmul cone).
 
-  (* the argument records *)
+  (** Short names for the argument records of [Crypto.BayerGroth], and
+      versions of its commitment, encryption, prover and verifier functions
+      specialised to the operations of this section. *)
   Local Notation svp_argument := (@svp_argument F G).
   Local Notation zero_argument := (@zero_argument F G).
   Local Notation hadamard_argument := (@hadamard_argument F G).
@@ -73,7 +118,6 @@ Section BayerGrothVerifier.
   Local Notation product_argument := (@product_argument F G).
   Local Notation shuffle_argument := (@shuffle_argument F G l).
 
-  (* the definitions of Crypto/BayerGroth.v at the operations of the context *)
   Local Notation com := (com (gid := gid) (gop := gop) (gpow := gpow)).
   Local Notation com_list := (com_list (gid := gid) (gop := gop) (gpow := gpow)).
   Local Notation hprefix := (hprefix (mul := mul)).
@@ -111,8 +155,11 @@ Section BayerGrothVerifier.
   Local Notation shuffle_prove := (shuffle_prove (zero := zero) (one := one) (add := add)
     (mul := mul) (sub := sub) (opp := opp) (gid := gid) (gop := gop) (gpow := gpow) (l := l)).
 
-  (* ---- the random oracles ---- *)
+  (** ** The random oracles *)
 
+  (** The eight hash functions used by the Swiss Post verifier, as functions
+      of the announcements (statement and group parameters fixed in the
+      closures); see the file header for the exact inputs. *)
   Record oracles : Type := mk_oracles {
     o_x : list G -> F;
     o_y : list G -> list G -> F;
@@ -123,24 +170,34 @@ Section BayerGrothVerifier.
     o_xs : G -> G -> G -> F -> G -> F;
     o_xm : list (list CT) -> CT -> list G -> G -> list G -> list CT -> F }.
 
-  (* ---- single value product argument (Algorithms 9.25, 9.26) ---- *)
+  (** ** Single value product argument (Algorithms 9.25, 9.26) *)
 
+  (** The SVP challenge [x = o_xs(c_Δ, c_δ, c_d, b, c_a)] for the claim that
+      [c_a] commits to a vector whose product is [b]. *)
   Definition svp_challenge (O : oracles) (ca : G) (b : F) (arg : svp_argument) : F :=
     o_xs O (svp_cDelta arg) (svp_cdelta arg) (svp_cd arg) b ca.
 
+  (** Fiat–Shamir SVP verifier: the interactive [svp_verify] at the oracle
+      challenge. *)
   Definition svp_verify_fs (O : oracles) (h : G) (gs : list G) (ca : G) (b : F) (arg : svp_argument) : bool :=
     svp_verify h gs ca b (svp_challenge O ca b arg) arg.
 
+  (** [svp_verify_fs] unfolds to the interactive verifier at
+      [svp_challenge]. *)
   Theorem svp_verify_fs_spec : forall O h gs ca b arg,
     svp_verify_fs O h gs ca b arg = svp_verify h gs ca b (svp_challenge O ca b arg) arg.
   Proof. reflexivity. Qed.
 
+  (** If the interactive verifier accepts at the oracle challenge, so does
+      [svp_verify_fs]. Used to transfer completeness. *)
   Lemma svp_verify_fs_of : forall O h gs ca b arg x,
     svp_challenge O ca b arg = x -> svp_verify h gs ca b x arg = true -> svp_verify_fs O h gs ca b arg = true.
   Proof. intros * <- hv; exact hv. Qed.
 
-  (* the honest prover: the announcements c_d, c_δ, c_Δ do not depend on the
-    challenge, so they are computed once (with challenge 0) and hashed *)
+  (** Honest non-interactive SVP prover: the announcements [c_d, c_δ, c_Δ]
+      do not depend on the challenge, so the prover runs once with
+      challenge [0] to obtain them, hashes them and reruns with the
+      resulting challenge. *)
   Definition svp_prove_fs (O : oracles) (h : G) (gs : list G) (a : list F) (r : F)
     (d : list F) (rd : F) (dmid : list F) (s0 sx : F) : svp_argument :=
     let ca := com h gs a r in
@@ -148,6 +205,10 @@ Section BayerGrothVerifier.
     let arg0 := svp_prove h gs a r d rd dmid s0 sx zero in
     svp_prove h gs a r d rd dmid s0 sx (svp_challenge O ca b arg0).
 
+  (** FS completeness of the SVP argument: for [a] of length at least two
+      matching the commitment key, with correctly sized randomness, the
+      verifier accepts the honest proof for [c_a = com h gs a r] and
+      [b = ∏ a_i]. From [svp_completeness]. *)
   Theorem svp_fs_completeness : forall (O : oracles) (h : G) (gs : list G) (a : list F) (r : F)
     (d : list F) (rd : F) (dmid : list F) (s0 sx : F),
     (2 <= length a)%nat -> length d = length a -> length dmid = (length a - 2)%nat -> length a = length gs ->
@@ -158,23 +219,33 @@ Section BayerGrothVerifier.
     reflexivity.
   Qed.
 
-  (* ---- zero argument (Algorithms 9.22, 9.23) ---- *)
+  (** ** Zero argument (Algorithms 9.22, 9.23) *)
 
+  (** The zero-argument challenge [o_xz(c_A0, c_Bm, c_d, c_B, c_A)]. *)
   Definition zero_challenge (O : oracles) (cA cB : list G) (arg : zero_argument) : F :=
     o_xz O (za_cA0 arg) (za_cBm arg) (za_cd arg) cB cA.
 
+  (** Fiat–Shamir zero-argument verifier: [zero_verify] at the oracle
+      challenge, for commitments [cA], [cB] and bilinear-map parameter
+      [y]. *)
   Definition zero_verify_fs (O : oracles) (h : G) (gs : list G) (cA cB : list G) (y : F)
     (arg : zero_argument) : bool :=
     zero_verify h gs cA cB y (zero_challenge O cA cB arg) arg.
 
+  (** [zero_verify_fs] unfolds to the interactive verifier. *)
   Theorem zero_verify_fs_spec : forall O h gs cA cB y arg,
     zero_verify_fs O h gs cA cB y arg = zero_verify h gs cA cB y (zero_challenge O cA cB arg) arg.
   Proof. reflexivity. Qed.
 
+  (** Transfer of acceptance from the interactive verifier at the oracle
+      challenge. *)
   Lemma zero_verify_fs_of : forall O h gs cA cB y arg x,
     zero_challenge O cA cB arg = x -> zero_verify h gs cA cB y x arg = true -> zero_verify_fs O h gs cA cB y arg = true.
   Proof. intros * <- hv; exact hv. Qed.
 
+  (** Honest non-interactive zero-argument prover: announcements computed
+      with challenge [0], hashed, then the prover reruns at that
+      challenge. *)
   Definition zero_prove_fs (O : oracles) (h : G) (gs : list G) (A B : list (list F)) (r s : list F) (y : F)
     (a0 bm : list F) (r0 sm : F) (t1 t2 : list F) : zero_argument :=
     let cA := com_list h gs A r in
@@ -182,6 +253,9 @@ Section BayerGrothVerifier.
     let arg0 := zero_prove h gs A B r s y a0 bm r0 sm t1 t2 zero in
     zero_prove h gs A B r s y a0 bm r0 sm t1 t2 (zero_challenge O cA cB arg0).
 
+  (** FS completeness of the zero argument: if
+      [Σ_i A_i ⋆_y B_i = 0] (the bilinear map [star]) and the dimensions
+      match, the honest proof is accepted. From [zero_completeness]. *)
   Theorem zero_fs_completeness : forall (O : oracles) (h : G) (gs : list G) (A B : list (list F))
     (r s : list F) (y : F) (a0 bm : list F) (r0 sm : F) (t1 t2 : list F),
     (1 <= length A)%nat -> length B = length A -> length r = length A -> length s = length A ->
@@ -196,12 +270,14 @@ Section BayerGrothVerifier.
     reflexivity.
   Qed.
 
-  (* ---- Hadamard argument (Algorithms 9.20, 9.21) ---- *)
+  (** ** Hadamard argument (Algorithms 9.20, 9.21) *)
 
+  (** The three Hadamard-level challenges. *)
   Record hchal : Type := mk_hchal { hc_x : F; hc_y : F; hc_xz : F }.
 
-  (* x and y from the statement and c_B; the zero argument's challenge from
-    the zero statement that the verifier derives from them *)
+  (** Computes [x = o_xh(c_A, c_b, c_B)], [y = o_yh(c_A, c_b, c_B)] and the
+      challenge of the inner zero argument on the zero statement that the
+      verifier derives from [(c_A, c_B, x)] ([hadamard_zero_stmt]). *)
   Definition hadamard_challenges (O : oracles) (h : G) (gs : list G) (n : nat) (cA : list G) (cb : G)
     (arg : hadamard_argument) : hchal :=
     let cB := ha_cB arg in
@@ -210,24 +286,31 @@ Section BayerGrothVerifier.
     let st := hadamard_zero_stmt h gs n cA cB x in
     mk_hchal x y (zero_challenge O (fst st) (snd st) (ha_zero arg)).
 
+  (** Fiat–Shamir Hadamard verifier: [hadamard_verify] at the oracle
+      challenges. *)
   Definition hadamard_verify_fs (O : oracles) (h : G) (gs : list G) (n : nat) (cA : list G) (cb : G)
     (arg : hadamard_argument) : bool :=
     let c := hadamard_challenges O h gs n cA cb arg in
     hadamard_verify h gs n cA cb (hc_x c) (hc_y c) (hc_xz c) arg.
 
+  (** [hadamard_verify_fs] unfolds to the interactive verifier. *)
   Theorem hadamard_verify_fs_spec : forall O h gs n cA cb arg,
     hadamard_verify_fs O h gs n cA cb arg =
     hadamard_verify h gs n cA cb (hc_x (hadamard_challenges O h gs n cA cb arg))
       (hc_y (hadamard_challenges O h gs n cA cb arg)) (hc_xz (hadamard_challenges O h gs n cA cb arg)) arg.
   Proof. reflexivity. Qed.
 
+  (** Transfer of acceptance from the interactive Hadamard verifier. *)
   Lemma hadamard_verify_fs_of : forall O h gs n cA cb arg x y xz,
     hadamard_challenges O h gs n cA cb arg = mk_hchal x y xz ->
     hadamard_verify h gs n cA cb x y xz arg = true -> hadamard_verify_fs O h gs n cA cb arg = true.
   Proof. intros * hc hv; unfold hadamard_verify_fs; rewrite hc; exact hv. Qed.
 
-  (* the honest prover: c_B first (independent of the challenges), then the
-    zero argument's announcements (they depend on x and y) *)
+  (** Honest non-interactive Hadamard prover. Stage 1: [c_B] does not depend
+      on the challenges, so [x] and [y] are read off a run with all
+      challenges zero. Stage 2: the zero-argument announcements depend on
+      [x] and [y], so the zero challenge is read off a run with those values.
+      The final argument uses all three. *)
   Definition hadamard_prove_fs (O : oracles) (h : G) (gs : list G) (n : nat) (A : list (list F))
     (r : list F) (s : F) (smid : list F) (a0z bmz : list F) (r0z smz : F) (t1 t2 : list F) : hadamard_argument :=
     let cA := com_list h gs A r in
@@ -237,6 +320,8 @@ Section BayerGrothVerifier.
     let c1 := hadamard_challenges O h gs n cA cb (P (hc_x c0) (hc_y c0) zero) in
     P (hc_x c0) (hc_y c0) (hc_xz c1).
 
+  (** The challenges recomputed from the honest Hadamard argument are the
+      ones used to produce it, given the staged definitions. *)
   Lemma hadamard_challenges_prove : forall O h gs n A r s smid a0z bmz r0z smz t1 t2 cA cb x y xz,
     hc_x (hadamard_challenges O h gs n cA cb (hadamard_prove h gs n A r s smid zero zero a0z bmz r0z smz t1 t2 zero)) = x ->
     hc_y (hadamard_challenges O h gs n cA cb (hadamard_prove h gs n A r s smid zero zero a0z bmz r0z smz t1 t2 zero)) = y ->
@@ -244,12 +329,16 @@ Section BayerGrothVerifier.
     hadamard_challenges O h gs n cA cb (hadamard_prove h gs n A r s smid x y a0z bmz r0z smz t1 t2 xz) = mk_hchal x y xz.
   Proof. intros; subst; reflexivity. Qed.
 
+  (** FS completeness of the Hadamard argument: for at least two rows of
+      equal length [n] matching the key, the verifier accepts the honest
+      proof for [c_A = com_list A r] and [c_b] the commitment to their
+      Hadamard product. Requires an oracle whose [x] and [y] are never
+      zero (the interactive completeness needs non-zero challenges). *)
   Theorem hadamard_fs_completeness : forall (O : oracles) (h : G) (gs : list G) (n : nat) (A : list (list F))
     (r : list F) (s : F) (smid : list F) (a0z bmz : list F) (r0z smz : F) (t1 t2 : list F),
     (2 <= length A)%nat -> Forall (fun a => length a = n) A -> length r = length A ->
     length smid = (length A - 2)%nat -> length t1 = S (length A) -> length t2 = (length A - 1)%nat ->
     n = length gs -> length a0z = length gs -> length bmz = length gs ->
-    (* an oracle whose Hadamard challenges are never zero *)
     (forall cA cb cB, o_xh O cA cb cB <> zero) -> (forall cA cb cB, o_yh O cA cb cB <> zero) ->
     hadamard_verify_fs O h gs n (com_list h gs A r) (com h gs (hprefix A (length A - 1)) s)
       (hadamard_prove_fs O h gs n A r s smid a0z bmz r0z smz t1 t2) = true.
@@ -260,30 +349,40 @@ Section BayerGrothVerifier.
     apply hadamard_challenges_prove; reflexivity.
   Qed.
 
-  (* ---- multi-exponentiation argument (Algorithms 9.15, 9.16) ---- *)
+  (** ** Multi-exponentiation argument (Algorithms 9.15, 9.16) *)
 
+  (** The challenge [o_xm(C_matrix, C, c_A, c_A0, c_B, E)]. *)
   Definition multiexp_challenge (O : oracles) (Cs : list (list CT)) (C : CT) (cA : list G)
     (arg : multiexp_argument) : F :=
     o_xm O Cs C cA (me_cA0 arg) (me_cB arg) (me_E arg).
 
+  (** Fiat–Shamir multi-exponentiation verifier: [multiexp_verify] at the
+      oracle challenge, for ciphertext matrix [Cs], target ciphertext [C]
+      and commitments [cA]. *)
   Definition multiexp_verify_fs (O : oracles) (h : G) (gs : list G) (g : G) (pk : Vector.t G l)
     (Cs : list (list CT)) (C : CT) (cA : list G) (arg : multiexp_argument) : bool :=
     multiexp_verify h gs g pk Cs C cA (multiexp_challenge O Cs C cA arg) arg.
 
+  (** [multiexp_verify_fs] unfolds to the interactive verifier. *)
   Theorem multiexp_verify_fs_spec : forall O h gs g pk Cs C cA arg,
     multiexp_verify_fs O h gs g pk Cs C cA arg = multiexp_verify h gs g pk Cs C cA (multiexp_challenge O Cs C cA arg) arg.
   Proof. reflexivity. Qed.
 
+  (** Transfer of acceptance from the interactive verifier. *)
   Lemma multiexp_verify_fs_of : forall O h gs g pk Cs C cA arg x,
     multiexp_challenge O Cs C cA arg = x -> multiexp_verify h gs g pk Cs C cA x arg = true ->
     multiexp_verify_fs O h gs g pk Cs C cA arg = true.
   Proof. intros * <- hv; exact hv. Qed.
 
-  (* the ciphertext C = Enc(1; ρ) ∏_i C_i^{a_i} of the honest statement *)
+  (** The ciphertext [C = Enc(1; ρ) · ∏_i C_i^{a_i}] of an honest
+      multi-exponentiation statement, with [C_i] the [i]-th row of [Cs]
+      and [a_i] the [i]-th row of [A]. *)
   Definition multiexp_C (g : G) (pk : Vector.t G l) (Cs : list (list CT)) (A : list (list F)) (ρ : F) : CT :=
     cmul (enc g pk (Vector.const gid l) ρ)
       (cprod (map (fun p => cmexp (snd p) (nth (fst p) A [])) (combine (seq 0 (length A)) Cs))).
 
+  (** Honest non-interactive multi-exponentiation prover (announcements
+      at challenge [0], then the real run). *)
   Definition multiexp_prove_fs (O : oracles) (h : G) (gs : list G) (g : G) (pk : Vector.t G l)
     (Cs : list (list CT)) (A : list (list F)) (r : list F) (ρ : F) (a0 : list F) (r0 : F)
     (bs ss τs : list F) : multiexp_argument :=
@@ -292,6 +391,8 @@ Section BayerGrothVerifier.
     let arg0 := multiexp_prove h gs g pk Cs A r ρ a0 r0 bs ss τs zero in
     multiexp_prove h gs g pk Cs A r ρ a0 r0 bs ss τs (multiexp_challenge O Cs C cA arg0).
 
+  (** FS completeness of the multi-exponentiation argument for the honest
+      statement [multiexp_C]. From [multiexp_completeness]. *)
   Theorem multiexp_fs_completeness : forall (O : oracles) (h : G) (gs : list G) (g : G) (pk : Vector.t G l)
     (Cs : list (list CT)) (A : list (list F)) (r : list F) (ρ : F) (a0 : list F) (r0 : F) (bs ss τs : list F),
     (1 <= length A)%nat -> length Cs = length A -> length r = length A ->
@@ -305,12 +406,16 @@ Section BayerGrothVerifier.
     reflexivity.
   Qed.
 
-  (* ---- product argument (Algorithms 9.18, 9.19) ---- *)
+  (** ** Product argument (Algorithms 9.18, 9.19) *)
 
+  (** The four product-level challenges: three Hadamard challenges and the
+      SVP challenge. *)
   Record pchal : Type := mk_pchal { pc_xh : F; pc_yh : F; pc_xz : F; pc_xs : F }.
 
-  (* for m > 1 the Hadamard argument on (c_A, c_b) and the single value
-    product argument on (c_b, b); for m = 1 only the latter, on (c_{A1}, b) *)
+  (** For [m = |c_A| > 1] the product argument consists of a Hadamard
+      argument on [(c_A, c_b)] and an SVP argument on [(c_b, b)]; for [m = 1]
+      only the SVP argument on [(c_{A,1}, b)], and the Hadamard challenges
+      are set to zero. *)
   Definition product_challenges (O : oracles) (h : G) (gs : list G) (n : nat) (cA : list G) (b : F)
     (arg : product_argument) : pchal :=
     let m := length cA in
@@ -321,22 +426,30 @@ Section BayerGrothVerifier.
     let ca := if Nat.ltb 1 m then pa_cb arg else nth 0 cA gid in
     mk_pchal (hc_x hc) (hc_y hc) (hc_xz hc) (svp_challenge O ca b (pa_svp arg)).
 
+  (** Fiat–Shamir product verifier: [product_verify] at the oracle
+      challenges. *)
   Definition product_verify_fs (O : oracles) (h : G) (gs : list G) (n : nat) (cA : list G) (b : F)
     (arg : product_argument) : bool :=
     let c := product_challenges O h gs n cA b arg in
     product_verify h gs n cA b (pc_xh c) (pc_yh c) (pc_xz c) (pc_xs c) arg.
 
+  (** [product_verify_fs] unfolds to the interactive verifier. *)
   Theorem product_verify_fs_spec : forall O h gs n cA b arg,
     product_verify_fs O h gs n cA b arg =
     product_verify h gs n cA b (pc_xh (product_challenges O h gs n cA b arg)) (pc_yh (product_challenges O h gs n cA b arg))
       (pc_xz (product_challenges O h gs n cA b arg)) (pc_xs (product_challenges O h gs n cA b arg)) arg.
   Proof. reflexivity. Qed.
 
+  (** Transfer of acceptance from the interactive product verifier. *)
   Lemma product_verify_fs_of : forall O h gs n cA b arg xh yh xz xs,
     product_challenges O h gs n cA b arg = mk_pchal xh yh xz xs ->
     product_verify h gs n cA b xh yh xz xs arg = true -> product_verify_fs O h gs n cA b arg = true.
   Proof. intros * hc hv; unfold product_verify_fs; rewrite hc; exact hv. Qed.
 
+  (** Honest non-interactive product prover, staged as for the Hadamard
+      argument: [x_h], [y_h] and the SVP challenge from a run with all
+      challenges zero, then the zero-argument challenge from a run with
+      [x_h], [y_h]. *)
   Definition product_prove_fs (O : oracles) (h : G) (gs : list G) (n : nat) (A : list (list F)) (r : list F)
     (s : F) (smid : list F) (a0z bmz : list F) (r0z smz : F) (t1 t2 : list F)
     (d : list F) (rd : F) (dmid : list F) (s0 sx : F) : product_argument :=
@@ -347,6 +460,8 @@ Section BayerGrothVerifier.
     let c1 := product_challenges O h gs n cA b (P (pc_xh c0) (pc_yh c0) zero zero) in
     P (pc_xh c0) (pc_yh c0) (pc_xz c1) (pc_xs c0).
 
+  (** The challenges recomputed from the honest product argument are the
+      staged ones (case split on [m > 1]). *)
   Lemma product_challenges_prove : forall O h gs n A r s smid a0z bmz r0z smz t1 t2 d rd dmid s0 sx cA b xh yh xz xs,
     pc_xh (product_challenges O h gs n cA b (product_prove h gs n A r s smid a0z bmz r0z smz t1 t2 d rd dmid s0 sx zero zero zero zero)) = xh ->
     pc_yh (product_challenges O h gs n cA b (product_prove h gs n A r s smid a0z bmz r0z smz t1 t2 d rd dmid s0 sx zero zero zero zero)) = yh ->
@@ -358,7 +473,9 @@ Section BayerGrothVerifier.
     destruct (Nat.ltb 1 (length A)); reflexivity.
   Qed.
 
-  (* for m > 1 the Hadamard challenges of the product argument are oracle values *)
+  (** For [m > 1], the Hadamard challenges [x_h] and [y_h] of an honest
+      product argument are oracle values and hence non-zero if the oracle
+      never returns zero there. *)
   Lemma product_challenges_xh_nz : forall O h gs n cA b A r s smid a0z bmz r0z smz t1 t2 d rd dmid s0 sx xh yh xz xs,
     (forall cA cb cB, o_xh O cA cb cB <> zero) -> (1 < length A)%nat ->
     pc_xh (product_challenges O h gs n cA b (product_prove h gs n A r s smid a0z bmz r0z smz t1 t2 d rd dmid s0 sx xh yh xz xs)) <> zero.
@@ -375,6 +492,11 @@ Section BayerGrothVerifier.
     rewrite (proj2 (PeanoNat.Nat.ltb_lt _ _) hlt). cbn [pa_had pa_cb pc_yh hc_y]. apply hy.
   Qed.
 
+  (** FS completeness of the product argument for [b = ∏] of all entries
+      of [A] (via [hprefix]) and [c_A = com_list A r]. From
+      [product_completeness], with the non-zero Hadamard challenges
+      supplied by [product_challenges_xh_nz] and
+      [product_challenges_yh_nz]. *)
   Theorem product_fs_completeness : forall (O : oracles) (h : G) (gs : list G) (n : nat) (A : list (list F)) (r : list F)
     (s : F) (smid : list F) (a0z bmz : list F) (r0z smz : F) (t1 t2 : list F)
     (d : list F) (rd : F) (dmid : list F) (s0 sx : F),
@@ -393,14 +515,18 @@ Section BayerGrothVerifier.
     apply product_challenges_prove; reflexivity.
   Qed.
 
-  (* ---- shuffle argument (Algorithms 9.11, 9.12) ---- *)
+  (** ** Shuffle argument (Algorithms 9.11, 9.12) *)
 
+  (** The eight challenges of a shuffle argument. *)
   Record schal : Type := mk_schal {
     sc_x : F; sc_y : F; sc_z : F; sc_xh : F; sc_yh : F; sc_xz : F; sc_xs : F; sc_xm : F }.
 
-  (* x from c_A; y, z from c_A and c_B; the product argument's challenges on
-    the statement (c_D c_{−z}, ∏(y i + x^i − z)); the multi-exponentiation
-    argument's challenge on (C' as an m × n matrix, ∏ C_i^{x^i}, c_B) *)
+  (** All challenges of a shuffle argument for [N = m·n] ciphertexts
+      arranged as an [m × n] matrix: [x] from [c_A], [y] and [z] from
+      [(c_A, c_B)], the product-argument challenges on the statement
+      [shuffle_product_stmt] (commitment [c_D · c_{−z}] and product
+      [∏ (y·i + x^i − z)]), and the multi-exponentiation challenge on
+      [(C' as an m × n matrix, ∏ C_i^{x^i}, c_B)]. *)
   Definition shuffle_challenges (O : oracles) (h : G) (gs : list G) (m n : nat) (Cs Cs' : list CT)
     (arg : shuffle_argument) : schal :=
     let N := (m * n)%nat in
@@ -414,28 +540,35 @@ Section BayerGrothVerifier.
     let xm := multiexp_challenge O (chunk n m Cs') (shuffle_mexp_C Cs x N) cB (sh_mexp arg) in
     mk_schal x y z (pc_xh pc) (pc_yh pc) (pc_xz pc) (pc_xs pc) xm.
 
+  (** Fiat–Shamir shuffle verifier (Algorithm 9.12): [shuffle_verify] at the
+      oracle challenges for input ciphertexts [Cs], output ciphertexts [Cs'],
+      commitment key [(h, gs)], generator [g] and public key [pk]. *)
   Definition shuffle_verify_fs (O : oracles) (h : G) (gs : list G) (g : G) (pk : Vector.t G l) (m n : nat)
     (Cs Cs' : list CT) (arg : shuffle_argument) : bool :=
     let c := shuffle_challenges O h gs m n Cs Cs' arg in
     shuffle_verify h gs g pk m n Cs Cs' (sc_x c) (sc_y c) (sc_z c) (sc_xh c) (sc_yh c) (sc_xz c) (sc_xs c) (sc_xm c) arg.
 
+  (** [shuffle_verify_fs] unfolds to the interactive verifier. *)
   Theorem shuffle_verify_fs_spec : forall O h gs g pk m n Cs Cs' arg,
     shuffle_verify_fs O h gs g pk m n Cs Cs' arg =
     let c := shuffle_challenges O h gs m n Cs Cs' arg in
     shuffle_verify h gs g pk m n Cs Cs' (sc_x c) (sc_y c) (sc_z c) (sc_xh c) (sc_yh c) (sc_xz c) (sc_xs c) (sc_xm c) arg.
   Proof. reflexivity. Qed.
 
+  (** Transfer of acceptance from the interactive shuffle verifier. *)
   Lemma shuffle_verify_fs_of : forall O h gs g pk m n Cs Cs' arg x y z xh yh xz xs xm,
     shuffle_challenges O h gs m n Cs Cs' arg = mk_schal x y z xh yh xz xs xm ->
     shuffle_verify h gs g pk m n Cs Cs' x y z xh yh xz xs xm arg = true ->
     shuffle_verify_fs O h gs g pk m n Cs Cs' arg = true.
   Proof. intros * hc hv; unfold shuffle_verify_fs; rewrite hc; exact hv. Qed.
 
-  (* the honest prover, stage by stage: c_A gives x; c_B (which depends on x)
-    gives y and z; the product statement and the announcements c_b, c_B of
-    the Hadamard argument give its challenges, the single value product and
-    multi-exponentiation announcements theirs; finally the zero argument's
-    announcements (which depend on the Hadamard challenges) give xz *)
+  (** Honest non-interactive shuffle prover, stage by stage: [c_A] gives
+      [x]; [c_B] (which depends on [x]) gives [y] and [z]; the product
+      statement and the Hadamard announcements give [x_h], [y_h], the SVP
+      and multi-exponentiation announcements give [x_s] and [x_m]; finally
+      the zero-argument announcements (which depend on [x_h], [y_h]) give
+      [x_z]. [perm] is the permutation and [ρs] the re-encryption
+      randomness. *)
   Definition shuffle_prove_fs (O : oracles) (h : G) (gs : list G) (g : G) (pk : Vector.t G l) (m n : nat)
     (Cs Cs' : list CT) (perm : list nat) (ρs : list F) (r s : list F)
     (sp : F) (smid : list F) (a0z bmz : list F) (r0z smz : F) (t1 t2 : list F)
@@ -458,8 +591,12 @@ Section BayerGrothVerifier.
     let c3 := Q (P x y z xh yh zero xs xm) in
     P x y z xh yh (sc_xz c3) xs xm.
 
-  (* the announcements of the honest provers do not depend on the challenges
-    that come after them *)
+  (** *** Challenge independence *)
+
+  (** The announcements of an honest prover do not depend on later
+      challenges. [svp_challenge_indep] and [multiexp_challenge_indep]: the
+      challenge computed from an honest SVP or multi-exponentiation argument
+      does not depend on the challenge the argument was produced with. *)
   Lemma svp_challenge_indep : forall O ca b h gs a r d rd dmid s0 sx x x',
     svp_challenge O ca b (svp_prove h gs a r d rd dmid s0 sx x) = svp_challenge O ca b (svp_prove h gs a r d rd dmid s0 sx x').
   Proof. reflexivity. Qed.
@@ -469,6 +606,9 @@ Section BayerGrothVerifier.
     multiexp_challenge O Cs C cA (multiexp_prove h gs g pk Ms A r ρ a0 r0 bs ss τs x').
   Proof. reflexivity. Qed.
 
+  (** The same for the product argument: [x_h], [y_h] and [x_s] do not
+      depend on any product challenge, and [x_z] does not depend on [x_z]
+      and [x_s] ([product_challenges_indep_xh], [_yh], [_xs], [_xz]). *)
   Lemma product_challenges_indep_xh : forall O h gs n cA b A r s smid a0z bmz r0z smz t1 t2 d rd dmid s0 sx xh yh xz xs xh' yh' xz' xs',
     pc_xh (product_challenges O h gs n cA b (product_prove h gs n A r s smid a0z bmz r0z smz t1 t2 d rd dmid s0 sx xh yh xz xs)) =
     pc_xh (product_challenges O h gs n cA b (product_prove h gs n A r s smid a0z bmz r0z smz t1 t2 d rd dmid s0 sx xh' yh' xz' xs')).
@@ -489,7 +629,12 @@ Section BayerGrothVerifier.
     pc_xz (product_challenges O h gs n cA b (product_prove h gs n A r s smid a0z bmz r0z smz t1 t2 d rd dmid s0 sx xh yh xz' xs')).
   Proof. intros; unfold product_challenges, product_prove; cbv zeta; destruct (Nat.ltb 1 (length A)); reflexivity. Qed.
 
-  (* the components of the honest shuffle argument *)
+  (** Components of an honest shuffle argument, by computation: [c_A]
+      commits to the permutation (as field elements), [c_B] to the
+      permuted powers [x^{π(i)}], the product argument is on
+      [y·π(i) + x^{π(i)} − z], and the multi-exponentiation argument is on
+      the output ciphertexts with exponents [x^{π(i)}] and randomness
+      [−Σ ρ_i x^{π(i)}]. *)
   Lemma sh_cA_prove : forall h gs g pk m n Cs' perm ρs r s sp smid a0z bmz r0z smz t1 t2 d rd dmid s0 sx a0 r0 bs ss τs x y z xh yh xz xs xm,
     sh_cA (shuffle_prove h gs g pk m n Cs' perm ρs r s sp smid a0z bmz r0z smz t1 t2 d rd dmid s0 sx a0 r0 bs ss τs x y z xh yh xz xs xm) =
     com_list h gs (chunk n m (map (fnat (zero := zero) (one := one) (add := add)) perm)) r.
@@ -515,11 +660,17 @@ Section BayerGrothVerifier.
       a0 r0 bs ss τs xm.
   Proof. reflexivity. Qed.
 
+  (** Unfolds [shuffle_challenges] and rewrites with the component lemmas
+      above. *)
   Local Ltac sh_components :=
     unfold shuffle_challenges; cbv zeta; cbn [sc_x sc_y sc_z sc_xh sc_yh sc_xz sc_xs sc_xm];
     repeat rewrite sh_cA_prove; repeat rewrite sh_cB_prove; repeat rewrite sh_prod_prove; repeat rewrite sh_mexp_prove.
 
-  (* each challenge of the shuffle argument depends only on the earlier ones *)
+  (** Each challenge of an honest shuffle argument depends only on the
+      earlier ones: [x] on nothing, [y] and [z] on [x], [x_h], [y_h], [x_s]
+      and [x_m] on [x, y, z], and [x_z] on all but itself and [x_s], [x_m].
+      Lemmas [sc_x_indep], [sc_y_indep], [sc_z_indep], [sc_xh_indep],
+      [sc_yh_indep], [sc_xs_indep], [sc_xm_indep], [sc_xz_indep]. *)
   Lemma sc_x_indep : forall O h gs g pk m n Cs Cs' perm ρs r s sp smid a0z bmz r0z smz t1 t2 d rd dmid s0 sx a0 r0 bs ss τs
     x y z xh yh xz xs xm x' y' z' xh' yh' xz' xs' xm',
     sc_x (shuffle_challenges O h gs m n Cs Cs' (shuffle_prove h gs g pk m n Cs' perm ρs r s sp smid a0z bmz r0z smz t1 t2 d rd dmid s0 sx a0 r0 bs ss τs x y z xh yh xz xs xm)) =
@@ -568,9 +719,15 @@ Section BayerGrothVerifier.
     sc_xz (shuffle_challenges O h gs m n Cs Cs' (shuffle_prove h gs g pk m n Cs' perm ρs r s sp smid a0z bmz r0z smz t1 t2 d rd dmid s0 sx a0 r0 bs ss τs x y z xh yh xz' xs' xm')).
   Proof. intros; sh_components; apply product_challenges_indep_xz. Qed.
 
+  (** Eta law for the challenge record. *)
   Lemma schal_eta : forall c : schal, c = mk_schal (sc_x c) (sc_y c) (sc_z c) (sc_xh c) (sc_yh c) (sc_xz c) (sc_xs c) (sc_xm c).
   Proof. destruct c; reflexivity. Qed.
 
+  (** The challenges recomputed by the verifier from an honest shuffle
+      argument equal the staged challenges used to produce it. Proof:
+      eta-expand the record, substitute the challenges by their definitions
+      latest first, and close each field with the corresponding
+      independence lemma. *)
   Lemma shuffle_challenges_prove : forall O h gs g pk m n Cs Cs' perm ρs r s sp smid a0z bmz r0z smz t1 t2
     d rd dmid s0 sx a0 r0 bs ss τs x y z xh yh xz xs xm,
     let P := fun x y z xh yh xz xs xm =>
@@ -590,12 +747,14 @@ Section BayerGrothVerifier.
     intros O h gs g pk m n Cs Cs' perm ρs r s sp smid a0z bmz r0z smz t1 t2 d rd dmid s0 sx a0 r0 bs ss τs
       x y z xh yh xz xs xm; cbv zeta; intros h1 h2 h3 h4 h5 h6 h7 h8.
     rewrite (schal_eta (shuffle_challenges _ _ _ _ _ _ _ _)).
-    (* substitute the challenges by their definitions, latest first *)
     rewrite <- h8, <- h7, <- h6, <- h5, <- h4, <- h3, <- h2, <- h1; cbv beta.
     f_equal; solve [ apply sc_x_indep | apply sc_y_indep | apply sc_z_indep | apply sc_xh_indep
                    | apply sc_yh_indep | apply sc_xz_indep | apply sc_xs_indep | apply sc_xm_indep ].
   Qed.
 
+  (** For [m > 1] the Hadamard challenges of an honest shuffle argument are
+      oracle values, hence non-zero under the corresponding oracle
+      hypothesis ([shuffle_challenges_xh_nz], [shuffle_challenges_yh_nz]). *)
   Lemma shuffle_challenges_xh_nz : forall O h gs g pk m n Cs Cs' perm ρs r s sp smid a0z bmz r0z smz t1 t2 d rd dmid s0 sx a0 r0 bs ss τs
     x y z xh yh xz xs xm,
     (forall cA cb cB, o_xh O cA cb cB <> zero) -> (1 < m)%nat ->
@@ -618,6 +777,13 @@ Section BayerGrothVerifier.
     cbn [pa_had pa_cb hc_y]. apply hy.
   Qed.
 
+  (** FS completeness of the shuffle argument. Hypotheses: [m ≥ 1],
+      [n ≥ 2] equal to the key length, [N = m·n] input and output
+      ciphertexts with [C'_i = Enc(1; ρ_i) · C_{π(i)}] for a permutation
+      [perm] of [0..N−1], correctly sized prover randomness, and an oracle
+      whose Hadamard challenges are never zero. Conclusion: the
+      Fiat–Shamir verifier accepts the honest proof. Proof: interactive
+      [shuffle_completeness] plus [shuffle_challenges_prove]. *)
   Theorem shuffle_fs_completeness : forall (O : oracles) (h : G) (gs : list G) (g : G) (pk : Vector.t G l) (m n : nat)
     (Cs Cs' : list CT) (perm : list nat) (ρs : list F) (r s : list F)
     (sp : F) (smid : list F) (a0z bmz : list F) (r0z smz : F) (t1 t2 : list F)
@@ -644,29 +810,32 @@ Section BayerGrothVerifier.
       a0 r0 bs ss τs); reflexivity.
   Qed.
 
-  (* ---------------------------------------------------------------- *)
-  (* the random-oracle step                                           *)
-  (* ---------------------------------------------------------------- *)
+  (** ** The random-oracle step *)
 
-  (* The soundness theorems of Crypto/BayerGrothSound.v are about the
-     interactive verifiers. Two statements carry them to the Fiat–Shamir
-     verifier. The rewinding form: a prover whose proofs are accepted by the
-     Fiat–Shamir verifier under every reprogramming of the oracle tree (the
-     oracle at index (jx, jy, jz, p, q, j, j', jm), evaluated on the
-     announcements of that proof, returns the challenges of that index;
-     announcements depend only on the earlier answers) either breaks the
-     binding of the commitment key or knows the shuffle witness — the
-     deterministic content of the forking argument, whose probabilistic
-     analysis (the loss in the number of oracle queries) is not formalised.
-     The one-query form, for the single-challenge arguments: a prover who
-     fixes announcements and answers the oracle's value c with resp c is
-     accepted with probability at most (k − 1)/|lf| over a uniform oracle
-     value, unless the k-special-soundness extractor applies. *)
-
+  (** The soundness theorems of [Crypto.BayerGrothSound] are about the
+      interactive verifiers; the theorems below carry them to the
+      Fiat–Shamir verifiers. *)
   Local Notation binding_break := (binding_break (gid := gid) (gop := gop) (gpow := gpow)).
   Local Notation encg := (encg (gop := gop) (gpow := gpow) (l := l)).
   Local Notation fnat := (fnat (zero := zero) (one := one) (add := add)).
 
+  (** Soundness in rewinding form. The prover's proofs form a tree indexed
+      by [(jx, jy, jz, p, q, j, j', jm)], one index per choice of each
+      challenge from the distinct lists [X, Y, Z, Xh, Yh, Zs p q, XS, XM]
+      of the sizes required by the extractor ([|X| = N], [|Y| > 2N²],
+      [|Z| > N], [|Xh| = m], [|Yh| = n], [|Zs p q| = 2m+1], [|XS| = n+1],
+      [|XM| = 2m]). The announcements of each proof only depend on the
+      earlier indices (encoded by the arguments of the functions [cB],
+      [pcb], …). If the reprogrammed oracle [O idx] returns the challenges
+      of [idx] on the announcements of that proof, and every proof is
+      accepted by [shuffle_verify_fs], then either there exist a
+      permutation [σ] and randomness [ρs] with
+      [C'_i = Enc(1; ρ_i) · C_{σ(i)}], or [binding_break h gs]. Also
+      requires that [fnat] be injective on [0..N−1] (characteristic larger
+      than [N]). This is the deterministic content of the forking lemma;
+      the query-loss analysis is not formalised. Proof: rewrite each
+      acceptance with the oracle hypothesis and apply
+      [shuffle_soundness]. *)
   Theorem shuffle_fs_soundness : forall (h g : G) (gs : list G) (pk : Vector.t G l) (m : nat) (Cs Cs' : list CT) (cA : list G)
     (X Y Z Xh Yh XS XM : list F) (Zs : nat -> nat -> list F)
     (O : nat -> nat -> nat -> nat -> nat -> nat -> nat -> nat -> oracles)
@@ -689,13 +858,11 @@ Section BayerGrothVerifier.
     NoDup Xh -> length Xh = m -> NoDup Yh -> length Yh = n ->
     (forall p q, (p < m)%nat -> (q < n)%nat -> NoDup (Zs p q) /\ length (Zs p q) = (2 * m + 1)%nat) ->
     NoDup XS -> length XS = S n -> NoDup XM -> length XM = (2 * m)%nat ->
-    (* the reprogrammed oracles return the challenges of the index on the announcements of its proof *)
     (forall jx jy jz p q j j' jm, (jx < N)%nat -> (jy < length Y)%nat -> (jz < length Z)%nat -> (p < m)%nat -> (q < n)%nat ->
       (j < 2 * m + 1)%nat -> (j' < S n)%nat -> (jm < 2 * m)%nat ->
       shuffle_challenges (O jx jy jz p q j j' jm) h gs m n Cs Cs' (arg jx jy jz p q j j' jm) =
       mk_schal (nth jx X zero) (nth jy Y zero) (nth jz Z zero) (nth p Xh zero) (nth q Yh zero)
         (nth j (Zs p q) zero) (nth j' XS zero) (nth jm XM zero)) ->
-    (* every proof of the tree is accepted by the Fiat–Shamir verifier *)
     (forall jx jy jz p q j j' jm, (jx < N)%nat -> (jy < length Y)%nat -> (jz < length Z)%nat -> (p < m)%nat -> (q < n)%nat ->
       (j < 2 * m + 1)%nat -> (j' < S n)%nat -> (jm < 2 * m)%nat ->
       shuffle_verify_fs (O jx jy jz p q j j' jm) h gs g pk m n Cs Cs' (arg jx jy jz p q j j' jm) = true) ->
@@ -712,8 +879,14 @@ Section BayerGrothVerifier.
     exact hv.
   Qed.
 
-  (* one-query bounds for the single-challenge arguments: a prover strategy
-     (announcements fixed, responses resp c to the oracle's value c) *)
+  (** One-query soundness error of the zero argument. Fix the
+      announcements and let the responses be any function of the challenge
+      [c]. Then either [c_A], [c_B] open to matrices [A], [B] with
+      [Σ A_i ⋆_y B_i = 0], or the commitment binding is broken, or the
+      probability that the interactive verifier accepts at a uniform
+      challenge from [lf] is at most [2·|c_A| / |lf|]. Proof:
+      [k_special_soundness_error] with [k = 2|c_A| + 1], then
+      [zero_soundness] on the [k] accepting challenges. *)
   Theorem zero_fs_soundness_error : forall (h : G) (gs : list G) (cA cB : list G) (y : F) (cA0 cBm : G) (cd : list G)
     (ra rb : F -> list F) (rr rs rt : F -> F) (lf : list F) (Hlfn : lf <> []),
     (1 <= length gs)%nat -> NoDup lf ->
@@ -727,9 +900,12 @@ Section BayerGrothVerifier.
           (uniform_with_replacement lf Hlfn)) (mk_prob (2 * length cA) (Pos.of_nat (length lf))) = true.
   Proof.
     intros * hn hnd.
+    (* Either k distinct accepting challenges exist, or the acceptance
+       probability is already small. *)
     destruct (k_special_soundness_error
       (fun c => zero_verify h gs cA cB y c (mk_zero cA0 cBm cd (ra c) (rb c) (rr c) (rs c) (rt c))) lf Hlfn (2 * length cA + 1)
       hnd ltac:(lia)) as [(cs & hcl & hcnd & hcs) | hp].
+    (* Extract the witness from the k accepting transcripts. *)
     + destruct (zero_soundness (Hvec := Hvec) (Fdec := Fdec) (Gdec := Gdec) h gs cA cB y cA0 cBm cd cs
         (fun j => ra (nth j cs zero)) (fun j => rb (nth j cs zero)) (fun j => rr (nth j cs zero)) (fun j => rs (nth j cs zero))
         (fun j => rt (nth j cs zero)) hn hcnd hcl) as [hw | hbb].
@@ -739,6 +915,10 @@ Section BayerGrothVerifier.
     + right; right. replace (2 * length cA)%nat with (2 * length cA + 1 - 1)%nat by lia. exact hp.
   Qed.
 
+  (** One-query soundness error of the SVP argument, with
+      [k = |gs| + 1]: either [c_a] opens to [a] with [∏ a_i = b], or the
+      binding is broken, or the acceptance probability is at most
+      [|gs| / |lf|]. From [svp_soundness]. *)
   Theorem svp_fs_soundness_error : forall (h : G) (gs : list G) (ca : G) (b : F) (cd cδ cΔ : G)
     (ra rb : F -> list F) (rr rs : F -> F) (lf : list F) (Hlfn : lf <> []),
     (2 <= length gs)%nat -> NoDup lf ->
@@ -760,6 +940,11 @@ Section BayerGrothVerifier.
     + right; right. replace (length gs) with (S (length gs) - 1)%nat by lia. exact hp.
   Qed.
 
+  (** One-query soundness error of the multi-exponentiation argument, with
+      [k = 2|c_A|]: either [c_A] opens to [A] and [C] is
+      [Enc(1; ρ) · ∏ C_i^{a_i}] for some [ρ], or the binding is broken, or
+      the acceptance probability is at most [(2|c_A| − 1) / |lf|]. From
+      [multiexp_soundness]. *)
   Theorem multiexp_fs_soundness_error : forall (h g : G) (gs : list G) (pk : Vector.t G l) (Cs : list (list CT)) (C : CT)
     (cA : list G) (cA0 : G) (cB : list G) (E : list CT) (ra : F -> list F) (rr rb rs rτ : F -> F) (lf : list F) (Hlfn : lf <> []),
     (1 <= length gs)%nat -> (1 <= length cA)%nat -> NoDup lf ->

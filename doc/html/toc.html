@@ -1,0 +1,1761 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<link href="coqdoc.css" rel="stylesheet" type="text/css" />
+<title>SigmaProtocol: verified Sigma protocols and e-voting</title>
+</head>
+
+<body>
+
+<div id="page">
+
+<div id="header">
+</div>
+
+<div id="main">
+
+<div id="toc">
+<h2><a href="Algebra.Field.html">Library Algebra.Field</a></h2>
+<ul class="doclist">
+<li><a href="Algebra.Field.html#lab1">Field lemmas and the bridge to the <span class="inlinecode"><span class="id" title="tactic">field</span></span> tactic</a>
+<ul class="doclist">
+<li><a href="Algebra.Field.html#lab2">Fields</a>
+
+</li>
+</ul>
+
+</li>
+</ul>
+<h2><a href="Algebra.Group.html">Library Algebra.Group</a></h2>
+<ul class="doclist">
+<li><a href="Algebra.Group.html#lab3">Elementary group lemmas</a>
+<ul class="doclist">
+<li><a href="Algebra.Group.html#lab4">Lemmas over an arbitrary group</a>
+
+</li>
+</ul>
+
+</li>
+</ul>
+<h2><a href="Algebra.Hierarchy.html">Library Algebra.Hierarchy</a></h2>
+<ul class="doclist">
+<li><a href="Algebra.Hierarchy.html#lab6">Algebraic hierarchy: monoids, groups, rings, fields and vector spaces</a>
+<ul class="doclist">
+<li><a href="Algebra.Hierarchy.html#lab7">Structures</a>
+
+</li>
+<li><a href="Algebra.Hierarchy.html#lab11">A derived fact</a>
+
+</li>
+</ul>
+
+</li>
+</ul>
+<h2><a href="Algebra.Integral_domain.html">Library Algebra.Integral_domain</a></h2>
+<ul class="doclist">
+<li><a href="Algebra.Integral_domain.html#lab12">Integral domains</a>
+<ul class="doclist">
+<li><a href="Algebra.Integral_domain.html#lab13">Lemmas and the standard-library instance</a>
+
+</li>
+</ul>
+
+</li>
+</ul>
+<h2><a href="Algebra.Monoid.html">Library Algebra.Monoid</a></h2>
+<ul class="doclist">
+<li><a href="Algebra.Monoid.html#lab14">Elementary monoid lemmas</a>
+<ul class="doclist">
+<li><a href="Algebra.Monoid.html#lab15">Lemmas over an arbitrary monoid</a>
+
+</li>
+</ul>
+
+</li>
+</ul>
+<h2><a href="Algebra.Product_space.html">Library Algebra.Product_space</a></h2>
+<ul class="doclist">
+<li><a href="Algebra.Product_space.html#lab16">Product of two vector spaces</a>
+<ul class="doclist">
+<li><a href="Algebra.Product_space.html#lab17">Componentwise operations and instances</a>
+
+</li>
+</ul>
+
+</li>
+</ul>
+<h2><a href="Algebra.Ring.html">Library Algebra.Ring</a></h2>
+<ul class="doclist">
+<li><a href="Algebra.Ring.html#lab18">Ring lemmas and the bridge to the standard-library ring tactic</a>
+<ul class="doclist">
+<li><a href="Algebra.Ring.html#lab19">Rings</a>
+
+</li>
+<li><a href="Algebra.Ring.html#lab20">Commutative rings and the <span class="inlinecode"><span class="id" title="tactic">ring</span></span> tactic</a>
+
+</li>
+<li><a href="Algebra.Ring.html#lab21">Embedding the integers</a>
+
+</li>
+</ul>
+
+</li>
+</ul>
+<h2><a href="Algebra.Vector_product_space.html">Library Algebra.Vector_product_space</a></h2>
+<ul class="doclist">
+<li><a href="Algebra.Vector_product_space.html#lab22">The vector space <span class="inlinecode"><span class="id" title="var">V</span></span> <span class="inlinecode">^</span> <span class="inlinecode"><span class="id" title="var">n</span></span> of length-indexed vectors</a>
+<ul class="doclist">
+<li><a href="Algebra.Vector_product_space.html#lab23">Inversion of length-indexed vectors</a>
+
+</li>
+<li><a href="Algebra.Vector_product_space.html#lab24">Componentwise vector-space structure on <span class="inlinecode"><span class="id" title="var">Vector.t</span></span> <span class="inlinecode"><span class="id" title="var">V</span></span> <span class="inlinecode"><span class="id" title="var">n</span></span></a>
+
+</li>
+</ul>
+
+</li>
+</ul>
+<h2><a href="Algebra.Vector_space.html">Library Algebra.Vector_space</a></h2>
+<ul class="doclist">
+<li><a href="Algebra.Vector_space.html#lab28">Basic vector-space lemmas</a>
+<ul class="doclist">
+<li><a href="Algebra.Vector_space.html#lab29">Lemmas</a>
+
+</li>
+</ul>
+
+</li>
+</ul>
+<h2><a href="Backend.BBSSharpVerifier.html">Library Backend.BBSSharpVerifier</a></h2>
+<ul class="doclist">
+<li><a href="Backend.BBSSharpVerifier.html#lab30">Fiat–Shamir verifier for <span class="inlinecode"><span class="id" title="var">BBS</span>#</span> credential presentations</a>
+<ul class="doclist">
+<li><a href="Backend.BBSSharpVerifier.html#lab31">Verifier over an abstract prime-order group</a>
+
+</li>
+<li><a href="Backend.BBSSharpVerifier.html#lab35">Full presentation</a>
+
+</li>
+</ul>
+
+</li>
+</ul>
+<h2><a href="Backend.BayerGrothVerifier.html">Library Backend.BayerGrothVerifier</a></h2>
+<ul class="doclist">
+<li><a href="Backend.BayerGrothVerifier.html#lab36">Fiat–Shamir verifier for Bayer–Groth shuffle arguments</a>
+<ul class="doclist">
+<li><a href="Backend.BayerGrothVerifier.html#lab37">Setting</a>
+
+</li>
+<li><a href="Backend.BayerGrothVerifier.html#lab38">The random oracles</a>
+
+</li>
+<li><a href="Backend.BayerGrothVerifier.html#lab39">Single value product argument (Algorithms 9.25, 9.26)</a>
+
+</li>
+<li><a href="Backend.BayerGrothVerifier.html#lab40">Zero argument (Algorithms 9.22, 9.23)</a>
+
+</li>
+<li><a href="Backend.BayerGrothVerifier.html#lab41">Hadamard argument (Algorithms 9.20, 9.21)</a>
+
+</li>
+<li><a href="Backend.BayerGrothVerifier.html#lab42">Multi-exponentiation argument (Algorithms 9.15, 9.16)</a>
+
+</li>
+<li><a href="Backend.BayerGrothVerifier.html#lab43">Product argument (Algorithms 9.18, 9.19)</a>
+
+</li>
+<li><a href="Backend.BayerGrothVerifier.html#lab44">Shuffle argument (Algorithms 9.11, 9.12)</a>
+
+</li>
+<li><a href="Backend.BayerGrothVerifier.html#lab46">The random-oracle step</a>
+
+</li>
+</ul>
+
+</li>
+</ul>
+<h2><a href="Backend.BeleniosTally.html">Library Backend.BeleniosTally</a></h2>
+<ul class="doclist">
+<li><a href="Backend.BeleniosTally.html#lab47">Belenios tally verifier</a>
+<ul class="doclist">
+<li><a href="Backend.BeleniosTally.html#lab48">Setting</a>
+
+</li>
+<li><a href="Backend.BeleniosTally.html#lab49">Belenios-style Fiat–Shamir verification</a>
+
+</li>
+<li><a href="Backend.BeleniosTally.html#lab50">The product group <span class="inlinecode"><span class="id" title="var">G</span></span> <span class="inlinecode">×</span> <span class="inlinecode"><span class="id" title="var">G</span></span></a>
+
+</li>
+<li><a href="Backend.BeleniosTally.html#lab51">Election data</a>
+
+</li>
+<li><a href="Backend.BeleniosTally.html#lab52">Ballot verification</a>
+
+</li>
+<li><a href="Backend.BeleniosTally.html#lab53">Tally</a>
+
+</li>
+<li><a href="Backend.BeleniosTally.html#lab54">Trustees, partial decryptions and result</a>
+
+</li>
+<li><a href="Backend.BeleniosTally.html#lab55">The certificate</a>
+
+</li>
+</ul>
+
+</li>
+</ul>
+<h2><a href="Backend.ElectionGuardTally.html">Library Backend.ElectionGuardTally</a></h2>
+<ul class="doclist">
+<li><a href="Backend.ElectionGuardTally.html#lab56">ElectionGuard tally verifier</a>
+<ul class="doclist">
+<li><a href="Backend.ElectionGuardTally.html#lab57">Setting</a>
+
+</li>
+<li><a href="Backend.ElectionGuardTally.html#lab58">Election data</a>
+
+</li>
+<li><a href="Backend.ElectionGuardTally.html#lab59">Range proofs and ballot validity</a>
+
+</li>
+<li><a href="Backend.ElectionGuardTally.html#lab60">Aggregation</a>
+
+</li>
+<li><a href="Backend.ElectionGuardTally.html#lab61">Guardians</a>
+
+</li>
+<li><a href="Backend.ElectionGuardTally.html#lab62">Decryption</a>
+
+</li>
+<li><a href="Backend.ElectionGuardTally.html#lab63">The certificate</a>
+
+</li>
+<li><a href="Backend.ElectionGuardTally.html#lab64">Link with the Sigma-protocol library</a>
+
+</li>
+</ul>
+
+</li>
+</ul>
+<h2><a href="Backend.FiatShamirLinRel.html">Library Backend.FiatShamirLinRel</a></h2>
+<ul class="doclist">
+<li><a href="Backend.FiatShamirLinRel.html#lab65">Fiat–Shamir verification of multi-base (linear-relation) proofs</a>
+<ul class="doclist">
+<li><a href="Backend.FiatShamirLinRel.html#lab66">Generic development over a vector space</a>
+
+</li>
+<li><a href="Backend.FiatShamirLinRel.html#lab67">Link to the generalised Okamoto protocol</a>
+
+</li>
+</ul>
+
+</li>
+</ul>
+<h2><a href="Backend.HeliosTally.html">Library Backend.HeliosTally</a></h2>
+<ul class="doclist">
+<li><a href="Backend.HeliosTally.html#lab68">Helios tally verifier</a>
+<ul class="doclist">
+<li><a href="Backend.HeliosTally.html#lab69">Generic setting</a>
+
+</li>
+<li><a href="Backend.HeliosTally.html#lab70">Helios data: ballots and trustees</a>
+
+</li>
+<li><a href="Backend.HeliosTally.html#lab71">Tally states and certificate</a>
+
+</li>
+<li><a href="Backend.HeliosTally.html#lab72">Building the certificate</a>
+
+</li>
+</ul>
+
+</li>
+</ul>
+<h2><a href="Backend.SchulzeBatchedTally.html">Library Backend.SchulzeBatchedTally</a></h2>
+<ul class="doclist">
+<li><a href="Backend.SchulzeBatchedTally.html#lab73">Schulze tally for the batched ballot</a>
+
+</li>
+</ul>
+<h2><a href="Backend.SchulzeSimpleTally.html">Library Backend.SchulzeSimpleTally</a></h2>
+<ul class="doclist">
+<li><a href="Backend.SchulzeSimpleTally.html#lab74">Schulze tally for the simplified ballot</a>
+
+</li>
+</ul>
+<h2><a href="Backend.SchulzeTally.html">Library Backend.SchulzeTally</a></h2>
+<ul class="doclist">
+<li><a href="Backend.SchulzeTally.html#lab75">Receipt-free Schulze tally: verifiable counting on encrypted margins</a>
+<ul class="doclist">
+<li><a href="Backend.SchulzeTally.html#lab76">Part 1: the plaintext Schulze method and closure certificates</a>
+
+</li>
+<li><a href="Backend.SchulzeTally.html#lab79">Part 2: the cryptographic tally</a>
+
+</li>
+<li><a href="Backend.SchulzeTally.html#lab82">Non-interactive tally (Fiat–Shamir)</a>
+
+</li>
+<li><a href="Backend.SchulzeTally.html#lab83">The counting state machine</a>
+
+</li>
+<li><a href="Backend.SchulzeTally.html#lab84">Proofs</a>
+
+</li>
+</ul>
+
+</li>
+</ul>
+<h2><a href="Backend.Tally.html">Library Backend.Tally</a></h2>
+<ul class="doclist">
+<li><a href="Backend.Tally.html#lab95">Certified tally for approval ballots (Helios-style homomorphic tally)</a>
+<ul class="doclist">
+<li><a href="Backend.Tally.html#lab96">Generic setting</a>
+
+</li>
+<li><a href="Backend.Tally.html#lab97">Ballots, tally states and the certificate</a>
+
+</li>
+</ul>
+
+</li>
+</ul>
+<h2><a href="Backend.UProveVerifier.html">Library Backend.UProveVerifier</a></h2>
+<ul class="doclist">
+<li><a href="Backend.UProveVerifier.html#lab98">Fiat–Shamir verifier for U-Prove tokens and presentation proofs</a>
+<ul class="doclist">
+<li><a href="Backend.UProveVerifier.html#lab99">Verifier over an abstract prime-order group</a>
+
+</li>
+</ul>
+
+</li>
+</ul>
+<h2><a href="Backend.VerificatumVerifier.html">Library Backend.VerificatumVerifier</a></h2>
+<ul class="doclist">
+<li><a href="Backend.VerificatumVerifier.html#lab103">Verifier for Verificatum mix-net proofs of shuffle and decryption</a>
+<ul class="doclist">
+<li><a href="Backend.VerificatumVerifier.html#lab104">Proof of a shuffle of one mix-server</a>
+
+</li>
+<li><a href="Backend.VerificatumVerifier.html#lab105">Shuffling by all mix-servers (Algorithm 25)</a>
+
+</li>
+<li><a href="Backend.VerificatumVerifier.html#lab106">Joint decryption (Algorithm 22)</a>
+
+</li>
+<li><a href="Backend.VerificatumVerifier.html#lab107">Mixing session (Algorithm 28)</a>
+
+</li>
+</ul>
+
+</li>
+</ul>
+<h2><a href="Crypto.AndSigma.html">Library Crypto.AndSigma</a></h2>
+<ul class="doclist">
+<li><a href="Crypto.AndSigma.html#lab108">AND composition of Schnorr proofs with a common base</a>
+<ul class="doclist">
+<li><a href="Crypto.AndSigma.html#lab109">AND composition with a common generator</a>
+
+</li>
+</ul>
+
+</li>
+</ul>
+<h2><a href="Crypto.AndSigmaGen.html">Library Crypto.AndSigmaGen</a></h2>
+<ul class="doclist">
+<li><a href="Crypto.AndSigmaGen.html#lab112">AND composition of Schnorr proofs with independent bases</a>
+<ul class="doclist">
+<li><a href="Crypto.AndSigmaGen.html#lab113">AND composition with per-conjunct generators</a>
+
+</li>
+</ul>
+
+</li>
+</ul>
+<h2><a href="Crypto.BBSSharp.html">Library Crypto.BBSSharp</a></h2>
+<ul class="doclist">
+<li><a href="Crypto.BBSSharp.html#lab116">BBS♯: pairing-free BBS anonymous credentials</a>
+<ul class="doclist">
+<li><a href="Crypto.BBSSharp.html#lab117">Setting and auxiliary facts</a>
+
+</li>
+<li><a href="Crypto.BBSSharp.html#lab118">The MAC and its randomisation</a>
+
+</li>
+<li><a href="Crypto.BBSSharp.html#lab119">The validity proof: one Okamoto statement in <span class="inlinecode"><span class="id" title="var">G</span>²</span></a>
+
+</li>
+<li><a href="Crypto.BBSSharp.html#lab121">Holder binding: Schnorr proof for <span class="inlinecode"><span class="id" title="var">pk_Blind</span></span></a>
+
+</li>
+<li><a href="Crypto.BBSSharp.html#lab122">The Issuer's DLEQ proof: Chaum–Pedersen for <span class="inlinecode"><span class="id" title="var">B</span>̄</span> <span class="inlinecode">=</span> <span class="inlinecode">Ā^<span class="id" title="var">x</span></span> <span class="inlinecode">∧</span> <span class="inlinecode"><span class="id" title="var">pk_I</span></span> <span class="inlinecode">=</span> <span class="inlinecode"><span class="id" title="var">g</span>̃^<span class="id" title="var">x</span></span></a>
+
+</li>
+<li><a href="Crypto.BBSSharp.html#lab123">Extraction of a credential (Appendix C)</a>
+
+</li>
+<li><a href="Crypto.BBSSharp.html#lab124">Statistical anonymity of the randomised credential</a>
+
+</li>
+</ul>
+
+</li>
+</ul>
+<h2><a href="Crypto.BayerGroth.html">Library Crypto.BayerGroth</a></h2>
+<ul class="doclist">
+<li><a href="Crypto.BayerGroth.html#lab125">The Bayer–Groth shuffle argument: provers, verifiers and completeness</a>
+<ul class="doclist">
+<li><a href="Crypto.BayerGroth.html#lab126">Parameters</a>
+
+</li>
+<li><a href="Crypto.BayerGroth.html#lab127">The field as a vector space over itself</a>
+
+</li>
+<li><a href="Crypto.BayerGroth.html#lab128">Multi-exponentiation and polynomial evaluation over a vector space</a>
+
+</li>
+<li><a href="Crypto.BayerGroth.html#lab129">Pedersen commitments</a>
+
+</li>
+<li><a href="Crypto.BayerGroth.html#lab130">List helpers</a>
+
+</li>
+<li><a href="Crypto.BayerGroth.html#lab131">Single value product argument (Alg. 9.25, 9.26)</a>
+
+</li>
+<li><a href="Crypto.BayerGroth.html#lab132">Scalar polynomials and the bilinear map ⋆</a>
+
+</li>
+<li><a href="Crypto.BayerGroth.html#lab133">Zero argument (Alg. 9.22, 9.23)</a>
+
+</li>
+<li><a href="Crypto.BayerGroth.html#lab134">Hadamard product argument (Alg. 9.20, 9.21)</a>
+
+</li>
+<li><a href="Crypto.BayerGroth.html#lab135">Multi-exponentiation argument (Alg. 9.15, 9.16, 9.17)</a>
+
+</li>
+<li><a href="Crypto.BayerGroth.html#lab136">Product argument (Alg. 9.18, 9.19)</a>
+
+</li>
+<li><a href="Crypto.BayerGroth.html#lab137">Helpers for the shuffle argument</a>
+
+</li>
+<li><a href="Crypto.BayerGroth.html#lab138">The shuffle argument (Alg. 9.11, 9.12)</a>
+
+</li>
+</ul>
+
+</li>
+</ul>
+<h2><a href="Crypto.BayerGrothSound.html">Library Crypto.BayerGrothSound</a></h2>
+<ul class="doclist">
+<li><a href="Crypto.BayerGrothSound.html#lab139">Soundness of the Bayer–Groth shuffle argument and its sub-arguments</a>
+<ul class="doclist">
+<li><a href="Crypto.BayerGrothSound.html#lab140">Setting</a>
+
+</li>
+<li><a href="Crypto.BayerGrothSound.html#lab141">Boolean reflection and finite choice</a>
+
+</li>
+<li><a href="Crypto.BayerGrothSound.html#lab142">Pedersen commitments: padding and binding</a>
+
+</li>
+<li><a href="Crypto.BayerGrothSound.html#lab143">Opening a committed polynomial from its evaluations</a>
+
+</li>
+<li><a href="Crypto.BayerGrothSound.html#lab144">Zero argument: (2m+1)-special soundness</a>
+
+</li>
+<li><a href="Crypto.BayerGrothSound.html#lab145">Hadamard argument: soundness from the zero argument</a>
+
+</li>
+<li><a href="Crypto.BayerGrothSound.html#lab146">Single value product argument: (n+1)-special soundness</a>
+
+</li>
+<li><a href="Crypto.BayerGrothSound.html#lab147">Product argument: composition</a>
+
+</li>
+<li><a href="Crypto.BayerGrothSound.html#lab148">Multi-exponentiation argument: 2m-special soundness</a>
+
+</li>
+<li><a href="Crypto.BayerGrothSound.html#lab149">Shuffle argument</a>
+
+</li>
+</ul>
+
+</li>
+</ul>
+<h2><a href="Crypto.BayerGrothZK.html">Library Crypto.BayerGrothZK</a></h2>
+<ul class="doclist">
+<li><a href="Crypto.BayerGrothZK.html#lab152">Special honest-verifier zero knowledge of the Bayer–Groth arguments</a>
+<ul class="doclist">
+<li><a href="Crypto.BayerGrothZK.html#lab153">Uniform coins and the bijection principle</a>
+
+</li>
+<li><a href="Crypto.BayerGrothZK.html#lab154">List slicing and arithmetic helpers</a>
+
+</li>
+<li><a href="Crypto.BayerGrothZK.html#lab156">The zero argument</a>
+
+</li>
+<li><a href="Crypto.BayerGrothZK.html#lab157">The single-value product argument (Alg. 9.9 / 9.10)</a>
+
+</li>
+<li><a href="Crypto.BayerGrothZK.html#lab158">The Hadamard product argument (Alg. 9.20 / 9.21)</a>
+
+</li>
+<li><a href="Crypto.BayerGrothZK.html#lab159">The product argument (Alg. 9.18 / 9.19)</a>
+
+</li>
+<li><a href="Crypto.BayerGrothZK.html#lab160">The multi-exponentiation argument for single-message ElGamal</a>
+
+</li>
+<li><a href="Crypto.BayerGrothZK.html#lab161">The shuffle argument (Alg. 9.11 / 9.12) for single-message ElGamal</a>
+
+</li>
+</ul>
+
+</li>
+</ul>
+<h2><a href="Crypto.ChaumPedersen.html">Library Crypto.ChaumPedersen</a></h2>
+<ul class="doclist">
+<li><a href="Crypto.ChaumPedersen.html#lab162">The Chaum–Pedersen Protocol</a>
+<ul class="doclist">
+<li><a href="Crypto.ChaumPedersen.html#lab163">Parameters</a>
+
+</li>
+<li><a href="Crypto.ChaumPedersen.html#lab164">Chaum–Pedersen</a>
+
+</li>
+</ul>
+
+</li>
+</ul>
+<h2><a href="Crypto.DecProof.html">Library Crypto.DecProof</a></h2>
+<ul class="doclist">
+<li><a href="Crypto.DecProof.html#lab167">Proof of Correct ElGamal Decryption</a>
+<ul class="doclist">
+<li><a href="Crypto.DecProof.html#lab168">Parameters</a>
+
+</li>
+<li><a href="Crypto.DecProof.html#lab169">Decryption proof</a>
+
+</li>
+</ul>
+
+</li>
+</ul>
+<h2><a href="Crypto.DistElgamal.html">Library Crypto.DistElgamal</a></h2>
+<ul class="doclist">
+<li><a href="Crypto.DistElgamal.html#lab172">Distributed ElGamal: Joint Keys and Combined Partial Decryption</a>
+<ul class="doclist">
+<li><a href="Crypto.DistElgamal.html#lab173">Parameters</a>
+
+</li>
+<li><a href="Crypto.DistElgamal.html#lab174">Definitions</a>
+
+</li>
+<li><a href="Crypto.DistElgamal.html#lab175">Correctness proofs</a>
+
+</li>
+</ul>
+
+</li>
+</ul>
+<h2><a href="Crypto.Elgamal.html">Library Crypto.Elgamal</a></h2>
+<ul class="doclist">
+<li><a href="Crypto.Elgamal.html#lab178">ElGamal Encryption in the Exponent</a>
+<ul class="doclist">
+<li><a href="Crypto.Elgamal.html#lab179">Parameters</a>
+
+</li>
+<li><a href="Crypto.Elgamal.html#lab180">Encryption, decryption and ciphertext operations</a>
+
+</li>
+<li><a href="Crypto.Elgamal.html#lab181">Ballots: vectors of ciphertexts</a>
+
+</li>
+<li><a href="Crypto.Elgamal.html#lab182">Correctness proofs</a>
+
+</li>
+</ul>
+
+</li>
+</ul>
+<h2><a href="Crypto.EncProof.html">Library Crypto.EncProof</a></h2>
+<ul class="doclist">
+<li><a href="Crypto.EncProof.html#lab185">Proof of Correct Encryption: Disjunctive Chaum–Pedersen</a>
+<ul class="doclist">
+<li><a href="Crypto.EncProof.html#lab186">Parameters</a>
+
+</li>
+<li><a href="Crypto.EncProof.html#lab187">The disjunctive encryption proof</a>
+
+</li>
+</ul>
+
+</li>
+</ul>
+<h2><a href="Crypto.EqSigma.html">Library Crypto.EqSigma</a></h2>
+<ul class="doclist">
+<li><a href="Crypto.EqSigma.html#lab192">Equality of Discrete Logarithms: the EQ Sigma Protocol</a>
+<ul class="doclist">
+<li><a href="Crypto.EqSigma.html#lab193">Parameters</a>
+
+</li>
+<li><a href="Crypto.EqSigma.html#lab194">The EQ protocol</a>
+
+</li>
+</ul>
+
+</li>
+</ul>
+<h2><a href="Crypto.LinearSigma.html">Library Crypto.LinearSigma</a></h2>
+<ul class="doclist">
+<li><a href="Crypto.LinearSigma.html#lab197">A Sigma protocol for preimages of a linear map</a>
+<ul class="doclist">
+<li><a href="Crypto.LinearSigma.html#lab198">The linear-relation protocol</a>
+
+</li>
+</ul>
+
+</li>
+</ul>
+<h2><a href="Crypto.MultiExp.html">Library Crypto.MultiExp</a></h2>
+<ul class="doclist">
+<li><a href="Crypto.MultiExp.html#lab202">Multi-exponentiation in a vector space</a>
+<ul class="doclist">
+<li><a href="Crypto.MultiExp.html#lab203">Definition and algebra of <span class="inlinecode"><span class="id" title="var">mexp</span></span></a>
+
+</li>
+</ul>
+
+</li>
+</ul>
+<h2><a href="Crypto.NeqSigma.html">Library Crypto.NeqSigma</a></h2>
+<ul class="doclist">
+<li><a href="Crypto.NeqSigma.html#lab204">Inequality of discrete logarithms (NEQ)</a>
+<ul class="doclist">
+<li><a href="Crypto.NeqSigma.html#lab205">Parameters</a>
+
+</li>
+<li><a href="Crypto.NeqSigma.html#lab206">The NEQ protocol</a>
+
+</li>
+<li><a href="Crypto.NeqSigma.html#lab209">Special honest-verifier zero knowledge</a>
+
+</li>
+</ul>
+
+</li>
+</ul>
+<h2><a href="Crypto.Okamoto.html">Library Crypto.Okamoto</a></h2>
+<ul class="doclist">
+<li><a href="Crypto.Okamoto.html#lab211">The (generalised) Okamoto protocol: knowledge of a representation</a>
+<ul class="doclist">
+<li><a href="Crypto.Okamoto.html#lab212">Setting</a>
+
+</li>
+<li><a href="Crypto.Okamoto.html#lab213">The protocol for <span class="inlinecode">2</span> <span class="inlinecode">+</span> <span class="inlinecode"><span class="id" title="var">n</span></span> generators</a>
+
+</li>
+<li><a href="Crypto.Okamoto.html#lab216">Security properties</a>
+
+</li>
+</ul>
+
+</li>
+</ul>
+<h2><a href="Crypto.OkamotoRows.html">Library Crypto.OkamotoRows</a></h2>
+<ul class="doclist">
+<li><a href="Crypto.OkamotoRows.html#lab223">Systems of multi-base equations as one Okamoto instance</a>
+<ul class="doclist">
+<li><a href="Crypto.OkamotoRows.html#lab224">Setting and group identities</a>
+
+</li>
+<li><a href="Crypto.OkamotoRows.html#lab225">Chaum–Pedersen with a reconstructed announcement</a>
+
+</li>
+<li><a href="Crypto.OkamotoRows.html#lab226">Rows of bases as Okamoto columns</a>
+
+</li>
+</ul>
+
+</li>
+</ul>
+<h2><a href="Crypto.OrSigma.html">Library Crypto.OrSigma</a></h2>
+<ul class="doclist">
+<li><a href="Crypto.OrSigma.html#lab227">OR-composition of Schnorr protocols over a common generator</a>
+<ul class="doclist">
+<li><a href="Crypto.OrSigma.html#lab228">Parameters</a>
+
+</li>
+<li><a href="Crypto.OrSigma.html#lab229">The OR protocol</a>
+
+</li>
+<li><a href="Crypto.OrSigma.html#lab232">Special honest-verifier zero knowledge</a>
+
+</li>
+</ul>
+
+</li>
+</ul>
+<h2><a href="Crypto.OrSigmaGen.html">Library Crypto.OrSigmaGen</a></h2>
+<ul class="doclist">
+<li><a href="Crypto.OrSigmaGen.html#lab234">OR-composition of Schnorr protocols with per-branch generators</a>
+<ul class="doclist">
+<li><a href="Crypto.OrSigmaGen.html#lab235">Parameters</a>
+
+</li>
+<li><a href="Crypto.OrSigmaGen.html#lab236">The OR protocol</a>
+
+</li>
+<li><a href="Crypto.OrSigmaGen.html#lab239">Special honest-verifier zero knowledge</a>
+
+</li>
+</ul>
+
+</li>
+</ul>
+<h2><a href="Crypto.ParallelSigma.html">Library Crypto.ParallelSigma</a></h2>
+<ul class="doclist">
+<li><a href="Crypto.ParallelSigma.html#lab241">Parallel composition of Schnorr's protocol</a>
+<ul class="doclist">
+<li><a href="Crypto.ParallelSigma.html#lab242">Parallel Schnorr</a>
+
+</li>
+</ul>
+
+</li>
+</ul>
+<h2><a href="Crypto.PedLinearRel.html">Library Crypto.PedLinearRel</a></h2>
+<ul class="doclist">
+<li><a href="Crypto.PedLinearRel.html#lab245">A linear relation on values hidden in Pedersen commitments</a>
+<ul class="doclist">
+<li><a href="Crypto.PedLinearRel.html#lab246">Setting</a>
+
+</li>
+<li><a href="Crypto.PedLinearRel.html#lab247">Prover, simulator and verifier</a>
+
+</li>
+<li><a href="Crypto.PedLinearRel.html#lab248">Security properties</a>
+
+</li>
+</ul>
+
+</li>
+</ul>
+<h2><a href="Crypto.PolyPerm.html">Library Crypto.PolyPerm</a></h2>
+<ul class="doclist">
+<li><a href="Crypto.PolyPerm.html#lab252">From polynomial identities to permutations</a>
+<ul class="doclist">
+<li><a href="Crypto.PolyPerm.html#lab253">Setting</a>
+
+</li>
+<li><a href="Crypto.PolyPerm.html#lab254">Products of linear factors</a>
+
+</li>
+<li><a href="Crypto.PolyPerm.html#lab255">The root multiset lemma</a>
+
+</li>
+<li><a href="Crypto.PolyPerm.html#lab256">From the product identity to a permutation</a>
+
+</li>
+</ul>
+
+</li>
+</ul>
+<h2><a href="Crypto.PolyRoots.html">Library Crypto.PolyRoots</a></h2>
+<ul class="doclist">
+<li><a href="Crypto.PolyRoots.html#lab257">Root bounds for univariate polynomials over a field</a>
+<ul class="doclist">
+<li><a href="Crypto.PolyRoots.html#lab258">Polynomials as coefficient lists</a>
+
+</li>
+<li><a href="Crypto.PolyRoots.html#lab259">Synthetic division by (X − r)</a>
+
+</li>
+<li><a href="Crypto.PolyRoots.html#lab260">The root bound</a>
+
+</li>
+<li><a href="Crypto.PolyRoots.html#lab261">A common non-root for a family of polynomials</a>
+
+</li>
+</ul>
+
+</li>
+</ul>
+<h2><a href="Crypto.ShuffleTW.html">Library Crypto.ShuffleTW</a></h2>
+<ul class="doclist">
+<li><a href="Crypto.ShuffleTW.html#lab262">Terelius–Wikström proof of a shuffle: the round-two Sigma protocol</a>
+<ul class="doclist">
+<li><a href="Crypto.ShuffleTW.html#lab263">Parameters</a>
+
+</li>
+<li><a href="Crypto.ShuffleTW.html#lab264">Multi-exponentiation in <span class="inlinecode"><span class="id" title="var">G</span>^<span class="id" title="var">m</span></span> with diagonal bases</a>
+
+</li>
+<li><a href="Crypto.ShuffleTW.html#lab265">The statement space <span class="inlinecode"><span class="id" title="var">V</span></span> <span class="inlinecode">=</span> <span class="inlinecode"><span class="id" title="var">G</span></span> <span class="inlinecode">×</span> <span class="inlinecode"><span class="id" title="var">G</span></span> <span class="inlinecode">×</span> <span class="inlinecode"><span class="id" title="var">G</span></span> <span class="inlinecode">×</span> <span class="inlinecode"><span class="id" title="var">G</span>^(<span class="id" title="var">N</span>+1)</span> <span class="inlinecode">×</span> <span class="inlinecode">(<span class="id" title="var">G</span></span> <span class="inlinecode">×</span> <span class="inlinecode"><span class="id" title="var">G</span>)</span></a>
+
+</li>
+<li><a href="Crypto.ShuffleTW.html#lab267">Public data, bases and target</a>
+
+</li>
+<li><a href="Crypto.ShuffleTW.html#lab268">The relation, unfolded</a>
+
+</li>
+<li><a href="Crypto.ShuffleTW.html#lab270">The protocol: generalised Okamoto at <span class="inlinecode"><span class="id" title="var">V</span></span></a>
+
+</li>
+</ul>
+
+</li>
+</ul>
+<h2><a href="Crypto.ShuffleTWProps.html">Library Crypto.ShuffleTWProps</a></h2>
+<ul class="doclist">
+<li><a href="Crypto.ShuffleTWProps.html#lab271">Terelius–Wikström shuffle: honest prover, completeness and zero knowledge</a>
+<ul class="doclist">
+<li><a href="Crypto.ShuffleTWProps.html#lab272">Enumerating <span class="inlinecode"><span class="id" title="var">Fin.t</span></span> <span class="inlinecode"><span class="id" title="var">n</span></span>, and permutations</a>
+
+</li>
+<li><a href="Crypto.ShuffleTWProps.html#lab273">Folds of commutative operations are invariant under permutation</a>
+
+</li>
+<li><a href="Crypto.ShuffleTWProps.html#lab274">The honest prover and completeness</a>
+
+</li>
+<li><a href="Crypto.ShuffleTWProps.html#lab276">Honest-verifier zero knowledge of the whole protocol</a>
+
+</li>
+</ul>
+
+</li>
+</ul>
+<h2><a href="Crypto.ShuffleTWSound.html">Library Crypto.ShuffleTWSound</a></h2>
+<ul class="doclist">
+<li><a href="Crypto.ShuffleTWSound.html#lab277">Terelius–Wikström shuffle soundness, part 1: the algebra of extraction</a>
+<ul class="doclist">
+<li><a href="Crypto.ShuffleTWSound.html#lab278">Parameters and group-law helpers</a>
+
+</li>
+<li><a href="Crypto.ShuffleTWSound.html#lab279">Vectors of exponents</a>
+
+</li>
+<li><a href="Crypto.ShuffleTWSound.html#lab282">Discrete-logarithm relations</a>
+
+</li>
+<li><a href="Crypto.ShuffleTWSound.html#lab283">The five equations, exploited</a>
+
+</li>
+</ul>
+
+</li>
+</ul>
+<h2><a href="Crypto.ShuffleTWSound2.html">Library Crypto.ShuffleTWSound2</a></h2>
+<ul class="doclist">
+<li><a href="Crypto.ShuffleTWSound2.html#lab284">Terelius–Wikström shuffle soundness, part 2: permutation matrices</a>
+<ul class="doclist">
+<li><a href="Crypto.ShuffleTWSound2.html#lab285">Parameters</a>
+
+</li>
+<li><a href="Crypto.ShuffleTWSound2.html#lab286">Field and vector helpers</a>
+
+</li>
+<li><a href="Crypto.ShuffleTWSound2.html#lab287">Every unit vector is a column</a>
+
+</li>
+<li><a href="Crypto.ShuffleTWSound2.html#lab288">From columns to a permutation</a>
+
+</li>
+<li><a href="Crypto.ShuffleTWSound2.html#lab289">The soundness theorem</a>
+
+</li>
+</ul>
+
+</li>
+</ul>
+<h2><a href="Crypto.Sigma.html">Library Crypto.Sigma</a></h2>
+<ul class="doclist">
+<li><a href="Crypto.Sigma.html#lab290">Sigma protocols: the generic transcript record and Schnorr's protocol</a>
+<ul class="doclist">
+<li><a href="Crypto.Sigma.html#lab291">Discrete-logarithm Sigma protocols</a>
+
+</li>
+<li><a href="Crypto.Sigma.html#lab292">Generic transcript record</a>
+
+</li>
+<li><a href="Crypto.Sigma.html#lab293">Schnorr's protocol for knowledge of a discrete logarithm</a>
+
+</li>
+</ul>
+
+</li>
+</ul>
+<h2><a href="Crypto.SigmaK.html">Library Crypto.SigmaK</a></h2>
+<ul class="doclist">
+<li><a href="Crypto.SigmaK.html#lab296">k-special soundness: polynomial interpolation and the soundness error</a>
+<ul class="doclist">
+<li><a href="Crypto.SigmaK.html#lab297">Polynomials and interpolation over a field</a>
+
+</li>
+<li><a href="Crypto.SigmaK.html#lab303">Coefficient extraction in a vector space</a>
+
+</li>
+<li><a href="Crypto.SigmaK.html#lab304">The soundness error of k-special soundness</a>
+
+</li>
+</ul>
+
+</li>
+</ul>
+<h2><a href="Crypto.UProve.html">Library Crypto.UProve</a></h2>
+<ul class="doclist">
+<li><a href="Crypto.UProve.html#lab305">U-Prove: token presentation and issuer signature as Sigma protocols</a>
+<ul class="doclist">
+<li><a href="Crypto.UProve.html#lab306">Setting</a>
+
+</li>
+<li><a href="Crypto.UProve.html#lab307">The token and the presentation proof</a>
+
+</li>
+<li><a href="Crypto.UProve.html#lab310">The Issuer's signature: Chaum–Pedersen</a>
+
+</li>
+<li><a href="Crypto.UProve.html#lab311">Pseudonyms and attribute commitments as extra rows</a>
+
+</li>
+</ul>
+
+</li>
+</ul>
+<h2><a href="Curve.Ed25519.html">Library Curve.Ed25519</a></h2>
+<ul class="doclist">
+<li><a href="Curve.Ed25519.html#lab312">Ed25519 as a vector space over <span class="inlinecode"><span class="id" title="var">Z_l</span></span></a>
+<ul class="doclist">
+<li><a href="Curve.Ed25519.html#lab313">The module <span class="inlinecode"><span class="id" title="var">Ed25519</span></span></a>
+
+</li>
+</ul>
+
+</li>
+</ul>
+<h2><a href="Curve.P256.html">Library Curve.P256</a></h2>
+<ul class="doclist">
+<li><a href="Curve.P256.html#lab318">NIST P-256 as a vector space over <span class="inlinecode"><span class="id" title="var">Z_n</span></span></a>
+<ul class="doclist">
+<li><a href="Curve.P256.html#lab319">The module <span class="inlinecode"><span class="id" title="var">P256</span></span></a>
+
+</li>
+</ul>
+
+</li>
+</ul>
+<h2><a href="Curve.P256Primes.html">Library Curve.P256Primes</a></h2>
+<ul class="doclist">
+<li><a href="Curve.P256Primes.html#lab325">Primality of the NIST P-256 parameters</a>
+
+</li>
+</ul>
+<h2><a href="Examples.AndSigmaIns.html">Library Examples.AndSigmaIns</a></h2>
+<ul class="doclist">
+<li><a href="Examples.AndSigmaIns.html#lab326">AND-composition of Schnorr protocols over a toy Schnorr group</a>
+<ul class="doclist">
+<li><a href="Examples.AndSigmaIns.html#lab327">Parameters and the instance</a>
+
+</li>
+</ul>
+
+</li>
+</ul>
+<h2><a href="Examples.ApprovalIns.html">Library Examples.ApprovalIns</a></h2>
+<ul class="doclist">
+<li><a href="Examples.ApprovalIns.html#lab328">Approval voting: the voter side over a toy Schnorr group</a>
+
+</li>
+</ul>
+<h2><a href="Examples.BBSSharpIns.html">Library Examples.BBSSharpIns</a></h2>
+<ul class="doclist">
+<li><a href="Examples.BBSSharpIns.html#lab333"><span class="inlinecode"><span class="id" title="var">BBS</span>#</span> anonymous credentials at P-256</a>
+<ul class="doclist">
+<li><a href="Examples.BBSSharpIns.html#lab334">How a <span class="inlinecode"><span class="id" title="var">BBS</span>#</span> credential works</a>
+
+</li>
+<li><a href="Examples.BBSSharpIns.html#lab335">Conversions for the driver</a>
+
+</li>
+<li><a href="Examples.BBSSharpIns.html#lab336">The credential (Issuer and holder side)</a>
+
+</li>
+<li><a href="Examples.BBSSharpIns.html#lab337">The three proofs, prover side</a>
+
+</li>
+<li><a href="Examples.BBSSharpIns.html#lab338">The verifier</a>
+
+</li>
+</ul>
+
+</li>
+</ul>
+<h2><a href="Examples.BayerGrothE2EIns.html">Library Examples.BayerGrothE2EIns</a></h2>
+<ul class="doclist">
+<li><a href="Examples.BayerGrothE2EIns.html#lab339">The Bayer–Groth shuffle argument at the Swiss Post <span class="inlinecode"><span class="id" title="var">Post_E2E_DEV</span></span> group</a>
+<ul class="doclist">
+<li><a href="Examples.BayerGrothE2EIns.html#lab340">The argument</a>
+
+</li>
+<li><a href="Examples.BayerGrothE2EIns.html#lab341">The group</a>
+
+</li>
+<li><a href="Examples.BayerGrothE2EIns.html#lab342">Conversions and types for the driver</a>
+
+</li>
+<li><a href="Examples.BayerGrothE2EIns.html#lab343">Encryption, commitments and honest statements</a>
+
+</li>
+<li><a href="Examples.BayerGrothE2EIns.html#lab344">The Fiat–Shamir verifiers</a>
+
+</li>
+<li><a href="Examples.BayerGrothE2EIns.html#lab345">The honest Fiat–Shamir provers</a>
+
+</li>
+<li><a href="Examples.BayerGrothE2EIns.html#lab346">Completeness at this group</a>
+
+</li>
+</ul>
+
+</li>
+</ul>
+<h2><a href="Examples.BayerGrothIns.html">Library Examples.BayerGrothIns</a></h2>
+<ul class="doclist">
+<li><a href="Examples.BayerGrothIns.html#lab347">The Bayer–Groth shuffle argument at the Swiss Post 3072-bit group</a>
+<ul class="doclist">
+<li><a href="Examples.BayerGrothIns.html#lab348">The argument</a>
+
+</li>
+<li><a href="Examples.BayerGrothIns.html#lab349">The group</a>
+
+</li>
+<li><a href="Examples.BayerGrothIns.html#lab350">Conversions and types for the driver</a>
+
+</li>
+<li><a href="Examples.BayerGrothIns.html#lab351">Encryption, commitments and honest statements</a>
+
+</li>
+<li><a href="Examples.BayerGrothIns.html#lab352">The Fiat–Shamir verifiers</a>
+
+</li>
+<li><a href="Examples.BayerGrothIns.html#lab353">The honest Fiat–Shamir provers</a>
+
+</li>
+<li><a href="Examples.BayerGrothIns.html#lab354">Completeness at this group</a>
+
+</li>
+</ul>
+
+</li>
+</ul>
+<h2><a href="Examples.BayerGrothIvxvGoIns.html">Library Examples.BayerGrothIvxvGoIns</a></h2>
+<ul class="doclist">
+<li><a href="Examples.BayerGrothIvxvGoIns.html#lab355">The Bayer–Groth shuffle argument at RFC 3526 group 14</a>
+<ul class="doclist">
+<li><a href="Examples.BayerGrothIvxvGoIns.html#lab356">The argument</a>
+
+</li>
+<li><a href="Examples.BayerGrothIvxvGoIns.html#lab357">The group</a>
+
+</li>
+<li><a href="Examples.BayerGrothIvxvGoIns.html#lab358">Conversions and types for the driver</a>
+
+</li>
+<li><a href="Examples.BayerGrothIvxvGoIns.html#lab359">Encryption, commitments and honest statements</a>
+
+</li>
+<li><a href="Examples.BayerGrothIvxvGoIns.html#lab360">The Fiat–Shamir verifiers</a>
+
+</li>
+<li><a href="Examples.BayerGrothIvxvGoIns.html#lab361">The honest Fiat–Shamir provers</a>
+
+</li>
+<li><a href="Examples.BayerGrothIvxvGoIns.html#lab362">Completeness at this group</a>
+
+</li>
+</ul>
+
+</li>
+</ul>
+<h2><a href="Examples.BayerGrothIvxvIns.html">Library Examples.BayerGrothIvxvIns</a></h2>
+<ul class="doclist">
+<li><a href="Examples.BayerGrothIvxvIns.html#lab363">The Bayer–Groth shuffle argument at the IVXV campaign group</a>
+<ul class="doclist">
+<li><a href="Examples.BayerGrothIvxvIns.html#lab364">The argument</a>
+
+</li>
+<li><a href="Examples.BayerGrothIvxvIns.html#lab365">The group</a>
+
+</li>
+<li><a href="Examples.BayerGrothIvxvIns.html#lab366">Conversions and types for the driver</a>
+
+</li>
+<li><a href="Examples.BayerGrothIvxvIns.html#lab367">Encryption, commitments and honest statements</a>
+
+</li>
+<li><a href="Examples.BayerGrothIvxvIns.html#lab368">The Fiat–Shamir verifiers</a>
+
+</li>
+<li><a href="Examples.BayerGrothIvxvIns.html#lab369">The honest Fiat–Shamir provers</a>
+
+</li>
+<li><a href="Examples.BayerGrothIvxvIns.html#lab370">Completeness at this group</a>
+
+</li>
+</ul>
+
+</li>
+</ul>
+<h2><a href="Examples.BeleniosIns.html">Library Examples.BeleniosIns</a></h2>
+<ul class="doclist">
+<li><a href="Examples.BeleniosIns.html#lab371">The Belenios verifier at Ed25519</a>
+<ul class="doclist">
+<li><a href="Examples.BeleniosIns.html#lab372">How a Belenios election is checked</a>
+
+</li>
+<li><a href="Examples.BeleniosIns.html#lab373">The data types at Ed25519</a>
+
+</li>
+<li><a href="Examples.BeleniosIns.html#lab374">The verifier</a>
+
+</li>
+</ul>
+
+</li>
+</ul>
+<h2><a href="Examples.BigNPow.html">Library Examples.BigNPow</a></h2>
+<ul class="doclist">
+<li><a href="Examples.BigNPow.html#lab375">Modular exponentiation over BigN for in-kernel checks</a>
+
+</li>
+</ul>
+<h2><a href="Examples.ChaumPedersenIns.html">Library Examples.ChaumPedersenIns</a></h2>
+<ul class="doclist">
+<li><a href="Examples.ChaumPedersenIns.html#lab376">Chaum–Pedersen protocol over a toy Schnorr group</a>
+<ul class="doclist">
+<li><a href="Examples.ChaumPedersenIns.html#lab377">Parameters and the instance</a>
+
+</li>
+</ul>
+
+</li>
+</ul>
+<h2><a href="Examples.DistElgamalIns.html">Library Examples.DistElgamalIns</a></h2>
+<ul class="doclist">
+<li><a href="Examples.DistElgamalIns.html#lab378">Distributed (n-out-of-n) ElGamal over a toy Schnorr group</a>
+<ul class="doclist">
+<li><a href="Examples.DistElgamalIns.html#lab379">Parameters and the instance</a>
+
+</li>
+</ul>
+
+</li>
+</ul>
+<h2><a href="Examples.Ed25519Ins.html">Library Examples.Ed25519Ins</a></h2>
+<ul class="doclist">
+<li><a href="Examples.Ed25519Ins.html#lab380">Schnorr, Chaum–Pedersen and approval ballots at Ed25519</a>
+<ul class="doclist">
+<li><a href="Examples.Ed25519Ins.html#lab381">Conversions for the driver</a>
+
+</li>
+<li><a href="Examples.Ed25519Ins.html#lab382">Keys</a>
+
+</li>
+<li><a href="Examples.Ed25519Ins.html#lab383">Schnorr: knowledge of <span class="inlinecode"><span class="id" title="var">x</span></span> with <span class="inlinecode"><span class="id" title="var">h</span></span> <span class="inlinecode">=</span> <span class="inlinecode"><span class="id" title="var">g</span>^<span class="id" title="var">x</span></span></a>
+
+</li>
+<li><a href="Examples.Ed25519Ins.html#lab384">Chaum–Pedersen: <span class="inlinecode"><span class="id" title="var">c₁</span></span> <span class="inlinecode">=</span> <span class="inlinecode"><span class="id" title="var">g</span>^<span class="id" title="var">x</span></span> <span class="inlinecode">∧</span> <span class="inlinecode"><span class="id" title="var">c₂</span></span> <span class="inlinecode">=</span> <span class="inlinecode"><span class="id" title="var">h</span>^<span class="id" title="var">x</span></span></a>
+
+</li>
+<li><a href="Examples.Ed25519Ins.html#lab385">Approval ballots</a>
+
+</li>
+<li><a href="Examples.Ed25519Ins.html#lab386">Non-interactive ballots</a>
+
+</li>
+</ul>
+
+</li>
+</ul>
+<h2><a href="Examples.ElectionGuardIns.html">Library Examples.ElectionGuardIns</a></h2>
+<ul class="doclist">
+<li><a href="Examples.ElectionGuardIns.html#lab387">The ElectionGuard 2.0 verifier at the standard parameters</a>
+<ul class="doclist">
+<li><a href="Examples.ElectionGuardIns.html#lab388">How an ElectionGuard 2.0 election is checked</a>
+
+</li>
+<li><a href="Examples.ElectionGuardIns.html#lab389">The parameters</a>
+
+</li>
+<li><a href="Examples.ElectionGuardIns.html#lab390">The data types</a>
+
+</li>
+<li><a href="Examples.ElectionGuardIns.html#lab391">The verifier</a>
+
+</li>
+<li><a href="Examples.ElectionGuardIns.html#lab392">Theorems at these parameters</a>
+
+</li>
+</ul>
+
+</li>
+</ul>
+<h2><a href="Examples.ElgamalIns.html">Library Examples.ElgamalIns</a></h2>
+<ul class="doclist">
+<li><a href="Examples.ElgamalIns.html#lab393">ElGamal encryption over a toy Schnorr group</a>
+<ul class="doclist">
+<li><a href="Examples.ElgamalIns.html#lab394">Parameters and the instance</a>
+
+</li>
+</ul>
+
+</li>
+</ul>
+<h2><a href="Examples.EncProofIns.html">Library Examples.EncProofIns</a></h2>
+<ul class="doclist">
+<li><a href="Examples.EncProofIns.html#lab395">Proof that an ElGamal ciphertext encrypts one of a list of messages</a>
+<ul class="doclist">
+<li><a href="Examples.EncProofIns.html#lab396">Parameters and the instance</a>
+
+</li>
+</ul>
+
+</li>
+</ul>
+<h2><a href="Examples.EqSigmaIns.html">Library Examples.EqSigmaIns</a></h2>
+<ul class="doclist">
+<li><a href="Examples.EqSigmaIns.html#lab397">Equality of discrete logarithms across three bases, toy instance</a>
+<ul class="doclist">
+<li><a href="Examples.EqSigmaIns.html#lab398">Parameters and the instance</a>
+
+</li>
+</ul>
+
+</li>
+</ul>
+<h2><a href="Examples.HeliosFrontendIns.html">Library Examples.HeliosFrontendIns</a></h2>
+<ul class="doclist">
+<li><a href="Examples.HeliosFrontendIns.html#lab399">Helios voting client at the IACR election parameters</a>
+
+</li>
+</ul>
+<h2><a href="Examples.HeliosTallyIns.html">Library Examples.HeliosTallyIns</a></h2>
+<ul class="doclist">
+<li><a href="Examples.HeliosTallyIns.html#lab400">Helios tally verifier at the IACR election parameters</a>
+
+</li>
+</ul>
+<h2><a href="Examples.IvxvGroupIns.html">Library Examples.IvxvGroupIns</a></h2>
+<ul class="doclist">
+<li><a href="Examples.IvxvGroupIns.html#lab401">The IVXV campaign group</a>
+
+</li>
+</ul>
+<h2><a href="Examples.NeqSigmaIns.html">Library Examples.NeqSigmaIns</a></h2>
+<ul class="doclist">
+<li><a href="Examples.NeqSigmaIns.html#lab402">Pairwise inequality of discrete logarithms, toy instance</a>
+<ul class="doclist">
+<li><a href="Examples.NeqSigmaIns.html#lab403">Parameters and the instance</a>
+
+</li>
+</ul>
+
+</li>
+</ul>
+<h2><a href="Examples.OrSigmaIns.html">Library Examples.OrSigmaIns</a></h2>
+<ul class="doclist">
+<li><a href="Examples.OrSigmaIns.html#lab404">OR-composition of Schnorr protocols over a toy Schnorr group</a>
+<ul class="doclist">
+<li><a href="Examples.OrSigmaIns.html#lab405">Parameters and the instance</a>
+
+</li>
+</ul>
+
+</li>
+</ul>
+<h2><a href="Examples.P256Ins.html">Library Examples.P256Ins</a></h2>
+<ul class="doclist">
+<li><a href="Examples.P256Ins.html#lab406">Schnorr, Chaum–Pedersen and approval ballots at P-256</a>
+<ul class="doclist">
+<li><a href="Examples.P256Ins.html#lab407">Conversions for the driver</a>
+
+</li>
+<li><a href="Examples.P256Ins.html#lab408">Keys</a>
+
+</li>
+<li><a href="Examples.P256Ins.html#lab409">Schnorr: knowledge of <span class="inlinecode"><span class="id" title="var">x</span></span> with <span class="inlinecode"><span class="id" title="var">h</span></span> <span class="inlinecode">=</span> <span class="inlinecode"><span class="id" title="var">g</span>^<span class="id" title="var">x</span></span></a>
+
+</li>
+<li><a href="Examples.P256Ins.html#lab410">Chaum–Pedersen: <span class="inlinecode"><span class="id" title="var">c₁</span></span> <span class="inlinecode">=</span> <span class="inlinecode"><span class="id" title="var">g</span>^<span class="id" title="var">x</span></span> <span class="inlinecode">∧</span> <span class="inlinecode"><span class="id" title="var">c₂</span></span> <span class="inlinecode">=</span> <span class="inlinecode"><span class="id" title="var">h</span>^<span class="id" title="var">x</span></span></a>
+
+</li>
+<li><a href="Examples.P256Ins.html#lab411">Approval ballots</a>
+
+</li>
+<li><a href="Examples.P256Ins.html#lab412">Non-interactive ballots</a>
+
+</li>
+</ul>
+
+</li>
+</ul>
+<h2><a href="Examples.ParaSigmaIns.html">Library Examples.ParaSigmaIns</a></h2>
+<ul class="doclist">
+<li><a href="Examples.ParaSigmaIns.html#lab413">Parallel Schnorr protocol over a toy Schnorr group</a>
+<ul class="doclist">
+<li><a href="Examples.ParaSigmaIns.html#lab414">Parameters and the instance</a>
+
+</li>
+</ul>
+
+</li>
+</ul>
+<h2><a href="Examples.PedLinearRelIns.html">Library Examples.PedLinearRelIns</a></h2>
+<ul class="doclist">
+<li><a href="Examples.PedLinearRelIns.html#lab415">Linear relation between Pedersen-committed values, toy instance</a>
+<ul class="doclist">
+<li><a href="Examples.PedLinearRelIns.html#lab416">Parameters and the instance</a>
+
+</li>
+</ul>
+
+</li>
+</ul>
+<h2><a href="Examples.Prime.html">Library Examples.Prime</a></h2>
+<ul class="doclist">
+<li><a href="Examples.Prime.html#lab417">Primality of small integers by trial division</a>
+
+</li>
+</ul>
+<h2><a href="Examples.SchulzeBenchIns.html">Library Examples.SchulzeBenchIns</a></h2>
+<ul class="doclist">
+<li><a href="Examples.SchulzeBenchIns.html#lab418">Schulze benchmarks at the Helios group parameters</a>
+
+</li>
+</ul>
+<h2><a href="Examples.SchulzeIns.html">Library Examples.SchulzeIns</a></h2>
+<ul class="doclist">
+<li><a href="Examples.SchulzeIns.html#lab424">Schulze election example: three candidates, five ballots</a>
+
+</li>
+</ul>
+<h2><a href="Examples.SigmaIns.html">Library Examples.SigmaIns</a></h2>
+<ul class="doclist">
+<li><a href="Examples.SigmaIns.html#lab431">Schnorr's protocol over a toy Schnorr group</a>
+<ul class="doclist">
+<li><a href="Examples.SigmaIns.html#lab432">Parameters and the instance</a>
+
+</li>
+</ul>
+
+</li>
+</ul>
+<h2><a href="Examples.SwissPostZkpE2EIns.html">Library Examples.SwissPostZkpE2EIns</a></h2>
+<ul class="doclist">
+<li><a href="Examples.SwissPostZkpE2EIns.html#lab433">Swiss Post zero-knowledge proofs at the <span class="inlinecode"><span class="id" title="var">Post_E2E_DEV</span></span> group</a>
+
+</li>
+</ul>
+<h2><a href="Examples.SwissPostZkpIns.html">Library Examples.SwissPostZkpIns</a></h2>
+<ul class="doclist">
+<li><a href="Examples.SwissPostZkpIns.html#lab434">Swiss Post zero-knowledge proofs at the Swiss Post 3072-bit group</a>
+
+</li>
+</ul>
+<h2><a href="Examples.SwissPostZkpIvxvGoIns.html">Library Examples.SwissPostZkpIvxvGoIns</a></h2>
+<ul class="doclist">
+<li><a href="Examples.SwissPostZkpIvxvGoIns.html#lab435">Swiss Post zero-knowledge proofs at RFC 3526 group 14</a>
+
+</li>
+</ul>
+<h2><a href="Examples.SwissPostZkpIvxvIns.html">Library Examples.SwissPostZkpIvxvIns</a></h2>
+<ul class="doclist">
+<li><a href="Examples.SwissPostZkpIvxvIns.html#lab436">Swiss Post zero-knowledge proofs at the IVXV campaign group</a>
+
+</li>
+</ul>
+<h2><a href="Examples.TallyIns.html">Library Examples.TallyIns</a></h2>
+<ul class="doclist">
+<li><a href="Examples.TallyIns.html#lab437">Approval-voting tally: the trustee side over a toy Schnorr group</a>
+
+</li>
+</ul>
+<h2><a href="Examples.UProveIns.html">Library Examples.UProveIns</a></h2>
+<ul class="doclist">
+<li><a href="Examples.UProveIns.html#lab438">The U-Prove verifier at P-256</a>
+<ul class="doclist">
+<li><a href="Examples.UProveIns.html#lab439">How a U-Prove token is checked</a>
+
+</li>
+<li><a href="Examples.UProveIns.html#lab440">Scalars, points and digests for the driver</a>
+
+</li>
+<li><a href="Examples.UProveIns.html#lab441">The verifier</a>
+
+</li>
+</ul>
+
+</li>
+</ul>
+<h2><a href="Examples.VerificatumIns.html">Library Examples.VerificatumIns</a></h2>
+<ul class="doclist">
+<li><a href="Examples.VerificatumIns.html#lab442">The Verificatum verifier at the Helios group</a>
+<ul class="doclist">
+<li><a href="Examples.VerificatumIns.html#lab443">How a Verificatum mixing session is checked</a>
+
+</li>
+<li><a href="Examples.VerificatumIns.html#lab444">The group and its operations</a>
+
+</li>
+<li><a href="Examples.VerificatumIns.html#lab445">Proofs of shuffle</a>
+
+</li>
+<li><a href="Examples.VerificatumIns.html#lab446">Decryption</a>
+
+</li>
+<li><a href="Examples.VerificatumIns.html#lab447">Conversions for the driver</a>
+
+</li>
+</ul>
+
+</li>
+</ul>
+<h2><a href="Examples.VerificatumIvxvIns.html">Library Examples.VerificatumIvxvIns</a></h2>
+<ul class="doclist">
+<li><a href="Examples.VerificatumIvxvIns.html#lab448">The Verificatum verifier at the IVXV campaign group</a>
+<ul class="doclist">
+<li><a href="Examples.VerificatumIvxvIns.html#lab449">How a Verificatum mixing session is checked</a>
+
+</li>
+<li><a href="Examples.VerificatumIvxvIns.html#lab450">The group and its operations</a>
+
+</li>
+<li><a href="Examples.VerificatumIvxvIns.html#lab451">Proofs of shuffle</a>
+
+</li>
+<li><a href="Examples.VerificatumIvxvIns.html#lab452">Decryption</a>
+
+</li>
+<li><a href="Examples.VerificatumIvxvIns.html#lab453">Conversions for the driver</a>
+
+</li>
+</ul>
+
+</li>
+</ul>
+<h2><a href="Examples.WasmBenchDefs.html">Library Examples.WasmBenchDefs</a></h2>
+<ul class="doclist">
+<li><a href="Examples.WasmBenchDefs.html#lab454">WebAssembly benchmarks at the Helios parameters</a>
+
+</li>
+</ul>
+<h2><a href="Examples.WasmBenchSmallDefs.html">Library Examples.WasmBenchSmallDefs</a></h2>
+<ul class="doclist">
+<li><a href="Examples.WasmBenchSmallDefs.html#lab456">Reduced-parameter WebAssembly benchmarks</a>
+<ul class="doclist">
+<li><a href="Examples.WasmBenchSmallDefs.html#lab457">Small64: a 64-bit modulus <span class="inlinecode"><span class="id" title="var">p</span></span> with a 32-bit subgroup order <span class="inlinecode"><span class="id" title="var">q</span></span></a>
+
+</li>
+<li><a href="Examples.WasmBenchSmallDefs.html#lab458">Small128: a 128-bit modulus <span class="inlinecode"><span class="id" title="var">p</span></span> with a 64-bit subgroup order <span class="inlinecode"><span class="id" title="var">q</span></span></a>
+
+</li>
+<li><a href="Examples.WasmBenchSmallDefs.html#lab459">Small256: a 256-bit modulus <span class="inlinecode"><span class="id" title="var">p</span></span> with a 128-bit subgroup order <span class="inlinecode"><span class="id" title="var">q</span></span></a>
+
+</li>
+</ul>
+
+</li>
+</ul>
+<h2><a href="Examples.primeP.html">Library Examples.primeP</a></h2>
+<ul class="doclist">
+<li><a href="Examples.primeP.html#lab460">Primality certificate for the 2048-bit Helios modulus p</a>
+
+</li>
+</ul>
+<h2><a href="Examples.primePEG.html">Library Examples.primePEG</a></h2>
+<ul class="doclist">
+<li><a href="Examples.primePEG.html#lab461">ECPP primality certificate for the ElectionGuard 2.0 modulus p</a>
+
+</li>
+</ul>
+<h2><a href="Examples.primeQ.html">Library Examples.primeQ</a></h2>
+<ul class="doclist">
+<li><a href="Examples.primeQ.html#lab462">Primality certificate for the 256-bit Helios subgroup order q</a>
+
+</li>
+</ul>
+<h2><a href="Examples.primeQEG.html">Library Examples.primeQEG</a></h2>
+<ul class="doclist">
+<li><a href="Examples.primeQEG.html#lab463">Primality certificate for the ElectionGuard 2.0 subgroup order</a>
+
+</li>
+</ul>
+<h2><a href="Examples.primeQSP.html">Library Examples.primeQSP</a></h2>
+<ul class="doclist">
+<li><a href="Examples.primeQSP.html#lab464">ECPP primality certificate for the Swiss Post 3072-bit subgroup order</a>
+
+</li>
+</ul>
+<h2><a href="Frontend.Approval.html">Library Frontend.Approval</a></h2>
+<ul class="doclist">
+<li><a href="Frontend.Approval.html#lab465">Approval voting ballots: per-candidate 0/1 proofs and an overall proof</a>
+<ul class="doclist">
+<li><a href="Frontend.Approval.html#lab466">Parameters</a>
+
+</li>
+<li><a href="Frontend.Approval.html#lab467">Ballot construction and verification</a>
+
+</li>
+<li><a href="Frontend.Approval.html#lab471">Correctness, completeness and soundness</a>
+
+</li>
+</ul>
+
+</li>
+</ul>
+<h2><a href="Frontend.Schulze.html">Library Frontend.Schulze</a></h2>
+<ul class="doclist">
+<li><a href="Frontend.Schulze.html#lab477">Receipt-free Schulze ballots, version 1: pairwise bits with position consistency</a>
+<ul class="doclist">
+<li><a href="Frontend.Schulze.html#lab478">Parameters</a>
+
+</li>
+<li><a href="Frontend.Schulze.html#lab479">Definitions</a>
+
+</li>
+<li><a href="Frontend.Schulze.html#lab485">Proofs</a>
+
+</li>
+</ul>
+
+</li>
+</ul>
+<h2><a href="Frontend.SchulzeBatched.html">Library Frontend.SchulzeBatched</a></h2>
+<ul class="doclist">
+<li><a href="Frontend.SchulzeBatched.html#lab496">Receipt-free Schulze ballots, version 2: the batched ballot</a>
+<ul class="doclist">
+<li><a href="Frontend.SchulzeBatched.html#lab497">Parameters and the statement space</a>
+
+</li>
+<li><a href="Frontend.SchulzeBatched.html#lab500">The batched ballot</a>
+
+</li>
+</ul>
+
+</li>
+</ul>
+<h2><a href="Frontend.SchulzeSimple.html">Library Frontend.SchulzeSimple</a></h2>
+<ul class="doclist">
+<li><a href="Frontend.SchulzeSimple.html#lab511">Receipt-free Schulze ballots, version 3: the simplified batched ballot</a>
+<ul class="doclist">
+<li><a href="Frontend.SchulzeSimple.html#lab512">Parameters and helpers</a>
+
+</li>
+<li><a href="Frontend.SchulzeSimple.html#lab514">The simplified ballot</a>
+
+</li>
+</ul>
+
+</li>
+</ul>
+<h2><a href="Probability.Distr.html">Library Probability.Distr</a></h2>
+<ul class="doclist">
+<li><a href="Probability.Distr.html#lab525">Finite probability distributions as a monad</a>
+<ul class="doclist">
+<li><a href="Probability.Distr.html#lab526">Distributions, equivalence and the monad</a>
+
+</li>
+<li><a href="Probability.Distr.html#lab527">Uniform distributions and probability arithmetic</a>
+
+</li>
+<li><a href="Probability.Distr.html#lab528">Product distributions and the functor structure</a>
+
+</li>
+<li><a href="Probability.Distr.html#lab529">Coordinatewise bijections of product distributions</a>
+
+</li>
+<li><a href="Probability.Distr.html#lab530">Bijections of the whole randomness vector</a>
+
+</li>
+<li><a href="Probability.Distr.html#lab531">Events</a>
+
+</li>
+<li><a href="Probability.Distr.html#lab532">Examples</a>
+
+</li>
+</ul>
+
+</li>
+</ul>
+<h2><a href="Probability.Prob.html">Library Probability.Prob</a></h2>
+<ul class="doclist">
+<li><a href="Probability.Prob.html#lab533">Exact rational probabilities</a>
+<ul class="doclist">
+<li><a href="Probability.Prob.html#lab534">Representation, equality, arithmetic and order</a>
+
+</li>
+</ul>
+
+</li>
+</ul>
+<h2><a href="Utility.Fermat.html">Library Utility.Fermat</a></h2>
+<ul class="doclist">
+<li><a href="Utility.Fermat.html#lab535">Fermat's little theorem</a>
+<ul class="doclist">
+<li><a href="Utility.Fermat.html#lab536">Binomial coefficients</a>
+
+</li>
+<li><a href="Utility.Fermat.html#lab537">List helpers</a>
+
+</li>
+<li><a href="Utility.Fermat.html#lab538">The binomial theorem</a>
+
+</li>
+<li><a href="Utility.Fermat.html#lab539">Divisibility by a prime</a>
+
+</li>
+<li><a href="Utility.Fermat.html#lab540">Fermat's little theorem</a>
+
+</li>
+<li><a href="Utility.Fermat.html#lab541">Range of modular powers</a>
+
+</li>
+</ul>
+
+</li>
+</ul>
+<h2><a href="Utility.Functions.html">Library Utility.Functions</a></h2>
+<ul class="doclist">
+<li><a href="Utility.Functions.html#lab542">Modular exponentiation on binary naturals</a>
+
+</li>
+</ul>
+<h2><a href="Utility.Insert.html">Library Utility.Insert</a></h2>
+<ul class="doclist">
+<li><a href="Utility.Insert.html#lab543">Inserting into and removing from length-indexed vectors</a>
+<ul class="doclist">
+<li><a href="Utility.Insert.html#lab544">Insertion and removal</a>
+
+</li>
+<li><a href="Utility.Insert.html#lab545">Interaction with <span class="inlinecode"><span class="id" title="var">zip_with</span></span></a>
+
+</li>
+</ul>
+
+</li>
+</ul>
+<h2><a href="Utility.SchnorrOrder.html">Library Utility.SchnorrOrder</a></h2>
+<ul class="doclist">
+<li><a href="Utility.SchnorrOrder.html#lab546">Order facts for Schnorr groups</a>
+<ul class="doclist">
+<li><a href="Utility.SchnorrOrder.html#lab547">Integer lemmas</a>
+
+</li>
+<li><a href="Utility.SchnorrOrder.html#lab548">Schnorr-group consequences</a>
+
+</li>
+</ul>
+
+</li>
+</ul>
+<h2><a href="Utility.Sha256.html">Library Utility.Sha256</a></h2>
+<ul class="doclist">
+<li><a href="Utility.Sha256.html#lab549">SHA-256 in Rocq</a>
+<ul class="doclist">
+<li><a href="Utility.Sha256.html#lab550">Well-founded induction on <span class="inlinecode"><span class="id" title="var">N</span></span></a>
+
+</li>
+<li><a href="Utility.Sha256.html#lab551">Bytes and base-256 logarithms</a>
+
+</li>
+<li><a href="Utility.Sha256.html#lab552">Converting numbers to byte lists</a>
+
+</li>
+<li><a href="Utility.Sha256.html#lab553">Byte conversion by well-founded recursion</a>
+
+</li>
+<li><a href="Utility.Sha256.html#lab554">SHA-256</a>
+
+</li>
+<li><a href="Utility.Sha256.html#lab556">String interface and test vectors</a>
+
+</li>
+</ul>
+
+</li>
+</ul>
+<h2><a href="Utility.Util.html">Library Utility.Util</a></h2>
+<ul class="doclist">
+<li><a href="Utility.Util.html#lab557">General utilities: vectors, finite indices, arithmetic and residues</a>
+<ul class="doclist">
+<li><a href="Utility.Util.html#lab558">Decidable equality as booleans</a>
+
+</li>
+<li><a href="Utility.Util.html#lab559">Vectors and finite indices</a>
+
+</li>
+<li><a href="Utility.Util.html#lab561">Injectivity of vector <span class="inlinecode"><span class="id" title="var">cons</span></span></a>
+
+</li>
+<li><a href="Utility.Util.html#lab562">A list lemma</a>
+
+</li>
+<li><a href="Utility.Util.html#lab563">Transparent arithmetic on <span class="inlinecode"><span class="id" title="var">nat</span></span></a>
+
+</li>
+<li><a href="Utility.Util.html#lab564">All pairs of a vector</a>
+
+</li>
+<li><a href="Utility.Util.html#lab565">Arithmetic modulo a prime</a>
+
+</li>
+<li><a href="Utility.Util.html#lab566">Enumerating finite indices</a>
+
+</li>
+</ul>
+
+</li>
+</ul>
+<h2><a href="Utility.Zpstar.html">Library Utility.Zpstar</a></h2>
+<ul class="doclist">
+<li><a href="Utility.Zpstar.html#lab567">The groups <span class="inlinecode"><span class="id" title="var">Z_p</span>^*</span>, the field <span class="inlinecode"><span class="id" title="var">Z_p</span></span> and Schnorr groups</a>
+<ul class="doclist">
+<li><a href="Utility.Zpstar.html#lab568">The multiplicative group <span class="inlinecode"><span class="id" title="var">Z_p</span>^*</span></a>
+
+</li>
+<li><a href="Utility.Zpstar.html#lab569">The prime field <span class="inlinecode"><span class="id" title="var">Z_p</span></span></a>
+
+</li>
+<li><a href="Utility.Zpstar.html#lab570">Field axioms</a>
+
+</li>
+<li><a href="Utility.Zpstar.html#lab571">Schnorr groups</a>
+
+</li>
+<li><a href="Utility.Zpstar.html#lab572">The Schnorr group as a vector space over <span class="inlinecode"><span class="id" title="var">Z_q</span></span></a>
+
+</li>
+</ul>
+
+</li>
+</ul>
+</div>
+<hr/>This page has been generated by <a href="http://rocq-prover.org/">coqdoc</a>
+</div>
+
+</div>
+
+</body>
+</html>

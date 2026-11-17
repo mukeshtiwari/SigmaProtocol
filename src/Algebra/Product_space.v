@@ -1,15 +1,22 @@
-(* The product of two vector spaces over the same field is a vector space,
-   with componentwise operations. Used to express Chaum-Pedersen-style
-   statements ((α, β) = (g, y)^r) as Schnorr statements in the product
-   group, so that the Or composition of the library applies to
-   disjunctions of such statements over different ciphertexts, as in
-   Belenios's proofs of possibly-blank votes. *)
+(** * Product of two vector spaces *)
 
+(** Given two vector spaces [V1] and [V2] over the same field [F], with
+    Leibniz equality on all carriers, the cartesian product [V1 * V2] with
+    componentwise operations is again a vector space over [F]
+    ([prod_vspace]). The typical use is [G × G], the space of ElGamal
+    ciphertexts [(g ^ r, g ^ m · h ^ r)], so that Sigma protocols stated over
+    an arbitrary vector space can be applied directly to ciphertexts; see
+    [Backend/BeleniosTally.v] and the Schulze front ends. The analogous
+    construction for vectors of length [n] ([V ^ n]) is in
+    [Vector_product_space.v]. *)
 From Stdlib Require Import Morphisms Utf8 RelationClasses.
 From Algebra Require Import Hierarchy.
 
+(** ** Componentwise operations and instances *)
 Section Product.
 
+  (** Two vector spaces [V1] and [V2] over the field [F], both with
+      Leibniz equality. *)
   Context
     {F : Type} {zero one : F} {add mul sub div : F -> F -> F} {opp inv : F -> F}
     {V1 : Type} {vid1 : V1} {vopp1 : V1 -> V1} {vadd1 : V1 -> V1 -> V1} {smul1 : V1 -> F -> V1}
@@ -17,11 +24,17 @@ Section Product.
     {H1 : @vector_space F (@eq F) zero one add mul sub div opp inv V1 (@eq V1) vid1 vopp1 vadd1 smul1}
     {H2 : @vector_space F (@eq F) zero one add mul sub div opp inv V2 (@eq V2) vid2 vopp2 vadd2 smul2}.
 
+  (** Componentwise zero, negation, addition and scalar action on
+      [V1 * V2]: [pid = (vid1, vid2)], [popp], [padd] and
+      [psmul (x1, x2) r = (x1 *s r, x2 *s r)]. *)
   Definition pid : V1 * V2 := (vid1, vid2).
   Definition popp (x : V1 * V2) : V1 * V2 := (vopp1 (fst x), vopp2 (snd x)).
   Definition padd (x y : V1 * V2) : V1 * V2 := (vadd1 (fst x) (fst y), vadd2 (snd x) (snd y)).
   Definition psmul (x : V1 * V2) (r : F) : V1 * V2 := (smul1 (fst x) r, smul2 (snd x) r).
 
+  (** Decidable equality on [V1 * V2] from decidable equality on each
+      component. Defined transparently so it can compute after
+      extraction. *)
   Definition prod_dec (d1 : forall x y : V1, {x = y} + {x <> y})
     (d2 : forall x y : V2, {x = y} + {x <> y}) :
     forall x y : V1 * V2, {x = y} + {x <> y}.
@@ -33,9 +46,13 @@ Section Product.
     + right; intro e; apply h; exact (f_equal fst e).
   Defined.
 
+  (** Unfold the componentwise operations and split the pair equation into
+      its two components. *)
   Local Ltac pair_law :=
     intros; unfold pid, popp, padd, psmul; cbn [fst snd]; f_equal.
 
+  (** [V1 * V2] with [padd], [pid] and [popp] is a commutative group; each
+      law follows from the same law in [V1] and [V2]. *)
   Global Instance prod_comm_group :
     @commutative_group (V1 * V2) (@eq (V1 * V2)) padd pid popp.
   Proof.
@@ -58,6 +75,8 @@ Section Product.
                 apply left_inverse | apply right_inverse | apply commutative].
   Qed.
 
+  (** [V1 * V2] with [psmul] is a vector space over [F]; each action axiom
+      holds componentwise. *)
   Global Instance prod_vspace :
     @vector_space F (@eq F) zero one add mul sub div opp inv
       (V1 * V2) (@eq (V1 * V2)) pid popp padd psmul.

@@ -1,0 +1,224 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<link href="coqdoc.css" rel="stylesheet" type="text/css" />
+<title>Examples.TallyIns</title>
+</head>
+
+<body>
+
+<div id="page">
+
+<div id="header">
+</div>
+
+<div id="main">
+
+<h1 class="libtitle">Library Examples.TallyIns</h1>
+
+<div class="code">
+<span class="id" title="keyword">From</span> <span class="id" title="var">Stdlib</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="library">Utf8</span> <span class="id" title="library">ZArith</span> <span class="id" title="library">Vector</span>.<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">Crypto</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <a class="idref" href="Crypto.Sigma.html#"><span class="id" title="library">Sigma</span></a> <a class="idref" href="Crypto.EncProof.html#"><span class="id" title="library">EncProof</span></a>.<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">Backend</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <a class="idref" href="Backend.Tally.html#"><span class="id" title="library">Tally</span></a>.<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">Utility</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <a class="idref" href="Utility.Zpstar.html#"><span class="id" title="library">Zpstar</span></a> <a class="idref" href="Utility.Util.html#"><span class="id" title="library">Util</span></a>.<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">Examples</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <a class="idref" href="Examples.Prime.html#"><span class="id" title="library">Prime</span></a>.<br/>
+<span class="id" title="keyword">Import</span> <a class="idref" href="Utility.Zpstar.html#Vspace"><span class="id" title="module">Vspace</span></a> <a class="idref" href="Utility.Zpstar.html#Schnorr"><span class="id" title="module">Schnorr</span></a> <a class="idref" href="Utility.Zpstar.html#Zpfield"><span class="id" title="module">Zpfield</span></a> <a class="idref" href="Utility.Zpstar.html#Zpgroup"><span class="id" title="module">Zpgroup</span></a><br/>
+&nbsp;&nbsp;<span class="id" title="module">VectorNotations</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<a id="lab437"></a><h1 class="section">Approval-voting tally: the trustee side over a toy Schnorr group</h1>
+
+
+<div class="paragraph"> </div>
+
+    This file instantiates the end-to-end tally of <span class="inlinecode"><span class="id" title="var">Backend</span>/<span class="id" title="var">Tally.v</span></span> over
+    the toy group of <span class="inlinecode"><span class="id" title="var">Examples</span>/<span class="id" title="var">ApprovalIns.v</span></span>: the order-<span class="inlinecode"><span class="id" title="var">q</span></span> subgroup of
+    <span class="inlinecode"><span class="id" title="var">Z_p</span>^*</span> with <span class="inlinecode"><span class="id" title="var">q</span></span> <span class="inlinecode">=</span> <span class="inlinecode">2963</span> and the safe prime <span class="inlinecode"><span class="id" title="var">p</span></span> <span class="inlinecode">=</span> <span class="inlinecode">2<span class="id" title="var">q</span></span> <span class="inlinecode">+</span> <span class="inlinecode">1</span> <span class="inlinecode">=</span> <span class="inlinecode">5927</span>,
+    generator <span class="inlinecode"><span class="id" title="var">g</span></span> <span class="inlinecode">=</span> <span class="inlinecode">4</span>, secret key <span class="inlinecode"><span class="id" title="var">x</span></span> <span class="inlinecode">=</span> <span class="inlinecode">1234</span> and public key
+    <span class="inlinecode"><span class="id" title="var">h</span></span> <span class="inlinecode">=</span> <span class="inlinecode">3210</span> <span class="inlinecode">=</span> <span class="inlinecode"><span class="id" title="var">g</span>^<span class="id" title="var">x</span></span>. It is the server-side counterpart of
+    <span class="inlinecode"><span class="id" title="var">Examples</span>/<span class="id" title="var">ApprovalIns.v</span></span>. The trustee holds <span class="inlinecode"><span class="id" title="var">x</span></span>, aggregates the valid
+    ballots homomorphically, decrypts the totals, and proves correct
+    decryption with Chaum–Pedersen proofs.
+
+<div class="paragraph"> </div>
+
+    The single computational definition, <span class="inlinecode"><span class="id" title="var">compute_final_count_ins</span></span>, is
+    extracted by <span class="inlinecode"><span class="id" title="var">src</span>/<span class="id" title="keyword">Extraction</span>/<span class="id" title="var">Tallylib</span>/<span class="id" title="var">Extraction.v</span></span> and driven by
+    <span class="inlinecode"><span class="id" title="var">src</span>/<span class="id" title="var">Executable</span>/<span class="id" title="var">Tallycode</span></span>. The parameters are for testing only. 
+</div>
+<div class="code">
+<span class="id" title="keyword">Section</span> <a id="Ins" class="idref" href="#Ins"><span class="id" title="section">Ins</span></a>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+The prime order <span class="inlinecode"><span class="id" title="var">q</span></span> of the subgroup. 
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <a id="q" class="idref" href="#q"><span class="id" title="definition">q</span></a> : <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Numbers.BinNums.html#Z"><span class="id" title="inductive">Z</span></a> := 2963.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+The safe prime <span class="inlinecode"><span class="id" title="var">p</span></span> <span class="inlinecode">=</span> <span class="inlinecode">2<span class="id" title="var">q</span></span> <span class="inlinecode">+</span> <span class="inlinecode">1</span>. 
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <a id="p" class="idref" href="#p"><span class="id" title="definition">p</span></a> : <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Numbers.BinNums.html#Z"><span class="id" title="inductive">Z</span></a> := 2 <span class="id" title="notation">×</span> <a class="idref" href="Examples.TallyIns.html#q"><span class="id" title="definition">q</span></a> <span class="id" title="notation">+</span> 1.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+Primality of <span class="inlinecode"><span class="id" title="var">q</span></span> and <span class="inlinecode"><span class="id" title="var">p</span></span> by trial division up to the square root, and
+      the safe-prime equation. 
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Theorem</span> <a id="prime_q" class="idref" href="#prime_q"><span class="id" title="lemma">prime_q</span></a> : <span class="id" title="inductive">Znumtheory.prime</span> <a class="idref" href="Examples.TallyIns.html#q"><span class="id" title="definition">q</span></a> : <span class="id" title="keyword">Prop</span> : <span class="id" title="keyword">Type</span>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">eapply</span> <a class="idref" href="Examples.Prime.html#is_prime_sqrt_correct"><span class="id" title="lemma">is_prime_sqrt_correct</span></a>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">compute</span>; <span class="id" title="tactic">reflexivity</span>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Qed</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Theorem</span> <a id="prime_p" class="idref" href="#prime_p"><span class="id" title="lemma">prime_p</span></a> : <span class="id" title="inductive">Znumtheory.prime</span> <a class="idref" href="Examples.TallyIns.html#p"><span class="id" title="definition">p</span></a> : <span class="id" title="keyword">Prop</span> : <span class="id" title="keyword">Type</span>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">eapply</span> <a class="idref" href="Examples.Prime.html#is_prime_sqrt_correct"><span class="id" title="lemma">is_prime_sqrt_correct</span></a>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">compute</span>; <span class="id" title="tactic">reflexivity</span>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Qed</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Theorem</span> <a id="safe_prime" class="idref" href="#safe_prime"><span class="id" title="lemma">safe_prime</span></a> : <a class="idref" href="Examples.TallyIns.html#p"><span class="id" title="definition">p</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Logic.html#6cd0f7b28b6092304087c7049437bb1a"><span class="id" title="notation">=</span></a> (2 <span class="id" title="notation">×</span> <a class="idref" href="Examples.TallyIns.html#q"><span class="id" title="definition">q</span></a> <span class="id" title="notation">+</span> 1)%<span class="id" title="var">Z</span>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>. <span class="id" title="tactic">compute</span>. <span class="id" title="tactic">exact</span> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Logic.html#eq_refl"><span class="id" title="constructor">eq_refl</span></a>. <span class="id" title="keyword">Qed</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+The generator <span class="inlinecode"><span class="id" title="var">g</span></span> <span class="inlinecode">=</span> <span class="inlinecode">4</span>, whose membership in the subgroup is checked by
+      <span class="inlinecode"><span class="id" title="keyword">vm_compute</span></span>. 
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <a id="g" class="idref" href="#g"><span class="id" title="definition">g</span></a> : @<a class="idref" href="Utility.Zpstar.html#Schnorr.Schnorr_group"><span class="id" title="record">Schnorr_group</span></a> <a class="idref" href="Examples.TallyIns.html#p"><span class="id" title="definition">p</span></a> <a class="idref" href="Examples.TallyIns.html#q"><span class="id" title="definition">q</span></a>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">refine</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;{| <a class="idref" href="Utility.Zpstar.html#Schnorr.v"><span class="id" title="projection">Schnorr.v</span></a> := 4;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="Utility.Zpstar.html#Schnorr.Ha"><span class="id" title="projection">Ha</span></a> := <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Logic.html#conj"><span class="id" title="constructor">conj</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Logic.html#eq_refl"><span class="id" title="constructor">eq_refl</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Logic.html#eq_refl"><span class="id" title="constructor">eq_refl</span></a> : (0 <span class="id" title="notation">&lt;</span> 4 <span class="id" title="notation">&lt;</span> <a class="idref" href="Examples.TallyIns.html#p"><span class="id" title="definition">p</span></a>)%<span class="id" title="var">Z</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="Utility.Zpstar.html#Schnorr.Hb"><span class="id" title="projection">Hb</span></a> := <span class="id" title="var">_</span> |}.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">vm_cast_no_check</span> (<a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Logic.html#eq_refl"><span class="id" title="constructor">eq_refl</span></a> (<span class="id" title="definition">Zpow_facts.Zpow_mod</span> 4 <a class="idref" href="Examples.TallyIns.html#q"><span class="id" title="definition">q</span></a> <a class="idref" href="Examples.TallyIns.html#p"><span class="id" title="definition">p</span></a>)).<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Defined</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+The trustee's secret key <span class="inlinecode"><span class="id" title="var">x</span></span> <span class="inlinecode">=</span> <span class="inlinecode">1234</span>. 
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <a id="x" class="idref" href="#x"><span class="id" title="definition">x</span></a> : @<a class="idref" href="Utility.Zpstar.html#Zpfield.Zp"><span class="id" title="record">Zp</span></a> <a class="idref" href="Examples.TallyIns.html#q"><span class="id" title="definition">q</span></a>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">refine</span> {| <a class="idref" href="Utility.Zpstar.html#Zpfield.v"><span class="id" title="projection">Zpfield.v</span></a> := 1234;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="Utility.Zpstar.html#Zpfield.Hv"><span class="id" title="projection">Zpfield.Hv</span></a> := <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Logic.html#eq_refl"><span class="id" title="constructor">eq_refl</span></a> : (1234 <span class="id" title="notation">mod</span> <a class="idref" href="Examples.TallyIns.html#q"><span class="id" title="definition">q</span></a>)%<span class="id" title="var">Z</span> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Logic.html#6cd0f7b28b6092304087c7049437bb1a"><span class="id" title="notation">=</span></a> 1234%<span class="id" title="var">Z</span> |}.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Defined</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+The public key <span class="inlinecode"><span class="id" title="var">h</span></span> <span class="inlinecode">=</span> <span class="inlinecode">3210</span> <span class="inlinecode">=</span> <span class="inlinecode"><span class="id" title="var">g</span>^1234</span>. 
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <a id="h" class="idref" href="#h"><span class="id" title="definition">h</span></a> : @<a class="idref" href="Utility.Zpstar.html#Schnorr.Schnorr_group"><span class="id" title="record">Schnorr_group</span></a> <a class="idref" href="Examples.TallyIns.html#p"><span class="id" title="definition">p</span></a> <a class="idref" href="Examples.TallyIns.html#q"><span class="id" title="definition">q</span></a>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">refine</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;{| <a class="idref" href="Utility.Zpstar.html#Schnorr.v"><span class="id" title="projection">Schnorr.v</span></a> := 3210;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="Utility.Zpstar.html#Schnorr.Ha"><span class="id" title="projection">Ha</span></a> := <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Logic.html#conj"><span class="id" title="constructor">conj</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Logic.html#eq_refl"><span class="id" title="constructor">eq_refl</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Logic.html#eq_refl"><span class="id" title="constructor">eq_refl</span></a> : (0 <span class="id" title="notation">&lt;</span> 3210 <span class="id" title="notation">&lt;</span> <a class="idref" href="Examples.TallyIns.html#p"><span class="id" title="definition">p</span></a>)%<span class="id" title="var">Z</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="Utility.Zpstar.html#Schnorr.Hb"><span class="id" title="projection">Hb</span></a> := <span class="id" title="var">_</span> |}.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">vm_cast_no_check</span> (<a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Logic.html#eq_refl"><span class="id" title="constructor">eq_refl</span></a> (<span class="id" title="definition">Zpow_facts.Zpow_mod</span> 3210 <a class="idref" href="Examples.TallyIns.html#q"><span class="id" title="definition">q</span></a> <a class="idref" href="Examples.TallyIns.html#p"><span class="id" title="definition">p</span></a>)).<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Defined</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+The trustee's tally (<span class="inlinecode"><span class="id" title="var">Tally.compute_final_count</span></span>) for ballots with <span class="inlinecode"><span class="id" title="var">n</span></span>
+      entries. It returns the valid and invalid ballots, the plaintext totals
+      <span class="inlinecode"><span class="id" title="var">pt</span></span>, the verdict, and a <span class="inlinecode"><span class="id" title="var">count</span></span> derivation that justifies them. Its
+      arguments are:
+
+<div class="paragraph"> </div>
+
+<ul class="doclist">
+<li> <span class="inlinecode"><span class="id" title="var">discrete_logarithm_search</span></span>, which recovers totals from <span class="inlinecode"><span class="id" title="var">g</span>^<span class="id" title="var">t</span></span> and is
+        supplied by the caller (a small search in the extracted program);
+
+</li>
+<li> <span class="inlinecode"><span class="id" title="var">us</span></span> and <span class="inlinecode"><span class="id" title="var">cs</span></span>, the commitment randomness and challenges of the
+        decryption proofs;
+
+</li>
+<li> <span class="inlinecode"><span class="id" title="var">bs</span></span>, the ballots.
+
+</li>
+</ul>
+
+<div class="paragraph"> </div>
+
+      The side condition <span class="inlinecode"><span class="id" title="var">g</span>^<span class="id" title="var">x</span></span> <span class="inlinecode">=</span> <span class="inlinecode"><span class="id" title="var">h</span></span> is discharged by computation, and the
+      remaining equalities between proof components of the Schnorr-group
+      records are closed with the proof-irrelevance axiom
+      (<span class="inlinecode"><span class="id" title="var">ProofIrrelevance.PI.proof_irrelevance</span></span>). The axiom is used in a
+      <span class="inlinecode"><span class="id" title="keyword">Prop</span></span> argument only, so it is erased by extraction. 
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <a id="compute_final_count_ins" class="idref" href="#compute_final_count_ins"><span class="id" title="definition">compute_final_count_ins</span></a> {<a id="n:1" class="idref" href="#n:1"><span class="id" title="binder">n</span></a> : <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Datatypes.html#nat"><span class="id" title="inductive">nat</span></a>}<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<a id="discrete_logarithm_search:2" class="idref" href="#discrete_logarithm_search:2"><span class="id" title="binder">discrete_logarithm_search</span></a> : @<a class="idref" href="Utility.Zpstar.html#Schnorr.Schnorr_group"><span class="id" title="record">Schnorr_group</span></a> <a class="idref" href="Examples.TallyIns.html#p"><span class="id" title="definition">p</span></a> <a class="idref" href="Examples.TallyIns.html#q"><span class="id" title="definition">q</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Notations.html#::type_scope:x_'-&gt;'_x"><span class="id" title="notation">→</span></a> @<a class="idref" href="Utility.Zpstar.html#Schnorr.Schnorr_group"><span class="id" title="record">Schnorr_group</span></a> <a class="idref" href="Examples.TallyIns.html#p"><span class="id" title="definition">p</span></a> <a class="idref" href="Examples.TallyIns.html#q"><span class="id" title="definition">q</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Notations.html#::type_scope:x_'-&gt;'_x"><span class="id" title="notation">→</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Notations.html#::type_scope:x_'-&gt;'_x"><span class="id" title="notation">(</span></a>@<a class="idref" href="Utility.Zpstar.html#Zpfield.Zp"><span class="id" title="record">Zp</span></a> <a class="idref" href="Examples.TallyIns.html#q"><span class="id" title="definition">q</span></a><a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Notations.html#::type_scope:x_'-&gt;'_x"><span class="id" title="notation">)</span></a>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<a id="us:3" class="idref" href="#us:3"><span class="id" title="binder">us</span></a> <a id="cs:4" class="idref" href="#cs:4"><span class="id" title="binder">cs</span></a> : <span class="id" title="inductive">Vector.t</span> (@<a class="idref" href="Utility.Zpstar.html#Zpfield.Zp"><span class="id" title="record">Zp</span></a> <a class="idref" href="Examples.TallyIns.html#q"><span class="id" title="definition">q</span></a>) <a class="idref" href="Examples.TallyIns.html#n:1"><span class="id" title="variable">n</span></a>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<a id="bs:5" class="idref" href="#bs:5"><span class="id" title="binder">bs</span></a> :  <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Datatypes.html#list"><span class="id" title="inductive">list</span></a> (@<a class="idref" href="Backend.Tally.html#ballot"><span class="id" title="definition">ballot</span></a> (@<a class="idref" href="Utility.Zpstar.html#Zpfield.Zp"><span class="id" title="record">Zp</span></a> <a class="idref" href="Examples.TallyIns.html#q"><span class="id" title="definition">q</span></a>) (@<a class="idref" href="Utility.Zpstar.html#Schnorr.Schnorr_group"><span class="id" title="record">Schnorr_group</span></a> <a class="idref" href="Examples.TallyIns.html#p"><span class="id" title="definition">p</span></a> <a class="idref" href="Examples.TallyIns.html#q"><span class="id" title="definition">q</span></a>) <a class="idref" href="Examples.TallyIns.html#n:1"><span class="id" title="variable">n</span></a>)) :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="Utility.Util.html#1c1c78eb8010a689d430e9cce412ba6d"><span class="id" title="notation">existsT</span></a> <a class="idref" href="Utility.Util.html#1c1c78eb8010a689d430e9cce412ba6d"><span class="id" title="notation">(</span></a><a id="vbs:6" class="idref" href="#vbs:6"><span class="id" title="binder">vbs</span></a> <a id="inbs:7" class="idref" href="#inbs:7"><span class="id" title="binder">inbs</span></a> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Datatypes.html#list"><span class="id" title="inductive">list</span></a> (@<a class="idref" href="Backend.Tally.html#ballot"><span class="id" title="definition">ballot</span></a> (@<a class="idref" href="Utility.Zpstar.html#Zpfield.Zp"><span class="id" title="record">Zp</span></a> <a class="idref" href="Examples.TallyIns.html#q"><span class="id" title="definition">q</span></a>) (@<a class="idref" href="Utility.Zpstar.html#Schnorr.Schnorr_group"><span class="id" title="record">Schnorr_group</span></a> <a class="idref" href="Examples.TallyIns.html#p"><span class="id" title="definition">p</span></a> <a class="idref" href="Examples.TallyIns.html#q"><span class="id" title="definition">q</span></a>) <a class="idref" href="Examples.TallyIns.html#n:1"><span class="id" title="variable">n</span></a>))<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<a id="pt:8" class="idref" href="#pt:8"><span class="id" title="binder">pt</span></a> : <span class="id" title="inductive">Vector.t</span> (@<a class="idref" href="Utility.Zpstar.html#Zpfield.Zp"><span class="id" title="record">Zp</span></a> <a class="idref" href="Examples.TallyIns.html#q"><span class="id" title="definition">q</span></a>) <a class="idref" href="Examples.TallyIns.html#n:1"><span class="id" title="variable">n</span></a>) (<a id="bfinal:9" class="idref" href="#bfinal:9"><span class="id" title="binder">bfinal</span></a> : <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Datatypes.html#bool"><span class="id" title="inductive">bool</span></a><a class="idref" href="Utility.Util.html#1c1c78eb8010a689d430e9cce412ba6d"><span class="id" title="notation">),</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;@<a class="idref" href="Backend.Tally.html#count"><span class="id" title="inductive">count</span></a> (@<a class="idref" href="Utility.Zpstar.html#Zpfield.Zp"><span class="id" title="record">Zp</span></a> <a class="idref" href="Examples.TallyIns.html#q"><span class="id" title="definition">q</span></a>) (@<a class="idref" href="Utility.Zpstar.html#Zpfield.zero"><span class="id" title="definition">Zpfield.zero</span></a> <a class="idref" href="Examples.TallyIns.html#q"><span class="id" title="definition">q</span></a> <a class="idref" href="Examples.TallyIns.html#prime_q"><span class="id" title="lemma">prime_q</span></a>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(@<a class="idref" href="Utility.Zpstar.html#Zpfield.one"><span class="id" title="definition">Zpfield.one</span></a> <a class="idref" href="Examples.TallyIns.html#q"><span class="id" title="definition">q</span></a> <a class="idref" href="Examples.TallyIns.html#prime_q"><span class="id" title="lemma">prime_q</span></a>) <a class="idref" href="Utility.Zpstar.html#Zpfield.zp_add"><span class="id" title="definition">zp_add</span></a> <a class="idref" href="Utility.Zpstar.html#Zpfield.zp_dec"><span class="id" title="lemma">zp_dec</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(@<a class="idref" href="Utility.Zpstar.html#Schnorr.Schnorr_group"><span class="id" title="record">Schnorr_group</span></a> <a class="idref" href="Examples.TallyIns.html#p"><span class="id" title="definition">p</span></a> <a class="idref" href="Examples.TallyIns.html#q"><span class="id" title="definition">q</span></a>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(@<a class="idref" href="Utility.Zpstar.html#Schnorr.one"><span class="id" title="definition">Schnorr.one</span></a> <a class="idref" href="Examples.TallyIns.html#p"><span class="id" title="definition">p</span></a> <a class="idref" href="Examples.TallyIns.html#q"><span class="id" title="definition">q</span></a> <a class="idref" href="Examples.TallyIns.html#prime_p"><span class="id" title="lemma">prime_p</span></a> <a class="idref" href="Examples.TallyIns.html#prime_q"><span class="id" title="lemma">prime_q</span></a>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(@<a class="idref" href="Utility.Zpstar.html#Schnorr.inv_schnorr_group"><span class="id" title="definition">inv_schnorr_group</span></a> 2 <a class="idref" href="Examples.TallyIns.html#p"><span class="id" title="definition">p</span></a> <a class="idref" href="Examples.TallyIns.html#q"><span class="id" title="definition">q</span></a> <a class="idref" href="Examples.TallyIns.html#safe_prime"><span class="id" title="lemma">safe_prime</span></a> <a class="idref" href="Examples.TallyIns.html#prime_p"><span class="id" title="lemma">prime_p</span></a> <a class="idref" href="Examples.TallyIns.html#prime_q"><span class="id" title="lemma">prime_q</span></a>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(@<a class="idref" href="Utility.Zpstar.html#Schnorr.mul_schnorr_group"><span class="id" title="definition">mul_schnorr_group</span></a> <a class="idref" href="Examples.TallyIns.html#p"><span class="id" title="definition">p</span></a> <a class="idref" href="Examples.TallyIns.html#q"><span class="id" title="definition">q</span></a> <a class="idref" href="Examples.TallyIns.html#prime_p"><span class="id" title="lemma">prime_p</span></a> <a class="idref" href="Examples.TallyIns.html#prime_q"><span class="id" title="lemma">prime_q</span></a>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(@<a class="idref" href="Utility.Zpstar.html#Vspace.pow"><span class="id" title="definition">pow</span></a> 2 <a class="idref" href="Examples.TallyIns.html#p"><span class="id" title="definition">p</span></a> <a class="idref" href="Examples.TallyIns.html#q"><span class="id" title="definition">q</span></a> <a class="idref" href="Examples.TallyIns.html#safe_prime"><span class="id" title="lemma">safe_prime</span></a> <a class="idref" href="Examples.TallyIns.html#prime_p"><span class="id" title="lemma">prime_p</span></a> <a class="idref" href="Examples.TallyIns.html#prime_q"><span class="id" title="lemma">prime_q</span></a>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="Utility.Zpstar.html#Schnorr.dec_zpstar"><span class="id" title="lemma">Schnorr.dec_zpstar</span></a> <a class="idref" href="Examples.TallyIns.html#n:1"><span class="id" title="variable">n</span></a> <a class="idref" href="Examples.TallyIns.html#g"><span class="id" title="definition">g</span></a> <a class="idref" href="Examples.TallyIns.html#h"><span class="id" title="definition">h</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<a class="idref" href="Backend.Tally.html#finished"><span class="id" title="constructor">finished</span></a> <a class="idref" href="Examples.TallyIns.html#bs:5"><span class="id" title="variable">bs</span></a> <a class="idref" href="Examples.TallyIns.html#vbs:6"><span class="id" title="variable">vbs</span></a> <a class="idref" href="Examples.TallyIns.html#inbs:7"><span class="id" title="variable">inbs</span></a> <a class="idref" href="Examples.TallyIns.html#pt:8"><span class="id" title="variable">pt</span></a> <a class="idref" href="Examples.TallyIns.html#bfinal:9"><span class="id" title="variable">bfinal</span></a>).<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">refine</span>(@<a class="idref" href="Backend.Tally.html#compute_final_count"><span class="id" title="definition">compute_final_count</span></a> (@<a class="idref" href="Utility.Zpstar.html#Zpfield.Zp"><span class="id" title="record">Zp</span></a> <a class="idref" href="Examples.TallyIns.html#q"><span class="id" title="definition">q</span></a>) (@<a class="idref" href="Utility.Zpstar.html#Zpfield.zero"><span class="id" title="definition">Zpfield.zero</span></a> <a class="idref" href="Examples.TallyIns.html#q"><span class="id" title="definition">q</span></a> <a class="idref" href="Examples.TallyIns.html#prime_q"><span class="id" title="lemma">prime_q</span></a>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(@<a class="idref" href="Utility.Zpstar.html#Zpfield.one"><span class="id" title="definition">Zpfield.one</span></a> <a class="idref" href="Examples.TallyIns.html#q"><span class="id" title="definition">q</span></a> <a class="idref" href="Examples.TallyIns.html#prime_q"><span class="id" title="lemma">prime_q</span></a>) <a class="idref" href="Utility.Zpstar.html#Zpfield.zp_add"><span class="id" title="definition">zp_add</span></a> <a class="idref" href="Utility.Zpstar.html#Zpfield.zp_mul"><span class="id" title="definition">zp_mul</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="Utility.Zpstar.html#Zpfield.zp_sub"><span class="id" title="definition">zp_sub</span></a> <a class="idref" href="Utility.Zpstar.html#Zpfield.zp_div"><span class="id" title="definition">zp_div</span></a> <a class="idref" href="Utility.Zpstar.html#Zpfield.zp_opp"><span class="id" title="definition">zp_opp</span></a> <a class="idref" href="Utility.Zpstar.html#Zpfield.zp_inv"><span class="id" title="definition">zp_inv</span></a> <a class="idref" href="Utility.Zpstar.html#Zpfield.zp_dec"><span class="id" title="lemma">zp_dec</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(@<a class="idref" href="Utility.Zpstar.html#Schnorr.Schnorr_group"><span class="id" title="record">Schnorr_group</span></a> <a class="idref" href="Examples.TallyIns.html#p"><span class="id" title="definition">p</span></a> <a class="idref" href="Examples.TallyIns.html#q"><span class="id" title="definition">q</span></a>) <a class="idref" href="Utility.Zpstar.html#Schnorr.one"><span class="id" title="definition">Schnorr.one</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(@<a class="idref" href="Utility.Zpstar.html#Schnorr.inv_schnorr_group"><span class="id" title="definition">inv_schnorr_group</span></a> 2 <a class="idref" href="Examples.TallyIns.html#p"><span class="id" title="definition">p</span></a> <a class="idref" href="Examples.TallyIns.html#q"><span class="id" title="definition">q</span></a> <a class="idref" href="Examples.TallyIns.html#safe_prime"><span class="id" title="lemma">safe_prime</span></a> <a class="idref" href="Examples.TallyIns.html#prime_p"><span class="id" title="lemma">prime_p</span></a> <a class="idref" href="Examples.TallyIns.html#prime_q"><span class="id" title="lemma">prime_q</span></a>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(@<a class="idref" href="Utility.Zpstar.html#Schnorr.mul_schnorr_group"><span class="id" title="definition">mul_schnorr_group</span></a> <a class="idref" href="Examples.TallyIns.html#p"><span class="id" title="definition">p</span></a> <a class="idref" href="Examples.TallyIns.html#q"><span class="id" title="definition">q</span></a> <a class="idref" href="Examples.TallyIns.html#prime_p"><span class="id" title="lemma">prime_p</span></a> <a class="idref" href="Examples.TallyIns.html#prime_q"><span class="id" title="lemma">prime_q</span></a>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(@<a class="idref" href="Utility.Zpstar.html#Vspace.pow"><span class="id" title="definition">pow</span></a> 2 <a class="idref" href="Examples.TallyIns.html#p"><span class="id" title="definition">p</span></a> <a class="idref" href="Examples.TallyIns.html#q"><span class="id" title="definition">q</span></a> <a class="idref" href="Examples.TallyIns.html#safe_prime"><span class="id" title="lemma">safe_prime</span></a> <a class="idref" href="Examples.TallyIns.html#prime_p"><span class="id" title="lemma">prime_p</span></a> <a class="idref" href="Examples.TallyIns.html#prime_q"><span class="id" title="lemma">prime_q</span></a>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="Utility.Zpstar.html#Schnorr.dec_zpstar"><span class="id" title="lemma">Schnorr.dec_zpstar</span></a> <span class="id" title="var">n</span> <a class="idref" href="Examples.TallyIns.html#g"><span class="id" title="definition">g</span></a> <a class="idref" href="Examples.TallyIns.html#h"><span class="id" title="definition">h</span></a> <a class="idref" href="Utility.Zpstar.html#Vspace.pow_vspace"><span class="id" title="instance">pow_vspace</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">discrete_logarithm_search</span> <a class="idref" href="Examples.TallyIns.html#x"><span class="id" title="definition">x</span></a> <span class="id" title="var">us</span> <span class="id" title="var">cs</span> <span class="id" title="var">_</span> <span class="id" title="var">bs</span>).<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">compute</span>; <span class="id" title="tactic">f_equal</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">eapply</span> <span class="id" title="definition">ProofIrrelevance.PI.proof_irrelevance</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">eapply</span> <span class="id" title="definition">ProofIrrelevance.PI.proof_irrelevance</span>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Defined</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">End</span> <a class="idref" href="Examples.TallyIns.html#Ins"><span class="id" title="section">Ins</span></a>.<br/>
+</div>
+</div>
+
+<div id="footer">
+<hr/><a href="index_symbols.html">Index</a><hr/>This page has been generated by <a href="http://rocq-prover.org/">coqdoc</a>
+</div>
+
+</div>
+
+</body>
+</html>

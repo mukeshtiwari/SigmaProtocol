@@ -1,0 +1,207 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<link href="coqdoc.css" rel="stylesheet" type="text/css" />
+<title>Examples.WasmBenchDefs</title>
+</head>
+
+<body>
+
+<div id="page">
+
+<div id="header">
+</div>
+
+<div id="main">
+
+<h1 class="libtitle">Library Examples.WasmBenchDefs</h1>
+
+<div class="code">
+<span class="id" title="keyword">From</span> <span class="id" title="var">Stdlib</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="library">Utf8</span> <span class="id" title="library">ZArith</span> <span class="id" title="library">Vector</span>.<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">Utility</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <a class="idref" href="Utility.Zpstar.html#"><span class="id" title="library">Zpstar</span></a> <a class="idref" href="Utility.Util.html#"><span class="id" title="library">Util</span></a>.<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">Examples</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <a class="idref" href="Examples.HeliosTallyIns.html#"><span class="id" title="library">HeliosTallyIns</span></a> <a class="idref" href="Examples.HeliosFrontendIns.html#"><span class="id" title="library">HeliosFrontendIns</span></a>.<br/>
+<span class="id" title="keyword">Import</span> <a class="idref" href="Utility.Zpstar.html#Vspace"><span class="id" title="module">Vspace</span></a> <a class="idref" href="Utility.Zpstar.html#Schnorr"><span class="id" title="module">Schnorr</span></a> <a class="idref" href="Utility.Zpstar.html#Zpfield"><span class="id" title="module">Zpfield</span></a> <a class="idref" href="Utility.Zpstar.html#Zpgroup"><span class="id" title="module">Zpgroup</span></a> <span class="id" title="module">VectorNotations</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<a id="lab454"></a><h1 class="section">WebAssembly benchmarks at the Helios parameters</h1>
+
+
+<div class="paragraph"> </div>
+
+    These are fixed inputs for compiling the Helios voting client
+    (<span class="inlinecode"><span class="id" title="var">Examples</span>/<span class="id" title="var">HeliosFrontendIns.v</span></span>) to WebAssembly with CertiRocq. The
+    terms are a 7-candidate approval ballot at the 2048-bit Helios group of
+    <span class="inlinecode"><span class="id" title="var">Examples</span>/<span class="id" title="var">HeliosTallyIns.v</span></span> under the IACR 2024 key <span class="inlinecode"><span class="id" title="var">h2024</span></span>, with
+    pinned randomness and challenges so that each compiled term is closed.
+    They are compiled by <span class="inlinecode"><span class="id" title="var">bench</span>/<span class="id" title="var">wasm</span>/<span class="id" title="var">WasmBench.v</span></span>
+    (<span class="inlinecode"><span class="id" title="var">CertiRocq</span></span> <span class="inlinecode"><span class="id" title="var">Compile</span></span> <span class="inlinecode"><span class="id" title="var">Wasm</span></span>). The same ballot term is also used by the
+    CakeML pipeline in <span class="inlinecode"><span class="id" title="var">bench</span>/<span class="id" title="var">cakeml</span>/<span class="id" title="var">Driver.v</span></span>.
+
+<div class="paragraph"> </div>
+
+    According to <span class="inlinecode"><span class="id" title="var">bench</span>/<span class="id" title="var">README.md</span></span>, all terms compile, but at 2048 bits the
+    vote and ballot modules exhaust the backend's 2 GB linear memory,
+    because CertiRocq computes on constructor-represented binary integers
+    without garbage collection. Only the small exponentiation probe runs.
+    <span class="inlinecode"><span class="id" title="var">Examples</span>/<span class="id" title="var">WasmBenchSmallDefs.v</span></span> repeats the experiment at smaller
+    parameters. Nothing is proved here. 
+</div>
+<div class="code">
+<span class="id" title="keyword">Section</span> <a id="WasmBench" class="idref" href="#WasmBench"><span class="id" title="section">WasmBench</span></a>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<span class="inlinecode"><span class="id" title="var">q</span></span> <span class="inlinecode">≠</span> <span class="inlinecode">0</span>, and <span class="inlinecode"><span class="id" title="var">mkzp</span></span>, which builds field elements from integers by
+      reduction mod <span class="inlinecode"><span class="id" title="var">q</span></span>. 
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <a id="q_neq_zero" class="idref" href="#q_neq_zero"><span class="id" title="lemma">q_neq_zero</span></a> : <a class="idref" href="Examples.HeliosTallyIns.html#q"><span class="id" title="definition">q</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Logic.html#::type_scope:x_'&lt;&gt;'_x"><span class="id" title="notation">≠</span></a> 0%<span class="id" title="var">Z</span>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>. <span class="id" title="tactic">discriminate</span>. <span class="id" title="keyword">Qed</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <a id="mkzp" class="idref" href="#mkzp"><span class="id" title="definition">mkzp</span></a> (<a id="z:1" class="idref" href="#z:1"><span class="id" title="binder">z</span></a> : <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Numbers.BinNums.html#Z"><span class="id" title="inductive">Z</span></a>) : @<a class="idref" href="Utility.Zpstar.html#Zpfield.Zp"><span class="id" title="record">Zp</span></a> <a class="idref" href="Examples.HeliosTallyIns.html#q"><span class="id" title="definition">q</span></a> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="Utility.Zpstar.html#Zpfield.mk_zp"><span class="id" title="constructor">mk_zp</span></a> (<span class="id" title="definition">Z.modulo</span> <a class="idref" href="Examples.WasmBenchDefs.html#z:1"><span class="id" title="variable">z</span></a> <a class="idref" href="Examples.HeliosTallyIns.html#q"><span class="id" title="definition">q</span></a>) (<span class="id" title="lemma">Z.mod_mod</span> <a class="idref" href="Examples.WasmBenchDefs.html#z:1"><span class="id" title="variable">z</span></a> <a class="idref" href="Examples.HeliosTallyIns.html#q"><span class="id" title="definition">q</span></a> <a class="idref" href="Examples.WasmBenchDefs.html#q_neq_zero"><span class="id" title="lemma">q_neq_zero</span></a>).<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+The fixed encryption randomness of the seven answers. 
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <a id="bench_rs" class="idref" href="#bench_rs"><span class="id" title="definition">bench_rs</span></a> : <span class="id" title="inductive">Vector.t</span> (@<a class="idref" href="Utility.Zpstar.html#Zpfield.Zp"><span class="id" title="record">Zp</span></a> <a class="idref" href="Examples.HeliosTallyIns.html#q"><span class="id" title="definition">q</span></a>) 7 :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="notation">[</span><a class="idref" href="Examples.WasmBenchDefs.html#mkzp"><span class="id" title="definition">mkzp</span></a> 16157387885063800092468972531095442600227637936690303362357377535130907802014<span class="id" title="notation">;</span> <a class="idref" href="Examples.WasmBenchDefs.html#mkzp"><span class="id" title="definition">mkzp</span></a> 48577076477968534331538798282877345169449379072358607271499506168024290496436<span class="id" title="notation">;</span> <a class="idref" href="Examples.WasmBenchDefs.html#mkzp"><span class="id" title="definition">mkzp</span></a> 24931630262289254097214708091063276378844549758072156217765307150175356726206<span class="id" title="notation">;</span> <a class="idref" href="Examples.WasmBenchDefs.html#mkzp"><span class="id" title="definition">mkzp</span></a> 41566972108330407139236895720128556017787341847205356916185490192885258906212<span class="id" title="notation">;</span> <a class="idref" href="Examples.WasmBenchDefs.html#mkzp"><span class="id" title="definition">mkzp</span></a> 53197766383624673008632826004499831964307484393215164687250509730196370056212<span class="id" title="notation">;</span> <a class="idref" href="Examples.WasmBenchDefs.html#mkzp"><span class="id" title="definition">mkzp</span></a> 33947725049433467350045554180148557448142904607798194645610524279359899319942<span class="id" title="notation">;</span> <a class="idref" href="Examples.WasmBenchDefs.html#mkzp"><span class="id" title="definition">mkzp</span></a> 22265497333554630303189440116913175127723344406891330686641041557895790189875<span class="id" title="notation">]</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+The fixed approvals (1, 0, 1, 0, 1, 1, 0). 
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <a id="bench_ms" class="idref" href="#bench_ms"><span class="id" title="definition">bench_ms</span></a> : <span class="id" title="inductive">Vector.t</span> (@<a class="idref" href="Utility.Zpstar.html#Zpfield.Zp"><span class="id" title="record">Zp</span></a> <a class="idref" href="Examples.HeliosTallyIns.html#q"><span class="id" title="definition">q</span></a>) 7 :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="notation">[</span><a class="idref" href="Examples.WasmBenchDefs.html#mkzp"><span class="id" title="definition">mkzp</span></a> 1<span class="id" title="notation">;</span> <a class="idref" href="Examples.WasmBenchDefs.html#mkzp"><span class="id" title="definition">mkzp</span></a> 0<span class="id" title="notation">;</span> <a class="idref" href="Examples.WasmBenchDefs.html#mkzp"><span class="id" title="definition">mkzp</span></a> 1<span class="id" title="notation">;</span> <a class="idref" href="Examples.WasmBenchDefs.html#mkzp"><span class="id" title="definition">mkzp</span></a> 0<span class="id" title="notation">;</span> <a class="idref" href="Examples.WasmBenchDefs.html#mkzp"><span class="id" title="definition">mkzp</span></a> 1<span class="id" title="notation">;</span> <a class="idref" href="Examples.WasmBenchDefs.html#mkzp"><span class="id" title="definition">mkzp</span></a> 1<span class="id" title="notation">;</span> <a class="idref" href="Examples.WasmBenchDefs.html#mkzp"><span class="id" title="definition">mkzp</span></a> 0<span class="id" title="notation">]</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+The fixed proof randomness (commitment exponents and simulated
+      challenge) of each 0-or-1 proof. 
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <a id="bench_uscs" class="idref" href="#bench_uscs"><span class="id" title="definition">bench_uscs</span></a> : <span class="id" title="inductive">Vector.t</span> (<span class="id" title="inductive">Vector.t</span> (@<a class="idref" href="Utility.Zpstar.html#Zpfield.Zp"><span class="id" title="record">Zp</span></a> <a class="idref" href="Examples.HeliosTallyIns.html#q"><span class="id" title="definition">q</span></a>) 3) 7 :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="notation">[[</span><a class="idref" href="Examples.WasmBenchDefs.html#mkzp"><span class="id" title="definition">mkzp</span></a> 52501326164280954343698450070125624996742870340154584073996146161991243611954<span class="id" title="notation">;</span> <a class="idref" href="Examples.WasmBenchDefs.html#mkzp"><span class="id" title="definition">mkzp</span></a> 31257822517213891940509019445600240522420303181573668741565908698740762328578<span class="id" title="notation">;</span> <a class="idref" href="Examples.WasmBenchDefs.html#mkzp"><span class="id" title="definition">mkzp</span></a> 37549375448611606962716670886564817868763826366789923558304100546674531854055<span class="id" title="notation">];</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="notation">[</span><a class="idref" href="Examples.WasmBenchDefs.html#mkzp"><span class="id" title="definition">mkzp</span></a> 57145230364634701078616884652580698479665404788326533747522401390664714493080<span class="id" title="notation">;</span> <a class="idref" href="Examples.WasmBenchDefs.html#mkzp"><span class="id" title="definition">mkzp</span></a> 18524649580344938191987111572137183814485582824836244259728656599794437183193<span class="id" title="notation">;</span> <a class="idref" href="Examples.WasmBenchDefs.html#mkzp"><span class="id" title="definition">mkzp</span></a> 18313416694536509187990553052756707576125682889637264882517364677021497468873<span class="id" title="notation">];</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="notation">[</span><a class="idref" href="Examples.WasmBenchDefs.html#mkzp"><span class="id" title="definition">mkzp</span></a> 43296265856110787529131751065902413139591193992613559471938315149424200179881<span class="id" title="notation">;</span> <a class="idref" href="Examples.WasmBenchDefs.html#mkzp"><span class="id" title="definition">mkzp</span></a> 42030301217962052027888225426271455573524234370981566081610181757278783634130<span class="id" title="notation">;</span> <a class="idref" href="Examples.WasmBenchDefs.html#mkzp"><span class="id" title="definition">mkzp</span></a> 27891024414110720275998855061311818196645931397334558640308875064312239221425<span class="id" title="notation">];</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="notation">[</span><a class="idref" href="Examples.WasmBenchDefs.html#mkzp"><span class="id" title="definition">mkzp</span></a> 43239140249798274522693233226603180763297219761552611527960157819962413458144<span class="id" title="notation">;</span> <a class="idref" href="Examples.WasmBenchDefs.html#mkzp"><span class="id" title="definition">mkzp</span></a> 7413692770183022330263885683119040191059594519308836671134129401019492684706<span class="id" title="notation">;</span> <a class="idref" href="Examples.WasmBenchDefs.html#mkzp"><span class="id" title="definition">mkzp</span></a> 832642807261969651737710755843279206580494383667266661818410112103981303452<span class="id" title="notation">];</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="notation">[</span><a class="idref" href="Examples.WasmBenchDefs.html#mkzp"><span class="id" title="definition">mkzp</span></a> 3637372052788598466420146433043537929916209138616999720534878254835941808727<span class="id" title="notation">;</span> <a class="idref" href="Examples.WasmBenchDefs.html#mkzp"><span class="id" title="definition">mkzp</span></a> 56207159024649998084539578186869177829502164952236387237372748083763902222530<span class="id" title="notation">;</span> <a class="idref" href="Examples.WasmBenchDefs.html#mkzp"><span class="id" title="definition">mkzp</span></a> 10922181505477351522091432875941946094753416179083850468797302868461412743162<span class="id" title="notation">];</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="notation">[</span><a class="idref" href="Examples.WasmBenchDefs.html#mkzp"><span class="id" title="definition">mkzp</span></a> 7018468225341733097758751788831699401447771956569948043173404986782995756827<span class="id" title="notation">;</span> <a class="idref" href="Examples.WasmBenchDefs.html#mkzp"><span class="id" title="definition">mkzp</span></a> 22184614573017316617263561940618923848729756428549446274207641777548714717243<span class="id" title="notation">;</span> <a class="idref" href="Examples.WasmBenchDefs.html#mkzp"><span class="id" title="definition">mkzp</span></a> 53568670938127896908685659506789523802530254123175143793583641106379936204784<span class="id" title="notation">];</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="notation">[</span><a class="idref" href="Examples.WasmBenchDefs.html#mkzp"><span class="id" title="definition">mkzp</span></a> 1708842438543908929142226980949167446672898799427190374644070389338572201636<span class="id" title="notation">;</span> <a class="idref" href="Examples.WasmBenchDefs.html#mkzp"><span class="id" title="definition">mkzp</span></a> 47059533152203304019185608478392141009934122635931479659359222435168398615428<span class="id" title="notation">;</span> <a class="idref" href="Examples.WasmBenchDefs.html#mkzp"><span class="id" title="definition">mkzp</span></a> 19063676143413803408162635089582444044372988309698101793569727251730394184216<span class="id" title="notation">]]</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+The fixed challenges of the seven proofs. 
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <a id="bench_cs" class="idref" href="#bench_cs"><span class="id" title="definition">bench_cs</span></a> : <span class="id" title="inductive">Vector.t</span> (@<a class="idref" href="Utility.Zpstar.html#Zpfield.Zp"><span class="id" title="record">Zp</span></a> <a class="idref" href="Examples.HeliosTallyIns.html#q"><span class="id" title="definition">q</span></a>) 7 :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="notation">[</span><a class="idref" href="Examples.WasmBenchDefs.html#mkzp"><span class="id" title="definition">mkzp</span></a> 25208041352013350914181268198464660734142939796798633831607970217026268878133<span class="id" title="notation">;</span> <a class="idref" href="Examples.WasmBenchDefs.html#mkzp"><span class="id" title="definition">mkzp</span></a> 36312956789914535582708166909001851179991473707227092547023733987404890854983<span class="id" title="notation">;</span> <a class="idref" href="Examples.WasmBenchDefs.html#mkzp"><span class="id" title="definition">mkzp</span></a> 7934228005399036278662023265740860857293714209765196968217854668541679993574<span class="id" title="notation">;</span> <a class="idref" href="Examples.WasmBenchDefs.html#mkzp"><span class="id" title="definition">mkzp</span></a> 9493029999266133874112142425512529214795730713179986437259810130599562829466<span class="id" title="notation">;</span> <a class="idref" href="Examples.WasmBenchDefs.html#mkzp"><span class="id" title="definition">mkzp</span></a> 30194604598268071226266109628101071928703957961016952184086877097840306442980<span class="id" title="notation">;</span> <a class="idref" href="Examples.WasmBenchDefs.html#mkzp"><span class="id" title="definition">mkzp</span></a> 15154669289319748637946665068896187288438726373453184700330637945559296136377<span class="id" title="notation">;</span> <a class="idref" href="Examples.WasmBenchDefs.html#mkzp"><span class="id" title="definition">mkzp</span></a> 11577038227344506415717883452759411284500659788629987993479326702200243236740<span class="id" title="notation">]</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+Encryption and proofs of the full ballot under <span class="inlinecode"><span class="id" title="var">h2024</span></span>. 
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <a id="helios_wasm_ballot_bench" class="idref" href="#helios_wasm_ballot_bench"><span class="id" title="definition">helios_wasm_ballot_bench</span></a> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="Examples.HeliosFrontendIns.html#helios_encrypt_ballot_and_generate_enc_proof"><span class="id" title="definition">helios_encrypt_ballot_and_generate_enc_proof</span></a> <a class="idref" href="Examples.HeliosTallyIns.html#h2024"><span class="id" title="definition">h2024</span></a> <a class="idref" href="Examples.WasmBenchDefs.html#bench_rs"><span class="id" title="definition">bench_rs</span></a> <a class="idref" href="Examples.WasmBenchDefs.html#bench_ms"><span class="id" title="definition">bench_ms</span></a> <a class="idref" href="Examples.WasmBenchDefs.html#bench_uscs"><span class="id" title="definition">bench_uscs</span></a> <a class="idref" href="Examples.WasmBenchDefs.html#bench_cs"><span class="id" title="definition">bench_cs</span></a>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+Verification of <span class="inlinecode"><span class="id" title="var">helios_wasm_ballot_bench</span></span> (expected <span class="inlinecode"><span class="id" title="var">true</span></span>). 
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <a id="helios_wasm_ballot_verify_bench" class="idref" href="#helios_wasm_ballot_verify_bench"><span class="id" title="definition">helios_wasm_ballot_verify_bench</span></a> : <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Datatypes.html#bool"><span class="id" title="inductive">bool</span></a> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="Examples.HeliosFrontendIns.html#helios_verify_encryption_ballot_proof"><span class="id" title="definition">helios_verify_encryption_ballot_proof</span></a> <a class="idref" href="Examples.HeliosTallyIns.html#h2024"><span class="id" title="definition">h2024</span></a> <a class="idref" href="Examples.WasmBenchDefs.html#helios_wasm_ballot_bench"><span class="id" title="definition">helios_wasm_ballot_bench</span></a>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<a id="lab455"></a><h3 class="section">Scaled-down probes</h3>
+
+
+<div class="paragraph"> </div>
+
+      A single 0/1 vote and bare modular exponentiations, which
+      characterise the limits of the WebAssembly backend. 
+<div class="paragraph"> </div>
+
+ The inputs of a single vote: the first entry of each fixed input, with
+      approval 1. 
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <a id="bench_rs1" class="idref" href="#bench_rs1"><span class="id" title="definition">bench_rs1</span></a> : <span class="id" title="inductive">Vector.t</span> (@<a class="idref" href="Utility.Zpstar.html#Zpfield.Zp"><span class="id" title="record">Zp</span></a> <a class="idref" href="Examples.HeliosTallyIns.html#q"><span class="id" title="definition">q</span></a>) 1 := <span class="id" title="notation">[</span><span class="id" title="definition">Vector.hd</span> <a class="idref" href="Examples.WasmBenchDefs.html#bench_rs"><span class="id" title="definition">bench_rs</span></a><span class="id" title="notation">]</span>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <a id="bench_ms1" class="idref" href="#bench_ms1"><span class="id" title="definition">bench_ms1</span></a> : <span class="id" title="inductive">Vector.t</span> (@<a class="idref" href="Utility.Zpstar.html#Zpfield.Zp"><span class="id" title="record">Zp</span></a> <a class="idref" href="Examples.HeliosTallyIns.html#q"><span class="id" title="definition">q</span></a>) 1 := <span class="id" title="notation">[</span><a class="idref" href="Examples.WasmBenchDefs.html#mkzp"><span class="id" title="definition">mkzp</span></a> 1<span class="id" title="notation">]</span>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <a id="bench_uscs1" class="idref" href="#bench_uscs1"><span class="id" title="definition">bench_uscs1</span></a> : <span class="id" title="inductive">Vector.t</span> (<span class="id" title="inductive">Vector.t</span> (@<a class="idref" href="Utility.Zpstar.html#Zpfield.Zp"><span class="id" title="record">Zp</span></a> <a class="idref" href="Examples.HeliosTallyIns.html#q"><span class="id" title="definition">q</span></a>) 3) 1 := <span class="id" title="notation">[</span><span class="id" title="definition">Vector.hd</span> <a class="idref" href="Examples.WasmBenchDefs.html#bench_uscs"><span class="id" title="definition">bench_uscs</span></a><span class="id" title="notation">]</span>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <a id="bench_cs1" class="idref" href="#bench_cs1"><span class="id" title="definition">bench_cs1</span></a> : <span class="id" title="inductive">Vector.t</span> (@<a class="idref" href="Utility.Zpstar.html#Zpfield.Zp"><span class="id" title="record">Zp</span></a> <a class="idref" href="Examples.HeliosTallyIns.html#q"><span class="id" title="definition">q</span></a>) 1 := <span class="id" title="notation">[</span><span class="id" title="definition">Vector.hd</span> <a class="idref" href="Examples.WasmBenchDefs.html#bench_cs"><span class="id" title="definition">bench_cs</span></a><span class="id" title="notation">]</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+Encryption and proof of the single vote. 
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <a id="helios_wasm_vote_bench" class="idref" href="#helios_wasm_vote_bench"><span class="id" title="definition">helios_wasm_vote_bench</span></a> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="Examples.HeliosFrontendIns.html#helios_encrypt_ballot_and_generate_enc_proof"><span class="id" title="definition">helios_encrypt_ballot_and_generate_enc_proof</span></a> <a class="idref" href="Examples.HeliosTallyIns.html#h2024"><span class="id" title="definition">h2024</span></a> <a class="idref" href="Examples.WasmBenchDefs.html#bench_rs1"><span class="id" title="definition">bench_rs1</span></a> <a class="idref" href="Examples.WasmBenchDefs.html#bench_ms1"><span class="id" title="definition">bench_ms1</span></a> <a class="idref" href="Examples.WasmBenchDefs.html#bench_uscs1"><span class="id" title="definition">bench_uscs1</span></a> <a class="idref" href="Examples.WasmBenchDefs.html#bench_cs1"><span class="id" title="definition">bench_cs1</span></a>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+One full exponentiation <span class="inlinecode"><span class="id" title="var">g</span>^<span class="id" title="var">r</span></span> with a 256-bit exponent. 
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <a id="helios_wasm_modexp_bench" class="idref" href="#helios_wasm_modexp_bench"><span class="id" title="definition">helios_wasm_modexp_bench</span></a> : @<a class="idref" href="Utility.Zpstar.html#Schnorr.Schnorr_group"><span class="id" title="record">Schnorr_group</span></a> <a class="idref" href="Examples.HeliosTallyIns.html#p"><span class="id" title="definition">p</span></a> <a class="idref" href="Examples.HeliosTallyIns.html#q"><span class="id" title="definition">q</span></a> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(@<a class="idref" href="Utility.Zpstar.html#Vspace.pow"><span class="id" title="definition">pow</span></a> <a class="idref" href="Examples.HeliosTallyIns.html#k"><span class="id" title="definition">k</span></a> <a class="idref" href="Examples.HeliosTallyIns.html#p"><span class="id" title="definition">p</span></a> <a class="idref" href="Examples.HeliosTallyIns.html#q"><span class="id" title="definition">q</span></a> <a class="idref" href="Examples.HeliosTallyIns.html#safe_prime"><span class="id" title="lemma">safe_prime</span></a> <a class="idref" href="Examples.HeliosTallyIns.html#prime_p"><span class="id" title="lemma">prime_p</span></a> <a class="idref" href="Examples.HeliosTallyIns.html#prime_q"><span class="id" title="lemma">prime_q</span></a>) <a class="idref" href="Examples.HeliosTallyIns.html#g"><span class="id" title="definition">g</span></a> (<span class="id" title="definition">Vector.hd</span> <a class="idref" href="Examples.WasmBenchDefs.html#bench_rs"><span class="id" title="definition">bench_rs</span></a>).<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+Tiny-exponent probes, <span class="inlinecode"><span class="id" title="var">g</span>^3</span> and <span class="inlinecode"><span class="id" title="var">g</span>^65537</span> (17 modular operations),
+      which measure the cost of individual operations. Per <span class="inlinecode"><span class="id" title="var">bench</span>/<span class="id" title="var">README.md</span></span>,
+      the <span class="inlinecode"><span class="id" title="var">g</span>^65537</span> probe is the one that runs in Node at 2048 bits. 
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <a id="helios_wasm_mul_bench" class="idref" href="#helios_wasm_mul_bench"><span class="id" title="definition">helios_wasm_mul_bench</span></a> : @<a class="idref" href="Utility.Zpstar.html#Schnorr.Schnorr_group"><span class="id" title="record">Schnorr_group</span></a> <a class="idref" href="Examples.HeliosTallyIns.html#p"><span class="id" title="definition">p</span></a> <a class="idref" href="Examples.HeliosTallyIns.html#q"><span class="id" title="definition">q</span></a> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(@<a class="idref" href="Utility.Zpstar.html#Vspace.pow"><span class="id" title="definition">pow</span></a> <a class="idref" href="Examples.HeliosTallyIns.html#k"><span class="id" title="definition">k</span></a> <a class="idref" href="Examples.HeliosTallyIns.html#p"><span class="id" title="definition">p</span></a> <a class="idref" href="Examples.HeliosTallyIns.html#q"><span class="id" title="definition">q</span></a> <a class="idref" href="Examples.HeliosTallyIns.html#safe_prime"><span class="id" title="lemma">safe_prime</span></a> <a class="idref" href="Examples.HeliosTallyIns.html#prime_p"><span class="id" title="lemma">prime_p</span></a> <a class="idref" href="Examples.HeliosTallyIns.html#prime_q"><span class="id" title="lemma">prime_q</span></a>) <a class="idref" href="Examples.HeliosTallyIns.html#g"><span class="id" title="definition">g</span></a> (<a class="idref" href="Examples.WasmBenchDefs.html#mkzp"><span class="id" title="definition">mkzp</span></a> 3).<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <a id="helios_wasm_modexp16_bench" class="idref" href="#helios_wasm_modexp16_bench"><span class="id" title="definition">helios_wasm_modexp16_bench</span></a> : @<a class="idref" href="Utility.Zpstar.html#Schnorr.Schnorr_group"><span class="id" title="record">Schnorr_group</span></a> <a class="idref" href="Examples.HeliosTallyIns.html#p"><span class="id" title="definition">p</span></a> <a class="idref" href="Examples.HeliosTallyIns.html#q"><span class="id" title="definition">q</span></a> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(@<a class="idref" href="Utility.Zpstar.html#Vspace.pow"><span class="id" title="definition">pow</span></a> <a class="idref" href="Examples.HeliosTallyIns.html#k"><span class="id" title="definition">k</span></a> <a class="idref" href="Examples.HeliosTallyIns.html#p"><span class="id" title="definition">p</span></a> <a class="idref" href="Examples.HeliosTallyIns.html#q"><span class="id" title="definition">q</span></a> <a class="idref" href="Examples.HeliosTallyIns.html#safe_prime"><span class="id" title="lemma">safe_prime</span></a> <a class="idref" href="Examples.HeliosTallyIns.html#prime_p"><span class="id" title="lemma">prime_p</span></a> <a class="idref" href="Examples.HeliosTallyIns.html#prime_q"><span class="id" title="lemma">prime_q</span></a>) <a class="idref" href="Examples.HeliosTallyIns.html#g"><span class="id" title="definition">g</span></a> (<a class="idref" href="Examples.WasmBenchDefs.html#mkzp"><span class="id" title="definition">mkzp</span></a> 65537).<br/>
+
+<br/>
+<span class="id" title="keyword">End</span> <a class="idref" href="Examples.WasmBenchDefs.html#WasmBench"><span class="id" title="section">WasmBench</span></a>.<br/>
+</div>
+</div>
+
+<div id="footer">
+<hr/><a href="index_symbols.html">Index</a><hr/>This page has been generated by <a href="http://rocq-prover.org/">coqdoc</a>
+</div>
+
+</div>
+
+</body>
+</html>

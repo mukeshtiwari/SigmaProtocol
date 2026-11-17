@@ -1,18 +1,41 @@
-(* Multi-base statements in product spaces: several linear equations
-   T_j = ∏_i B_j[i]^{w_i} over one witness vector w, verified with one
-   challenge and one response vector, are a single instance of the
-   generalised Okamoto protocol (Crypto/Okamoto.v) in the product space G^m
-   (Algebra/Vector_product_space.v), one component per equation. This is
-   the shape of the presentation proofs of anonymous credentials: U-Prove
-   with a pseudonym and attribute commitments (Crypto/UProve.v), and the
-   validity proof of BBS# (Crypto/BBSSharp.v). The file has the transpose
-   from rows to Okamoto bases, the componentwise reconstruction of the
-   announcement as a Fiat–Shamir verifier computes it, the completeness,
-   special soundness and honest-verifier zero-knowledge instances, rows
-   with a single base, the Chaum–Pedersen reconstruction used by the
-   discrete-logarithm-equality proofs, and the group facts the credential
-   files share. *)
+(** * Systems of multi-base equations as one Okamoto instance *)
 
+(** Many presentation proofs of anonymous credentials prove knowledge of a
+    single witness vector [w = (w_1, ..., w_K)] satisfying several linear
+    equations in the exponent at once,
+
+    [[
+      T_j = ∏_i B_j[i]^(w_i)          for j = 1, ..., m,
+    ]]
+
+    using one challenge and one response vector. Such a system is a single
+    instance of the generalised Okamoto protocol of [Okamoto], taken in the
+    product group [G^m] of [Vector_product_space]: the [i]-th Okamoto base is
+    the column [(B_1[i], ..., B_m[i])] and the public value is
+    [(T_1, ..., T_m)]. This file sets up that encoding and transfers the
+    Okamoto results to it:
+
+    - [transpose] turns the [m] rows [B_j] (each of length [K]) into the [K]
+      columns, and [vexp_transpose] shows the product-space
+      multi-exponentiation of the columns is the vector of row-wise
+      multi-exponentiations;
+    - [ext_reconstruct] recomputes the announcement [A_j = T_j^(−c) · B_j^r]
+      from the challenge and responses, as a Fiat–Shamir verifier does;
+    - [ext_completeness], [ext_simulator_completeness],
+      [ext_special_soundness] and [ext_shvzk] are the instances of the
+      Okamoto theorems;
+    - [unit_row] encodes an equation with a single base [T = b^(w_p)] as a
+      row.
+
+    The file also gives the analogous reconstruction and properties for the
+    Chaum–Pedersen protocol (equality of discrete logarithms) from
+    [ChaumPedersen], and a handful of group identities ([gpow_add],
+    [pow_opp], [ginv_gop], ...) shared by the credential files.
+
+    It is used by [UProve] (pseudonym and attribute commitments) and
+    [BBSSharp], by the Bayer–Groth shuffle files ([BayerGroth],
+    [BayerGrothSound], [BayerGrothZK]), and by the corresponding extracted
+    verifiers and examples. *)
 From Stdlib Require Import Utf8 Vector Fin Lia Bool setoid_ring.Field Permutation List.
 From Algebra Require Import Hierarchy Group Monoid Field Integral_domain Ring
   Vector_space Vector_product_space.
@@ -21,8 +44,13 @@ From Probability Require Import Prob Distr.
 From Utility Require Import Util.
 Import VectorNotations.
 
+(** ** Setting and group identities *)
 Section OkamotoRows.
 
+  (** A field [F] and a group [G] forming a vector space ([Hvec]), each with
+      decidable equality. The local notations below name the group axioms that
+      [Hvec] provides; [gexp] is the multi-exponentiation [mexp] of [MultiExp]
+      over [G]. *)
   Context
     {F : Type} {zero one : F} {add mul sub div : F -> F -> F} {opp inv : F -> F}
     {Fdec : forall x y : F, {x = y} + {x <> y}}
@@ -38,7 +66,6 @@ Section OkamotoRows.
   Local Notation "( a ; c ; r )" := (mk_sigma _ _ _ a c r).
   Local Notation gexp := (mexp (vid := gid) (vadd := gop) (smul := gpow)).
 
-  (* the group and vector-space laws of G as explicit terms *)
   Local Notation gcg := (@vector_space_commutative_group F (@eq F) zero one add mul sub div
     opp inv G (@eq G) gid ginv gop gpow Hvec).
   Local Notation ggroup := (@commutative_group_group G (@eq G) gop gid ginv gcg).
@@ -66,9 +93,9 @@ Section OkamotoRows.
   Local Notation gzero := (@vector_space_field_zero F (@eq F) zero one add mul sub div
     opp inv G (@eq G) gid ginv gop gpow Hvec).
 
-
-  (* the vector-space laws as plain lemmas (rewriting with the unapplied class
-    projections does not terminate) *)
+  (** Exponent laws, restated from the vector-space axioms:
+      [g^(r+s) = g^r · g^s], [g^(r·s) = (g^r)^s], [(a·b)^r = a^r · b^r],
+      [g^1 = g] and [g^0 = gid]. *)
   Lemma gpow_add : forall (g : G) (r s : F), g ^ (add r s) = gop (g ^ r) (g ^ s).
   Proof. intros; apply gfadd. Qed.
   Lemma gpow_mul : forall (g : G) (r s : F), g ^ (mul r s) = (g ^ r) ^ s.
@@ -80,16 +107,14 @@ Section OkamotoRows.
   Lemma gpow_zero : forall g : G, g ^ zero = gid.
   Proof. intros; apply gzero. Qed.
 
-  (* ---------------------------------------------------------------- *)
-  (* Group facts                                                       *)
-  (* ---------------------------------------------------------------- *)
-
+  (** Uniqueness of inverses: if [x · y = gid] then [x⁻¹ = y]. *)
   Lemma inv_unique : forall x y : G, gop x y = gid -> ginv x = y.
   Proof.
     intros x y h.
     rewrite <-(gid_r (ginv x)), <-h, gassoc, ginv_l, gid_l; reflexivity.
   Qed.
 
+  (** In the abelian group [G], [(a·b)⁻¹ = a⁻¹ · b⁻¹]. *)
   Lemma ginv_gop : forall a b : G, ginv (gop a b) = gop (ginv a) (ginv b).
   Proof.
     intros a b; apply inv_unique.
@@ -97,9 +122,11 @@ Section OkamotoRows.
       (gid_r a), (ginv_r a); reflexivity.
   Qed.
 
+  (** The identity is its own inverse. *)
   Lemma ginv_gid : ginv gid = gid.
   Proof. apply inv_unique; apply gid_l. Qed.
 
+  (** Negating the exponent inverts: [g^(−r) = (g^r)⁻¹]. *)
   Lemma pow_opp : forall (g : G) (r : F), g ^ (opp r) = ginv (g ^ r).
   Proof.
     intros g r; symmetry; apply inv_unique.
@@ -108,6 +135,7 @@ Section OkamotoRows.
     rewrite h; apply gpow_zero.
   Qed.
 
+  (** Rearrangement: [(a·b)·(c·d) = (a·c)·(b·d)]. *)
   Lemma gop4 : forall a b c d : G, gop (gop a b) (gop c d) = gop (gop a c) (gop b d).
   Proof.
     intros a b c d.
@@ -115,6 +143,8 @@ Section OkamotoRows.
       (gassoc a c (gop b d)); reflexivity.
   Qed.
 
+  (** Negating all exponents inverts a multi-exponentiation:
+      [gexp gs (−xs) = (gexp gs xs)⁻¹]. *)
   Lemma mexp_map_opp : forall (k : nat) (gs : Vector.t G k) (xs : Vector.t F k),
     gexp gs (Vector.map opp xs) = ginv (gexp gs xs).
   Proof.
@@ -126,6 +156,9 @@ Section OkamotoRows.
       cbn [Vector.map]; rewrite !mexp_cons, ih, pow_opp, ginv_gop; reflexivity.
   Qed.
 
+  (** Multi-exponentiation is multiplicative in the bases:
+      [gexp (v ⊙ w) xs = gexp v xs · gexp w xs], where [⊙] is the
+      coordinate-wise product. *)
   Lemma mexp_map2_gop : forall (k : nat) (v w : Vector.t G k) (xs : Vector.t F k),
     gexp (Vector.map2 gop v w) xs = gop (gexp v xs) (gexp w xs).
   Proof.
@@ -138,26 +171,26 @@ Section OkamotoRows.
       rewrite map2_cons, !mexp_cons, ih, gop_pow, gop4; reflexivity.
   Qed.
 
+  (** ** Chaum–Pedersen with a reconstructed announcement
 
-  (* ---------------------------------------------------------------- *)
-  (* Chaum–Pedersen reconstruction                                      *)
-  (* ---------------------------------------------------------------- *)
-
-  (* The statement c₁ = g^y ∧ c₂ = h^y with the published response ρ and
-    challenge c (response convention ρ = ω + c·y): the verifier
-    reconstructs the announcement (g^ρ c₁^{−c}, h^ρ c₂^{−c}), which with
-    challenge c is an accepting Chaum–Pedersen transcript. Used for the
-    Issuer's signature of U-Prove (Figure 4 of its spec) and for the
-    discrete-logarithm-equality proof of BBS#. *)
+      For the statement [c1 = g^y ∧ c2 = h^y], recompute the two announcement
+      components [g^ρ · c1^(−c)] and [h^ρ · c2^(−c)] from the challenge [c]
+      and response [ρ]. A Fiat–Shamir verifier recomputes the announcement this
+      way and hashes it, instead of receiving it. *)
   Definition cp_reconstruct (g c1 h c2 : G) (c ρ : F) : Vector.t G 2 :=
     [gop (g ^ ρ) (c1 ^ (opp c)); gop (h ^ ρ) (c2 ^ (opp c))].
 
+  (** The Chaum–Pedersen transcript built from the reconstructed
+      announcement. *)
   Definition cp_transcript (g c1 h c2 : G) (c ρ : F) : @sigma_proto F G 2 1 1 :=
     (cp_reconstruct g c1 h c2 c ρ; [c]; [ρ]).
 
+  (** The Chaum–Pedersen verifier of [ChaumPedersen] for bases [g], [h] and
+      public values [c1], [c2]. *)
   Definition cp_verify (g c1 h c2 : G) (t : @sigma_proto F G 2 1 1) : bool :=
     generalised_cp_accepting_conversations (gop := gop) (gpow := gpow) (Gdec := Gdec) g h c1 c2 t.
 
+  (** A reconstructed transcript always verifies, for every [c] and [ρ]. *)
   Theorem cp_reconstruct_accepting : forall (g c1 h c2 : G) (c ρ : F),
     cp_verify g c1 h c2 (cp_transcript g c1 h c2 c ρ) = true.
   Proof.
@@ -166,6 +199,8 @@ Section OkamotoRows.
     rewrite <-gassoc, pow_opp, ginv_l, gid_r; reflexivity.
   Qed.
 
+  (** Special soundness: two accepting transcripts with the same announcement
+      and different challenges yield [y] with [g^y = c1] and [h^y = c2]. *)
   Theorem cp_special_soundness : forall (g c1 h c2 : G) (a : Vector.t G 2) (ca ra cb rb : F),
     ca <> cb ->
     cp_verify g c1 h c2 (a; [ca]; [ra]) = true ->
@@ -177,6 +212,9 @@ Section OkamotoRows.
     exists y; split; [exact (hy Fin.F1) | exact (hy (Fin.FS Fin.F1))].
   Qed.
 
+  (** Special honest-verifier zero knowledge: if [g^y = c1], [h^y = c2] and
+      [lf] enumerates the field without duplicates, the real transcript
+      distribution is a permutation of the simulated one. *)
   Theorem cp_shvzk : forall (lf : list F) (Hlfn : lf <> List.nil) (g c1 h c2 : G) (y c : F),
     g ^ y = c1 -> h ^ y = c2 ->
     List.NoDup lf -> (forall z : F, List.In z lf) ->
@@ -188,21 +226,25 @@ Section OkamotoRows.
     exact (generalised_cp_special_honest_verifier_zkp_enum y g h c1 c2 (conj h1 h2) lf Hlfn c hnd hall).
   Qed.
 
+  (** ** Rows of bases as Okamoto columns
+
+      [VG m] is the product group [G^m]; [vexp m] is multi-exponentiation in
+      it, with coordinate-wise operations. *)
   Section Rows.
 
     Local Notation VG m := (Vector.t G m).
     Local Notation vexp m := (mexp (vid := vec_id (V := G) (vid := gid) m)
       (vadd := vec_add (vadd := gop)) (smul := vec_smul (smul := gpow))).
 
-    (* A presentation with m components is given by one base row per
-      component (over the K witness coordinates) and one target per
-      component. The Okamoto bases in G^m are the columns. *)
+    (** [transpose K Bs] turns [m] rows of length [K] into [K] columns of length
+        [m]. *)
     Fixpoint transpose {m : nat} (K : nat) : Vector.t (VG K) m -> Vector.t (VG m) K :=
       match K return Vector.t (VG K) m -> Vector.t (VG m) K with
       | 0 => fun _ => []
       | S K' => fun Bs => Vector.map Vector.hd Bs :: transpose K' (Vector.map Vector.tl Bs)
       end.
 
+    (** Mapping a constant function gives a constant vector. *)
     Lemma map_fun_const : forall {A B : Type} (c : B) (m : nat) (v : Vector.t A m),
       Vector.map (fun _ => c) v = Vector.const c m.
     Proof.
@@ -210,6 +252,7 @@ Section OkamotoRows.
       cbn [Vector.map]; rewrite ih; reflexivity.
     Qed.
 
+    (** [map2 f (map g v) (map h v) = map (fun a => f (g a) (h a)) v]. *)
     Lemma map2_map : forall {A B C D : Type} (f : B -> C -> D) (g : A -> B) (h : A -> C) (m : nat)
       (v : Vector.t A m),
       Vector.map2 f (Vector.map g v) (Vector.map h v) = Vector.map (fun a => f (g a) (h a)) v.
@@ -218,7 +261,9 @@ Section OkamotoRows.
       cbn [Vector.map]; rewrite map2_cons, ih; reflexivity.
     Qed.
 
-    (* the product-space multi-exponentiation is componentwise *)
+    (** Multi-exponentiation of the columns in [G^m] by [ws] equals the vector
+        of row-wise multi-exponentiations [(gexp B_j ws)_j]. This is the bridge
+        between the Okamoto relation in [G^m] and the system of equations. *)
     Lemma vexp_transpose : forall (m K : nat) (Bs : Vector.t (VG K) m) (ws : Vector.t F K),
       vexp m (transpose K Bs) ws = Vector.map (fun row => gexp row ws) Bs.
     Proof.
@@ -236,12 +281,14 @@ Section OkamotoRows.
         rewrite mexp_cons; reflexivity.
     Qed.
 
-    (* the component reconstructions, as the U-Prove verifier computes them:
-      T_j^{−c} · ∏_i B_j[i]^{r_i} *)
+    (** The announcement recomputed from challenge [c] and responses [rs], row
+        by row: [A_j = T_j^(−c) · gexp B_j rs]. *)
     Definition ext_reconstruct {K m : nat} (c : F) (Bs : Vector.t (VG K) m) (Ts : VG m)
       (rs : Vector.t F K) : VG m :=
       Vector.map2 (fun row T => gop (T ^ (opp c)) (gexp row rs)) Bs Ts.
 
+    (** The reconstructed announcement satisfies the verification equation:
+        [A_j · T_j^c = gexp B_j rs] for every row [j]. *)
     Lemma ext_reconstruct_eq : forall (K m : nat) (c : F) (Bs : Vector.t (VG K) m) (Ts : VG m)
       (rs : Vector.t F K),
       vec_add (vadd := gop) (ext_reconstruct c Bs Ts rs) (vec_smul (smul := gpow) Ts c) =
@@ -257,24 +304,31 @@ Section OkamotoRows.
         rewrite (gcomm (T ^ (opp c)) (gexp row rs)), <-gassoc, pow_opp, ginv_l, gid_r; reflexivity.
     Qed.
 
+    (** The verifier for the system: the generalised Okamoto verifier in [G^m]
+        with the transposed bases and public value [Ts]. The witness has length
+        [S (S n) ≥ 2], as the Okamoto protocol requires. *)
     Definition ext_verify {n m : nat} (Bs : Vector.t (VG (S (S n))) m) (Ts : VG m)
       (t : @sigma_proto F (VG m) 1 1 (S (S n))) : bool :=
       generalised_okamoto_accepting_conversation (gid := vec_id (V := G) (vid := gid) m)
         (gop := vec_add (vadd := gop)) (gpow := vec_smul (smul := gpow)) (Gdec := vec_dec Gdec)
         (n := n) (transpose (S (S n)) Bs) Ts t.
 
+    (** Honest transcript for witness [ws], randomness [us] and challenge [c]. *)
     Definition ext_real {n m : nat} (ws : Vector.t F (S (S n))) (Bs : Vector.t (VG (S (S n))) m) (Ts : VG m)
       (us : Vector.t F (S (S n))) (c : F) : @sigma_proto F (VG m) 1 1 (S (S n)) :=
       generalised_okamoto_real_protocol (add := add) (mul := mul) (gid := vec_id (V := G) (vid := gid) m)
         (gop := vec_add (vadd := gop)) (gpow := vec_smul (smul := gpow)) (n := n)
         ws (transpose (S (S n)) Bs) Ts us c.
 
+    (** Simulated transcript for responses [us] and challenge [c]. *)
     Definition ext_simulator {n m : nat} (Bs : Vector.t (VG (S (S n))) m) (Ts : VG m)
       (us : Vector.t F (S (S n))) (c : F) : @sigma_proto F (VG m) 1 1 (S (S n)) :=
       generalised_okamoto_simulator_protocol (opp := opp) (gid := vec_id (V := G) (vid := gid) m)
         (gop := vec_add (vadd := gop)) (gpow := vec_smul (smul := gpow)) (n := n)
         (transpose (S (S n)) Bs) Ts us c.
 
+    (** Distribution of honest transcripts, with randomness drawn uniformly from
+        [lf]. *)
     Definition ext_real_distribution {n m : nat} (lf : list F) (Hlfn : lf <> List.nil)
       (ws : Vector.t F (S (S n))) (Bs : Vector.t (VG (S (S n))) m) (Ts : VG m) (c : F) :
       dist (@sigma_proto F (VG m) 1 1 (S (S n))) :=
@@ -282,14 +336,15 @@ Section OkamotoRows.
         (gop := vec_add (vadd := gop)) (gpow := vec_smul (smul := gpow)) (n := n)
         lf Hlfn ws (transpose (S (S n)) Bs) Ts c.
 
+    (** Distribution of simulated transcripts. *)
     Definition ext_simulator_distribution {n m : nat} (lf : list F) (Hlfn : lf <> List.nil)
       (Bs : Vector.t (VG (S (S n))) m) (Ts : VG m) (c : F) : dist (@sigma_proto F (VG m) 1 1 (S (S n))) :=
       generalised_okamoto_simulator_distribution (opp := opp) (gid := vec_id (V := G) (vid := gid) m)
         (gop := vec_add (vadd := gop)) (gpow := vec_smul (smul := gpow)) (n := n)
         lf Hlfn (transpose (S (S n)) Bs) Ts c.
 
-    (* the componentwise reconstructions and the challenge form an accepting
-      transcript of the product-space statement *)
+    (** The transcript with the reconstructed announcement is always
+        accepted. *)
     Theorem ext_reconstruct_accepting : forall (n m : nat) (Bs : Vector.t (VG (S (S n))) m) (Ts : VG m)
       (c : F) (rs : Vector.t F (S (S n))),
       ext_verify Bs Ts ([ext_reconstruct c Bs Ts rs]; [c]; rs) = true.
@@ -301,6 +356,8 @@ Section OkamotoRows.
       symmetry; apply ext_reconstruct_eq.
     Qed.
 
+    (** Completeness: if [gexp B_j ws = T_j] for every row [j], honest
+        transcripts are accepted. *)
     Theorem ext_completeness : forall (n m : nat) (ws : Vector.t F (S (S n))) (Bs : Vector.t (VG (S (S n))) m)
       (Ts : VG m) (us : Vector.t F (S (S n))) (c : F),
       (forall j : Fin.t m, gexp Bs[@j] ws = Ts[@j]) ->
@@ -314,13 +371,16 @@ Section OkamotoRows.
       rewrite (Vector.nth_map _ _ j j eq_refl); symmetry; apply hrel.
     Qed.
 
+    (** Simulated transcripts are always accepted. *)
     Theorem ext_simulator_completeness : forall (n m : nat) (Bs : Vector.t (VG (S (S n))) m) (Ts : VG m)
       (us : Vector.t F (S (S n))) (c : F),
       ext_verify Bs Ts (ext_simulator Bs Ts us c) = true.
     Proof. intros *; apply generalised_okamoto_simulator_accepting_conversation. Qed.
 
-    (* special soundness: one witness satisfying every component equation, so
-      the pseudonym and the commitments are bound to the token's attributes *)
+    (** Special soundness: from two accepting transcripts with the same
+        announcement [A] and challenges [c1 ≠ c2], a witness [ws] with
+        [gexp B_j ws = T_j] for all [j] exists (it is
+        [(rs1 − rs2)/(c1 − c2)], by [generalised_okamoto_real_special_soundness]). *)
     Theorem ext_special_soundness : forall (n m : nat) (Bs : Vector.t (VG (S (S n))) m) (Ts A : VG m)
       (c1 c2 : F) (rs1 rs2 : Vector.t F (S (S n))),
       c1 <> c2 ->
@@ -337,6 +397,9 @@ Section OkamotoRows.
       rewrite (Vector.nth_map _ _ j j eq_refl); reflexivity.
     Qed.
 
+    (** Special honest-verifier zero knowledge: if [ws] satisfies all the
+        equations and [lf] enumerates the field without duplicates, the real
+        transcript distribution is a permutation of the simulated one. *)
     Theorem ext_shvzk : forall (n m : nat) (lf : list F) (Hlfn : lf <> List.nil) (ws : Vector.t F (S (S n)))
       (Bs : Vector.t (VG (S (S n))) m) (Ts : VG m) (c : F),
       (forall j : Fin.t m, gexp Bs[@j] ws = Ts[@j]) ->
@@ -351,10 +414,13 @@ Section OkamotoRows.
       rewrite (Vector.nth_map _ _ j j eq_refl); symmetry; apply hrel.
     Qed.
 
-    (* a row with the single base b at coordinate p *)
+    (** [unit_row p b] is the row with [b] at position [p] and [gid] elsewhere,
+        so that the single-base equation [T = b^(w_p)] fits the row format. *)
     Definition unit_row {K : nat} (p : Fin.t K) (b : G) : VG K :=
       Vector.replace (Vector.const gid K) p b.
 
+    (** [Vector.replace] at the first position, and at a successor position;
+        both by computation. *)
     Lemma replace_F1 : forall {A : Type} (k : nat) (a : A) (v : Vector.t A k) (b : A),
       Vector.replace (a :: v) Fin.F1 b = b :: v.
     Proof. reflexivity. Qed.
@@ -363,6 +429,7 @@ Section OkamotoRows.
       Vector.replace (a :: v) (Fin.FS p) b = a :: Vector.replace v p b.
     Proof. reflexivity. Qed.
 
+    (** [gexp (unit_row p b) ws = b^(ws_p)]. *)
     Lemma mexp_unit_row : forall (K : nat) (p : Fin.t K) (b : G) (ws : Vector.t F K),
       gexp (unit_row p b) ws = b ^ ws[@p].
     Proof.

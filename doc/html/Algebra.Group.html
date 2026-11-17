@@ -1,0 +1,342 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<link href="coqdoc.css" rel="stylesheet" type="text/css" />
+<title>Algebra.Group</title>
+</head>
+
+<body>
+
+<div id="page">
+
+<div id="header">
+</div>
+
+<div id="main">
+
+<h1 class="libtitle">Library Algebra.Group</h1>
+
+<div class="code">
+</div>
+
+<div class="doc">
+<a id="lab3"></a><h1 class="section">Elementary group lemmas</h1>
+
+<div class="paragraph"> </div>
+
+ Standard identities for a <span class="inlinecode"><span class="id" title="var">group</span></span> <span class="inlinecode">(<span class="id" title="var">T</span>,</span> <span class="inlinecode"><span class="id" title="var">eq</span>,</span> <span class="inlinecode"><span class="id" title="var">op</span>,</span> <span class="inlinecode"><span class="id" title="var">id</span>,</span> <span class="inlinecode"><span class="id" title="var">inv</span>)</span> as defined in
+    <span class="inlinecode"><span class="id" title="var">Hierarchy.v</span></span>: two-sided cancellation, involutivity and injectivity of
+    the inverse, the inverse of a product, the inverse of the identity and a
+    rearrangement lemma for equations. Most proofs reduce to the monoid
+    lemmas of <span class="inlinecode"><span class="id" title="var">Monoid.v</span></span> with the group inverse as the witness. These
+    lemmas are used pervasively for the group <span class="inlinecode"><span class="id" title="var">G</span></span> of the Sigma-protocol,
+    ElGamal and shuffle developments (often through <span class="inlinecode"><span class="id" title="var">Vector_space.v</span></span>), and
+    for the additive group of a field. 
+</div>
+<div class="code">
+<span class="id" title="keyword">From</span> <span class="id" title="var">Stdlib</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span><br/>
+&nbsp;&nbsp;<span class="id" title="library">Morphisms</span>.<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">Algebra</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span><br/>
+&nbsp;&nbsp;<a class="idref" href="Algebra.Hierarchy.html#"><span class="id" title="library">Hierarchy</span></a> <a class="idref" href="Algebra.Monoid.html#"><span class="id" title="library">Monoid</span></a>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<a id="lab4"></a><h2 class="section">Lemmas over an arbitrary group</h2>
+
+</div>
+<div class="code">
+<span class="id" title="keyword">Section</span> <a id="Group" class="idref" href="#Group"><span class="id" title="section">Group</span></a>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+A group with operation <span class="inlinecode"><span class="id" title="var">op</span></span> (written <span class="inlinecode">×</span> locally), identity <span class="inlinecode"><span class="id" title="var">id</span></span> and
+      inverse <span class="inlinecode"><span class="id" title="var">inv</span></span>. 
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Context</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;{<a id="Group.T" class="idref" href="#Group.T"><span class="id" title="variable">T</span></a> : <span class="id" title="keyword">Type</span>}<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;{<a id="Group.eq" class="idref" href="#Group.eq"><span class="id" title="variable">eq</span></a> : <a class="idref" href="Algebra.Group.html#T:1"><span class="id" title="variable">T</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Notations.html#::type_scope:x_'-&gt;'_x"><span class="id" title="notation">→</span></a> <a class="idref" href="Algebra.Group.html#T:1"><span class="id" title="variable">T</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Notations.html#::type_scope:x_'-&gt;'_x"><span class="id" title="notation">→</span></a> <span class="id" title="keyword">Prop</span>}<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;{<a id="Group.op" class="idref" href="#Group.op"><span class="id" title="variable">op</span></a> : <a class="idref" href="Algebra.Group.html#T:1"><span class="id" title="variable">T</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Notations.html#::type_scope:x_'-&gt;'_x"><span class="id" title="notation">→</span></a> <a class="idref" href="Algebra.Group.html#T:1"><span class="id" title="variable">T</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Notations.html#::type_scope:x_'-&gt;'_x"><span class="id" title="notation">→</span></a> <a class="idref" href="Algebra.Group.html#T:1"><span class="id" title="variable">T</span></a>}<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;{<a id="Group.id" class="idref" href="#Group.id"><span class="id" title="variable">id</span></a> : <a class="idref" href="Algebra.Group.html#T:1"><span class="id" title="variable">T</span></a>}<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;{<a id="Group.inv" class="idref" href="#Group.inv"><span class="id" title="variable">inv</span></a> : <a class="idref" href="Algebra.Group.html#T:1"><span class="id" title="variable">T</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Notations.html#::type_scope:x_'-&gt;'_x"><span class="id" title="notation">→</span></a> <a class="idref" href="Algebra.Group.html#T:1"><span class="id" title="variable">T</span></a>}<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;{<a id="Group.Hgroup" class="idref" href="#Group.Hgroup"><span class="id" title="variable">Hgroup</span></a> : @<a class="idref" href="Algebra.Hierarchy.html#group"><span class="id" title="class">group</span></a> <a class="idref" href="Algebra.Group.html#T:1"><span class="id" title="variable">T</span></a> <a class="idref" href="Algebra.Group.html#eq:2"><span class="id" title="variable">eq</span></a> <a class="idref" href="Algebra.Group.html#op:3"><span class="id" title="variable">op</span></a> <a class="idref" href="Algebra.Group.html#id:4"><span class="id" title="variable">id</span></a> <a class="idref" href="Algebra.Group.html#inv:5"><span class="id" title="variable">inv</span></a>}.<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Local Infix</span> <a id="0e4ed1555ca5eaaa0d72a6498bb781e3" class="idref" href="#0e4ed1555ca5eaaa0d72a6498bb781e3"><span class="id" title="notation">&quot;</span></a>=" := <a class="idref" href="Algebra.Group.html#Group.eq"><span class="id" title="variable">eq</span></a> : <span class="id" title="var">type_scope</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Local Notation</span> <a id="Group.::type_scope:x_'&lt;&gt;'_x" class="idref" href="#Group.::type_scope:x_'&lt;&gt;'_x"><span class="id" title="notation">&quot;</span></a>a &lt;&gt; b" := (<a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Logic.html#not"><span class="id" title="definition">not</span></a> (<span class="id" title="var">a</span> <a class="idref" href="Algebra.Group.html#0e4ed1555ca5eaaa0d72a6498bb781e3"><span class="id" title="notation">=</span></a> <span class="id" title="var">b</span>)) : <span class="id" title="var">type_scope</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Local Infix</span> <a id="3b9b61d50bd2f497b14967b14568f8db" class="idref" href="#3b9b61d50bd2f497b14967b14568f8db"><span class="id" title="notation">&quot;</span></a>×" := <a class="idref" href="Algebra.Group.html#Group.op"><span class="id" title="variable">op</span></a>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+Right cancellation: <span class="inlinecode"><span class="id" title="var">x</span></span> <span class="inlinecode">×</span> <span class="inlinecode"><span class="id" title="var">z</span></span> <span class="inlinecode">=</span> <span class="inlinecode"><span class="id" title="var">y</span></span> <span class="inlinecode">×</span> <span class="inlinecode"><span class="id" title="var">z</span></span> <span class="inlinecode">↔</span> <span class="inlinecode"><span class="id" title="var">x</span></span> <span class="inlinecode">=</span> <span class="inlinecode"><span class="id" title="var">y</span></span>. 
+</div>
+<div class="code">
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <a id="group_cancel_right" class="idref" href="#group_cancel_right"><span class="id" title="lemma">group_cancel_right</span></a> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">∀</span> <a id="z:7" class="idref" href="#z:7"><span class="id" title="binder">z</span></a> <a id="x:8" class="idref" href="#x:8"><span class="id" title="binder">x</span></a> <a id="y:9" class="idref" href="#y:9"><span class="id" title="binder">y</span></a>, <a class="idref" href="Algebra.Group.html#x:8"><span class="id" title="variable">x</span></a> <a class="idref" href="Algebra.Group.html#3b9b61d50bd2f497b14967b14568f8db"><span class="id" title="notation">×</span></a> <a class="idref" href="Algebra.Group.html#z:7"><span class="id" title="variable">z</span></a> <a class="idref" href="Algebra.Group.html#0e4ed1555ca5eaaa0d72a6498bb781e3"><span class="id" title="notation">=</span></a> <a class="idref" href="Algebra.Group.html#y:9"><span class="id" title="variable">y</span></a> <a class="idref" href="Algebra.Group.html#3b9b61d50bd2f497b14967b14568f8db"><span class="id" title="notation">×</span></a> <a class="idref" href="Algebra.Group.html#z:7"><span class="id" title="variable">z</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Logic.html#::type_scope:x_'&lt;-&gt;'_x"><span class="id" title="notation">↔</span></a> <a class="idref" href="Algebra.Group.html#x:8"><span class="id" title="variable">x</span></a> <a class="idref" href="Algebra.Group.html#0e4ed1555ca5eaaa0d72a6498bb781e3"><span class="id" title="notation">=</span></a> <a class="idref" href="Algebra.Group.html#y:9"><span class="id" title="variable">y</span></a>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">intros</span> ? ? ?; <span class="id" title="tactic">split</span>; <span class="id" title="tactic">intro</span> <span class="id" title="var">H</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">eapply</span> <a class="idref" href="Algebra.Monoid.html#monoid_cancel_right"><span class="id" title="lemma">monoid_cancel_right</span></a> <span class="id" title="keyword">with</span> (<span class="id" title="var">iz</span> := <a class="idref" href="Algebra.Group.html#Group.inv"><span class="id" title="variable">inv</span></a> <span class="id" title="var">z</span>).<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">instantiate</span> (1 := <span class="id" title="var">z</span>).<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">apply</span> <a class="idref" href="Algebra.Hierarchy.html#right_inverse"><span class="id" title="definition">right_inverse</span></a>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">exact</span> <span class="id" title="var">H</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">rewrite</span> <span class="id" title="var">H</span>; <span class="id" title="tactic">reflexivity</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Qed</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+Left cancellation: <span class="inlinecode"><span class="id" title="var">z</span></span> <span class="inlinecode">×</span> <span class="inlinecode"><span class="id" title="var">x</span></span> <span class="inlinecode">=</span> <span class="inlinecode"><span class="id" title="var">z</span></span> <span class="inlinecode">×</span> <span class="inlinecode"><span class="id" title="var">y</span></span> <span class="inlinecode">↔</span> <span class="inlinecode"><span class="id" title="var">x</span></span> <span class="inlinecode">=</span> <span class="inlinecode"><span class="id" title="var">y</span></span>. 
+</div>
+<div class="code">
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <a id="group_cancel_left" class="idref" href="#group_cancel_left"><span class="id" title="lemma">group_cancel_left</span></a> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">∀</span> <a id="z:10" class="idref" href="#z:10"><span class="id" title="binder">z</span></a> <a id="x:11" class="idref" href="#x:11"><span class="id" title="binder">x</span></a> <a id="y:12" class="idref" href="#y:12"><span class="id" title="binder">y</span></a>, <a class="idref" href="Algebra.Group.html#z:10"><span class="id" title="variable">z</span></a> <a class="idref" href="Algebra.Group.html#3b9b61d50bd2f497b14967b14568f8db"><span class="id" title="notation">×</span></a> <a class="idref" href="Algebra.Group.html#x:11"><span class="id" title="variable">x</span></a> <a class="idref" href="Algebra.Group.html#0e4ed1555ca5eaaa0d72a6498bb781e3"><span class="id" title="notation">=</span></a> <a class="idref" href="Algebra.Group.html#z:10"><span class="id" title="variable">z</span></a> <a class="idref" href="Algebra.Group.html#3b9b61d50bd2f497b14967b14568f8db"><span class="id" title="notation">×</span></a> <a class="idref" href="Algebra.Group.html#y:12"><span class="id" title="variable">y</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Logic.html#::type_scope:x_'&lt;-&gt;'_x"><span class="id" title="notation">↔</span></a> <a class="idref" href="Algebra.Group.html#x:11"><span class="id" title="variable">x</span></a> <a class="idref" href="Algebra.Group.html#0e4ed1555ca5eaaa0d72a6498bb781e3"><span class="id" title="notation">=</span></a> <a class="idref" href="Algebra.Group.html#y:12"><span class="id" title="variable">y</span></a>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">intros</span> ? ? ?; <span class="id" title="tactic">split</span>; <span class="id" title="tactic">intro</span> <span class="id" title="var">H</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">eapply</span> <a class="idref" href="Algebra.Monoid.html#monoid_cancel_left"><span class="id" title="lemma">monoid_cancel_left</span></a> <span class="id" title="keyword">with</span> (<span class="id" title="var">iz</span> := <a class="idref" href="Algebra.Group.html#Group.inv"><span class="id" title="variable">inv</span></a> <span class="id" title="var">z</span>).<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">instantiate</span> (1 := <span class="id" title="var">z</span>).<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">apply</span> <a class="idref" href="Algebra.Hierarchy.html#left_inverse"><span class="id" title="definition">left_inverse</span></a>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">exact</span> <span class="id" title="var">H</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">rewrite</span> <span class="id" title="var">H</span>; <span class="id" title="tactic">reflexivity</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Qed</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+The inverse is an involution: <span class="inlinecode"><span class="id" title="var">inv</span></span> <span class="inlinecode">(<span class="id" title="var">inv</span></span> <span class="inlinecode"><span class="id" title="var">x</span>)</span> <span class="inlinecode">=</span> <span class="inlinecode"><span class="id" title="var">x</span></span>. 
+</div>
+<div class="code">
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <a id="group_inv_inv" class="idref" href="#group_inv_inv"><span class="id" title="lemma">group_inv_inv</span></a> : <span class="id" title="keyword">∀</span> <a id="x:13" class="idref" href="#x:13"><span class="id" title="binder">x</span></a>,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="Algebra.Group.html#Group.inv"><span class="id" title="variable">inv</span></a> (<a class="idref" href="Algebra.Group.html#Group.inv"><span class="id" title="variable">inv</span></a> <a class="idref" href="Algebra.Group.html#x:13"><span class="id" title="variable">x</span></a>) <a class="idref" href="Algebra.Group.html#0e4ed1555ca5eaaa0d72a6498bb781e3"><span class="id" title="notation">=</span></a> <a class="idref" href="Algebra.Group.html#x:13"><span class="id" title="variable">x</span></a>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">intros</span> ?.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">eapply</span> <a class="idref" href="Algebra.Monoid.html#monoid_inv_inv"><span class="id" title="lemma">monoid_inv_inv</span></a>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">try</span> <span class="id" title="tactic">instantiate</span> (1 := <a class="idref" href="Algebra.Group.html#Group.inv"><span class="id" title="variable">inv</span></a> <span class="id" title="var">x</span>);<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">apply</span> <a class="idref" href="Algebra.Hierarchy.html#left_inverse"><span class="id" title="definition">left_inverse</span></a>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Qed</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<span class="inlinecode"><span class="id" title="var">inv</span></span> <span class="inlinecode"><span class="id" title="var">y</span></span> <span class="inlinecode">×</span> <span class="inlinecode"><span class="id" title="var">inv</span></span> <span class="inlinecode"><span class="id" title="var">x</span></span> is a left inverse of <span class="inlinecode"><span class="id" title="var">x</span></span> <span class="inlinecode">×</span> <span class="inlinecode"><span class="id" title="var">y</span></span>. 
+</div>
+<div class="code">
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <a id="group_inv_op_ext" class="idref" href="#group_inv_op_ext"><span class="id" title="lemma">group_inv_op_ext</span></a> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">∀</span> <a id="x:14" class="idref" href="#x:14"><span class="id" title="binder">x</span></a> <a id="y:15" class="idref" href="#y:15"><span class="id" title="binder">y</span></a>, <a class="idref" href="Algebra.Group.html#3b9b61d50bd2f497b14967b14568f8db"><span class="id" title="notation">(</span></a><a class="idref" href="Algebra.Group.html#Group.inv"><span class="id" title="variable">inv</span></a> <a class="idref" href="Algebra.Group.html#y:15"><span class="id" title="variable">y</span></a> <a class="idref" href="Algebra.Group.html#3b9b61d50bd2f497b14967b14568f8db"><span class="id" title="notation">×</span></a> <a class="idref" href="Algebra.Group.html#Group.inv"><span class="id" title="variable">inv</span></a> <a class="idref" href="Algebra.Group.html#x:14"><span class="id" title="variable">x</span></a><a class="idref" href="Algebra.Group.html#3b9b61d50bd2f497b14967b14568f8db"><span class="id" title="notation">)</span></a> <a class="idref" href="Algebra.Group.html#3b9b61d50bd2f497b14967b14568f8db"><span class="id" title="notation">×</span></a> <a class="idref" href="Algebra.Group.html#3b9b61d50bd2f497b14967b14568f8db"><span class="id" title="notation">(</span></a><a class="idref" href="Algebra.Group.html#x:14"><span class="id" title="variable">x</span></a> <a class="idref" href="Algebra.Group.html#3b9b61d50bd2f497b14967b14568f8db"><span class="id" title="notation">×</span></a> <a class="idref" href="Algebra.Group.html#y:15"><span class="id" title="variable">y</span></a><a class="idref" href="Algebra.Group.html#3b9b61d50bd2f497b14967b14568f8db"><span class="id" title="notation">)</span></a> <a class="idref" href="Algebra.Group.html#0e4ed1555ca5eaaa0d72a6498bb781e3"><span class="id" title="notation">=</span></a> <a class="idref" href="Algebra.Group.html#Group.id"><span class="id" title="variable">id</span></a>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">intros</span> ? ?.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">eapply</span> <a class="idref" href="Algebra.Monoid.html#monoid_inv_op"><span class="id" title="lemma">monoid_inv_op</span></a>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">apply</span> <a class="idref" href="Algebra.Hierarchy.html#left_inverse"><span class="id" title="definition">left_inverse</span></a>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Qed</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+Inverse of a product reverses the order:
+        <span class="inlinecode"><span class="id" title="var">inv</span></span> <span class="inlinecode">(<span class="id" title="var">x</span></span> <span class="inlinecode">×</span> <span class="inlinecode"><span class="id" title="var">y</span>)</span> <span class="inlinecode">=</span> <span class="inlinecode"><span class="id" title="var">inv</span></span> <span class="inlinecode"><span class="id" title="var">y</span></span> <span class="inlinecode">×</span> <span class="inlinecode"><span class="id" title="var">inv</span></span> <span class="inlinecode"><span class="id" title="var">x</span></span>. 
+</div>
+<div class="code">
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <a id="group_inv_flip" class="idref" href="#group_inv_flip"><span class="id" title="lemma">group_inv_flip</span></a> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">∀</span> <a id="x:16" class="idref" href="#x:16"><span class="id" title="binder">x</span></a> <a id="y:17" class="idref" href="#y:17"><span class="id" title="binder">y</span></a>, <a class="idref" href="Algebra.Group.html#Group.inv"><span class="id" title="variable">inv</span></a> (<a class="idref" href="Algebra.Group.html#x:16"><span class="id" title="variable">x</span></a> <a class="idref" href="Algebra.Group.html#3b9b61d50bd2f497b14967b14568f8db"><span class="id" title="notation">×</span></a> <a class="idref" href="Algebra.Group.html#y:17"><span class="id" title="variable">y</span></a>) <a class="idref" href="Algebra.Group.html#0e4ed1555ca5eaaa0d72a6498bb781e3"><span class="id" title="notation">=</span></a> <a class="idref" href="Algebra.Group.html#Group.inv"><span class="id" title="variable">inv</span></a> <a class="idref" href="Algebra.Group.html#y:17"><span class="id" title="variable">y</span></a> <a class="idref" href="Algebra.Group.html#3b9b61d50bd2f497b14967b14568f8db"><span class="id" title="notation">×</span></a> <a class="idref" href="Algebra.Group.html#Group.inv"><span class="id" title="variable">inv</span></a> <a class="idref" href="Algebra.Group.html#x:16"><span class="id" title="variable">x</span></a>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">intros</span> ? ?.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">pose</span> <span class="id" title="var">proof</span> (<a class="idref" href="Algebra.Group.html#group_cancel_right"><span class="id" title="lemma">group_cancel_right</span></a> <span class="id" title="var">x</span> (<a class="idref" href="Algebra.Group.html#Group.inv"><span class="id" title="variable">inv</span></a> (<span class="id" title="var">x</span> <a class="idref" href="Algebra.Group.html#3b9b61d50bd2f497b14967b14568f8db"><span class="id" title="notation">×</span></a> <span class="id" title="var">y</span>)) (<a class="idref" href="Algebra.Group.html#Group.inv"><span class="id" title="variable">inv</span></a> <span class="id" title="var">y</span> <a class="idref" href="Algebra.Group.html#3b9b61d50bd2f497b14967b14568f8db"><span class="id" title="notation">×</span></a> <a class="idref" href="Algebra.Group.html#Group.inv"><span class="id" title="variable">inv</span></a> <span class="id" title="var">x</span>)) <span class="id" title="keyword">as</span> <span class="id" title="var">Hg</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">apply</span> <span class="id" title="var">Hg</span>; <span class="id" title="tactic">clear</span> <span class="id" title="var">Hg</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">assert</span> (<span class="id" title="var">Ht</span> : <a class="idref" href="Algebra.Group.html#Group.inv"><span class="id" title="variable">inv</span></a> <span class="id" title="var">y</span> <a class="idref" href="Algebra.Group.html#3b9b61d50bd2f497b14967b14568f8db"><span class="id" title="notation">×</span></a> <a class="idref" href="Algebra.Group.html#Group.inv"><span class="id" title="variable">inv</span></a> <span class="id" title="var">x</span> <a class="idref" href="Algebra.Group.html#3b9b61d50bd2f497b14967b14568f8db"><span class="id" title="notation">×</span></a> <span class="id" title="var">x</span> <a class="idref" href="Algebra.Group.html#0e4ed1555ca5eaaa0d72a6498bb781e3"><span class="id" title="notation">=</span></a> <a class="idref" href="Algebra.Group.html#Group.inv"><span class="id" title="variable">inv</span></a> <span class="id" title="var">y</span> <a class="idref" href="Algebra.Group.html#3b9b61d50bd2f497b14967b14568f8db"><span class="id" title="notation">×</span></a> <a class="idref" href="Algebra.Group.html#3b9b61d50bd2f497b14967b14568f8db"><span class="id" title="notation">(</span></a><a class="idref" href="Algebra.Group.html#Group.inv"><span class="id" title="variable">inv</span></a> <span class="id" title="var">x</span> <a class="idref" href="Algebra.Group.html#3b9b61d50bd2f497b14967b14568f8db"><span class="id" title="notation">×</span></a> <span class="id" title="var">x</span><a class="idref" href="Algebra.Group.html#3b9b61d50bd2f497b14967b14568f8db"><span class="id" title="notation">)</span></a>) <span class="id" title="tactic">by</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="tactic">rewrite</span> <a class="idref" href="Algebra.Hierarchy.html#associative"><span class="id" title="definition">associative</span></a>; <span class="id" title="tactic">reflexivity</span>).<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">rewrite</span> <span class="id" title="var">Ht</span>, <a class="idref" href="Algebra.Hierarchy.html#left_inverse"><span class="id" title="definition">left_inverse</span></a>, <a class="idref" href="Algebra.Hierarchy.html#right_identity"><span class="id" title="definition">right_identity</span></a>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">pose</span> <span class="id" title="var">proof</span> (<a class="idref" href="Algebra.Group.html#group_cancel_right"><span class="id" title="lemma">group_cancel_right</span></a> <span class="id" title="var">y</span> (<a class="idref" href="Algebra.Group.html#Group.inv"><span class="id" title="variable">inv</span></a> (<span class="id" title="var">x</span> <a class="idref" href="Algebra.Group.html#3b9b61d50bd2f497b14967b14568f8db"><span class="id" title="notation">×</span></a> <span class="id" title="var">y</span>) <a class="idref" href="Algebra.Group.html#3b9b61d50bd2f497b14967b14568f8db"><span class="id" title="notation">×</span></a> <span class="id" title="var">x</span>) (<a class="idref" href="Algebra.Group.html#Group.inv"><span class="id" title="variable">inv</span></a> <span class="id" title="var">y</span>)) <span class="id" title="keyword">as</span> <span class="id" title="var">Hg</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">apply</span> <span class="id" title="var">Hg</span>; <span class="id" title="tactic">clear</span> <span class="id" title="var">Hg</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">rewrite</span> <a class="idref" href="Algebra.Hierarchy.html#left_inverse"><span class="id" title="definition">left_inverse</span></a>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">assert</span> (<span class="id" title="var">H</span> : <a class="idref" href="Algebra.Group.html#Group.inv"><span class="id" title="variable">inv</span></a> (<span class="id" title="var">x</span> <a class="idref" href="Algebra.Group.html#3b9b61d50bd2f497b14967b14568f8db"><span class="id" title="notation">×</span></a> <span class="id" title="var">y</span>) <a class="idref" href="Algebra.Group.html#3b9b61d50bd2f497b14967b14568f8db"><span class="id" title="notation">×</span></a> <span class="id" title="var">x</span> <a class="idref" href="Algebra.Group.html#3b9b61d50bd2f497b14967b14568f8db"><span class="id" title="notation">×</span></a> <span class="id" title="var">y</span> <a class="idref" href="Algebra.Group.html#0e4ed1555ca5eaaa0d72a6498bb781e3"><span class="id" title="notation">=</span></a> <a class="idref" href="Algebra.Group.html#Group.inv"><span class="id" title="variable">inv</span></a> (<span class="id" title="var">x</span> <a class="idref" href="Algebra.Group.html#3b9b61d50bd2f497b14967b14568f8db"><span class="id" title="notation">×</span></a> <span class="id" title="var">y</span>) <a class="idref" href="Algebra.Group.html#3b9b61d50bd2f497b14967b14568f8db"><span class="id" title="notation">×</span></a> <a class="idref" href="Algebra.Group.html#3b9b61d50bd2f497b14967b14568f8db"><span class="id" title="notation">(</span></a><span class="id" title="var">x</span> <a class="idref" href="Algebra.Group.html#3b9b61d50bd2f497b14967b14568f8db"><span class="id" title="notation">×</span></a> <span class="id" title="var">y</span><a class="idref" href="Algebra.Group.html#3b9b61d50bd2f497b14967b14568f8db"><span class="id" title="notation">)</span></a>) <span class="id" title="tactic">by</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="tactic">rewrite</span> <a class="idref" href="Algebra.Hierarchy.html#associative"><span class="id" title="definition">associative</span></a>; <span class="id" title="tactic">reflexivity</span>).<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">rewrite</span> <span class="id" title="var">H</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">apply</span> <a class="idref" href="Algebra.Hierarchy.html#left_inverse"><span class="id" title="definition">left_inverse</span></a>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Qed</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+Uniqueness of inverses: <span class="inlinecode"><span class="id" title="var">y</span></span> <span class="inlinecode">×</span> <span class="inlinecode"><span class="id" title="var">x</span></span> <span class="inlinecode">=</span> <span class="inlinecode"><span class="id" title="var">id</span></span> holds exactly when
+        <span class="inlinecode"><span class="id" title="var">y</span></span> <span class="inlinecode">=</span> <span class="inlinecode"><span class="id" title="var">inv</span></span> <span class="inlinecode"><span class="id" title="var">x</span></span>. 
+</div>
+<div class="code">
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <a id="group_inv_unique" class="idref" href="#group_inv_unique"><span class="id" title="lemma">group_inv_unique</span></a> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">∀</span> <a id="x:18" class="idref" href="#x:18"><span class="id" title="binder">x</span></a> <a id="y:19" class="idref" href="#y:19"><span class="id" title="binder">y</span></a>, <a class="idref" href="Algebra.Group.html#y:19"><span class="id" title="variable">y</span></a> <a class="idref" href="Algebra.Group.html#3b9b61d50bd2f497b14967b14568f8db"><span class="id" title="notation">×</span></a> <a class="idref" href="Algebra.Group.html#x:18"><span class="id" title="variable">x</span></a> <a class="idref" href="Algebra.Group.html#0e4ed1555ca5eaaa0d72a6498bb781e3"><span class="id" title="notation">=</span></a> <a class="idref" href="Algebra.Group.html#Group.id"><span class="id" title="variable">id</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Logic.html#::type_scope:x_'&lt;-&gt;'_x"><span class="id" title="notation">↔</span></a> <a class="idref" href="Algebra.Group.html#y:19"><span class="id" title="variable">y</span></a> <a class="idref" href="Algebra.Group.html#0e4ed1555ca5eaaa0d72a6498bb781e3"><span class="id" title="notation">=</span></a> <a class="idref" href="Algebra.Group.html#Group.inv"><span class="id" title="variable">inv</span></a> <a class="idref" href="Algebra.Group.html#x:18"><span class="id" title="variable">x</span></a>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">intros</span> ? ?; <span class="id" title="tactic">split</span>; <span class="id" title="tactic">intros</span> <span class="id" title="var">H</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">pose</span> <span class="id" title="var">proof</span> (<a class="idref" href="Algebra.Group.html#group_cancel_right"><span class="id" title="lemma">group_cancel_right</span></a> (<a class="idref" href="Algebra.Group.html#Group.inv"><span class="id" title="variable">inv</span></a> <span class="id" title="var">x</span>) (<span class="id" title="var">y</span> <a class="idref" href="Algebra.Group.html#3b9b61d50bd2f497b14967b14568f8db"><span class="id" title="notation">×</span></a> <span class="id" title="var">x</span>) <a class="idref" href="Algebra.Group.html#Group.id"><span class="id" title="variable">id</span></a>) <span class="id" title="keyword">as</span> <span class="id" title="var">Hg</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">apply</span> <span class="id" title="var">Hg</span> <span class="id" title="tactic">in</span> <span class="id" title="var">H</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">rewrite</span> <a class="idref" href="Algebra.Hierarchy.html#left_identity"><span class="id" title="definition">left_identity</span></a> <span class="id" title="tactic">in</span> <span class="id" title="var">H</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">rewrite</span> &lt;- <a class="idref" href="Algebra.Hierarchy.html#associative"><span class="id" title="definition">associative</span></a>, <a class="idref" href="Algebra.Hierarchy.html#right_inverse"><span class="id" title="definition">right_inverse</span></a>,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="Algebra.Hierarchy.html#right_identity"><span class="id" title="definition">right_identity</span></a> <span class="id" title="tactic">in</span> <span class="id" title="var">H</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">exact</span> <span class="id" title="var">H</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">rewrite</span> <span class="id" title="var">H</span>, <a class="idref" href="Algebra.Hierarchy.html#left_inverse"><span class="id" title="definition">left_inverse</span></a>; <span class="id" title="tactic">reflexivity</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Qed</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+The inverse is injective (hence bijective, being an involution):
+        <span class="inlinecode"><span class="id" title="var">inv</span></span> <span class="inlinecode"><span class="id" title="var">x</span></span> <span class="inlinecode">=</span> <span class="inlinecode"><span class="id" title="var">inv</span></span> <span class="inlinecode"><span class="id" title="var">y</span></span> <span class="inlinecode">↔</span> <span class="inlinecode"><span class="id" title="var">x</span></span> <span class="inlinecode">=</span> <span class="inlinecode"><span class="id" title="var">y</span></span>. 
+</div>
+<div class="code">
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <a id="group_inv_bijective" class="idref" href="#group_inv_bijective"><span class="id" title="lemma">group_inv_bijective</span></a> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">∀</span> <a id="x:20" class="idref" href="#x:20"><span class="id" title="binder">x</span></a> <a id="y:21" class="idref" href="#y:21"><span class="id" title="binder">y</span></a>, <a class="idref" href="Algebra.Group.html#Group.inv"><span class="id" title="variable">inv</span></a> <a class="idref" href="Algebra.Group.html#x:20"><span class="id" title="variable">x</span></a> <a class="idref" href="Algebra.Group.html#0e4ed1555ca5eaaa0d72a6498bb781e3"><span class="id" title="notation">=</span></a> <a class="idref" href="Algebra.Group.html#Group.inv"><span class="id" title="variable">inv</span></a> <a class="idref" href="Algebra.Group.html#y:21"><span class="id" title="variable">y</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Logic.html#::type_scope:x_'&lt;-&gt;'_x"><span class="id" title="notation">↔</span></a> <a class="idref" href="Algebra.Group.html#x:20"><span class="id" title="variable">x</span></a> <a class="idref" href="Algebra.Group.html#0e4ed1555ca5eaaa0d72a6498bb781e3"><span class="id" title="notation">=</span></a> <a class="idref" href="Algebra.Group.html#y:21"><span class="id" title="variable">y</span></a>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">intros</span> ? ?; <span class="id" title="tactic">split</span>; <span class="id" title="tactic">intros</span> <span class="id" title="var">H</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">apply</span> <a class="idref" href="Algebra.Group.html#group_cancel_right"><span class="id" title="lemma">group_cancel_right</span></a> <span class="id" title="keyword">with</span> (<span class="id" title="var">z</span> := <span class="id" title="var">x</span>) <span class="id" title="tactic">in</span> <span class="id" title="var">H</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">rewrite</span> <a class="idref" href="Algebra.Hierarchy.html#left_inverse"><span class="id" title="definition">left_inverse</span></a> <span class="id" title="tactic">in</span> <span class="id" title="var">H</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">apply</span> <a class="idref" href="Algebra.Group.html#group_cancel_left"><span class="id" title="lemma">group_cancel_left</span></a> <span class="id" title="keyword">with</span> (<span class="id" title="var">z</span> := <span class="id" title="var">y</span>) <span class="id" title="tactic">in</span> <span class="id" title="var">H</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">rewrite</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="Algebra.Hierarchy.html#associative"><span class="id" title="definition">associative</span></a>,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="Algebra.Hierarchy.html#right_inverse"><span class="id" title="definition">right_inverse</span></a>,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="Algebra.Hierarchy.html#right_identity"><span class="id" title="definition">right_identity</span></a>,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="Algebra.Hierarchy.html#left_identity"><span class="id" title="definition">left_identity</span></a> <span class="id" title="tactic">in</span> <span class="id" title="var">H</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">symmetry</span> <span class="id" title="tactic">in</span> <span class="id" title="var">H</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">exact</span> <span class="id" title="var">H</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">rewrite</span> <span class="id" title="var">H</span>; <span class="id" title="tactic">reflexivity</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Qed</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+The identity is its own inverse: <span class="inlinecode"><span class="id" title="var">inv</span></span> <span class="inlinecode"><span class="id" title="var">id</span></span> <span class="inlinecode">=</span> <span class="inlinecode"><span class="id" title="var">id</span></span>. 
+</div>
+<div class="code">
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <a id="group_inv_id" class="idref" href="#group_inv_id"><span class="id" title="lemma">group_inv_id</span></a> : <a class="idref" href="Algebra.Group.html#Group.inv"><span class="id" title="variable">inv</span></a> <a class="idref" href="Algebra.Group.html#Group.id"><span class="id" title="variable">id</span></a> <a class="idref" href="Algebra.Group.html#0e4ed1555ca5eaaa0d72a6498bb781e3"><span class="id" title="notation">=</span></a> <a class="idref" href="Algebra.Group.html#Group.id"><span class="id" title="variable">id</span></a>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">symmetry</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">apply</span> <a class="idref" href="Algebra.Group.html#group_inv_unique"><span class="id" title="lemma">group_inv_unique</span></a>,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="Algebra.Hierarchy.html#right_identity"><span class="id" title="definition">right_identity</span></a>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Qed</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+Only the identity has the identity as inverse:
+        <span class="inlinecode"><span class="id" title="var">inv</span></span> <span class="inlinecode"><span class="id" title="var">x</span></span> <span class="inlinecode">=</span> <span class="inlinecode"><span class="id" title="var">id</span></span> <span class="inlinecode">↔</span> <span class="inlinecode"><span class="id" title="var">x</span></span> <span class="inlinecode">=</span> <span class="inlinecode"><span class="id" title="var">id</span></span>. 
+</div>
+<div class="code">
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <a id="group_inv_id_iff" class="idref" href="#group_inv_id_iff"><span class="id" title="lemma">group_inv_id_iff</span></a> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">∀</span> <a id="x:22" class="idref" href="#x:22"><span class="id" title="binder">x</span></a>, <a class="idref" href="Algebra.Group.html#Group.inv"><span class="id" title="variable">inv</span></a> <a class="idref" href="Algebra.Group.html#x:22"><span class="id" title="variable">x</span></a> <a class="idref" href="Algebra.Group.html#0e4ed1555ca5eaaa0d72a6498bb781e3"><span class="id" title="notation">=</span></a> <a class="idref" href="Algebra.Group.html#Group.id"><span class="id" title="variable">id</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Logic.html#::type_scope:x_'&lt;-&gt;'_x"><span class="id" title="notation">↔</span></a> <a class="idref" href="Algebra.Group.html#x:22"><span class="id" title="variable">x</span></a> <a class="idref" href="Algebra.Group.html#0e4ed1555ca5eaaa0d72a6498bb781e3"><span class="id" title="notation">=</span></a> <a class="idref" href="Algebra.Group.html#Group.id"><span class="id" title="variable">id</span></a>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">intros</span> ?; <span class="id" title="tactic">split</span>; <span class="id" title="tactic">intros</span> <span class="id" title="var">H</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">apply</span> <a class="idref" href="Algebra.Group.html#group_inv_bijective"><span class="id" title="lemma">group_inv_bijective</span></a>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">rewrite</span> <a class="idref" href="Algebra.Group.html#group_inv_id"><span class="id" title="lemma">group_inv_id</span></a>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">exact</span> <span class="id" title="var">H</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">rewrite</span> <span class="id" title="var">H</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">apply</span> <a class="idref" href="Algebra.Group.html#group_inv_id"><span class="id" title="lemma">group_inv_id</span></a>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Qed</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+Non-identity elements have non-identity inverses:
+        <span class="inlinecode"><span class="id" title="var">x</span></span> <span class="inlinecode">≠</span> <span class="inlinecode"><span class="id" title="var">id</span></span> <span class="inlinecode">↔</span> <span class="inlinecode"><span class="id" title="var">inv</span></span> <span class="inlinecode"><span class="id" title="var">x</span></span> <span class="inlinecode">≠</span> <span class="inlinecode"><span class="id" title="var">id</span></span>. 
+</div>
+<div class="code">
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <a id="group_inv_nonzero_nonzero" class="idref" href="#group_inv_nonzero_nonzero"><span class="id" title="lemma">group_inv_nonzero_nonzero</span></a> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">∀</span> <a id="x:23" class="idref" href="#x:23"><span class="id" title="binder">x</span></a>, <a class="idref" href="Algebra.Group.html#x:23"><span class="id" title="variable">x</span></a> <a class="idref" href="Algebra.Group.html#Group.::type_scope:x_'&lt;&gt;'_x"><span class="id" title="notation">≠</span></a> <a class="idref" href="Algebra.Group.html#Group.id"><span class="id" title="variable">id</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Logic.html#::type_scope:x_'&lt;-&gt;'_x"><span class="id" title="notation">↔</span></a> <a class="idref" href="Algebra.Group.html#Group.inv"><span class="id" title="variable">inv</span></a> <a class="idref" href="Algebra.Group.html#x:23"><span class="id" title="variable">x</span></a> <a class="idref" href="Algebra.Group.html#Group.::type_scope:x_'&lt;&gt;'_x"><span class="id" title="notation">≠</span></a> <a class="idref" href="Algebra.Group.html#Group.id"><span class="id" title="variable">id</span></a>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">intros</span> ?.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">rewrite</span> <a class="idref" href="Algebra.Group.html#group_inv_id_iff"><span class="id" title="lemma">group_inv_id_iff</span></a>; <span class="id" title="tactic">reflexivity</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Qed</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+Moving a factor across an equation:
+        <span class="inlinecode"><span class="id" title="var">x</span></span> <span class="inlinecode">=</span> <span class="inlinecode"><span class="id" title="var">z</span></span> <span class="inlinecode">×</span> <span class="inlinecode"><span class="id" title="var">inv</span></span> <span class="inlinecode"><span class="id" title="var">y</span></span> <span class="inlinecode">↔</span> <span class="inlinecode"><span class="id" title="var">x</span></span> <span class="inlinecode">×</span> <span class="inlinecode"><span class="id" title="var">y</span></span> <span class="inlinecode">=</span> <span class="inlinecode"><span class="id" title="var">z</span></span>. 
+</div>
+<div class="code">
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <a id="group_eq_r_opp_r_inv" class="idref" href="#group_eq_r_opp_r_inv"><span class="id" title="lemma">group_eq_r_opp_r_inv</span></a> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">∀</span> <a id="x:24" class="idref" href="#x:24"><span class="id" title="binder">x</span></a> <a id="y:25" class="idref" href="#y:25"><span class="id" title="binder">y</span></a> <a id="z:26" class="idref" href="#z:26"><span class="id" title="binder">z</span></a>, <a class="idref" href="Algebra.Group.html#x:24"><span class="id" title="variable">x</span></a> <a class="idref" href="Algebra.Group.html#0e4ed1555ca5eaaa0d72a6498bb781e3"><span class="id" title="notation">=</span></a> <a class="idref" href="Algebra.Group.html#Group.op"><span class="id" title="variable">op</span></a> <a class="idref" href="Algebra.Group.html#z:26"><span class="id" title="variable">z</span></a> (<a class="idref" href="Algebra.Group.html#Group.inv"><span class="id" title="variable">inv</span></a> <a class="idref" href="Algebra.Group.html#y:25"><span class="id" title="variable">y</span></a>) <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Logic.html#::type_scope:x_'&lt;-&gt;'_x"><span class="id" title="notation">↔</span></a> <a class="idref" href="Algebra.Group.html#Group.op"><span class="id" title="variable">op</span></a> <a class="idref" href="Algebra.Group.html#x:24"><span class="id" title="variable">x</span></a> <a class="idref" href="Algebra.Group.html#y:25"><span class="id" title="variable">y</span></a> <a class="idref" href="Algebra.Group.html#0e4ed1555ca5eaaa0d72a6498bb781e3"><span class="id" title="notation">=</span></a> <a class="idref" href="Algebra.Group.html#z:26"><span class="id" title="variable">z</span></a>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">intros</span> ? ? ?; <span class="id" title="tactic">split</span>; <span class="id" title="tactic">intros</span> <span class="id" title="var">H</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">apply</span> <a class="idref" href="Algebra.Group.html#group_cancel_right"><span class="id" title="lemma">group_cancel_right</span></a> <span class="id" title="keyword">with</span> (<span class="id" title="var">z</span> := <span class="id" title="var">y</span>) <span class="id" title="tactic">in</span> <span class="id" title="var">H</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">rewrite</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;- <a class="idref" href="Algebra.Hierarchy.html#associative"><span class="id" title="definition">associative</span></a>,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="Algebra.Hierarchy.html#left_inverse"><span class="id" title="definition">left_inverse</span></a>,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="Algebra.Hierarchy.html#right_identity"><span class="id" title="definition">right_identity</span></a> <span class="id" title="tactic">in</span> <span class="id" title="var">H</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">exact</span> <span class="id" title="var">H</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">apply</span> <a class="idref" href="Algebra.Group.html#group_cancel_right"><span class="id" title="lemma">group_cancel_right</span></a> <span class="id" title="keyword">with</span> (<span class="id" title="var">z</span> := <a class="idref" href="Algebra.Group.html#Group.inv"><span class="id" title="variable">inv</span></a> <span class="id" title="var">y</span>) <span class="id" title="tactic">in</span> <span class="id" title="var">H</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">rewrite</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;- <a class="idref" href="Algebra.Hierarchy.html#associative"><span class="id" title="definition">associative</span></a>,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="Algebra.Hierarchy.html#right_inverse"><span class="id" title="definition">right_inverse</span></a>,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="Algebra.Hierarchy.html#right_identity"><span class="id" title="definition">right_identity</span></a> <span class="id" title="tactic">in</span> <span class="id" title="var">H</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">exact</span> <span class="id" title="var">H</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Qed</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<a id="lab5"></a><h3 class="section">Additive groups of non-trivial rings</h3>
+
+
+<div class="paragraph"> </div>
+
+        Here the group is read additively, with <span class="inlinecode"><span class="id" title="var">id</span></span> playing the role of
+        zero and an element <span class="inlinecode"><span class="id" title="var">one</span></span> distinct from it. 
+</div>
+<div class="code">
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Section</span> <a id="Group.ZeroNeqOne" class="idref" href="#Group.ZeroNeqOne"><span class="id" title="section">ZeroNeqOne</span></a>.<br/>
+</div>
+
+<div class="doc">
+An element <span class="inlinecode"><span class="id" title="var">one</span></span> with <span class="inlinecode"><span class="id" title="var">id</span></span> <span class="inlinecode">≠</span> <span class="inlinecode"><span class="id" title="var">one</span></span>. 
+</div>
+<div class="code">
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Context</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{<a id="Group.ZeroNeqOne.one" class="idref" href="#Group.ZeroNeqOne.one"><span class="id" title="variable">one</span></a> : <a class="idref" href="Algebra.Group.html#Group.T"><span class="id" title="variable">T</span></a>}<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{<a id="Group.ZeroNeqOne.Hn" class="idref" href="#Group.ZeroNeqOne.Hn"><span class="id" title="variable">Hn</span></a> : @<a class="idref" href="Algebra.Hierarchy.html#is_zero_neq_one"><span class="id" title="class">is_zero_neq_one</span></a> <a class="idref" href="Algebra.Group.html#Group.T"><span class="id" title="variable">T</span></a> <a class="idref" href="Algebra.Group.html#Group.eq"><span class="id" title="variable">eq</span></a> <a class="idref" href="Algebra.Group.html#Group.id"><span class="id" title="variable">id</span></a> <a class="idref" href="Algebra.Group.html#one:27"><span class="id" title="variable">one</span></a>}.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<span class="inlinecode">-1</span> <span class="inlinecode">≠</span> <span class="inlinecode">0</span>: the inverse of <span class="inlinecode"><span class="id" title="var">one</span></span> is not the identity. Used for
+          fields, where <span class="inlinecode"><span class="id" title="var">opp</span></span> <span class="inlinecode"><span class="id" title="var">one</span></span> must be non-zero. 
+</div>
+<div class="code">
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <a id="opp_one_neq_zero" class="idref" href="#opp_one_neq_zero"><span class="id" title="lemma">opp_one_neq_zero</span></a> : <a class="idref" href="Algebra.Group.html#Group.inv"><span class="id" title="variable">inv</span></a> <a class="idref" href="Algebra.Group.html#Group.ZeroNeqOne.one"><span class="id" title="variable">one</span></a> <a class="idref" href="Algebra.Group.html#Group.::type_scope:x_'&lt;&gt;'_x"><span class="id" title="notation">≠</span></a> <a class="idref" href="Algebra.Group.html#Group.id"><span class="id" title="variable">id</span></a>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">intro</span> <span class="id" title="var">Ht</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">rewrite</span> <a class="idref" href="Algebra.Group.html#group_inv_id_iff"><span class="id" title="lemma">group_inv_id_iff</span></a> <span class="id" title="tactic">in</span> <span class="id" title="var">Ht</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">pose</span> <span class="id" title="var">proof</span> <a class="idref" href="Algebra.Hierarchy.html#zero_neq_one"><span class="id" title="definition">zero_neq_one</span></a> <span class="id" title="keyword">as</span> <span class="id" title="var">H</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">unfold</span> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Logic.html#not"><span class="id" title="definition">not</span></a> <span class="id" title="tactic">in</span> <span class="id" title="var">H</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">symmetry</span> <span class="id" title="tactic">in</span> <span class="id" title="var">Ht</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">apply</span> <span class="id" title="var">H</span> <span class="id" title="tactic">in</span> <span class="id" title="var">Ht</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">exact</span> <span class="id" title="var">Ht</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Qed</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">End</span> <a class="idref" href="Algebra.Group.html#Group.ZeroNeqOne"><span class="id" title="section">ZeroNeqOne</span></a>.<br/>
+<span class="id" title="keyword">End</span> <a class="idref" href="Algebra.Group.html#Group"><span class="id" title="section">Group</span></a>.<br/>
+</div>
+</div>
+
+<div id="footer">
+<hr/><a href="index_symbols.html">Index</a><hr/>This page has been generated by <a href="http://rocq-prover.org/">coqdoc</a>
+</div>
+
+</div>
+
+</body>
+</html>

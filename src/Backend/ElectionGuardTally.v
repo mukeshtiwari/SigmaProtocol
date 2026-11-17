@@ -1,40 +1,56 @@
-(* A certified verifier for ElectionGuard 2.0 election records
-   (https://www.electionguard.vote, specification version 2.0.0), for the
-   parts of the record that are proofs about ElGamal ciphertexts in the
-   Schnorr group of the specification:
+(** * ElectionGuard tally verifier *)
 
-   - the guardians' proofs of knowledge of their polynomial coefficients
-     (verification 2): Schnorr proofs of K_ij = g^a_ij, and the joint
-     public key K = ∏_i K_i0 (verification 3);
-   - the range proofs of the encrypted selections (verification 5) and
-     the selection-limit proofs of the contests (verification 6): each
-     is a disjunction over j = 0..R of "(α, β / K^j) = (g, K)^ξ", the
-     Or composition of Chaum-Pedersen statements, which is a disjunction
-     of Schnorr statements in the product group G × G with the common
-     base (g, K);
-   - the aggregation of the cast ballots into the encrypted tally
-     (verification 8);
-   - the decryption proofs of the tally (verification 9) and the
-     decrypted values (verification 10): the Chaum-Pedersen statement
-     (K, M) = (g, A)^s, a Schnorr statement in G × G, and T = K^t with
-     M = B / T.
+(** A certified verifier for ElectionGuard 2.0 election records
+    (specification version 2.0.0), covering the parts of the record that
+    are proofs about ElGamal ciphertexts in the specification's Schnorr
+    group.  ElectionGuard encrypts a value [m] as [(α, β) = (g^ξ, K^(m+ξ))]
+    under the joint key [K], so plaintexts are encoded as powers of [K].
+    The numbers below refer to the verification steps of the specification.
 
-   ElectionGuard writes each proof as (challenge c, response v) and the
-   verifier reconstructs the announcements (a, b) = (g^v · α^c, K^w · β^c)
-   with w = v − j·c and checks that the hash of the announcements is the
-   sum of the challenges. In the product group with base (g, K) and
-   message (α, β / K^j), the reconstruction is exactly the Belenios one,
-   (g, K)^v · (α, β / K^j)^c, so the Fiat-Shamir layer of
-   Backend/BeleniosTally.v (fs_verify and its theorems
-   fs_verify_schnorr_accepting and fs_verify_or_accepting) is reused
-   unchanged. The hash functions are parameters, as everywhere in this
-   development: the driver computes them (HMAC-SHA-256 over the
-   specification's fixed-width encodings, keyed by the parameter base
-   hash H_P or the extended base hash H_E) and passes them in. The
-   checks that are only about hashes (manifest, base hashes, contest
-   hashes, confirmation codes) and the hashed-ElGamal contest data are
-   done by the driver. *)
+    - Guardian key ceremony (verifications 2 and 3): each guardian [i]
+      commits to its polynomial coefficients [K_ij = g^(a_ij)] with Schnorr
+      proofs, and [K = ∏_i K_i0] ([verify_guardians]).
+    - Ballot validity (verifications 5 and 6): each selection has a range
+      proof that it encrypts a value in [0..R], and each contest a
+      selection-limit proof that the product of its selections encrypts a
+      value in [0..L].  Each is a disjunction over [j] of the
+      Chaum–Pedersen statement [(α, β / K^j) = (g, K)^ξ]
+      ([verify_range], [verify_contest], [verify_ballot]).
+    - Aggregation (verification 8): the encrypted tally is the product of
+      the valid cast ballots ([encrypted_tally]).
+    - Decryption (verifications 9 and 10): for each tally ciphertext
+      [(A, B)] the record gives [T = K^t] and a proof that
+      [(K, M) = (g, A)^s] with [M = B / T] ([verify_decryption]).
 
+    ElectionGuard writes a proof as (challenge [c], response [v]) and the
+    verifier reconstructs the announcements and checks that their hash is
+    the sum of the challenges.  In the product group with base [(g, K)]
+    this reconstruction coincides with the Belenios one, so the
+    Fiat–Shamir layer ([fs_verify], [fs_verify_schnorr_accepting],
+    [fs_verify_or_accepting]) and the [G × G] instance of
+    [Backend/BeleniosTally.v] are reused unchanged.  The theorems at the
+    end of the file ([verify_guardian_schnorr_accepting],
+    [verify_range_or_accepting], [verify_decryption_schnorr_accepting])
+    state that the reconstructed transcripts are accepting conversations
+    of the library's Schnorr and OR protocols ([Crypto/Sigma.v],
+    [Crypto/OrSigmaGen.v]), whose special soundness then applies.
+
+    The verifier is an inductive certificate [count] built by
+    [compute_final_tally] and [compute_final_count], extracted to OCaml in
+    [src/Extraction/Electionguardlib] with the parameters of
+    [Examples/ElectionGuardIns.v], and run on real records
+    ([bench/electionguard-diff]).
+
+    What is _not_ verified in this file: the hash functions are parameters
+    computed by the OCaml driver (HMAC-SHA-256 over the specification's
+    fixed-width encodings keyed by [H_P] or [H_E]); the hash-only checks
+    (manifest, base hashes, contest hashes, confirmation codes) and the
+    hashed-ElGamal contest data are done by the driver; group membership
+    of the record's elements is not checked here; the decryptions of
+    challenged ballots ([verify_ballot_decryptions], verifications 12 and
+    13) are defined but are not part of the [count] certificate; and, as
+    in Belenios, the soundness of Fiat–Shamir is not formalised (the
+    [..._accepting] theorems do not depend on the hash check). *)
 From Stdlib Require Import Utf8 ZArith Vector List Lia Bool
   setoid_ring.Field Psatz.
 From Algebra Require Import Hierarchy Group Monoid Field Integral_domain Ring Vector_space Product_space.
@@ -43,8 +59,11 @@ From Backend Require Import BeleniosTally.
 From Utility Require Import Util.
 Import VectorNotations.
 
+(** ** Setting *)
 Section ElectionGuard.
 
+  (** Field [F], group [G] (a vector space over [F]) and decidable
+      equalities. *)
   Context
     {F : Type} {zero one : F} {add mul sub div : F -> F -> F} {opp inv : F -> F}
     {Fdec : forall x y : F, {x = y} + {x <> y}}
@@ -53,7 +72,9 @@ Section ElectionGuard.
     {Hvec : @vector_space F (@eq F) zero one add mul sub div opp inv
       G (@eq G) gid ginv gop gpow}.
 
-  (* the product group G × G and the Fiat-Shamir layer of BeleniosTally *)
+  (** Local names for the product group [G × G], its vector-space instance,
+      the Belenios proof type and ciphertexts, and the Fiat–Shamir verifier
+      instantiated in [G] ([fs_verify1]) and in [G × G] ([fs_verify2]). *)
   Local Notation G2 := (G * G)%type.
   Local Notation gop2 := (BeleniosTally.gop2 (gop := gop)).
   Local Notation gpow2 := (BeleniosTally.gpow2 (gpow := gpow)).
@@ -69,74 +90,80 @@ Section ElectionGuard.
   Local Notation fs_verify2 :=
     (fs_verify (zero := zero) (add := add) (Fdec := Fdec) (vadd := gop2) (smul := gpow2)).
 
-  (* ---------------------------------------------------------------- *)
-  (* Election data                                                     *)
-  (* ---------------------------------------------------------------- *)
+  (** ** Election data *)
 
-  (* a contest of the manifest *)
+  (** A contest of the manifest: number of options [nselections], the
+      option limit [R] (each option encrypts a value in [0..R]) and the
+      selection limit [L] (the options sum to a value in [0..L]). *)
   Record contest_spec : Type := mk_contest_spec {
-    nselections : nat;      (* number of options *)
-    option_limit : nat;     (* R: each option encrypts a value in 0..R *)
-    selection_limit : nat   (* L: the options sum to a value in 0..L *)
+    nselections : nat;
+    option_limit : nat;
+    selection_limit : nat
   }.
 
+  (** The election: generator [g], joint public key [K], the number of
+      guardians [n], the quorum [k], and the contests in manifest order. *)
   Record election : Type := mk_election {
-    g : G;                          (* the generator of the specification *)
-    K : G;                          (* the joint election public key *)
-    nguardians : nat;               (* n *)
-    quorum : nat;                   (* k *)
-    contests : list contest_spec    (* in the order of the manifest *)
+    g : G;
+    K : G;
+    nguardians : nat;
+    quorum : nat;
+    contests : list contest_spec
   }.
 
-  (* an encrypted option, with its range proof (R + 1 pairs) *)
+  (** An encrypted option with its range proof ([R + 1] pairs). *)
   Record selection : Type := mk_selection {
     encrypted_vote : ciphertext;
     range_proof : list proof
   }.
 
-  (* an encrypted contest: the contest's position in the manifest, its
-    options in the order of the manifest, and the selection-limit proof
-    (L + 1 pairs) *)
+  (** An encrypted contest: its position in the manifest, its options in
+      manifest order, and its selection-limit proof ([L + 1] pairs). *)
   Record contest : Type := mk_contest {
     cindex : nat;
     selections : list selection;
     limit_proof : list proof
   }.
 
+  (** A ballot: its contests and whether it was cast (as opposed to
+      challenged). *)
   Record ballot : Type := mk_ballot {
     bcontests : list contest;
-    cast : bool                     (* cast, as opposed to challenged *)
+    cast : bool
   }.
 
-  (* The hash functions of one ballot, as ElectionGuard computes them
-    from the extended base hash, the public key, the ciphertext and the
-    announcements. They are supplied by the driver. *)
+  (** The hash functions for one ballot, supplied by the driver:
+      [h_range i j] for option [j] of contest [i] and [h_limit i] for the
+      selection-limit proof of contest [i]. *)
   Record ballot_hashes : Type := mk_ballot_hashes {
-    h_range : nat -> nat -> list G2 -> F;   (* contest i, option j: H(H_E; 0x21, K, α, β, a_0, b_0, …, a_R, b_R) *)
-    h_limit : nat -> list G2 -> F           (* contest i: the same, over the aggregate of its options *)
+    h_range : nat -> nat -> list G2 -> F;
+    h_limit : nat -> list G2 -> F
   }.
 
-  (* ---------------------------------------------------------------- *)
-  (* Range proofs                                                      *)
-  (* ---------------------------------------------------------------- *)
+  (** ** Range proofs and ballot validity *)
 
-  (* the message of the j-th branch: (α, β / K^j) *)
+  (** The target of branch [j]: [(α, β / K^j)]. *)
   Definition message (E : election) (c : ciphertext) (j : nat) : G2 :=
     (fst c, gop (snd c) (ginv (gpow (K E) (nat_to_F j)))).
 
-  (* the statements (α, β / K^j) = (g, K)^ξ, j = 0..R *)
+  (** The [R + 1] statements [(α, β / K^j) = (g, K)^ξ] for [j = 0..R]. *)
   Definition range_statements (E : election) (c : ciphertext) (R : nat) : list (G2 * G2) :=
     List.map (fun j => ((g E, K E), message E c j)) (List.seq 0 (S R)).
 
-  (* verification 5 / 6: the R + 1 proofs of a ciphertext, against the
-    hash of the reconstructed announcements *)
+  (** Range proof of a ciphertext (verifications 5 and 6): the [R + 1]
+      proofs verify against the hash [H] of the reconstructed
+      announcements. *)
   Definition verify_range (E : election) (H : list G2 -> F) (c : ciphertext) (R : nat)
     (pfs : list proof) : bool :=
     fs_verify2 H (range_statements E c R) pfs.
 
+  (** Homomorphic product of a list of ciphertexts. *)
   Definition aggregate (cs : list ciphertext) : ciphertext :=
     sum_ciphertexts (gid := gid) (gop := gop) cs.
 
+  (** A contest is valid when it has the expected number of options, every
+      option's range proof for [0..R] verifies, and the selection-limit
+      proof for [0..L] verifies on the product of its options. *)
   Definition verify_contest (E : election) (hs : ballot_hashes) (spec : contest_spec)
     (ct : contest) : bool :=
     Nat.eqb (length ct.(selections)) spec.(nselections) &&
@@ -146,6 +173,7 @@ Section ElectionGuard.
     verify_range E (hs.(h_limit) ct.(cindex))
       (aggregate (List.map encrypted_vote ct.(selections))) spec.(selection_limit) ct.(limit_proof).
 
+  (** Whether a list of naturals is strictly increasing. *)
   Fixpoint strictly_increasing (l : list nat) : bool :=
     match l with
     | nil => true
@@ -156,8 +184,9 @@ Section ElectionGuard.
         end
     end.
 
-  (* a ballot is valid when its contests are distinct contests of the
-    manifest, in order, and each is valid *)
+  (** A ballot is valid when its contest indices are strictly increasing
+      (distinct and in manifest order), each index names a manifest
+      contest, and each contest is valid. *)
   Definition verify_ballot (E : election) (hs : ballot_hashes) (b : ballot) : bool :=
     strictly_increasing (List.map cindex b.(bcontests)) &&
     forallb (fun ct =>
@@ -166,50 +195,56 @@ Section ElectionGuard.
       | None => false
       end) b.(bcontests).
 
-  (* ---------------------------------------------------------------- *)
-  (* Aggregation (verification 8)                                      *)
-  (* ---------------------------------------------------------------- *)
+  (** ** Aggregation *)
 
-  (* the ciphertexts of contest i of a ballot; a ballot without the
-    contest contributes the neutral element *)
+  (** The ciphertexts of contest [i] of a ballot; a ballot without that
+      contest contributes [n] neutral ciphertexts. *)
   Definition contest_ciphertexts (i n : nat) (b : ballot) : list ciphertext :=
     match List.find (fun ct => Nat.eqb ct.(cindex) i) b.(bcontests) with
     | Some ct => List.map encrypted_vote ct.(selections)
     | None => List.repeat (gid, gid) n
     end.
 
+  (** A ballot laid out as a full tally, contest by contest in manifest
+      order. *)
   Definition ballot_tally (E : election) (b : ballot) : list (list ciphertext) :=
     List.map (fun '(i, spec) => contest_ciphertexts i spec.(nselections) b)
       (List.combine (List.seq 0 (length E.(contests))) E.(contests)).
 
+  (** Component-wise product of two tallies. *)
   Definition mul_tallies (t u : list (list ciphertext)) : list (list ciphertext) :=
     List.map (fun '(cs, ds) =>
       List.map (fun '(c, d) => mul_ciphertext (gop := gop) c d) (List.combine cs ds))
       (List.combine t u).
 
+  (** The empty tally: [(gid, gid)] for every option of every contest. *)
   Definition neutral_tally (E : election) : list (list ciphertext) :=
     List.map (fun spec => List.repeat (gid, gid) spec.(nselections)) E.(contests).
 
-  (* the encrypted tally: the product, option by option, of the cast ballots *)
+  (** The encrypted tally (verification 8): the product of the cast ballots
+      among the given list; challenged ballots are filtered out. *)
   Definition encrypted_tally (E : election) (bs : list ballot) : list (list ciphertext) :=
     List.fold_right (fun b acc => mul_tallies (ballot_tally E b) acc)
       (neutral_tally E) (List.filter cast bs).
 
-  (* ---------------------------------------------------------------- *)
-  (* Guardians (verifications 2 and 3)                                 *)
-  (* ---------------------------------------------------------------- *)
+  (** ** Guardians *)
 
+  (** A guardian: its index (from 1), the coefficient commitments
+      [K_i0, …, K_i(k−1)] and their Schnorr proofs. *)
   Record guardian : Type := mk_guardian {
-    xcoord : nat;                       (* the guardian's index i, from 1 *)
-    coefficients : list G;              (* K_i0, …, K_i(k-1) *)
+    xcoord : nat;
+    coefficients : list G;
     coefficient_proofs : list proof
   }.
 
+  (** Hash function for the proof of coefficient [j] of guardian [i],
+      supplied by the driver. *)
   Record guardian_hashes : Type := mk_guardian_hashes {
-    h_coef : nat -> nat -> list G -> F  (* guardian i, coefficient j: H(H_P; 0x10, i, j, K_ij, h_ij) *)
+    h_coef : nat -> nat -> list G -> F
   }.
 
-  (* each coefficient commitment K_ij comes with a Schnorr proof *)
+  (** A guardian is valid when it has [quorum] coefficients, one proof per
+      coefficient, and each Schnorr proof of [K_ij = g^(a_ij)] verifies. *)
   Definition verify_guardian (E : election) (gh : guardian_hashes) (gd : guardian) : bool :=
     Nat.eqb (length gd.(coefficients)) E.(quorum) &&
     Nat.eqb (length gd.(coefficients)) (length gd.(coefficient_proofs)) &&
@@ -218,7 +253,8 @@ Section ElectionGuard.
       (List.combine (List.seq 0 (length gd.(coefficients)))
         (List.combine gd.(coefficients) gd.(coefficient_proofs))).
 
-  (* K = ∏_i K_i0 *)
+  (** The joint key [∏_i K_i0] (guardians without coefficients
+      contribute nothing). *)
   Definition joint_key (gs : list guardian) : G :=
     List.fold_right (fun gd acc =>
       match gd.(coefficients) with
@@ -226,36 +262,44 @@ Section ElectionGuard.
       | nil => acc
       end) gid gs.
 
+  (** Verifications 2 and 3: there are [nguardians] guardians indexed
+      [1, …, n] in order, each guardian is valid, and the joint key equals
+      [K]. *)
   Definition verify_guardians (E : election) (gh : guardian_hashes) (gs : list guardian) : bool :=
     Nat.eqb (length gs) E.(nguardians) &&
-    (* the guardians are 1, …, n, in order *)
     forallb (fun '(i, gd) => Nat.eqb gd.(xcoord) i)
       (List.combine (List.seq 1 (length gs)) gs) &&
     forallb (verify_guardian E gh) gs &&
     (if Gdec (joint_key gs) E.(K) then true else false).
 
-  (* ---------------------------------------------------------------- *)
-  (* Decryption (verifications 9 and 10)                               *)
-  (* ---------------------------------------------------------------- *)
+  (** ** Decryption *)
 
+  (** A decryption of one tally ciphertext: [T = K^t], the proof, and the
+      decrypted value [t]. *)
   Record decryption : Type := mk_decryption {
-    dT : G;                (* T = K^t, the "b_over_m" of the record *)
+    dT : G;
     dproof : proof;
-    dvalue : F             (* t, the decrypted value *)
+    dvalue : F
   }.
 
+  (** Hash function for the decryption proof of option [j] of contest [i],
+      supplied by the driver. *)
   Record decryption_hashes : Type := mk_decryption_hashes {
-    h_dec : nat -> nat -> list G2 -> F   (* contest i, option j: H(H_E; 0x30, K, A, B, a, b, M) *)
+    h_dec : nat -> nat -> list G2 -> F
   }.
 
-  (* (K, M) = (g, A)^s with M = B / T, and T = K^t *)
+  (** Verifications 9 and 10 for one ciphertext [(A, B)]: with [M = B / T],
+      the proof of [(K, M) = (g, A)^s] verifies (a Schnorr statement in
+      [G × G]), and [T = K^t].  The discrete logarithm [t] is supplied by
+      the record; only the equation is checked. *)
   Definition verify_decryption (E : election) (H : list G2 -> F) (c : ciphertext)
     (d : decryption) : bool :=
     let M := gop (snd c) (ginv d.(dT)) in
     fs_verify2 H (List.cons ((g E, fst c), (K E, M)) List.nil) (List.cons d.(dproof) List.nil) &&
     (if Gdec d.(dT) (gpow (K E) d.(dvalue)) then true else false).
 
-  (* the decryptions of a tally (or of a challenged ballot), option by option *)
+  (** All decryptions of a tally, option by option, with matching
+      shapes. *)
   Definition verify_decryptions (E : election) (dh : decryption_hashes)
     (tally : list (list ciphertext)) (ds : list (list decryption)) : bool :=
     Nat.eqb (length tally) (length ds) &&
@@ -265,20 +309,26 @@ Section ElectionGuard.
         (List.combine (List.seq 0 (length cs)) (List.combine cs dsi)))
       (List.combine (List.seq 0 (length tally)) (List.combine tally ds)).
 
-  (* a challenged ballot (verifications 12 and 13): its own ciphertexts,
-    decrypted *)
+  (** Decryption of a challenged ballot (verifications 12 and 13): its own
+      ciphertexts, laid out as a tally, are checked as above.  Not used by
+      [count]. *)
   Definition verify_ballot_decryptions (E : election) (dh : decryption_hashes)
     (b : ballot) (ds : list (list decryption)) : bool :=
     verify_decryptions E dh (ballot_tally E b) ds.
 
-  (* ---------------------------------------------------------------- *)
-  (* The certificate                                                   *)
-  (* ---------------------------------------------------------------- *)
+  (** ** The certificate *)
 
+  (** [partial us vbs inbs] and [finished us vbs inbs b], as in
+      [Backend/BeleniosTally.v]. *)
   Inductive state : Type :=
   | partial : list ballot -> list ballot -> list ballot -> state
   | finished : list ballot -> list ballot -> list ballot -> bool -> state.
 
+  (** The ElectionGuard certificate.  [ax], [cvalid] and [cinvalid]
+      classify the ballots with [verify_ballot]; [cfinish] checks the
+      guardians ([bg]), that the encrypted tally of the valid cast ballots
+      (in the original order) equals the published one ([bt]), and the
+      decryptions ([bd]); the final flag is [bg && bt && bd]. *)
   Inductive count (E : election) (hs : ballot -> ballot_hashes) : state -> Type :=
   | ax : count E hs (partial nil nil nil)
   | cvalid (b : ballot) (us vbs inbs : list ballot) :
@@ -293,15 +343,14 @@ Section ElectionGuard.
       (dh : decryption_hashes) (tally published : list (list ciphertext))
       (ds : list (list decryption)) (bg bt bd : bool) :
       count E hs (partial us vbs inbs) ->
-      (* the guardians' proofs and the joint public key *)
       verify_guardians E gh gs = bg ->
-      (* the encrypted tally of the valid cast ballots is the published one *)
       tally = encrypted_tally E (List.rev vbs) ->
       tally_eqb (Gdec := Gdec) tally published = bt ->
-      (* the decryption proofs and the decrypted values *)
       verify_decryptions E dh tally ds = bd ->
       count E hs (finished us vbs inbs (bg && bt && bd)).
 
+  (** Classifies the ballots and builds [count E hs (partial bs vbs inbs)],
+      processing the list from its end. *)
   Definition compute_final_tally (E : election) (hs : ballot -> ballot_hashes) :
     forall (bs : list ballot),
     existsT (vbs inbs : list ballot), count E hs (partial bs vbs inbs).
@@ -320,8 +369,10 @@ Section ElectionGuard.
       end).
   Defined.
 
-  (* The certified verifier: the guardians, the ballots, the published
-    encrypted tally and its decryptions; returns the certificate. *)
+  (** The certified verifier: from the guardians, the ballots, the
+      published encrypted tally and its decryptions, returns the final flag
+      and a certificate [count E hs (finished (rev bs) vbs inbs bfinal)].
+      This is the entry point of the extracted verifier. *)
   Definition compute_final_count (E : election) (hs : ballot -> ballot_hashes)
     (gh : guardian_hashes) (gs : list guardian) (bs : list ballot)
     (published : list (list ciphertext)) (dh : decryption_hashes)
@@ -339,12 +390,11 @@ Section ElectionGuard.
       eq_refl eq_refl eq_refl eq_refl).
   Defined.
 
-  (* ---------------------------------------------------------------- *)
-  (* Link to the library                                               *)
-  (* ---------------------------------------------------------------- *)
+  (** ** Link with the Sigma-protocol library *)
 
-  (* A verified coefficient proof is an accepting transcript of the
-    Schnorr protocol for K_ij = g^a_ij. *)
+  (** A verified coefficient proof [(c, s)] for [K_ij] yields the accepting
+      Schnorr conversation [(g^s · K_ij^c; −c; s)] of [Crypto/Sigma.v].
+      An instance of [fs_verify_schnorr_accepting]. *)
   Theorem coefficient_proof_schnorr_accepting : forall (E : election) (H : list G -> F)
     (Kij : G) (c s : F),
     fs_verify1 H (List.cons (g E, Kij) List.nil) (List.cons (c, s) List.nil) = true ->
@@ -355,7 +405,9 @@ Section ElectionGuard.
     exact (fs_verify_schnorr_accepting (Hvec := Hvec) (HV := Hvec) H (g E) Kij c s hv).
   Qed.
 
-  (* every coefficient proof of a verified guardian *)
+  (** If [forallb] holds over [combine (seq k (length xs)) (combine xs ys)],
+      then [f (k + j) x y] holds for every position [j] present in both
+      lists. *)
   Lemma forallb_seq_combine : forall {A B : Type} (f : nat -> A -> B -> bool)
     (xs : list A) (ys : list B) (k : nat),
     forallb (fun '(j, (x, y)) => f j x y) (List.combine (List.seq k (length xs)) (List.combine xs ys)) = true ->
@@ -370,6 +422,8 @@ Section ElectionGuard.
       - rewrite <-Nat.add_succ_comm; exact (ih ys (S k) h2 j x' y hx hy).
   Qed.
 
+  (** For a valid guardian, the proof of every coefficient [K_ij] yields an
+      accepting Schnorr conversation for [K_ij = g^(a_ij)]. *)
   Theorem verify_guardian_schnorr_accepting : forall (E : election) (gh : guardian_hashes)
     (gd : guardian) (j : nat) (Kij : G) (c s : F),
     verify_guardian E gh gd = true ->
@@ -388,14 +442,15 @@ Section ElectionGuard.
       gd.(coefficients) gd.(coefficient_proofs) 0 hf j Kij (c, s) hK hp).
   Qed.
 
-  (* the messages of the branches, as a vector, for the statement about
-    the library's Or composition *)
+  (** The vector of branch targets [message E c k, …, message E c (k+n−1)]. *)
   Fixpoint messages_from (E : election) (c : ciphertext) (k n : nat) : Vector.t G2 n :=
     match n with
     | 0 => []
     | S n' => message E c k :: messages_from E c (S k) n'
     end.
 
+  (** [messages_from] agrees with the list of [message E c j] for
+      [j ∈ seq k n]. *)
   Lemma messages_from_to_list : forall (E : election) (c : ciphertext) (n k : nat),
     Vector.to_list (messages_from E c k n) = List.map (message E c) (List.seq k n).
   Proof.
@@ -406,6 +461,7 @@ Section ElectionGuard.
     rewrite ih; reflexivity.
   Qed.
 
+  (** Pairing a constant with a vector commutes with [Vector.to_list]. *)
   Lemma map2_pair_const_to_list : forall {A B : Type} (a : A) (n : nat) (v : Vector.t B n),
     Vector.to_list (Vector.map2 pair (Vector.const a n) v) = List.map (pair a) (Vector.to_list v).
   Proof.
@@ -415,6 +471,8 @@ Section ElectionGuard.
       cbn; f_equal; apply ih.
   Qed.
 
+  (** [range_statements] written as the list of a vector of statements with
+      the constant base [(g, K)]. *)
   Lemma range_statements_vec : forall (E : election) (c : ciphertext) (n : nat),
     range_statements E c n =
     Vector.to_list (Vector.map2 pair (Vector.const (g E, K E) (S n)) (messages_from E c 0 (S n))).
@@ -423,10 +481,12 @@ Section ElectionGuard.
     rewrite map2_pair_const_to_list, messages_from_to_list, List.map_map; reflexivity.
   Qed.
 
-  (* A verified range proof with R + 1 = 2 + n branches is an accepting
-    transcript of the library's Or composition of the Schnorr statements
-    (α, β / K^j) = (g, K)^ξ in G × G, with the reconstructed announcements
-    and negated challenges. *)
+  (** A verified range proof with [R = n + 1 ≥ 1] (so at least two
+      branches) yields an accepting conversation of the generalised OR
+      composition of [Crypto/OrSigmaGen.v] on the statements
+      [(α, β / K^j) = (g, K)^ξ], [j = 0..R], with reconstructed
+      announcements and challenge vector [(−Σ c_j) :: (−c_0, …, −c_R)].
+      Obtained from [fs_verify_or_accepting] via [range_statements_vec]. *)
   Theorem verify_range_or_accepting : forall (E : election) (H : list G2 -> F)
     (c : ciphertext) (n : nat) (cs ss : Vector.t F (2 + n)),
     verify_range E H c (S n) (Vector.to_list (Vector.map2 pair cs ss)) = true ->
@@ -444,8 +504,8 @@ Section ElectionGuard.
       (Vector.const (g E, K E) (2 + n)) (messages_from E c 0 (2 + n)) cs ss hv).
   Qed.
 
-  (* A verified decryption proof is an accepting transcript of the Schnorr
-    protocol in G × G for (K, M) = (g, A)^s, M = B / T. *)
+  (** A verified decryption yields an accepting conversation, in [G × G],
+      for the Chaum–Pedersen statement [(K, B / T) = (g, A)^s]. *)
   Theorem verify_decryption_schnorr_accepting : forall (E : election) (H : list G2 -> F)
     (c : ciphertext) (d : decryption),
     verify_decryption E H c d = true ->

@@ -5,12 +5,25 @@ From Utility Require Import Zpstar Util.
 From Examples Require Import HeliosTallyIns.
 Import Vspace Schnorr Zpfield Zpgroup VectorNotations.
 
-(* Frontend (voting-client) functions instantiated at the 2048-bit
-   Helios parameters from HeliosTallyIns. Used to benchmark ballot
-   encryption and proof generation at real-world parameters. *)
+(** * Helios voting client at the IACR election parameters
 
+    This file contains the voter-side (front end) functions of
+    [Frontend/Approval.v], instantiated at the 2048-bit Helios group of
+    [Examples/HeliosTallyIns.v]. Each answer is encrypted as
+    [Enc(g^m; r)] with [m ∈ {0, 1}] and proved to be 0 or 1 with a
+    two-branch disjunctive encryption proof. The election key [h] is a
+    parameter, so the same code serves any of the IACR elections (or a
+    fresh key).
+
+    The functions are extracted with [Examples/HeliosTallyIns.v] by
+    [src/Extraction/HeliosTallylib/Extraction.v]. They are used to benchmark
+    ballot encryption and proof generation at real-world parameters
+    ([src/Executable/HeliosBenchcode], and the JavaScript build in
+    [src/Executable/HeliosJscode]). Nothing is proved here. The
+    correctness results are those of [Frontend/Approval.v]. *)
 Section HeliosFrontend.
 
+  (** Entrywise encryption [Enc(g^m_i; r_i)] of an answer vector under [h]. *)
   Definition helios_encrypt_ballot {n : nat} (h : @Schnorr_group p q)
     (rs ms : Vector.t (@Zp q) n) :
     Vector.t (@Schnorr_group p q * @Schnorr_group p q) n.
@@ -24,6 +37,9 @@ Section HeliosFrontend.
     all: (try eapply safe_prime).
   Defined.
 
+  (** Encryption together with the 0-or-1 proofs, one challenge per answer.
+      [uscs] holds each proof's commitment randomness and simulated
+      challenge. *)
   Definition helios_encrypt_ballot_and_generate_enc_proof {n : nat}
     (h : @Schnorr_group p q)
     (rs ms : Vector.t (@Zp q) n)
@@ -44,17 +60,18 @@ Section HeliosFrontend.
     all: (try eapply safe_prime).
   Defined.
 
-  (* The announcements of the ballot, from which the non-interactive 
-     ballot derives its challenges. Approval.ballot_commitment_announcement 
-     proves that they are exactly the announcements of the proofs that 
-     helios_encrypt_ballot_and_generate_enc_proof produces. *)
+  (** The announcements of the ballot's proofs. The non-interactive ballot
+      derives its challenges from them, and
+      [Approval.ballot_commitment_announcement] shows that they are exactly
+      the announcements of the proofs produced by
+      [helios_encrypt_ballot_and_generate_enc_proof]. *)
   Definition helios_generate_ballot_commitment {n : nat}
     (h : @Schnorr_group p q)
     (rs ms : Vector.t (@Zp q) n)
     (uscs : Vector.t (Vector.t (@Zp q) 3) n) :
     Vector.t (Vector.t (@Schnorr_group p q * @Schnorr_group p q) 2) n.
   Proof.
-    refine(@generate_ballot_commitment (@Zp q) Zpfield.zero Zpfield.one 
+    refine(@generate_ballot_commitment (@Zp q) Zpfield.zero Zpfield.one
       zp_opp zp_dec (@Schnorr_group p q)
       (@inv_schnorr_group k p q safe_prime prime_p prime_q)
       (@mul_schnorr_group p q prime_p prime_q)
@@ -64,8 +81,8 @@ Section HeliosFrontend.
     all: (try eapply safe_prime).
   Defined.
 
-  (* unfold a vector of commitment pairs into a flat vector of
-     group elements, used as input to the random oracle *)
+  (** Flattens [n] announcements (two pairs each) into [4n] group elements,
+      the input to the hash. *)
   Definition helios_vector_unfold : ∀ {n : nat},
     Vector.t (Vector.t (@Schnorr_group p q * @Schnorr_group p q) 2) n ->
     Vector.t (@Schnorr_group p q) (4 * n).
@@ -87,6 +104,9 @@ Section HeliosFrontend.
     exact (vha :: vhb :: vhta :: vhtb :: ret).
   Defined.
 
+  (** The non-interactive ballot. The [n] challenges are [fn] applied to
+      [(p, q, g, h)] and all announcements. [fn] is the hash, supplied by the
+      caller. *)
   Definition helios_nizk_encrypt_ballot_and_generate_enc_proof {n : nat}
     (fn : ∀ {m : nat}, Vector.t (Z + (@Schnorr_group p q)) m -> Vector.t (@Zp q) n)
     (h : @Schnorr_group p q)
@@ -101,6 +121,7 @@ Section HeliosFrontend.
     exact(helios_encrypt_ballot_and_generate_enc_proof h rs ms uscs c).
   Defined.
 
+  (** Verification of the 0-or-1 proofs of a ballot under key [h]. *)
   Definition helios_verify_encryption_ballot_proof {n : nat}
     (h : @Schnorr_group p q)
     (proof : Vector.t ((@Schnorr_group p q) * (@Schnorr_group p q) *

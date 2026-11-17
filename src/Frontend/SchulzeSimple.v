@@ -1,28 +1,49 @@
-(* The simplified batched Schulze ballot. Everything is committed under one Pedersen key
-   gs₁ of length m², and most checks are done by the verifier through the
-   homomorphism instead of being proved:
+(** * Receipt-free Schulze ballots, version 3: the simplified batched ballot
 
-     the differences δ = Ms are committed under the derived key
-     g'_i = ∏_k g_k^{M_ki}, so that C_δ = com_{g'}(s; ρ_δ) = com_{gs₁}(Ms; ρ_δ)
-     and δ = Ms holds by construction (com_gd);
+    This file formalises a simplification of the batched ballot of
+    [Frontend/SchulzeBatched.v] (version 2). The published ciphertexts are
+    the same [K = m²] exponential-ElGamal encryptions [Enc(b_(i,j))] of the
+    pairwise preference bits, in row-major order, so the tally of
+    [Backend/SchulzeTally.v] applies unchanged (via [ballot3_bits]). All
+    commitments are Pedersen commitments under a single key [(h1, gs1)]
+    with [|gs1| = K], and most of what version 2 proves with random linear
+    combinations is now checked by the verifier through the homomorphism:
 
-     the bit vectors X^(t) of v = −δ + 2p − b are committed separately,
-     and the verifier forms C₀ = C_δ · C_b · C_p^{-2} · ∏_t C_{X(t)}^{2^t},
-     which the voter opens as a commitment to the zero vector, h₁^{ρ*};
+    - _Differences by construction._ The positions [s] are committed under
+      the derived key [g'_i = ∏_k gs1_k ^ M_(k,i)], where [M] is the
+      [K × m] difference matrix (row [k = (i, j)] is [e_j - e_i]). Then
+      [C_δ = com_g'(s; ρ_δ) = com_gs1(M s; ρ_δ)] ([com_gd]), so the vector
+      committed in [C_δ] under [gs1] is [δ = M s] by construction and no
+      separate [C_s] or scalar row is needed.
+    - _Bit decomposition by a homomorphic check._ The [L] bit vectors
+      [X^(t)] of [v = -δ + 2p - b] are committed separately ([C_X(t)]),
+      and the verifier forms
+[[
+        C₀ = C_δ · C_b · C_p ^ -2 · ∏_t C_X(t) ^ (2^t),
+]]
+      which the voter opens as a commitment to the zero vector, [h1 ^ ρ*].
+    - _One zero argument._ The three Hadamard checks of version 2
+      ([p = b ∘ δ], [X^(t) ∈ {0,1}^K], [b ∈ {0,1}^K]) become one Bayer–Groth
+      zero argument with [R = L + 3] rows, weighted by powers of a
+      challenge [z]: row 0 is [z·b] against [δ], row 1 [z·p] against [-1],
+      row [2 + t] is [z^(2+t)·X^(t)] against [X^(t) - 1] ([t < L]), and row
+      [2 + L] is [z^(2+L)·b] against [b - 1].
 
-     the three Hadamard checks (p = b ∘ δ, X^(t) ∈ {0,1}, b ∈ {0,1}) are one
-     zero argument with L + 3 rows, weighted by powers of a challenge z.
+    The linear-relation proof ([Crypto/LinearSigma.v]) now has only five
+    rows, into [G^5]: [C_δ], [C_b], the two components of the combined
+    ciphertext [∏_k c_k ^ β_k = Enc(⟨β, b⟩; R)], and [C₀ = h1 ^ ρ*]. Its
+    witness is [(s, b, ρ_δ, ρ_b, R, ρ* )]. There are five challenges
+    [β, y, z, c, x] instead of ten.
 
-   The linear argument (Crypto/LinearSigma.v) has five rows into G^5:
-   C_δ, C_b, the two components of the link C_β = ∏ c_k^{β_k}, and C₀;
-   its witness is (s, b, ρ_δ, ρ_b, R, ρ^{*}). Five challenges: β, y, z, c, x.
-
-   This file: the definitions, the honest voter, completeness
-   (ballot3_valid), the Fiat–Shamir form (nizk_ballot3_valid), special
-   soundness (ballot3_sound) in the same rewinding form as
-   Frontend/SchulzeBatched.v, reusing its extractors (beta_bits,
-   decode_positions) and polynomial lemmas, and SHVZK (ballot3_zk). *)
-
+    _Results._ Completeness [ballot3_valid]; Fiat–Shamir completeness
+    [nizk_ballot3_valid]; special soundness [ballot3_sound] in the same
+    rewinding form as [ballot2_sound], reusing its extractors
+    ([beta_bits], [decode_positions]) and polynomial lemmas; and SHVZK
+    [ballot3_zk], which needs only the discrete logarithms of [gs1] in
+    base [h1]. At [m = 17] the ballot is about 180 KB, with about 0.7 s to
+    prove and 1.5 s to verify, against about 350 KB and 4–6 s for version 2
+    on the same machine. The end-to-end theorem is in
+    [Backend/SchulzeSimpleTally.v]. *)
 From Stdlib Require Import Utf8 Vector Fin Lia Bool setoid_ring.Field Permutation List Arith PeanoNat
   RelationClasses Morphisms.
 From Algebra Require Import Hierarchy Group Monoid Field Integral_domain Ring
@@ -32,6 +53,13 @@ From Frontend Require Import Schulze SchulzeBatched.
 From Utility Require Import Util.
 Import ListNotations.
 
+(** ** Parameters and helpers
+
+    As in [Frontend/SchulzeBatched.v], [Hvec] makes [G] a vector space
+    over [F]. The local notations fix the implicit arguments of the
+    generic list, polynomial, commitment and zero-argument operations, and
+    of the definitions and lemmas reused from [Frontend/Schulze.v] and
+    [Frontend/SchulzeBatched.v] (their implicits are not inferable here). *)
 Section SchulzeSimple.
 
   Context
@@ -82,7 +110,6 @@ Section SchulzeSimple.
   Local Notation binding_break := (binding_break (gid := gid) (gop := gop) (gpow := gpow)).
   Local Notation cdec := (Schulze.cdec (ginv := ginv) (gop := gop) (gpow := gpow)).
 
-  (* group laws by name (typeclass search is unreliable with the product instances) *)
   Local Notation gop_assoc := (gop_assoc (Hvec := Hvec)).
   Local Notation gop_comm := (gop_comm (Hvec := Hvec)).
   Local Notation gop_gid_l := (gop_gid_l (Hvec := Hvec)).
@@ -98,14 +125,13 @@ Section SchulzeSimple.
   Local Notation com_add := (com_add (Hvec := Hvec)).
   Local Notation com_scale := (com_scale (Hvec := Hvec)).
 
-  (* ---------------------------------------------------------------- *)
-  (* the statement space G^5                                           *)
-  (* ---------------------------------------------------------------- *)
-
+  (** The statement space [G^5] of the linear proof and the constructor
+      [vec5]. Unlike version 2, no product with [F^2] is needed. *)
   Definition G5vs := vec_vspace (HV := Hvec) 5.
   Definition vec5 (a b c d e : G) : Vector.t G 5 :=
     Vector.cons G a 4 (Vector.cons G b 3 (Vector.cons G c 2 (Vector.cons G d 1 (Vector.cons G e 0 (Vector.nil G))))).
 
+  (** Componentwise addition, scaling and injectivity of [vec5]. *)
   Lemma vec_add5 : forall a b c d e a' b' c' d' e',
     vec_add (vadd := gop) (vec5 a b c d e) (vec5 a' b' c' d' e') =
     vec5 (gop a a') (gop b b') (gop c c') (gop d d') (gop e e').
@@ -125,23 +151,28 @@ Section SchulzeSimple.
     cbn in e1, e2, e3, e4, e5; repeat split; assumption.
   Qed.
 
+  (** The linear-relation Sigma protocol over [G^5]. *)
   Local Notation lin_proof := (@lin_proof F (Vector.t G 5)).
   Local Notation lin_verify := (lin_verify (vadd := vec_add (vadd := gop)) (smul := vec_smul (smul := gpow))
     (Vdec := vec_dec Gdec (n := 5))).
   Local Notation lin_prove := (lin_prove (add := add) (mul := mul)).
 
-  (* ---------------------------------------------------------------- *)
-  (* list and polynomial helpers                                       *)
-  (* ---------------------------------------------------------------- *)
+  (** *** List and polynomial helpers
 
+      Primed copies of the [fsum] and [ladd]/[lscale] lemmas of
+      [Frontend/SchulzeBatched.v], stated with this file's notations. *)
+
+  (** [fsum] is additive. *)
   Lemma fsum_add' : forall (f g : nat -> F) (k : nat),
     fsum (fun i => f i + g i) k = fsum f k + fsum g k.
   Proof. intros f g k; induction k as [| k ih]; cbn [SigmaK.fsum]; [field | rewrite ih; field]. Qed.
 
+  (** [fsum] commutes with scaling. *)
   Lemma fsum_scale' : forall (c : F) (f : nat -> F) (k : nat),
     fsum (fun i => c * f i) k = c * fsum f k.
   Proof. intros c f k; induction k as [| k ih]; cbn [SigmaK.fsum]; [field | rewrite ih; field]. Qed.
 
+  (** Lengths and entries of [lscale] and [ladd]. *)
   Lemma lscale_length' : forall c xs, length (lscale c xs) = length xs.
   Proof. intros; unfold SigmaK.lscale; apply map_length. Qed.
   Lemma ladd_length' : forall xs ys, length xs = length ys -> length (ladd xs ys) = length xs.
@@ -159,7 +190,7 @@ Section SchulzeSimple.
     destruct i as [| i]; [reflexivity | cbn [SigmaK.ladd combine map nth fst snd]; apply ih; cbn in *; lia].
   Qed.
 
-  (* a fold over a mapped segment is a finite sum *)
+  (** A fold over a mapped [seq] segment is a finite sum. *)
   Lemma fold_map_seq : forall (f : nat -> F) (st k : nat),
     fold_right add zero (map f (seq st k)) = fsum (fun i => f (st + i)%nat) k.
   Proof.
@@ -168,6 +199,7 @@ Section SchulzeSimple.
     f_equal; apply fsum_ext; intros i hi; f_equal; lia.
   Qed.
 
+  (** The sum of the row star products of a zero argument as an [fsum]. *)
   Lemma fold_combine_fsum : forall (y : F) (A B : list (list F)), length A = length B ->
     fold_right add zero (map (fun p => star y (fst p) (snd p)) (combine A B)) =
     fsum (fun i => star y (nth i A []) (nth i B [])) (length A).
@@ -178,15 +210,18 @@ Section SchulzeSimple.
     rewrite ih by (cbn in hl; lia). rewrite (fsum_shift (Hvec := Hvec)); cbn [nth]; reflexivity.
   Qed.
 
+  (** [combine] of two maps over one list. *)
   Lemma combine_map_same : forall {A B C : Type} (f : A -> B) (g : A -> C) (l : list A),
     combine (map f l) (map g l) = map (fun a => (f a, g a)) l.
   Proof. intros; induction l as [| a l ih]; [reflexivity | cbn; rewrite ih; reflexivity]. Qed.
 
+  (** [com_list] of two maps over one list. *)
   Lemma com_list_map : forall (h : G) (gs : list G) {A : Type} (f : A -> list F) (g : A -> F) (l : list A),
     com_list h gs (map f l) (map g l) = map (fun a => com h gs (f a) (g a)) l.
   Proof. intros; unfold BayerGroth.com_list; rewrite combine_map_same, map_map; reflexivity. Qed.
 
-  (* Horner evaluation of a mapped segment *)
+  (** Horner evaluation of a mapped [seq] segment:
+      [eval (c st, c (st+1), …) z = Σ_j z^j c (st + j)]. *)
   Lemma eval_map_seq : forall (c : nat -> F) (z : F) (st k : nat),
     eval (map c (seq st k)) z = fsum (fun j => fpow z j * c (st + j)%nat) k.
   Proof.
@@ -196,6 +231,7 @@ Section SchulzeSimple.
     apply fsum_ext; intros j hj; cbn [SigmaK.fpow]; replace (st + S j)%nat with (S st + j)%nat by lia; field.
   Qed.
 
+  (** Powers of a non-zero field element are non-zero. *)
   Lemma fpow_nonzero : forall (z : F) (k : nat), z <> zero -> fpow z k <> zero.
   Proof.
     intros z k hz; induction k as [| k ih]; cbn [SigmaK.fpow].
@@ -203,25 +239,30 @@ Section SchulzeSimple.
     + intro e; destruct (mul_eq_zero (Fdec := Fdec) (Hf := vector_space_field) _ _ e); [exact (hz H) | exact (ih H)].
   Qed.
 
+  (** A commitment to the zero vector is [h ^ r]. *)
   Lemma com_zeros : forall (h : G) (gs : list G) (k : nat) (r : F), com h gs (repeat zero k) r = h ^ r.
   Proof. intros; unfold BayerGroth.com; rewrite (lmexp_repeat_zero (HV := Hvec)), gop_gid_r; reflexivity. Qed.
 
+  (** A commitment with randomness [0] is a multi-exponentiation. *)
   Lemma com_rand_zero : forall (h : G) (gs : list G) (v : list F), com h gs v zero = gmexp gs v.
   Proof. intros; unfold BayerGroth.com; rewrite pow_zero, gop_gid_l; reflexivity. Qed.
 
+  (** A list as the map of its entries. *)
   Lemma list_as_map_nth : forall (l : list F), l = map (fun i => nth i l zero) (seq 0 (length l)).
   Proof.
     intros l; apply (nth_ext _ _ zero zero); [rewrite map_length, seq_length; reflexivity |].
     intros i hi; rewrite nth_map_seq by exact hi; reflexivity.
   Qed.
 
-  (* Σ_{t<k} c(st+t) · V(st+t), as a vector of length len *)
+  (** [lincomb len c V st k = Σ_(t<k) c(st+t) · V(st+t)] as a vector of
+      length [len]. *)
   Fixpoint lincomb (len : nat) (c : nat -> F) (V : nat -> list F) (st k : nat) : list F :=
     match k with
     | 0 => repeat zero len
     | S k' => ladd (lscale (c st) (V st)) (lincomb len c V (S st) k')
     end.
 
+  (** Length and entries of [lincomb]. *)
   Lemma lincomb_length : forall len c V st k, (forall t, (st <= t < st + k)%nat -> length (V t) = len) ->
     length (lincomb len c V st k) = len.
   Proof.
@@ -245,7 +286,8 @@ Section SchulzeSimple.
       apply fsum_ext; intros t ht; replace (st + S t)%nat with (S st + t)%nat by lia; reflexivity.
   Qed.
 
-  (* ∏_t com(V t; r t)^{c t} = com(Σ_t c t · V t; Σ_t c t · r t) *)
+  (** Homomorphism of Pedersen commitments:
+      [∏_t com(V t; r t) ^ (c t) = com(Σ_t c t · V t; Σ_t c t · r t)]. *)
   Lemma com_lincomb : forall (h : G) (gs : list G) (len : nat) (c r : nat -> F) (V : nat -> list F) (st k : nat),
     (forall t, (st <= t < st + k)%nat -> length (V t) = len) ->
     gmexp (map (fun t => com h gs (V t) (r t)) (seq st k)) (map c (seq st k)) =
@@ -259,14 +301,12 @@ Section SchulzeSimple.
       f_equal; f_equal; apply fsum_ext; intros t ht; replace (st + S t)%nat with (S st + t)%nat by lia; reflexivity.
   Qed.
 
-  (* ---------------------------------------------------------------- *)
-  (* the ballot                                                        *)
-  (* ---------------------------------------------------------------- *)
+  (** ** The simplified ballot
 
+      The section fixes [m = n + 1] candidates, the bit length [L], the
+      election key [(g, h)] and the commitment key [(h1, gs1)]. *)
   Section Ballot3.
 
-    (* m = S n candidates, L bits per difference, keys: the election key
-       (g, h), the commitment key (h1, gs1) of length K = m² *)
     Context {n : nat} (L : nat) (g h h1 : G) (gs1 : list G).
     Local Notation m := (S n).
     Local Notation K := (SchulzeBatched.K (n := n)).
@@ -290,27 +330,37 @@ Section SchulzeSimple.
     Local Notation nth_hon_d := (nth_hon_d (zero := zero) (one := one) (add := add) (sub := sub) (n := n)).
     Local Notation nth_hon_p := (nth_hon_p (zero := zero) (one := one) (add := add) (mul := mul) (sub := sub) (n := n)).
 
-    (* witness layout: s | b | ρ_δ ρ_b R ρ* *)
+    (** Witness layout: [s] (length [m]) at [0], [b] (length [K]) at
+        [oB3], then four scalars at [oR3]: [ρ_δ], [ρ_b], the combined
+        encryption randomness [⟨β, r⟩] and [ρ*]. [W3] is the witness length
+        and [R = L + 3] the number of rows of the zero argument. *)
     Definition oB3 : nat := m.
     Definition oR3 : nat := (m + K)%nat.
     Definition W3 : nat := (oR3 + 4)%nat.
     Definition R : nat := (L + 3)%nat.
 
-    (* the difference matrix M: row k = (i, j) (k = i·m + j) is e_j − e_i *)
+    (** The difference matrix: [mcoef k i] is the entry [(k, i)] of [M]
+        ([ [i = k mod m] - [i = k / m] ]), [mcol i] its [i]-th column,
+        [Ms s = M s] the difference vector, and [gd] the derived key
+        [g'_i = ∏_k gs1_k ^ M_(k,i)]. *)
     Definition mcoef (k i : nat) : F :=
       (if Nat.eqb (k mod m) i then one else zero) - (if Nat.eqb (k / m) i then one else zero).
     Definition mcol (i : nat) : list F := map (fun k => mcoef k i) (seq 0 K).
     Definition Ms (s : list F) : list F :=
       map (fun k => nth (k mod m) s zero - nth (k / m) s zero) (seq 0 K).
-    (* the derived position key g'_i = ∏_k g_k^{M_ki} *)
     Definition gd : list G := map (fun i => gmexp gs1 (mcol i)) (seq 0 m).
 
-    (* the exponents 2^t and C₀ = C_δ · C_b · C_p^{-2} · ∏_t C_{X(t)}^{2^t} *)
+    (** [pows2 = (2^0, …, 2^(L-1))] and the verifier's combination
+        [C₀ Cd Cb Cp CX = Cd · Cb · Cp ^ -2 · ∏_t CX_t ^ (2^t)]. *)
     Definition pows2 : list F := map pow2F (seq 0 L).
     Definition C0 (Cd Cb Cp : G) (CX : list G) : G :=
       gop (gop Cd Cb) (gop (Cp ^ (opp (one + one))) (gmexp CX pows2)).
 
-    (* the statement of the linear proof as a function of the witness *)
+    (** The linear map of the linear proof:
+[[
+      ( com_gd(s; ρ_δ), com_gs1(b; ρ_b), g ^ R, g ^ ⟨β, b⟩ · h ^ R, h1 ^ ρ* )
+]]
+        *)
     Definition phi3 (beta : list F) (w : list F) : Vector.t G 5 :=
       vec5 (com h1 gd (wslice w 0 m) (wat w oR3))
            (com h1 gs1 (wslice w oB3 K) (wat w (oR3 + 1)))
@@ -318,23 +368,29 @@ Section SchulzeSimple.
            (gop (g ^ dot beta (wslice w oB3 K) K) (h ^ wat w (oR3 + 2)))
            (h1 ^ wat w (oR3 + 3)).
 
+    (** A simplified ballot: [K] ciphertexts, [C_δ], [C_b], [C_p], the [L]
+        bit-vector commitments [C_X], the linear proof and one zero
+        argument. *)
     Record ballot3 : Type := mk_ballot3 {
       b3_cs : list (G * G);
       b3_Cd : G; b3_Cb : G; b3_Cp : G; b3_CX : list G;
       b3_lin : lin_proof;
       b3_z : zero_argument }.
 
+    (** The challenges [β] (length [K]), [y], [z], [c], [x]. *)
     Record chal3 : Type := mk_chal3 { c3_beta : list F; c3_y : F; c3_z : F; c3_c : F; c3_x : F }.
 
+    (** The statement of the linear proof read off the ballot. *)
     Definition target3 (beta : list F) (bt : ballot3) : Vector.t G 5 :=
       let cb := cbeta beta (b3_cs bt) in
       vec5 (b3_Cd bt) (b3_Cb bt) (fst cb) (snd cb) (C0 (b3_Cd bt) (b3_Cb bt) (b3_Cp bt) (b3_CX bt)).
 
-    (* the rows of the zero argument, weighted by powers of z:
-         row 0:     z·b        against δ
-         row 1:     z·p        against −1
-         row 2+t:   z^{2+t}·X(t) against X(t) − 1   (t < L)
-         row 2+L:   z^{2+L}·b  against b − 1 *)
+    (** The rows of the zero argument as functions of the row index:
+        [zwt z i] is the weight ([z] for rows 0 and 1, [z^i] otherwise);
+        [baseA] the row commitment before weighting ([C_b], [C_p], [C_X(t)],
+        and [C_b] again for row [2 + L]); [rowA] the weighted
+        [A]-commitment; [rowB] the [B]-commitment ([C_δ], [com(-1)],
+        or [baseA · com(-1)]). [zA], [zB] list the [R] rows. *)
     Definition zwt (z : F) (i : nat) : F := match i with 0 | 1 => z | _ => fpow z i end.
     Definition baseA (bt : ballot3) (i : nat) : G :=
       match i with
@@ -352,20 +408,21 @@ Section SchulzeSimple.
     Definition zA (z : F) (bt : ballot3) : list G := map (rowA z bt) (seq 0 R).
     Definition zB (bt : ballot3) : list G := map (rowB bt) (seq 0 R).
 
+    (** The interactive verifier: [K] ciphertexts, [L] bit commitments, the
+        linear proof and the zero argument accept. *)
     Definition verify_ballot3 (ch : chal3) (bt : ballot3) : bool :=
       (Nat.eqb (length (b3_cs bt)) K) && (Nat.eqb (length (b3_CX bt)) L) &&
       lin_verify W3 (phi3 (c3_beta ch)) (target3 (c3_beta ch) bt) (c3_c ch) (b3_lin bt) &&
       zero_verify h1 gs1 (zA (c3_z ch) bt) (zB bt) (c3_y ch) (c3_x ch) (b3_z bt).
 
-    (* the ciphertexts as the m × m matrix of Frontend/Schulze.v, for aggregation *)
+    (** The ciphertexts as the [m × m] matrix of [Frontend/Schulze.v]. *)
     Definition ballot3_bits (bt : ballot3) : Vector.t (Vector.t (G * G) m) m :=
       Vector.map (fun i => Vector.map (fun j =>
         nth (fin_idx i * m + fin_idx j) (b3_cs bt) cid) (fin_enum m)) (fin_enum m).
 
-    (* ---------------------------------------------------------------- *)
-    (* the derived key                                                   *)
-    (* ---------------------------------------------------------------- *)
+    (** *** The derived key *)
 
+    (** Lengths and entries of [mcol] and [Ms]. *)
     Lemma mcol_length : forall i, length (mcol i) = K.
     Proof. intros; unfold mcol; rewrite map_length, seq_length; reflexivity. Qed.
     Lemma Ms_length : forall s, length (Ms s) = K.
@@ -373,6 +430,7 @@ Section SchulzeSimple.
     Lemma nth_Ms : forall s k, (k < K)%nat -> nth k (Ms s) zero = nth (k mod m) s zero - nth (k / m) s zero.
     Proof. intros; unfold Ms; rewrite nth_map_seq by assumption; reflexivity. Qed.
 
+    (** [Σ_j f j · [i = j] = f i]. *)
     Lemma fsum_indicator : forall (f : nat -> F) (i len : nat), (i < len)%nat ->
       fsum (fun j => f j * (if Nat.eqb i j then one else zero)) len = f i.
     Proof.
@@ -382,6 +440,7 @@ Section SchulzeSimple.
       + intros j hj hji; rewrite (proj2 (Nat.eqb_neq i j)) by lia; field.
     Qed.
 
+    (** [Σ_i s_i · mcol i = M s]. *)
     Lemma lincomb_mcol : forall s, length s = m ->
       lincomb K (fun i => nth i s zero) mcol 0 m = Ms s.
     Proof.
@@ -396,7 +455,8 @@ Section SchulzeSimple.
         rewrite fsum_add', fsum_scale', !fsum_indicator by assumption; field.
     Qed.
 
-    (* com_{g'}(s; ρ) = com_{gs₁}(Ms; ρ) *)
+    (** [com_g'(s; ρ) = com_gs1(M s; ρ)]: the derived-key commitment to the
+        positions is a [gs1]-commitment to the differences. *)
     Lemma com_gd : forall s rho, length s = m -> com h1 gd s rho = com h1 gs1 (Ms s) rho.
     Proof.
       intros s rho hs; unfold BayerGroth.com at 1; unfold gd.
@@ -411,10 +471,10 @@ Section SchulzeSimple.
       rewrite (fsum_zero (Hf := vector_space_field)), com_rand_zero; reflexivity.
     Qed.
 
-    (* ---------------------------------------------------------------- *)
-    (* linearity of phi3                                                 *)
-    (* ---------------------------------------------------------------- *)
+    (** *** Linearity of [phi3] *)
 
+    (** Slicing, entries and inner products distribute over [ladd] and
+        [lscale] on witnesses of length [W3]. *)
     Lemma wslice_ladd3 : forall w w' off len, length w = W3 -> length w' = W3 -> (off + len <= W3)%nat ->
       wslice (ladd w w') off len = ladd (wslice w off len) (wslice w' off len).
     Proof.
@@ -446,9 +506,11 @@ Section SchulzeSimple.
       rewrite nth_lscale' by lia; field.
     Qed.
 
+    (** All slices fit in [W3]. *)
     Lemma W3_offsets : (0 + m <= W3 /\ oB3 + K <= W3 /\ oR3 + 3 < W3)%nat.
     Proof. unfold W3, oR3, oB3; lia. Qed.
 
+    (** [phi3] is additive on witnesses of length [W3]. *)
     Lemma phi3_add : forall beta w w', length w = W3 -> length w' = W3 ->
       phi3 beta (ladd w w') = vec_add (vadd := gop) (phi3 beta w) (phi3 beta w').
     Proof.
@@ -459,6 +521,7 @@ Section SchulzeSimple.
       f_equal. apply gop_rearrange.
     Qed.
 
+    (** [phi3] commutes with scaling on witnesses of length [W3]. *)
     Lemma phi3_scale : forall beta c w, length w = W3 ->
       phi3 beta (lscale c w) = vec_smul (smul := gpow) (phi3 beta w) c.
     Proof.
@@ -469,32 +532,39 @@ Section SchulzeSimple.
       f_equal. rewrite gop_pow; reflexivity.
     Qed.
 
-    (* ---------------------------------------------------------------- *)
-    (* the honest voter                                                  *)
-    (* ---------------------------------------------------------------- *)
+    (** *** The honest voter *)
 
-    (* bit t of every v_k *)
+    (** [hon_Xt sn t] is the bit vector [X^(t)]: bit [t] of [v_k] for every
+        cell [k]. *)
     Definition hon_Xt (sn : list nat) (t : nat) : list F :=
       map (fun k => natF (bit (pos_v sn k) t)) (seq 0 K).
 
+    (** The voter's randomness: encryption randomness [r3_r], commitment
+        randomness [r3_rd], [r3_rb], [r3_rp] and [r3_rX] (one per bit
+        vector), the linear announcement randomness [r3_a] and the
+        zero-argument randomness [r3_a0 … r3_t2]. *)
     Record rand3 : Type := mk_rand3 {
-      r3_r : list F;                       (* K encryption randomnesses *)
-      r3_rd : F; r3_rb : F; r3_rp : F;     (* commitment randomness *)
-      r3_rX : list F;                      (* L commitment randomnesses for the bit vectors *)
-      r3_a : list F;                       (* W3, the linear proof *)
+      r3_r : list F;
+      r3_rd : F; r3_rb : F; r3_rp : F;
+      r3_rX : list F;
+      r3_a : list F;
       r3_a0 : list F; r3_bm : list F; r3_r0 : F; r3_sm : F; r3_t1 : list F; r3_t2 : list F }.
 
+    (** The honest ciphertexts. *)
     Definition hon_cs3 (sn : list nat) (rd : rand3) : list (G * G) :=
       map (fun k => enc g h (natF (pos_bit sn k)) (nth k (r3_r rd) zero)) (seq 0 K).
 
-    (* ρ* = ρ_δ + ρ_b − 2ρ_p + Σ_t 2^t ρ_X(t) *)
+    (** [ρ* = ρ_δ + ρ_b - 2ρ_p + Σ_t 2^t ρ_X(t)], the randomness of [C₀]. *)
     Definition rho_star (rd : rand3) : F :=
       r3_rd rd + r3_rb rd + (opp (one + one) * r3_rp rd + fsum (fun t => pow2F t * nth t (r3_rX rd) zero) L).
 
+    (** The honest witness [(s, b, ρ_δ, ρ_b, ⟨β, r⟩, ρ* )]. *)
     Definition hon_w3 (beta : list F) (sn : list nat) (rd : rand3) : list F :=
       hon_s sn ++ hon_b sn ++ [r3_rd rd; r3_rb rd; dot beta (r3_r rd) K; rho_star rd].
 
-    (* the rows of the honest zero argument *)
+    (** The rows of the honest zero argument as vectors and randomness:
+        [hon_vecA], [hon_vecB] and [hon_rA], [hon_rB] mirror [baseA] and
+        [rowB]. *)
     Definition hon_vecA (sn : list nat) (i : nat) : list F :=
       match i with
       | 0 => hon_b sn
@@ -516,6 +586,8 @@ Section SchulzeSimple.
     Definition hon_rB (rd : rand3) (i : nat) : F :=
       match i with 0 => r3_rd rd | 1 => zero | S (S t) => hon_rA rd i end.
 
+    (** [encrypt_ballot3 ch sn rd]: the honest ballot for positions [sn]
+        under challenges [ch]. *)
     Definition encrypt_ballot3 (ch : chal3) (sn : list nat) (rd : rand3) : ballot3 :=
       let beta := c3_beta ch in let z := c3_z ch in
       mk_ballot3 (hon_cs3 sn rd)
@@ -527,10 +599,9 @@ Section SchulzeSimple.
           (map (fun i => zwt z i * hon_rA rd i) (seq 0 R)) (map (hon_rB rd) (seq 0 R))
           (c3_y ch) (r3_a0 rd) (r3_bm rd) (r3_r0 rd) (r3_sm rd) (r3_t1 rd) (r3_t2 rd) (c3_x ch)).
 
-    (* ---------------------------------------------------------------- *)
-    (* completeness                                                      *)
-    (* ---------------------------------------------------------------- *)
+    (** *** Completeness *)
 
+    (** Length, entries and bit property of [hon_Xt]. *)
     Lemma hon_Xt_length : forall sn t, length (hon_Xt sn t) = K.
     Proof. intros; unfold hon_Xt; rewrite map_length, seq_length; reflexivity. Qed.
     Lemma nth_hon_Xt : forall sn t k, (k < K)%nat -> nth k (hon_Xt sn t) zero = natF (bit (pos_v sn k) t).
@@ -541,6 +612,7 @@ Section SchulzeSimple.
       destruct (bit_01 (pos_v sn k) t) as [e | e]; rewrite e; [left; reflexivity | right; apply (natF_one (Hvec := Hvec))].
     Qed.
 
+    (** [M] applied to the honest positions gives the honest differences. *)
     Lemma Ms_hon : forall sn, length sn = m -> Ms (hon_s sn) = hon_d sn.
     Proof.
       intros sn hsn; apply (nth_ext _ _ zero zero); [rewrite Ms_length, hon_d_length; reflexivity |].
@@ -548,6 +620,7 @@ Section SchulzeSimple.
       destruct (kdm_lt k hk) as (hd & hm); rewrite !nth_hon_s by lia; reflexivity.
     Qed.
 
+    (** The combined honest ciphertext encrypts [⟨β, b⟩]. *)
     Lemma cbeta_hon3 : forall beta sn rd, length beta = K ->
       cbeta beta (hon_cs3 sn rd) = enc g h (dot beta (hon_b sn) K) (dot beta (r3_r rd) K).
     Proof.
@@ -556,6 +629,7 @@ Section SchulzeSimple.
       apply enc_ext; apply fsum_ext; intros i hi; rewrite Nat.add_0_l; [rewrite nth_hon_b by exact hi |]; reflexivity.
     Qed.
 
+    (** The honest witness has length [W3] and the expected slices. *)
     Lemma hon_w3_length : forall beta sn rd, length sn = m -> length (hon_w3 beta sn rd) = W3.
     Proof.
       intros * hsn; unfold hon_w3, W3, oR3; rewrite !app_length, hon_s_length, hon_b_length by exact hsn.
@@ -582,7 +656,7 @@ Section SchulzeSimple.
         rewrite !wat_app_shift by reflexivity; reflexivity.
     Qed.
 
-    (* the 2^t-combination of the bit commitments *)
+    (** [∏_t C_X(t) ^ (2^t)] is the commitment to [Σ_t 2^t X^(t)]. *)
     Lemma gmexp_CX : forall (X : nat -> list F) (rX : nat -> F),
       (forall t, (t < L)%nat -> length (X t) = K) ->
       gmexp (map (fun t => com h1 gs1 (X t) (rX t)) (seq 0 L)) pows2 =
@@ -593,7 +667,9 @@ Section SchulzeSimple.
       f_equal; apply fsum_ext; intros t ht; rewrite Nat.add_0_l; reflexivity.
     Qed.
 
-    (* C₀ on openings: a commitment to δ + b − 2p + Σ_t 2^t X(t) *)
+    (** [C₀] on openings is the commitment to
+        [δ + b - 2p + Σ_t 2^t X^(t)] with randomness
+        [ρ_δ + ρ_b - 2ρ_p + Σ_t 2^t ρ_X(t)]. *)
     Lemma C0_com : forall (d b p : list F) (rd rb rp : F) (X : nat -> list F) (rX : nat -> F),
       length d = K -> length b = K -> length p = K -> (forall t, (t < L)%nat -> length (X t) = K) ->
       C0 (com h1 gs1 d rd) (com h1 gs1 b rb) (com h1 gs1 p rp) (map (fun t => com h1 gs1 (X t) (rX t)) (seq 0 L)) =
@@ -612,6 +688,9 @@ Section SchulzeSimple.
       reflexivity.
     Qed.
 
+    (** For positions at most [m < 2^L], the honest
+        [δ + b - 2p + Σ_t 2^t X^(t)] is the zero vector; hence the honest
+        [C₀] is [h1 ^ ρ*]. *)
     Lemma hon_zero_vec : forall sn, length sn = m -> (forall i, (i < m)%nat -> (nth i sn 0 <= m)%nat) ->
       (m < Nat.pow 2 L)%nat ->
       ladd (ladd (hon_d sn) (hon_b sn)) (ladd (lscale (opp (one + one)) (hon_p sn)) (lincomb K pow2F (hon_Xt sn) 0 L)) =
@@ -624,6 +703,7 @@ Section SchulzeSimple.
         by (rewrite ladd_length', hon_d_length; [reflexivity | rewrite hon_d_length, hon_b_length; reflexivity]).
       assert (hl2 : length (ladd (lscale (opp (one + one)) (hon_p sn)) (lincomb K pow2F (hon_Xt sn) 0 L)) = K)
         by (rewrite ladd_length', hls; [reflexivity | rewrite hls, hlc; reflexivity]).
+      (* Entry k: case analysis on b_k, using the binary expansion of v_k. *)
       apply (nth_ext _ _ zero zero).
       + rewrite ladd_length', hl1, repeat_length; [reflexivity | rewrite hl1, hl2; reflexivity].
       + intros k hk; rewrite ladd_length', hl1 in hk by (rewrite hl1, hl2; reflexivity).
@@ -647,6 +727,7 @@ Section SchulzeSimple.
           rewrite (natF_sub (Hvec := Hvec)) by lia; cbn [nat_to_F]; field.
     Qed.
 
+    (** The honest [target3] is [phi3] of the honest witness. *)
     Lemma target3_phi3 : forall ch sn rd, length sn = m -> length (c3_beta ch) = K ->
       (forall i, (i < m)%nat -> (nth i sn 0 <= m)%nat) -> (m < Nat.pow 2 L)%nat ->
       target3 (c3_beta ch) (encrypt_ballot3 ch sn rd) = phi3 (c3_beta ch) (hon_w3 (c3_beta ch) sn rd).
@@ -661,7 +742,7 @@ Section SchulzeSimple.
       rewrite hon_zero_vec by assumption; rewrite com_zeros; reflexivity.
     Qed.
 
-    (* the honest zero argument: rows and sum *)
+    (** Lengths and bit property of the honest rows. *)
     Lemma hon_vecA_length : forall sn i, length (hon_vecA sn i) = K.
     Proof.
       intros sn i; destruct i as [| [| t]]; cbn [hon_vecA];
@@ -679,6 +760,7 @@ Section SchulzeSimple.
       destruct (Nat.ltb t L); [exact (hon_Xt_bits sn t x hx) | exact (hon_b_bits (Hvec := Hvec) sn x hx)].
     Qed.
 
+    (** The honest [zA] and [zB] are [com_list] of the honest rows. *)
     Lemma hon_zA : forall ch sn rd, length (r3_rX rd) = L ->
       zA (c3_z ch) (encrypt_ballot3 ch sn rd) =
       com_list h1 gs1 (map (fun i => lscale (zwt (c3_z ch) i) (hon_vecA sn i)) (seq 0 R))
@@ -705,6 +787,9 @@ Section SchulzeSimple.
         apply Nat.ltb_lt in ht; rewrite nth_map_seq by exact ht; reflexivity.
     Qed.
 
+    (** The honest zero argument has a zero weighted sum: rows 0 and 1
+        give [z (star(b, δ) + star(b ∘ δ, -1)) = 0], the bit rows give
+        [star(v, v - 1) = 0]. *)
     Lemma hon_zero_sum : forall sn y z, length sn = m ->
       fold_right add zero (map (fun p => star y (fst p) (snd p))
         (combine (map (fun i => lscale (zwt z i) (hon_vecA sn i)) (seq 0 R)) (map (hon_vecB sn) (seq 0 R)))) = zero.
@@ -723,6 +808,9 @@ Section SchulzeSimple.
         star_w y y (hmul (hon_b sn) (hon_d sn)) (repeat (opp one) K))); [field | rewrite hp; field].
     Qed.
 
+    (** Completeness of the simplified ballot: for [m] positions at most
+        [m < 2^L], [|gs1| = K], [|β| = K] and voter randomness of the right
+        lengths, the honest ballot is accepted under any challenges. *)
     Theorem ballot3_valid : forall (ch : chal3) (sn : list nat) (rd : rand3),
       length sn = m -> (forall i, (i < m)%nat -> (nth i sn 0 <= m)%nat) -> (m < Nat.pow 2 L)%nat ->
       length gs1 = K -> length (c3_beta ch) = K ->
@@ -735,9 +823,11 @@ Section SchulzeSimple.
       apply andb_true_iff; split; [apply andb_true_iff; split; [apply andb_true_iff; split |] |].
       + cbn [b3_cs encrypt_ballot3]; unfold hon_cs3; apply Nat.eqb_eq; rewrite map_length, seq_length; reflexivity.
       + cbn [b3_CX encrypt_ballot3]; apply Nat.eqb_eq; rewrite map_length, seq_length; reflexivity.
+        (* The linear proof. *)
       + rewrite target3_phi3 by assumption. cbn [b3_lin encrypt_ballot3].
         apply (lin_completeness W3 (phi3 (c3_beta ch)) (phi3_add (c3_beta ch)) (phi3_scale (c3_beta ch)));
           [apply hon_w3_length; exact hsn | exact ha].
+        (* The zero argument, with rows given by the honest openings. *)
       + rewrite hon_zA by exact hrX; rewrite hon_zB by assumption. cbn [b3_z encrypt_ballot3].
         apply (zero_completeness (Hvec := Hvec) (Gdec := Gdec)); rewrite ?map_length, ?seq_length;
           try (unfold R; lia); try assumption.
@@ -748,26 +838,30 @@ Section SchulzeSimple.
         * apply hon_zero_sum; exact hsn.
     Qed.
 
-    (* ---------------------------------------------------------------- *)
-    (* Fiat–Shamir: every challenge from one random oracle               *)
-    (* ---------------------------------------------------------------- *)
+    (** *** Fiat–Shamir
 
+        Tagged items as in version 2. *)
     Inductive b3_item : Type := B3G (x : G) | B3F (x : F) | B3N (k : nat).
 
+    (** The Fiat–Shamir section, parametric in the hash [H]. *)
     Section NIZK3.
+      (** [H] is an abstract function into [F]. *)
       Context (H : list b3_item -> F).
 
+      (** Item lists for the ciphertexts, the base statement (ciphertexts
+          and commitments), a [G^5] value, and a zero-argument
+          announcement. *)
       Definition items_cs3 (cs : list (G * G)) : list b3_item :=
         concat (map (fun c => [B3G (fst c); B3G (snd c)]) cs).
-      (* the ciphertexts and the commitments: what β, y and z are derived from *)
       Definition items_base3 (bt : ballot3) : list b3_item :=
         items_cs3 (b3_cs bt) ++ [B3G (b3_Cd bt); B3G (b3_Cb bt); B3G (b3_Cp bt)] ++ map B3G (b3_CX bt).
       Definition items_st3 (st : Vector.t G 5) : list b3_item := map B3G (Vector.to_list st).
       Definition items_zero3 (z : zero_argument) : list b3_item :=
         B3G (za_cA0 z) :: B3G (za_cBm z) :: map B3G (za_cd z).
 
-      (* tag 1: β (K values); 2: y; 3: z; 4: c from the linear announcement;
-         5: x from the zero announcement *)
+      (** The challenges: tag 1 for [β] ([K] values), 2 for [y], 3 for [z]
+          (all from the base), 4 for [c] (with the linear announcement),
+          5 for [x] (with the zero-argument announcement). *)
       Definition vec_chal3 (tag : nat) (bt : ballot3) : list F :=
         map (fun k => H (B3N tag :: B3N k :: items_base3 bt)) (seq 0 K).
       Definition challenges_of3 (bt : ballot3) : chal3 :=
@@ -775,20 +869,21 @@ Section SchulzeSimple.
           (H (B3N 4 :: items_base3 bt ++ items_st3 (lin_a (b3_lin bt))))
           (H (B3N 5 :: items_base3 bt ++ items_zero3 (b3_z bt))).
 
+      (** The non-interactive verifier. *)
       Definition nizk_verify_ballot3 (bt : ballot3) : bool :=
         verify_ballot3 (challenges_of3 bt) bt.
 
-      (* the honest voter in three passes: the first fixes β, y, z (from the
-         ciphertexts and commitments), the second fixes c and x (the linear
-         announcement depends on β, the zero announcement on y and z), the
-         third is the ballot *)
+      (** The honest non-interactive voter in three passes: the first
+          fixes [β], [y], [z] (from the ciphertexts and commitments); the
+          second fixes [c] and [x] (the linear announcement depends on [β],
+          the zero announcement on [y] and [z]); the third is the ballot. *)
       Definition chal30 : chal3 := mk_chal3 (repeat zero K) zero zero zero zero.
       Definition nizk_encrypt_ballot3 (sn : list nat) (rd : rand3) : ballot3 :=
         let b0 := encrypt_ballot3 chal30 sn rd in
         let b1 := encrypt_ballot3 (challenges_of3 b0) sn rd in
         encrypt_ballot3 (challenges_of3 b1) sn rd.
 
-      (* the announcements of the honest ballot do not depend on c and x *)
+      (** The derived challenges depend only on [β], [y], [z]. *)
       Lemma challenges_announcements3 : forall ch ch' sn rd,
         c3_beta ch = c3_beta ch' -> c3_y ch = c3_y ch' -> c3_z ch = c3_z ch' ->
         challenges_of3 (encrypt_ballot3 ch sn rd) = challenges_of3 (encrypt_ballot3 ch' sn rd).
@@ -796,9 +891,11 @@ Section SchulzeSimple.
         intros [] [] sn rd e1 e2 e3; cbn in e1, e2, e3; subst; reflexivity.
       Qed.
 
+      (** [β] has length [K]. *)
       Lemma vec_chal3_length : forall tag bt, length (vec_chal3 tag bt) = K.
       Proof. intros; unfold vec_chal3; rewrite map_length, seq_length; reflexivity. Qed.
 
+      (** Completeness of the non-interactive ballot, for every hash [H]. *)
       Theorem nizk_ballot3_valid : forall (sn : list nat) (rd : rand3),
         length sn = m -> (forall i, (i < m)%nat -> (nth i sn 0 <= m)%nat) -> (m < Nat.pow 2 L)%nat ->
         length gs1 = K ->
@@ -819,17 +916,20 @@ Section SchulzeSimple.
 
     End NIZK3.
 
-    (* ---------------------------------------------------------------- *)
-    (* soundness: the linear argument                                    *)
-    (* ---------------------------------------------------------------- *)
+    (** *** Soundness: the linear argument *)
 
+    (** [natF_injective] from [Frontend/Schulze.v]. *)
     Local Notation natF_injective := (natF_injective (zero := zero) (one := one) (add := add)).
 
+    (** The linear proof for coefficients [β] accepted for one announcement
+        at two challenges. *)
     Definition lin_accepts3 (beta : list F) (bt : ballot3) (c0 c1 : F) : Prop :=
       exists (A : Vector.t G 5) (z0 z1 : list F),
         lin_verify W3 (phi3 beta) (target3 beta bt) c0 (mk_lin A z0) = true /\
         lin_verify W3 (phi3 beta) (target3 beta bt) c1 (mk_lin A z1) = true.
 
+    (** Special soundness of the linear proof gives a witness [w] with
+        [phi3 w = target3]. *)
     Lemma lin_open3 : forall beta bt c0 c1, c0 <> c1 -> lin_accepts3 beta bt c0 c1 ->
       exists w, length w = W3 /\ phi3 beta w = target3 beta bt.
     Proof.
@@ -839,6 +939,9 @@ Section SchulzeSimple.
       exists (lin_extract (sub := sub) (mul := mul) (inv := inv) (add := add) (opp := opp) (one := one) c0 c1 z0 z1); split; assumption.
     Qed.
 
+    (** Reading the openings off [phi3 w = target3]: [C_δ] is a
+        [gs1]-commitment to [M s], [C_b] to [b], the combined ciphertext
+        encrypts [⟨β, b⟩], and [C₀ = h1 ^ ρ*]. *)
     Lemma phi3_target_open : forall beta bt w, phi3 beta w = target3 beta bt ->
       b3_Cd bt = com h1 gs1 (Ms (wslice w 0 m)) (wat w oR3) /\
       b3_Cb bt = com h1 gs1 (wslice w oB3 K) (wat w (oR3 + 1)) /\
@@ -852,20 +955,21 @@ Section SchulzeSimple.
       + rewrite (surjective_pairing (cbeta beta (b3_cs bt))); unfold Elgamal.enc; rewrite <-e3, <-e4; reflexivity.
     Qed.
 
-    (* ---------------------------------------------------------------- *)
-    (* soundness: the zero argument                                      *)
-    (* ---------------------------------------------------------------- *)
+    (** *** Soundness: the zero argument
 
-    (* the rows on openings (b, p, X(t)) of C_b, C_p, C_X(t) and (d) of C_δ *)
+        The rows in terms of openings [(b, p, X^(t))] of [C_b], [C_p],
+        [C_X(t)] and [d] of [C_δ]. *)
     Definition vecA (b p : list F) (X : nat -> list F) (i : nat) : list F :=
       match i with 0 => b | 1 => p | S (S t) => if Nat.ltb t L then X t else b end.
     Definition vecB (d b p : list F) (X : nat -> list F) (i : nat) : list F :=
       match i with 0 => d | 1 => repeat (opp one) K | S (S t) => ladd (vecA b p X i) (repeat (opp one) K) end.
+    (** The randomness of the rows on openings. *)
     Definition rA (rb rp : F) (rX : nat -> F) (i : nat) : F :=
       match i with 0 => rb | 1 => rp | S (S t) => if Nat.ltb t L then rX t else rb end.
     Definition rB (rd rb rp : F) (rX : nat -> F) (i : nat) : F :=
       match i with 0 => rd | 1 => zero | S (S t) => rA rb rp rX i end.
 
+    (** Lengths of the rows on openings. *)
     Lemma vecA_length : forall b p X i, length b = K -> length p = K -> (forall t, (t < L)%nat -> length (X t) = K) ->
       length (vecA b p X i) = K.
     Proof.
@@ -880,9 +984,11 @@ Section SchulzeSimple.
       rewrite ladd_length', hA; [reflexivity | rewrite hA, repeat_length; reflexivity].
     Qed.
 
+    (** [zwt z i ≠ 0] for [z ≠ 0]. *)
     Lemma zwt_nonzero : forall z i, z <> zero -> zwt z i <> zero.
     Proof. intros z i hz; destruct i as [| [| i]]; cbn [zwt]; [exact hz | exact hz | apply fpow_nonzero; exact hz]. Qed.
 
+    (** [baseA] on openings. *)
     Lemma baseA_com : forall bt (b p : list F) (X : nat -> list F) (rb rp : F) (rX : nat -> F) i, (i < R)%nat ->
       b3_Cb bt = com h1 gs1 b rb -> b3_Cp bt = com h1 gs1 p rp ->
       (forall t, (t < L)%nat -> nth t (b3_CX bt) gid = com h1 gs1 (X t) (rX t)) ->
@@ -892,6 +998,7 @@ Section SchulzeSimple.
       destruct (Nat.ltb t L) eqn:ht; [apply eCX; apply Nat.ltb_lt; exact ht | exact eCb].
     Qed.
 
+    (** [rowA] and [rowB] on openings. *)
     Lemma rows_com : forall bt z (d b p : list F) (X : nat -> list F) (rd rb rp : F) (rX : nat -> F) i, (i < R)%nat ->
       length b = K -> length p = K -> (forall t, (t < L)%nat -> length (X t) = K) ->
       b3_Cb bt = com h1 gs1 b rb -> b3_Cd bt = com h1 gs1 d rd -> b3_Cp bt = com h1 gs1 p rp ->
@@ -909,8 +1016,9 @@ Section SchulzeSimple.
         unfold SchulzeBatched.cneg; reflexivity.
     Qed.
 
-    (* one accepted zero argument at (y, z), with all commitments opened: the
-       weighted sum of the star products of the openings vanishes *)
+    (** One accepted zero argument at [(y, z)], with all commitments
+        opened: the weighted sum of the star products of the openings
+        vanishes, or [gs1] is broken. *)
     Lemma zero_open_at : forall bt y z (d b p : list F) (X : nat -> list F) (rd rb rp : F) (rX : nat -> F),
       length gs1 = K -> length b = K -> length d = K -> length p = K -> (forall t, (t < L)%nat -> length (X t) = K) ->
       b3_Cb bt = com h1 gs1 b rb -> b3_Cd bt = com h1 gs1 d rd -> b3_Cp bt = com h1 gs1 p rp ->
@@ -926,6 +1034,7 @@ Section SchulzeSimple.
         ltac:(lia) hnd hlen htr) as [(A & B & ra & sb & eA & eB & lA & lB & lra & lsb & hAn & hBn & hsum) | hbk];
         [| left; exact hbk].
       rewrite hzA in lA, lB, lra, lsb.
+      (* Open every row commitment to the expected weighted vector. *)
       assert (hrow : forall i, (i < R)%nat ->
         (nth i A [] = lscale (zwt z i) (vecA b p X i) /\ nth i B [] = vecB d b p X i) \/ binding_break h1 gs1).
       { intros i hi.
@@ -944,6 +1053,7 @@ Section SchulzeSimple.
         destruct (open_eq_or_break_len (Hvec := Hvec) (Fdec := Fdec) h1 gs1 _ _ _ _
           (hBn _ (nth_In B [] hiB)) hlB eBi) as [(eb & _) | hbk]; [| right; exact hbk].
         left; split; assumption. }
+      (* Rewrite the accepted sum of star products row by row. *)
       destruct (forall_or _ _ R hrow) as [hall | hbk]; [right | left; exact hbk].
       rewrite fold_combine_fsum in hsum by lia. rewrite lA in hsum.
       refine (eq_trans _ hsum); apply fsum_ext; intros i hi.
@@ -951,7 +1061,8 @@ Section SchulzeSimple.
       unfold BayerGroth.star; rewrite star_w_lscale_l; reflexivity.
     Qed.
 
-    (* one accepted zero argument at a non-zero z: openings of C_p and the C_X(t) *)
+    (** One accepted zero argument at a non-zero [z] provides openings of
+        [C_p] and of all [C_X(t)] (by unweighting the extracted rows). *)
     Lemma zero_open_ref : forall bt y z, length gs1 = K -> z <> zero ->
       zero_accepts h1 gs1 (zA z bt) (zB bt) y ->
       binding_break h1 gs1 \/ exists (p : list F) (rp : F) (X : nat -> list F) (rX : nat -> F),
@@ -985,7 +1096,8 @@ Section SchulzeSimple.
         rewrite (proj2 (Nat.ltb_lt t' L) ht') in e; exact e.
     Qed.
 
-    (* the weighted sum as a polynomial in z *)
+    (** [qpoly y d b p X]: the coefficients of the weighted sum as a
+        polynomial in [z] (rows 0 and 1 share the coefficient of [z¹]). *)
     Definition qpoly (y : F) (d b p : list F) (X : nat -> list F) : list F :=
       (star y b d + star y p (repeat (opp one) K)) ::
       map (fun t => star y (vecA b p X (S (S t))) (vecB d b p X (S (S t)))) (seq 0 (S L)).
@@ -993,6 +1105,7 @@ Section SchulzeSimple.
     Lemma qpoly_length : forall y d b p X, length (qpoly y d b p X) = (L + 2)%nat.
     Proof. intros; unfold qpoly; cbn [length]; rewrite map_length, seq_length; lia. Qed.
 
+    (** The weighted sum is [z · eval (qpoly …) z]. *)
     Lemma weighted_sum_eval : forall y z d b p X,
       fsum (fun i => zwt z i * star y (vecA b p X i) (vecB d b p X i)) R = z * eval (qpoly y d b p X) z.
     Proof.
@@ -1009,7 +1122,8 @@ Section SchulzeSimple.
       rewrite fsum_scale'. cbn [zwt]. field.
     Qed.
 
-    (* the coefficients vanish on L + 2 distinct non-zero z *)
+    (** If the weighted sum vanishes on [L + 2] distinct non-zero [z], every
+        coefficient vanishes: the product row and each bit row separately. *)
     Lemma coeffs_vanish : forall y d b p X (Z : list F), NoDup Z -> length Z = (L + 2)%nat ->
       (forall z, In z Z -> z <> zero) ->
       (forall z, In z Z -> fsum (fun i => zwt z i * star y (vecA b p X i) (vecB d b p X i)) R = zero) ->
@@ -1026,7 +1140,8 @@ Section SchulzeSimple.
         rewrite nth_map_seq in e by exact ht; exact e.
     Qed.
 
-    (* the rows at K distinct non-zero y: p = b ∘ d, and the bit rows are bits *)
+    (** If the product row vanishes on [K] distinct non-zero [y], then
+        [p = b ∘ d]. *)
     Lemma prod_of_star : forall (b p d : list F) (Y : list F), length b = K -> length p = K -> length d = K ->
       NoDup Y -> length Y = K -> (forall y, In y Y -> y <> zero) ->
       (forall y, In y Y -> star y b d + star y p (repeat (opp one) K) = zero) ->
@@ -1049,6 +1164,8 @@ Section SchulzeSimple.
       transitivity (opp (nth j b zero * nth j d zero + opp one * nth j p zero)); [field | rewrite e; field].
     Qed.
 
+    (** If a bit row vanishes on [K] distinct non-zero [y], then [v] is a
+        bit vector. *)
     Lemma bits_of_star : forall (v : list F) (Y : list F), length v = K ->
       NoDup Y -> length Y = K -> (forall y, In y Y -> y <> zero) ->
       (forall y, In y Y -> star y v (ladd v (repeat (opp one) K)) = zero) ->
@@ -1072,11 +1189,11 @@ Section SchulzeSimple.
       right. apply (sub_eq_zero (Hf := vector_space_field)). etransitivity; [| exact e0]; field.
     Qed.
 
-    (* ---------------------------------------------------------------- *)
-    (* soundness: C₀ and the bit decomposition                           *)
-    (* ---------------------------------------------------------------- *)
+    (** *** Soundness: [C₀] and the bit decomposition *)
 
-    (* C₀ opened as h₁^{ρ*}: the committed vector is zero entry by entry *)
+    (** [C₀ = h1 ^ ρ*] on openings: the committed vector
+        [δ + b - 2p + Σ_t 2^t X^(t)] is zero entry by entry, or [gs1] is
+        broken. *)
     Lemma C0_open : forall (d b p : list F) (X : nat -> list F) (rd rb rp rs : F) (rX : nat -> F) (CX : list G),
       length gs1 = K -> length d = K -> length b = K -> length p = K -> (forall t, (t < L)%nat -> length (X t) = K) ->
       length CX = L -> (forall t, (t < L)%nat -> nth t CX gid = com h1 gs1 (X t) (rX t)) ->
@@ -1089,6 +1206,8 @@ Section SchulzeSimple.
       assert (eC : CX = map (fun t => com h1 gs1 (X t) (rX t)) (seq 0 L)).
       { apply (nth_ext _ _ gid gid); [rewrite map_length, seq_length; exact hCX |].
         intros t ht; rewrite hCX in ht; rewrite nth_map_seq by exact ht; apply eCX; exact ht. }
+      (* C₀ is a commitment to the combined vector; compare it with the
+         zero-vector opening h1 ^ rs by binding. *)
       rewrite eC, (C0_com d b p rd rb rp X rX hd hb hp hX) in e.
       rewrite <-(com_zeros h1 gs1 K rs) in e.
       assert (hlc : length (lincomb K pow2F X 0 L) = K) by (apply lincomb_length; intros t ht; apply hX; lia).
@@ -1099,6 +1218,7 @@ Section SchulzeSimple.
         by (rewrite ladd_length'; lia).
       destruct (open_eq_or_break_len (Hvec := Hvec) (Fdec := Fdec) h1 gs1 _ _ _ _ ltac:(rewrite hl3; exact (eq_sym hg1))
         ltac:(rewrite repeat_length; exact (eq_sym hg1)) e) as [(ev & _) | hbk]; [right | left; exact hbk].
+      (* Read off entry k. *)
       intros k hk.
       pose proof (f_equal (fun l => nth k l zero) ev) as ek; cbn beta in ek.
       rewrite nth_repeat' in ek by exact hk.
@@ -1112,10 +1232,13 @@ Section SchulzeSimple.
         [field | exact ek].
     Qed.
 
-    (* the bit vectors stacked as one vector of length L·K, as decode_positions reads them *)
+    (** The bit vectors stacked as one list of length [L·K], in the layout
+        [decode_positions] expects ([X^(t)_k] at [t·K + k]). *)
     Definition Xflat (X : nat -> list F) : list F :=
       map (fun u => nth (u mod K) (X (u / K)) zero) (seq 0 (L * K)).
 
+    (** Length and entries of [Xflat]; [vbits] and the bit property carry
+        over. *)
     Lemma Xflat_length : forall X, length (Xflat X) = (L * K)%nat.
     Proof. intros; unfold Xflat; rewrite map_length, seq_length; reflexivity. Qed.
 
@@ -1139,16 +1262,26 @@ Section SchulzeSimple.
       apply hX; [apply Nat.Div0.div_lt_upper_bound; lia | apply Nat.mod_upper_bound; lia].
     Qed.
 
-    (* ---------------------------------------------------------------- *)
-    (* soundness: the theorem                                            *)
-    (* ---------------------------------------------------------------- *)
+    (** *** Special soundness *)
 
-    (* a prover accepted by the linear argument on a base β and on a β
-       differing in each single coordinate (two challenges each), and by the
-       zero argument on K distinct non-zero y and L + 2 distinct non-zero z
-       (2(L+3)+1 challenges each), either breaks the binding of the commitment
-       key or has committed to one ranking: positions pos with every pairwise
-       ciphertext encrypting [pos_i < pos_j] *)
+    (** Special soundness of the simplified ballot, in rewinding form.
+        Given [h = g ^ x], [L ≥ 1], [|gs1| = K], characteristic above
+        [3 · 2^L + 2]; the linear proof accepted (two challenges) on a
+        base [β₀] and on, for each [k], a [β'] differing from [β₀] only at
+        [k]; and the zero argument accepted for every [y ∈ Y], [z ∈ Z] with
+        [K] distinct non-zero [y] and [L + 2] distinct non-zero [z] (each at
+        [2R + 1] challenges [x]); then [gs1] is broken or there are
+        positions [pos_i ≤ 2 · 2^L] with every ciphertext [c_(i·m+j)]
+        decrypting to [g ^ [pos_i < pos_j] ].
+
+        Proof outline: extract the base witness ([lin_open3]); the [β]
+        family makes each ciphertext decrypt to its committed bit
+        ([beta_bits]); a reference [(y₀, z₀)] gives openings of [C_p] and
+        [C_X(t)] ([zero_open_ref]), and every [(y, z)] gives the weighted
+        sum on the same openings ([zero_open_at]); separate the rows by [z]
+        ([coeffs_vanish]) and the coordinates by [y] ([prod_of_star],
+        [bits_of_star]); [C₀] gives the binary expansion ([C0_open]); then
+        [decode_positions]. *)
     Theorem ballot3_sound : forall (x : F) (bt : ballot3) (beta0 : list F) (c0 c1 : F) (Y Z : list F),
       h = g ^ x -> (1 <= L)%nat -> length gs1 = K -> natF_injective (3 * Nat.pow 2 L + 2) ->
       length (b3_cs bt) = K -> length (b3_CX bt) = L -> length beta0 = K -> c0 <> c1 ->
@@ -1166,14 +1299,14 @@ Section SchulzeSimple.
     Proof.
       intros x bt beta0 c0 c1 Y Z hh hL hg1 hinj hcs hCX hb0l hc hacc0 hfamb hndY hY hy0 hndZ hZ hz0 hzero.
       pose proof K_pos as hK; pose proof (m_le_K (n := n)) as hmle.
-      (* the base witness *)
+      (* The base witness: openings of C_δ (as M s0) and C_b (as b0). *)
       destruct (lin_open3 beta0 bt c0 c1 hc hacc0) as (w0 & hw0 & hphi0).
       destruct (phi3_target_open beta0 bt w0 hphi0) as (eCd & eCb & ecb0 & eC0).
       set (s0 := wslice w0 0 m) in *; set (b0 := wslice w0 oB3 K) in *; set (d0 := Ms s0) in *.
       assert (hs0 : length s0 = m) by apply wslice_length.
       assert (hb0 : length b0 = K) by apply wslice_length.
       assert (hd0 : length d0 = K) by apply Ms_length.
-      (* any other accepted β opens C_b to b0, or breaks the key *)
+      (* Every β' of the family opens C_b to the same b0, or gs1 is broken. *)
       assert (hagree : forall beta, length beta = K -> lin_accepts3 beta bt c0 c1 ->
         binding_break h1 gs1 \/ exists Rb, cbeta beta (b3_cs bt) = enc g h (dot beta b0 K) Rb).
       { intros beta hbl hacc.
@@ -1184,7 +1317,7 @@ Section SchulzeSimple.
         destruct (open_eq_or_break_len (Hvec := Hvec) (Fdec := Fdec) h1 gs1 _ _ _ _ hl1 hl2
           (eq_trans (eq_sym eCb') eCb)) as [(eb & _) | hbk]; [| left; exact hbk].
         right; exists (wat w (oR3 + 2)); rewrite ecb, eb; reflexivity. }
-      (* every ciphertext encrypts its committed bit *)
+      (* Every ciphertext decrypts to its committed bit. *)
       assert (hbits : binding_break h1 gs1 \/
         forall k, (k < K)%nat -> cdec x (nth k (b3_cs bt) cid) = g ^ nth k b0 zero).
       { destruct (forall_or (fun k => exists beta', differ_at k beta' beta0 /\ cdec x (cbeta beta' (b3_cs bt)) = g ^ dot beta' b0 K)
@@ -1194,14 +1327,15 @@ Section SchulzeSimple.
           left; exists beta'; split; [exact hd |]. rewrite ecb; apply (cdec_enc (Hvec := Hvec)); exact hh.
         - apply (beta_bits (Hvec := Hvec) g h x (b3_cs bt) beta0 b0 hh hcs hb0); [| exact hfam].
           rewrite ecb0; apply (cdec_enc (Hvec := Hvec)); exact hh. }
-      (* the reference openings of C_p and the C_X(t), from one accepted zero argument *)
       assert (hY1 : (1 <= length Y)%nat) by lia.
       assert (hZ1 : (1 <= length Z)%nat) by lia.
       assert (hy0in : In (nth 0 Y zero) Y) by (apply nth_In; lia).
       assert (hz0in : In (nth 0 Z zero) Z) by (apply nth_In; lia).
+      (* Reference openings of C_p and the C_X(t) from one accepted zero
+         argument. *)
       destruct (zero_open_ref bt (nth 0 Y zero) (nth 0 Z zero) hg1 (hz0 _ hz0in) (hzero _ _ hy0in hz0in))
         as [hbk | (p & rp & X & rX & hp & hX & eCp & eCX)]; [left; exact hbk |].
-      (* every accepted (y, z) gives the weighted sum on the same openings *)
+      (* Every accepted (y, z) gives the weighted sum on those openings. *)
       assert (hsums : binding_break h1 gs1 \/
         forall y z, In y Y -> In z Z -> fsum (fun i => zwt z i * star y (vecA b0 p X i) (vecB d0 b0 p X i)) R = zero).
       { destruct (forall_or (fun iy => forall iz, (iz < length Z)%nat ->
@@ -1218,11 +1352,12 @@ Section SchulzeSimple.
           destruct (In_nth Y y zero hy) as (iy & hiy & ey); destruct (In_nth Z z zero hz) as (iz & hiz & ez).
           rewrite <-ey, <-ez; exact (hall iy hiy iz hiz). }
       destruct hsums as [hbk | hsums]; [left; exact hbk |].
-      (* separate the rows by z, then the coordinates by y *)
+      (* Separate the rows by z. *)
       assert (hrows : forall y, In y Y ->
         star y b0 d0 + star y p (repeat (opp one) K) = zero /\
         forall t, (t < S L)%nat -> star y (vecA b0 p X (S (S t))) (vecB d0 b0 p X (S (S t))) = zero).
       { intros y hy; apply (coeffs_vanish y d0 b0 p X Z hndZ hZ hz0); intros z hz; exact (hsums y z hy hz). }
+      (* Then the coordinates by y: p = b ∘ d, X(t) and b are bit vectors. *)
       assert (hprod : forall j, (j < K)%nat -> nth j p zero = nth j b0 zero * nth j d0 zero).
       { apply (prod_of_star b0 p d0 Y hb0 hp hd0 hndY hY hy0); intros y hy; exact (proj1 (hrows y hy)). }
       assert (hXbits : forall t k, (t < L)%nat -> (k < K)%nat -> nth k (X t) zero = zero \/ nth k (X t) zero = one).
@@ -1233,17 +1368,17 @@ Section SchulzeSimple.
       { apply (bits_of_star b0 Y hb0 hndY hY hy0).
         intros y hy; pose proof (proj2 (hrows y hy) L ltac:(lia)) as e; cbn [vecA vecB] in e.
         rewrite Nat.ltb_irrefl in e; exact e. }
-      (* C₀: the binary expansion of v *)
       rewrite eCd, eCb, eCp in eC0.
+      (* C₀: the binary expansion of v. *)
       destruct (C0_open d0 b0 p X _ _ rp _ rX (b3_CX bt) hg1 hd0 hb0 hp hX hCX eCX eC0) as [hbk | hrow]; [left; exact hbk |].
       destruct hbits as [hbk | hbits]; [left; exact hbk |].
-      (* decode *)
       assert (hdm : forall k, (k < K)%nat -> nth k d0 zero = nth (k mod m) s0 zero - nth (k / m) s0 zero).
       { intros k hk; unfold d0; apply nth_Ms; exact hk. }
       assert (hXf : length (Xflat X) = SchulzeBatched.NX (n := n) L) by (rewrite Xflat_length; reflexivity).
       assert (hrow' : forall k, (k < K)%nat ->
         vbits (Xflat X) k + nth k d0 zero - (one + one) * nth k p zero + nth k b0 zero = zero).
       { intros k hk; rewrite vbits_Xflat by exact hk; exact (hrow k hk). }
+      (* Decode positions with the extractor of version 2. *)
       pose proof (decode_positions (Hvec := Hvec) (Fdec := Fdec) L s0 d0 b0 p (Xflat X) hs0 hd0 hb0 hp hXf hinj hdm hbbits
         (Xflat_bits X hXbits) hprod hrow') as hdec.
       right.
@@ -1257,7 +1392,8 @@ Section SchulzeSimple.
           [rewrite (natF_one (Hvec := Hvec)) | cbn [nat_to_F]]; reflexivity.
     Qed.
 
-    (* the rewinding hypotheses of ballot3_sound as one predicate on the ballot *)
+    (** The rewinding hypotheses of [ballot3_sound] as one predicate (used
+        by [Backend/SchulzeSimpleTally.v]). *)
     Definition ballot3_rewound (bt : ballot3) : Prop :=
       length (b3_cs bt) = K /\ length (b3_CX bt) = L /\
       exists (beta0 : list F) (c0 c1 : F) (Y Z : list F),
@@ -1268,7 +1404,7 @@ Section SchulzeSimple.
         NoDup Z /\ length Z = (L + 2)%nat /\ (forall z, In z Z -> z <> zero) /\
         (forall y z, In y Y -> In z Z -> zero_accepts h1 gs1 (zA z bt) (zB bt) y).
 
-    (* soundness restated on the m × m matrix of ciphertexts *)
+    (** [ballot3_sound] restated on the matrix [ballot3_bits]. *)
     Corollary ballot3_sound_bits : forall (x : F) (bt : ballot3),
       h = g ^ x -> (1 <= L)%nat -> length gs1 = K -> natF_injective (3 * Nat.pow 2 L + 2) ->
       ballot3_rewound bt ->
@@ -1287,26 +1423,28 @@ Section SchulzeSimple.
       apply hdec.
     Qed.
 
-    (* ---------------------------------------------------------------- *)
-    (* special honest-verifier zero knowledge                            *)
-    (* ---------------------------------------------------------------- *)
+    (** *** Special honest-verifier zero knowledge
 
-    (* The honest ballot, as a distribution over the voter's randomness, is
-       a permutation of the output of a simulator that has the ciphertexts
-       and the challenges only: the L + 3 commitments are uniform in the
-       group generated by h₁ (the key has known discrete logarithms in base
-       h₁, as in the library's zero-argument simulator; the derived key
-       inherits them through com_gd), and the linear proof and the zero
-       argument are simulated from the commitments by the library's
-       simulators. *)
+        The honest ballot, as a distribution over the voter's randomness,
+        is a permutation of a simulator's output given only the ciphertexts
+        and the challenges: the [L + 3] commitments are uniform in the
+        group generated by [h1] (the key [gs1] has known discrete
+        logarithms [γ] in base [h1], as for the library's zero-argument
+        simulator; the derived key inherits them through [com_gd]), and the
+        proofs are simulated from the commitments by the library
+        simulators. *)
     Import Distr.
     Section ZK3.
+      (** The enumeration [lf] of [F] and the discrete logarithms [γ] of
+          [gs1] in base [h1]. *)
       Context (lf : list F) (Hlfn : lf <> []).
       Context (γ : list F).
       Hypothesis hg1 : length gs1 = K.
       Hypothesis hγl : length γ = K.
       Hypothesis hγ : forall j, (j < K)%nat -> nth j gs1 gid = h1 ^ (nth j γ zero).
 
+      (** Library distributions with implicit arguments fixed; [NC = L + 3]
+          is the number of commitments. *)
       Local Notation lin_real_distribution := (lin_real_distribution (add := add) (mul := mul)).
       Local Notation lin_sim_distribution := (lin_sim_distribution (vopp := vec_opp (vopp := ginv))
         (vadd := vec_add (vadd := gop)) (smul := vec_smul (smul := gpow))).
@@ -1317,57 +1455,64 @@ Section SchulzeSimple.
       Local Notation zdot := (BayerGrothZK.dot (zero := zero) (add := add) (mul := mul)).
       Local Notation NC := (L + 3)%nat.
 
+      (** [Bind] respects pointwise equality of the continuation. *)
       Lemma bind_ext3 : forall {A B : Type} (d : dist A) (f f' : A -> dist B),
         (forall a, f a = f' a) -> Bind d f = Bind d f'.
       Proof. intros A B d f f' e; induction d as [| (a & p) d ih]; [reflexivity | cbn; rewrite e, ih; reflexivity]. Qed.
 
-      (* the commitment randomness of the bit vectors: entries 3, …, L + 2 of t *)
+      (** [tX t]: the commitment randomness of the bit vectors, entries
+          [3, …, L + 2] of [t]. *)
       Definition tX (t : list F) : list F := map (fun j => nth (3 + j) t zero) (seq 0 L).
       Lemma tX_length : forall t, length (tX t) = L.
       Proof. intros; unfold tX; rewrite map_length, seq_length; reflexivity. Qed.
 
-      (* the voter's randomness as four independent uniform draws: the K
-         encryption randomnesses, the L + 3 commitment randomnesses, the
-         announcement of the linear proof and the randomness of the zero
-         argument in the library's layout *)
+      (** [rand3_of r t a l] assembles the voter randomness from four
+          independent uniform draws: the [K] encryption randomnesses, the
+          [L + 3] commitment randomnesses, the linear announcement
+          randomness and the zero-argument randomness in the library's
+          layout. *)
       Definition rand3_of (r t a l : list F) : rand3 :=
         mk_rand3 r (nth 0 t zero) (nth 1 t zero) (nth 2 t zero) (tX t) a
           (slice l 0 (length gs1)) (slice l (length gs1) (length gs1))
           (nth (2 * length gs1) l zero) (nth (2 * length gs1 + 1) l zero)
           (slice l (2 * length gs1 + 2) (S R)) (slice l (2 * length gs1 + 3 + R) (R - 1)).
 
+      (** The honest ciphertexts for randomness [r]. *)
       Definition honest_cs3 (sn : list nat) (r : list F) : list (G * G) :=
         map (fun k => enc g h (natF (pos_bit sn k)) (nth k r zero)) (seq 0 K).
 
-      (* the honest voter *)
+      (** The honest ballot as a distribution. *)
       Definition ballot3_real_dist (ch : chal3) (sn : list nat) : dist ballot3 :=
         Bind (rand lf Hlfn K) (fun r => Bind (rand lf Hlfn NC) (fun t => Bind (rand lf Hlfn W3) (fun a =>
         Bind (rand lf Hlfn (zR gs1 R)) (fun l =>
           Ret (encrypt_ballot3 ch sn (rand3_of r t a l)))))).
 
-      (* a ballot with the given ciphertexts and commitments; only those
-         fields are read by target3, zA and zB *)
+      (** A dummy ballot with the given ciphertexts and commitments; only
+          those fields are read by [target3], [zA] and [zB]. *)
       Definition sim_bt (cs : list (G * G)) (C : list G) : ballot3 :=
         mk_ballot3 cs (nth 0 C gid) (nth 1 C gid) (nth 2 C gid) (skipn 3 C)
           (mk_lin (vec5 gid gid gid gid gid) []) (mk_zero gid gid [] [] [] zero zero zero).
 
-      (* the simulator of the proofs, from the ciphertexts and the L + 3 commitments *)
+      (** The simulator of the proofs, from the ciphertexts and the
+          [L + 3] commitments. *)
       Definition sim_proofs3 (ch : chal3) (cs : list (G * G)) (C : list G) : dist ballot3 :=
         let bt0 := sim_bt cs C in
         Bind (lin_sim_distribution W3 (phi3 (c3_beta ch)) lf Hlfn (target3 (c3_beta ch) bt0) (c3_c ch)) (fun lp =>
         Bind (zero_sim_distribution h1 gs1 (c3_y ch) (c3_x ch) R lf Hlfn (zA (c3_z ch) bt0) (zB bt0)) (fun za =>
           Ret (mk_ballot3 cs (nth 0 C gid) (nth 1 C gid) (nth 2 C gid) (skipn 3 C) lp za))).
 
-      (* the simulator of a ballot: L + 3 uniform commitments, then the proofs *)
+      (** The ballot simulator: [L + 3] uniform commitments [h1 ^ u], then
+          the simulated proofs. *)
       Definition ballot3_sim_dist (ch : chal3) (cs : list (G * G)) : dist ballot3 :=
         Bind (rand lf Hlfn NC) (fun u => sim_proofs3 ch cs (map (fun e => h1 ^ e) u)).
 
-      (* the honest commitments *)
+      (** The honest commitments for commitment randomness [t]. *)
       Definition com_vals3 (sn : list nat) (t : list F) : list G :=
         [com h1 gd (hon_s sn) (nth 0 t zero); com h1 gs1 (hon_b sn) (nth 1 t zero); com h1 gs1 (hon_p sn) (nth 2 t zero)] ++
         map (fun i => com h1 gs1 (hon_Xt sn i) (nth i (tX t) zero)) (seq 0 L).
 
-      (* the honest proofs given the ciphertexts and the commitment randomness *)
+      (** The honest proofs given the ciphertext and commitment
+          randomness. *)
       Definition real_proofs3 (ch : chal3) (sn : list nat) (r t : list F) : dist ballot3 :=
         let rd0 := rand3_of r t [] [] in
         let C := com_vals3 sn t in
@@ -1378,6 +1523,7 @@ Section SchulzeSimple.
                 (c3_y ch) (c3_x ch) R lf Hlfn) (fun za =>
           Ret (mk_ballot3 (honest_cs3 sn r) (nth 0 C gid) (nth 1 C gid) (nth 2 C gid) (skipn 3 C) lp za))).
 
+      (** The real distribution factors through [real_proofs3]. *)
       Lemma real_dist_proofs3 : forall ch sn,
         ballot3_real_dist ch sn = Bind (rand lf Hlfn K) (fun r => Bind (rand lf Hlfn NC) (fun t => real_proofs3 ch sn r t)).
       Proof.
@@ -1388,7 +1534,9 @@ Section SchulzeSimple.
         reflexivity.
       Qed.
 
-      (* given the ciphertexts and the commitments, the proofs are simulatable *)
+      (** Given the ciphertexts and the commitments, the real proofs are a
+          permutation of the simulated ones ([lin_shvzk], [zero_shvzk]); the
+          dummy ballot's statement is convertible to the honest one. *)
       Lemma real_proofs_perm3 : forall (ch : chal3) (sn : list nat) (r t : list F),
         NoDup lf -> (forall v : F, In v lf) ->
         length sn = m -> (forall i, (i < m)%nat -> (nth i sn 0 <= m)%nat) -> (m < Nat.pow 2 L)%nat ->
@@ -1399,12 +1547,15 @@ Section SchulzeSimple.
         pose proof K_pos as hK.
         unfold real_proofs3, sim_proofs3; cbv zeta.
         set (rd0 := rand3_of r t [] []).
+        (* The dummy ballot's statement is the honest one. *)
         replace (target3 (c3_beta ch) (sim_bt (honest_cs3 sn r) (com_vals3 sn t)))
           with (phi3 (c3_beta ch) (hon_w3 (c3_beta ch) sn rd0))
           by (rewrite <-(target3_phi3 ch sn rd0); [reflexivity | assumption ..]).
         eapply Permutation_trans; [apply bind_perm_left; apply (lin_shvzk (HV := G5vs) W3 (phi3 (c3_beta ch))
           (phi3_add (c3_beta ch)) (phi3_scale (c3_beta ch))); [apply hon_w3_length; exact hsn | exact hnd | exact hall] |].
         apply bind_perm_right; intros lp _ _.
+        (* The zero-argument statement of the dummy ballot is convertible to
+           the honest ballot's. *)
         change (zA (c3_z ch) (sim_bt (honest_cs3 sn r) (com_vals3 sn t))) with (zA (c3_z ch) (encrypt_ballot3 ch sn rd0)).
         change (zB (sim_bt (honest_cs3 sn r) (com_vals3 sn t))) with (zB (encrypt_ballot3 ch sn rd0)).
         rewrite hon_zA by apply tX_length. rewrite hon_zB by (try apply tX_length; exact hsn).
@@ -1418,8 +1569,9 @@ Section SchulzeSimple.
         apply bind_perm_right; intros za _ _. apply Permutation_refl.
       Qed.
 
-      (* the commitments are uniform: the bijection t ↦ t + ⟨γ, v⟩ on the
-         L + 3 commitment randomnesses, where C_δ is read as com_{gs₁}(δ) *)
+      (** The discrete logarithms in base [h1] of the honest committed
+          vectors, and the bijection [t ↦ t + dlog] on the commitment
+          randomness. [C_δ] is read as [com_gs1(δ)] via [com_gd]. *)
       Definition dlog3 (sn : list nat) (i : nat) : F :=
         match i with
         | 0 => zdot γ (hon_d sn) | 1 => zdot γ (hon_b sn) | 2 => zdot γ (hon_p sn)
@@ -1430,9 +1582,11 @@ Section SchulzeSimple.
       Definition com_psi3 (sn : list nat) (u : list F) : list F :=
         map (fun i => nth i u zero - dlog3 sn i) (seq 0 NC).
 
+      (** There are [L + 3] honest commitments. *)
       Lemma com_vals3_length : forall sn t, length (com_vals3 sn t) = NC.
       Proof. intros; unfold com_vals3; rewrite app_length, map_length, seq_length; cbn [length]; lia. Qed.
 
+      (** The honest commitments are uniform ([zk_of_bijection]). *)
       Lemma com_vals_perm3 : forall (sn : list nat), NoDup lf -> (forall v : F, In v lf) -> length sn = m ->
         Permutation (Bind (rand lf Hlfn NC) (fun t => Ret (com_vals3 sn t)))
                     (Bind (rand lf Hlfn NC) (fun u => Ret (map (fun e => h1 ^ e) u))).
@@ -1462,9 +1616,9 @@ Section SchulzeSimple.
             apply (com_dlog (Hvec := Hvec)); assumption.
       Qed.
 
-      (* SHVZK of the simplified ballot: for valid positions, the honest
-         ballot is distributed as the simulator's output given the
-         ciphertexts *)
+      (** SHVZK of the simplified ballot: for valid positions and
+          [|β| = K], the honest ballot is distributed as the simulator's
+          output given only the ciphertexts and the challenges. *)
       Theorem ballot3_zk : forall (ch : chal3) (sn : list nat),
         NoDup lf -> (forall v : F, In v lf) ->
         length sn = m -> (forall i, (i < m)%nat -> (nth i sn 0 <= m)%nat) -> (m < Nat.pow 2 L)%nat ->

@@ -1,114 +1,181 @@
+(** * Receipt-free Schulze tally: verifiable counting on encrypted margins
+
+    This file is the back end of the receipt-free Schulze election of
+    [Frontend/Schulze.v]. Voters submit ElGamal-encrypted pairwise preference
+    matrices with zero-knowledge ballot proofs. The tally multiplies them
+    homomorphically into an encrypted matrix [encD], where the (i, j) entry
+    encrypts [D i j], the number of ballots that rank candidate [i] strictly
+    above candidate [j]. The trustees then announce a winner [w] and prove,
+    without publishing [D], that [w] is a Schulze winner (Schulze 2011) of [D].
+
+    The Schulze method works on the defeat matrix [d i j = D i j] if
+    [D j i < D i j] and [0] otherwise. The strength of a path is its weakest
+    edge, and [p i j] is the strength of the strongest path from [i] to [j]
+    (the min-max, or widest-path, closure of [d]). Candidate [w] wins when
+    [p j w ≤ p w j] for every [j].
+
+    The file has two parts.
+
+    - Part 1 ([Section SchulzeZ]) is the plaintext reference over [Z]. A
+      _closure certificate_ [(p, paths)] for [d] ([cert_ok]) consists of an
+      upper bound [p ≥ d] that is closed under one min-max step, together
+      with one witness path per pair whose strength reaches [p i j].
+      [cert_ok_is_closure] and [closure_unique] show that such a certificate
+      pins down the closure uniquely, and [cert_winner] shows that a winner
+      of the certificate is a winner of every closure. Part 1 also gives the
+      honest prover's computable closure ([minmax_closure]), witness paths
+      ([witness_path]) and winner ([winner_of]).
+    - Part 2 ([Section SchulzeTally]) is the cryptographic tally. Every
+      statement is about an ElGamal ciphertext under the trustees' key
+      [(g, h)], [h = g ^ x], and is proved with a membership proof
+      ([EncProof]: the plaintext lies in a small set) or a generalised
+      disjunction ([OrSigmaGen] over the product group [G × G]).
+
+    Let [N] be the number of ballots and [K = 2N + 1] ([tally_shift]). The
+    tally proof ([tally_proof], checked by [verify_tally]) has seven parts:
+
+    - Re-encryption: fresh ciphertexts [Enc'(D_ij)] whose randomness the
+      trustees know. A Chaum–Pedersen decryption proof ([DecProof]) shows
+      that [Enc'(D_ij) / Enc(D_ij)] decrypts to the identity.
+    - Defeat range: [Enc(d_ij)] with [d_ij ∈ {0..N}].
+    - Defeat disjunction, with [Δ = D_ij - D_ji]:
+      [(K d_ij + Δ ∈ {-N..0}) ∨ (K (d_ij - D_ij) + Δ ∈ {1..N})].
+      Since all values lie in [0..N], the first branch forces
+      [d_ij = 0 ∧ Δ ≤ 0] and the second forces [d_ij = D_ij ∧ Δ ≥ 1]
+      ([defeat_decode]).
+    - Lower bound: [Enc(p_ij)] with [p_ij - d_ij ∈ {0..N}].
+    - Closure: for all [i, j, k],
+      [(p_ij - p_ik ∈ {0..N}) ∨ (p_ij - p_kj ∈ {0..N})].
+    - Witness paths: a published path [i → ... → j] for every pair, with
+      [d_uv - p_ij ∈ {0..N}] on each edge [(u, v)].
+    - Winner: [p_wj - p_jw ∈ {0..N}] for every [j].
+
+    The main results are as follows.
+
+    - Completeness: [verify_tally_complete] (honest trustees with a correct
+      plaintext certificate are accepted), [verify_tally_complete_auto] and
+      [verify_tally_complete_inj] (for the certificate computed by
+      [minmax_closure] and [witness_path], provided it passes the boolean
+      check [cert_ok_b]), and [nizk_tally_complete] (the Fiat–Shamir variant).
+    - Special soundness: [verify_tally_sound]. Two accepting transcripts with
+      equal announcements and pairwise different challenges yield a defeat
+      matrix equal to [defeat D], a certificate and the winner property,
+      provided the field characteristic exceeds [2N² + 3N].
+    - End to end: [schulze_end_to_end] and [count_sound] combine
+      [Schulze.ballot_sound] with [verify_tally_sound]. Accepting ballots and
+      an accepting tally certify that [w] is a winner of every closure of the
+      defeats of the voters' actual rankings.
+    - Special honest-verifier zero knowledge: [tally_zk]. The distribution of
+      honest tally proofs is a permutation of the simulator's distribution.
+    - The counting state machine [count] (in the style of
+      [Backend/HeliosTally.v]) and the function [final_verdict], which is
+      correct by construction.
+
+    The honest prover's closure algorithm is not proved correct here, and it
+    does not need to be. The trustees check the computed certificate with
+    [cert_ok_b] before publishing it, and soundness does not depend on how
+    the certificate was produced. The closure is computed on a tabulated
+    matrix ([tab]/[untab]). Iterating [closure_step] directly on functions
+    [node -> node -> Z] would, after extraction, re-evaluate earlier
+    iterations at every access, about [(2m)^m] evaluations in total.
+
+    The concrete instances are in [Examples/SchulzeIns.v] and
+    [Examples/SchulzeBenchIns.v] and are extracted through [src/Extraction].
+    [Backend/SchulzeSimpleTally.v] and [Backend/SchulzeBatchedTally.v] reuse
+    this tally for the other ballot front ends. *)
 From Stdlib Require Import Setoid
   setoid_ring.Field Psatz Vector Utf8 Fin Lia ZArith List FunctionalExtensionality.
 From Algebra Require Import
   Hierarchy Group Monoid
   Field Integral_domain
   Ring Vector_space Product_space.
-From Utility Require Import 
+From Utility Require Import
   Util.
-From Crypto Require Import 
+From Crypto Require Import
   Elgamal EncProof OrSigmaGen Sigma ChaumPedersen DecProof.
 From Frontend Require Import Approval Schulze.
 From Probability Require Import Prob Distr.
 From Stdlib Require Import Permutation.
 Import VectorNotations.
 
-(* Receipt-free Schulze tally.
+(** ** Part 1: the plaintext Schulze method and closure certificates
 
-   SchulzeZ is the plaintext reference: defeat strengths, the 
-   closure certificate cert_ok, Schulze winners, and the theorem that a 
-   certificate characterises the min-max closure (cert_ok_is_closure, 
-   closure_unique). Part 2 is the cryptographic tally: the trustees prove 
-   the certificate on encrypted margins without decrypting them publicly.
-
-   Encrypted tally. Everything is an ElGamal ciphertext under the trustees'
-   key (g, h), h = g^x, and every statement is a membership proof of a 
-   plaintext in a small set (EncProof) or a disjunction of two such 
-   statements (OrSigmaGen over the product group G × G, branch k being the 
-   Schnorr statement (c₁, c₂ / m_k) = (g, h)^r for its own ciphertext 
-   (c₁, c₂) and message m_k). N is the number of ballots, K = 2N + 1.
-
-   1. Fresh margins: the trustees publish Enc'(D_ij) with randomness they 
-      know and prove with DecProof that Enc'(D_ij) / Enc(D_ij) decrypts to 
-      the identity. All later statements are on ciphertexts whose randomness 
-      the trustees know.
-   2. Defeats: Enc(d_ij) with d_ij ∈ {0..N} (EncProof) and the disjunction, 
-      with Δ = D_ij - D_ji,
-        (K d_ij + Δ ∈ {-N..0})  ∨  (K (d_ij - D_ij) + Δ ∈ {1..N}),
-      an OrSigmaGen with S N + N branches. Since d_ij, D_ij, D_ji ∈ [0, N], 
-      the first branch forces d_ij = 0 ∧ Δ ≤ 0 and the second 
-      d_ij = D_ij ∧ Δ ≥ 1: this is 
-        (D_ji - D_ij ∈ {0..N} ∧ d_ij = 0) ∨ (D_ij - D_ji ∈ {1..N} ∧ d_ij = D_ij).
-   3. Closure: Enc(p_ij); p_ij - d_ij ∈ {0..N} (EncProof); for all i, j, k 
-      the disjunction (p_ij - p_ik ∈ {0..N}) ∨ (p_ij - p_kj ∈ {0..N}) 
-      (OrSigmaGen, S N + S N branches); and for every pair a witness path 
-      i → ... → j with d_uv - p_ij ∈ {0..N} on every edge (EncProof). A 
-      witness is required for every pair, also when p_ij = 0, where the 
-      direct edge always works.
-   4. Winner: p_wj - p_jw ∈ {0..N} for every j.
-
-   All challenges are supplied by the caller (interactive form, as in 
-   Approval.v); nizk_generate_tally and nizk_verify_tally derive them by
-   Fiat-Shamir. *)
-
-(* ------------------------------------------------------------------ *)
-(* Part 1: the plaintext Schulze method and the closure certificate     *)
-(* ------------------------------------------------------------------ *)
-
+    The candidates are [node = Fin.t m]. A matrix is a function
+    [node -> node -> Z]. This part does no cryptography. It is the reference
+    semantics that the cryptographic tally is proved against. *)
 Section SchulzeZ.
   Local Open Scope Z_scope.
   Context {m : nat}.
   Local Notation node := (Fin.t m).
   Local Notation matrix := (node -> node -> Z).
 
-  (* defeat strength: D i j when i beats j, else 0 *)
+  (** The defeat matrix of the pairwise count matrix [D]. [defeat D i j] is
+      [D i j] when [i] beats [j] ([D j i < D i j]) and [0] otherwise. These are
+      the edge weights of the Schulze graph. *)
   Definition defeat (D : matrix) (i j : node) : Z :=
     if Z.ltb (D j i) (D i j) then D i j else 0.
 
-  (* strength of the walk u → v₁ → ... → vₖ (l = [v₁; ...; vₖ], k ≥ 1):
-     the minimum of its edges; 0 for the empty walk *)
+  (** [strength d u l] is the strength of the walk [u → v₁ → ... → vₖ], where
+      [l = [v₁; ...; vₖ]], measured in [d]. It is the minimum of the edge
+      weights [d u v₁, d v₁ v₂, ...]. It is [0] for the empty walk. For [k = 1]
+      it is [d u v₁], with no [min] against [0]. *)
   Fixpoint strength (d : matrix) (u : node) (l : list node) : Z :=
     match l with
     | List.nil => 0
-    | List.cons v l' => 
+    | List.cons v l' =>
       match l' with
       | List.nil => d u v
       | _ => Z.min (d u v) (strength d v l')
       end
     end.
 
-  (* a path from i to j: the vertex sequence i :: l, l ≠ [], ending in j *)
+  (** [path_from_to i j l] holds when [l = i :: l'] is a vertex sequence from
+      [i] to [j] with at least one edge ([l' ≠ []] and the last vertex of [l']
+      is [j]). Vertices may repeat. *)
   Definition path_from_to (i j : node) (l : list node) : Prop :=
     match l with
     | List.nil => False
     | List.cons u l' => u = i ∧ l' <> List.nil ∧ List.last l' i = j
     end.
 
+  (** The strength of a vertex sequence [u :: l'], that is, [strength d u l']. *)
   Definition path_strength (d : matrix) (l : list node) : Z :=
     match l with
     | List.nil => 0
     | List.cons u l' => strength d u l'
     end.
 
-  (* the closure certificate: p dominates d, is closed under one-step 
-     extension, and every entry is realised by a witness path *)
+  (** The closure certificate. [cert_ok d p paths] states three things:
+
+      - [p] dominates [d]: [d i j ≤ p i j];
+      - [p] is closed under one min-max step: [min (p i k) (p k j) ≤ p i j];
+      - for every pair, [paths i j] is a path from [i] to [j] whose strength
+        is at least [p i j].
+
+      The first two conditions make [p] an upper bound on every path strength.
+      The third makes the bound attained. *)
   Definition cert_ok (d p : matrix) (paths : node -> node -> list node) : Prop :=
     (∀ i j, d i j <= p i j) ∧
     (∀ i j k, Z.min (p i k) (p k j) <= p i j) ∧
     (∀ i j, path_from_to i j (paths i j) ∧ p i j <= path_strength d (paths i j)).
 
-  Definition schulze_winner (p : matrix) (w : node) : Prop := 
+  (** [w] is a Schulze winner of the strongest-path matrix [p] when
+      [p j w ≤ p w j] for every [j]. Ties allow several winners. *)
+  Definition schulze_winner (p : matrix) (w : node) : Prop :=
     ∀ j, p j w <= p w j.
 
-  (* p is the min-max closure of d: p i j is the largest strength of a 
-     path from i to j, or 0 when no path has positive strength *)
+  (** [is_closure d p] is the semantic specification of the min-max closure.
+      For all [i, j], [p i j] is non-negative, bounds the strength of every
+      path from [i] to [j], and, when it is positive, is attained by some
+      path. *)
   Definition is_closure (d p : matrix) : Prop :=
-    ∀ i j, 
+    ∀ i j,
       0 <= p i j ∧
       (∀ l, path_from_to i j l -> path_strength d l <= p i j) ∧
       (0 < p i j -> ∃ l, path_from_to i j l ∧ p i j <= path_strength d l).
 
-  Lemma last_default : ∀ (l : list node) (a b : node), 
+  (** [List.last] of a non-empty list does not depend on the default. *)
+  Lemma last_default : ∀ (l : list node) (a b : node),
     l <> List.nil -> List.last l a = List.last l b.
   Proof.
     induction l as [| x l ih]; intros a b h; [contradiction |].
@@ -116,13 +183,17 @@ Section SchulzeZ.
     cbn; apply ih; discriminate.
   Qed.
 
+  (** Unfolding [strength] on a walk with at least two further vertices. *)
   Lemma strength_cons : ∀ (d : matrix) (u v w : node) (l : list node),
     strength d u (v :: w :: l)%list = Z.min (d u v) (strength d v (w :: l)%list).
   Proof. reflexivity. Qed.
 
+  (** The strength of any walk from [u] to [j] is at most [p u j], when [p]
+      dominates [d] and is closed under one min-max step. The proof is by
+      induction on the walk. *)
   Lemma strength_le : ∀ (d p : matrix),
     (∀ i j, d i j <= p i j) -> (∀ i j k, Z.min (p i k) (p k j) <= p i j) ->
-    ∀ (l : list node) (u j : node), 
+    ∀ (l : list node) (u j : node),
     l <> List.nil -> List.last l u = j -> strength d u l <= p u j.
   Proof.
     intros d p h1 h2 l; induction l as [| v l' ih]; intros u j hne hl.
@@ -139,7 +210,9 @@ Section SchulzeZ.
         destruct (Z.min_spec (p u v) (p v j)) as [[? ?] | [? ?]]; lia.
   Qed.
 
-  (* THE key lemma: a certificate pins down the closure *)
+  (** A certificate for non-negative [d] is a closure. Non-negativity of [p]
+      follows from [d ≤ p]. The upper bound is [strength_le]. Attainment is
+      given by the witness paths (also when [p i j = 0]). *)
   Theorem cert_ok_is_closure : ∀ (d p : matrix) (paths : node -> node -> list node),
     (∀ i j, 0 <= d i j) -> cert_ok d p paths -> is_closure d p.
   Proof.
@@ -151,7 +224,10 @@ Section SchulzeZ.
     + intro hp; exists (paths i j); exact (h3 i j).
   Qed.
 
-  Theorem closure_unique : ∀ (d p p' : matrix), 
+  (** The min-max closure is unique. If [p] and [p'] are both closures of
+      [d], then each attained value of one is bounded by the other, so they
+      are equal pointwise. *)
+  Theorem closure_unique : ∀ (d p p' : matrix),
     is_closure d p -> is_closure d p' -> ∀ i j, p i j = p' i j.
   Proof.
     intros d p p' hp hp' i j.
@@ -165,8 +241,10 @@ Section SchulzeZ.
     lia.
   Qed.
 
-  (* a certified winner is a Schulze winner of the (unique) closure *)
-  Corollary cert_winner : ∀ (d p : matrix) (paths : node -> node -> list node) (w : node), 
+  (** A winner of a certified [p] is a Schulze winner of every closure of
+      [d]. It follows from [cert_ok_is_closure] and [closure_unique]. This is
+      the plaintext half of the end-to-end theorem [schulze_end_to_end]. *)
+  Corollary cert_winner : ∀ (d p : matrix) (paths : node -> node -> list node) (w : node),
     (∀ i j, 0 <= d i j) -> cert_ok d p paths -> schulze_winner p w ->
     ∀ p', is_closure d p' -> schulze_winner p' w.
   Proof.
@@ -175,41 +253,52 @@ Section SchulzeZ.
     rewrite <- !he; apply hw.
   Qed.
 
-  (* ---------------------------------------------------------------- *)
-  (* computable closure, witness paths and winner, for the honest prover.
-     Their correctness is not part of the trusted base and is not proved 
-     here: the trustees check the computed certificate with cert_ok_b 
-     before publishing (verify_tally_complete_auto), and verify_tally_sound 
-     does not depend on how the certificate was produced. The algorithm is 
-     the Kleene iteration of the min-max semiring, verified in the 
-     Semiring_graph_algorithm development (mat_star, kleene_fixed_point_least). *)
+  (** *** Computable closure, witness paths and winner (honest prover)
 
-  Definition max_fin (f : node -> Z) (z : Z) : Z := 
+      These functions are used by the honest trustees to build a certificate.
+      Their correctness is not proved here and is not part of the trusted
+      base. The result is checked with [cert_ok_b] before it is used
+      ([verify_tally_complete_auto]). The algorithm is the Kleene iteration
+      of the min-max semiring. *)
+
+  (** [max_fin f z] is the maximum of [z] and all [f k] for [k : node]. *)
+  Definition max_fin (f : node -> Z) (z : Z) : Z :=
     Vector.fold_right (fun i acc => Z.max (f i) acc) (fin_enum m) z.
 
-  Definition closure_step (d p : matrix) : matrix := 
+  (** One relaxation step: [p' i j = max (p i j) (max_k (min (p i k) (d k j)))].
+      It extends the best known walks by one edge of [d]. *)
+  Definition closure_step (d p : matrix) : matrix :=
     fun i j => Z.max (p i j) (max_fin (fun k => Z.min (p i k) (d k j)) 0).
 
-  (* the matrix as a table, so that each iteration is computed once: iterating
-     closure_step on functions re-evaluates the previous step at every
-     access, (2m)^m evaluations in all *)
+  (** [tab] turns a function matrix into an explicit [m × m] table, and
+      [untab] reads a table back as a function. Each iteration of the closure
+      is therefore evaluated once. Without them, an iterated function matrix
+      recomputes every earlier step at each access, about [(2m)^m] evaluations
+      after extraction. *)
   Definition tab (p : matrix) : Vector.t (Vector.t Z m) m :=
     Vector.map (fun i => Vector.map (p i) (fin_enum m)) (fin_enum m).
   Definition untab (t : Vector.t (Vector.t Z m) m) : matrix := fun i j => t[@i][@j].
 
-  (* after m steps every walk of at most m + 1 edges has been considered *)
+  (** The min-max closure of [d]: [m] iterations of [closure_step] starting
+      from [d], computed on tables. After [m] steps every walk with at most
+      [m + 1] edges has been considered. *)
   Definition minmax_closure (d : matrix) : matrix :=
     untab (Nat.iter m (fun t => tab (closure_step d (untab t))) (tab d)).
 
+  (** The first [Some] value of [f] over the candidates in index order. *)
   Definition first_some {A : Type} (f : node -> option A) : option A :=
-    Vector.fold_right (fun i acc => match f i with Some a => Some a | None => acc end) 
+    Vector.fold_right (fun i acc => match f i with Some a => Some a | None => acc end)
       (fin_enum m) None.
 
+  (** Boolean list membership for candidates. *)
   Definition in_node (k : node) (l : list node) : bool :=
     List.existsb (fun v => if Fin.eq_dec k v then true else false) l.
 
-  (* breadth-first search for a walk u → ... → j with every edge ≥ s; the
-     frontier holds (node, the nodes after the start, reversed) *)
+  (** Breadth-first search for a walk to [j] in which every edge has weight
+      at least [s]. Each frontier entry is a node together with the nodes
+      reached after the start, in reverse order. [visited] avoids revisits,
+      and [fuel] bounds the search. On success it returns the walk without
+      its start vertex. *)
   Fixpoint bfs_walk (d : matrix) (s : Z) (fuel : nat) (j : node)
     (frontier : list (node * list node)) (visited : list node) : option (list node) :=
     match fuel with
@@ -227,40 +316,54 @@ Section SchulzeZ.
       end
     end.
 
+  (** [find_walk d s u j] runs [bfs_walk] from [u] with fuel [m² + 1]. *)
   Definition find_walk (d : matrix) (s : Z) (u j : node) : option (list node) :=
     bfs_walk d s (S (m * m)) j (List.cons (u, List.nil) List.nil) (List.cons u List.nil).
 
+  (** The honest witness path from [i] to [j] for strength [p i j]: the BFS
+      walk prefixed with [i], or the direct edge (the two-element
+      list of [i] and [j]) if the search fails.
+      The direct edge is adequate when [p i j = 0]. *)
   Definition witness_path (d p : matrix) (i j : node) : list node :=
     match find_walk d (p i j) i j with
     | Some l => List.cons i l
     | None => List.cons i (List.cons j List.nil)
     end.
 
-  (* ---------------------------------------------------------------- *)
-  (* the certificate as a boolean check, so that the trustees can verify 
-     their plaintext certificate before publishing it *)
+  (** *** Boolean certificate check
 
+      Decidable versions of [path_from_to], [cert_ok] and [schulze_winner].
+      The trustees run them on their computed certificate before publishing,
+      and the soundness lemmas below connect them to the propositional
+      versions. *)
+
+  (** Boolean version of [path_from_to]. *)
   Definition path_from_to_b (i j : node) (l : list node) : bool :=
     match l with
     | List.nil => false
-    | List.cons u l' => 
+    | List.cons u l' =>
       ((if Fin.eq_dec u i then true else false) &&
        (match l' with List.nil => false | _ => true end) &&
        (if Fin.eq_dec (List.last l' i) j then true else false))%bool
     end.
 
+  (** Boolean version of [cert_ok], by exhaustive enumeration over pairs and
+      triples ([forall_fin]). It takes [O(m³)] comparisons plus the path
+      strengths. *)
   Definition cert_ok_b (d p : matrix) (paths : node -> node -> list node) : bool :=
     (forall_fin m (fun i => forall_fin m (fun j => Z.leb (d i j) (p i j))) &&
-     forall_fin m (fun i => forall_fin m (fun j => forall_fin m (fun k => 
+     forall_fin m (fun i => forall_fin m (fun j => forall_fin m (fun k =>
        Z.leb (Z.min (p i k) (p k j)) (p i j)))) &&
-     forall_fin m (fun i => forall_fin m (fun j => 
-       (path_from_to_b i j (paths i j) && 
+     forall_fin m (fun i => forall_fin m (fun j =>
+       (path_from_to_b i j (paths i j) &&
         Z.leb (p i j) (path_strength d (paths i j)))%bool)))%bool.
 
-  Definition schulze_winner_b (p : matrix) (w : node) : bool := 
+  (** Boolean version of [schulze_winner]. *)
+  Definition schulze_winner_b (p : matrix) (w : node) : bool :=
     forall_fin m (fun j => Z.leb (p j w) (p w j)).
 
-  Lemma path_from_to_b_sound : ∀ (i j : node) (l : list node), 
+  (** [path_from_to_b] implies [path_from_to]. *)
+  Lemma path_from_to_b_sound : ∀ (i j : node) (l : list node),
     path_from_to_b i j l = true -> path_from_to i j l.
   Proof.
     intros i j [| u l'] h; [discriminate |]; cbn in h |- *.
@@ -271,120 +374,149 @@ Section SchulzeZ.
     split; [assumption | split; [discriminate | assumption]].
   Qed.
 
-  Lemma cert_ok_b_sound : ∀ (d p : matrix) (paths : node -> node -> list node), 
+  (** [cert_ok_b] implies [cert_ok]. *)
+  Lemma cert_ok_b_sound : ∀ (d p : matrix) (paths : node -> node -> list node),
     cert_ok_b d p paths = true -> cert_ok d p paths.
   Proof.
     intros d p paths h; unfold cert_ok_b in h.
     apply andb_prop in h; destruct h as (h & h3); apply andb_prop in h; destruct h as (h1 & h2).
     split; [| split].
-    + intros i j; apply Z.leb_le. 
+    + intros i j; apply Z.leb_le.
       exact (proj1 (forall_fin_true _ _) (proj1 (forall_fin_true _ _) h1 i) j).
-    + intros i j k; apply Z.leb_le. 
-      exact (proj1 (forall_fin_true _ _) 
+    + intros i j k; apply Z.leb_le.
+      exact (proj1 (forall_fin_true _ _)
         (proj1 (forall_fin_true _ _) (proj1 (forall_fin_true _ _) h2 i) j) k).
-    + intros i j. 
+    + intros i j.
       pose proof (proj1 (forall_fin_true _ _) (proj1 (forall_fin_true _ _) h3 i) j) as hij.
       apply andb_prop in hij; destruct hij as (ha & hb).
       split; [apply path_from_to_b_sound; exact ha | apply Z.leb_le; exact hb].
   Qed.
 
-  Lemma schulze_winner_b_sound : ∀ (p : matrix) (w : node), 
+  (** [schulze_winner_b] implies [schulze_winner]. *)
+  Lemma schulze_winner_b_sound : ∀ (p : matrix) (w : node),
     schulze_winner_b p w = true -> schulze_winner p w.
   Proof. intros p w h j; apply Z.leb_le; exact (proj1 (forall_fin_true _ _) h j). Qed.
 
+  (** The first candidate (in index order) that is a winner of [p], if any.
+      The trustees use it to announce the winner. *)
   Definition winner_of (p : matrix) : option node :=
-    first_some (fun w => 
+    first_some (fun w =>
       if forall_fin m (fun j => Z.leb (p j w) (p w j)) then Some w else None).
 
 End SchulzeZ.
 
-(* ------------------------------------------------------------------ *)
-(* Part 2: the cryptographic tally                                      *)
-(* ------------------------------------------------------------------ *)
+(** ** Part 2: the cryptographic tally
 
+    The development is generic in a field [F] (the exponents) and a group
+    [G] with exponentiation [gpow]. The algebraic laws are assumed only in
+    [Section Proofs], through a [vector_space] instance. *)
 Section SchulzeTally.
 
-  Context 
+  (** The field of exponents [F] and its operations. *)
+  Context
     {F : Type}
-    {zero one : F} 
+    {zero one : F}
     {add mul sub div : F -> F -> F}
     {opp inv : F -> F}
     {Fdec: forall x y : F, {x = y} + {x <> y}}.
 
-  Context 
-    {G : Type} 
-    {gid : G} 
+  (** The group [G], written multiplicatively, with [gpow : G -> F -> G]. *)
+  Context
+    {G : Type}
+    {gid : G}
     {ginv : G -> G}
-    {gop : G -> G -> G} 
+    {gop : G -> G -> G}
     {gpow : G -> F -> G}
     {Gdec : forall x y : G, {x = y} + {x <> y}}.
 
+  (** Local notations: [^] is [gpow], [natF] embeds [nat] into [F], and the
+      ciphertext operations [cmul], [cinv], [cpow], [cdec] and the membership
+      proofs come from [Frontend/Schulze.v], instantiated at this section's
+      parameters. *)
   Local Infix "^" := gpow.
   Local Infix "*" := mul.
   Local Infix "+" := add.
   Local Notation natF := (nat_to_F zero one add).
 
-  (* the ciphertext algebra and the membership proofs of Frontend/Schulze.v, 
-     at this section's parameters *)
   Local Notation cmul := (Schulze.cmul (gop := gop)).
   Local Notation cinv := (Schulze.cinv (ginv := ginv)).
   Local Notation cpow := (Schulze.cpow (gpow := gpow)).
   Local Notation cdec := (Schulze.cdec (ginv := ginv) (gop := gop) (gpow := gpow)).
   Local Notation membership_proof k := (@Schulze.membership_proof F G k).
-  Local Notation verify_membership := (Schulze.verify_membership (F := F) (zero := zero) 
+  Local Notation verify_membership := (Schulze.verify_membership (F := F) (zero := zero)
     (add := add) (Fdec := Fdec) (G := G) (ginv := ginv) (gop := gop) (gpow := gpow) (Gdec := Gdec)).
-  Local Notation prove_membership := (Schulze.prove_membership (F := F) (zero := zero) 
-    (add := add) (mul := mul) (sub := sub) (opp := opp) (G := G) (ginv := ginv) (gop := gop) 
+  Local Notation prove_membership := (Schulze.prove_membership (F := F) (zero := zero)
+    (add := add) (mul := mul) (sub := sub) (opp := opp) (G := G) (ginv := ginv) (gop := gop)
     (gpow := gpow)).
 
-  (* the product group G × G, in which a ciphertext statement is a Schnorr 
-     statement (c₁, c₂ / m) = (g, h)^r *)
   Local Notation G2 := (G * G)%type.
+  (** The product group [G2 = G × G], its exponentiation and decidable
+      equality. A ciphertext statement is a Schnorr statement in [G2]: the
+      ciphertext [(c₁, c₂)] encrypts [m] with randomness [r] exactly when
+      [(c₁, c₂ / g^m) = (g, h)^r]. *)
   Definition gop2 : G2 -> G2 -> G2 := padd (vadd1 := gop) (vadd2 := gop).
   Definition gpow2 : G2 -> F -> G2 := psmul (smul1 := gpow) (smul2 := gpow).
   Definition Gdec2 : forall x y : G2, {x = y} + {x <> y} := prod_dec Gdec Gdec.
 
+  (** The [G2] statement for one branch of a disjunction: ciphertext [cp]
+      with the known message [msg] divided out of the second component. *)
   Definition or_statement (cp : G2) (msg : G) : G2 := (fst cp, gop (snd cp) (ginv msg)).
 
-  (* discrete logarithm of y in base g among g^0 .. g^k, by search *)
+  (** [dlog_le g y k] finds the least [t ≤ k] with [y = g ^ natF t] by linear
+      search. The trustees use it to recover the plaintext counts [D i j] from
+      [g ^ D i j]. *)
   Fixpoint dlog_le (g y : G) (k : nat) : option nat :=
     match k with
     | 0 => if Gdec y (g ^ natF 0) then Some 0 else None
-    | S k' => 
+    | S k' =>
       match dlog_le g y k' with
       | Some r => Some r
       | None => if Gdec y (g ^ natF (S k')) then Some (S k') else None
       end
     end.
 
+  (** *** The verifier
+
+      [m] is the number of candidates and [N] the maximum number of ballots.
+      Encrypted matrices are [m × m] vectors of vectors. *)
   Section Verifier.
-    (* m candidates, N ballots *)
     Context {m N : nat} (g h : G).
     Local Notation matrix A := (Vector.t (Vector.t A m) m).
-    Definition mget {A : Type} (M : matrix A) (i j : Fin.t m) : A := 
+    (** [mget M i j] is the (i, j) entry of a matrix. *)
+    Definition mget {A : Type} (M : matrix A) (i j : Fin.t m) : A :=
       Vector.nth (Vector.nth M i) j.
 
-    (* g^0 .. g^N : the set {0..N} *)
+    (** The plaintext set [{g^0, ..., g^N}], that is, the values [0..N]. *)
     Definition msgs_range : Vector.t G (S N) :=
       Vector.map (fun k => g ^ natF (fin_idx k)) (fin_enum (S N)).
 
-    (* K = 2N + 1 *)
+    (** The shift [K = 2N + 1] used to separate the two branches of the defeat
+        disjunction. *)
     Definition tally_shift : nat := S (N + N).
 
+    (** A generalised OR proof with [k] branches over [G2]. *)
     Definition or_proof (k : nat) : Type := @sigma_proto F G2 k (S k) k.
 
+    (** Verification of a [k]-branch OR proof, where every branch is a Schnorr
+        statement in [G2] with base [(g, h)]. *)
     Definition verify_or {k : nat} (hs : Vector.t G2 k) (pf : or_proof k) : bool :=
-      @generalised_or_accepting_conversations F zero add Fdec G2 gop2 gpow2 Gdec2 k 
+      @generalised_or_accepting_conversations F zero add Fdec G2 gop2 gpow2 Gdec2 k
         (Vector.const (g, h) k) hs pf.
 
+    (** Verification of a range (membership) proof: [cp] encrypts some value
+        in [{0..N}]. *)
     Definition verify_range (cp : G2) (pf : membership_proof (S N)) : bool :=
       verify_membership g h msgs_range cp pf.
 
-    (* the two ciphertexts of the defeat disjunction for the pair (i, j):
-       V₂ = Enc(d)^K · Enc(D_ij) / Enc(D_ji)   on which  K d + Δ ∈ {-N..0}
-       V₁ = (Enc(d) / Enc(D_ij))^K · Enc(D_ij) / Enc(D_ji)   on which  
-            K (d - D_ij) + Δ ∈ {1..N} *)
-    Definition defeat_statements (encD' enc_d : matrix G2) (i j : Fin.t m) : 
+    (** The [2N + 1] branch statements of the defeat disjunction for the pair
+        [(i, j)]. With [Δ = Enc'(D_ij) / Enc'(D_ji)]:
+
+        - [V₂ = Enc(d_ij)^K · Δ] encrypts [K d_ij + Δ], and the first [N + 1]
+          branches say that this equals [-t] for some [t ∈ {0..N}];
+        - [V₁ = (Enc(d_ij) / Enc'(D_ij))^K · Δ] encrypts [K (d_ij - D_ij) + Δ],
+          and the last [N] branches say that this equals [t + 1] for some
+          [t ∈ {0..N-1}]. *)
+    Definition defeat_statements (encD' enc_d : matrix G2) (i j : Fin.t m) :
       Vector.t G2 (S N + N) :=
       let Dij := mget encD' i j in
       let Dji := mget encD' j i in
@@ -395,8 +527,10 @@ Section SchulzeTally.
       Vector.map (fun t => or_statement V2 (ginv (g ^ natF (fin_idx t)))) (fin_enum (S N)) ++
       Vector.map (fun t => or_statement V1 (g ^ natF (S (fin_idx t)))) (fin_enum N).
 
-    (* p_ij - p_ik ∈ {0..N}  ∨  p_ij - p_kj ∈ {0..N} *)
-    Definition upper_statements (enc_p : matrix G2) (k i j : Fin.t m) : 
+    (** The [2N + 2] branch statements of the closure disjunction for [(k, i, j)]:
+        [p_ij - p_ik ∈ {0..N}] (first half) or [p_ij - p_kj ∈ {0..N}] (second
+        half). *)
+    Definition upper_statements (enc_p : matrix G2) (k i j : Fin.t m) :
       Vector.t G2 (S N + S N) :=
       let pij := mget enc_p i j in
       let A := cmul pij (cinv (mget enc_p i k)) in
@@ -404,219 +538,267 @@ Section SchulzeTally.
       Vector.map (fun t => or_statement A (g ^ natF (fin_idx t))) (fin_enum (S N)) ++
       Vector.map (fun t => or_statement B (g ^ natF (fin_idx t))) (fin_enum (S N)).
 
+    (** The published tally proof. Its fields are:
+
+        - [tp_encD']: the fresh re-encryptions [Enc'(D_ij)];
+        - [tp_dec]: decryption proofs that [Enc'(D_ij) / Enc(D_ij)] decrypts to
+          the identity;
+        - [tp_enc_d], [tp_enc_p]: the encrypted defeats [Enc(d_ij)] and
+          strongest paths [Enc(p_ij)];
+        - [tp_d_range]: proofs that [d_ij ∈ {0..N}];
+        - [tp_defeat]: the defeat disjunctions;
+        - [tp_lower]: proofs that [p_ij - d_ij ∈ {0..N}];
+        - [tp_upper]: indexed [k], then [i, j], the closure disjunctions;
+        - [tp_paths]: the witness paths, in the clear;
+        - [tp_edges]: one proof that [d_uv - p_ij ∈ {0..N}] per path edge;
+        - [tp_winner]: proofs that [p_wj - p_jw ∈ {0..N}].
+
+        The witness paths reveal which edges carry strong defeats, but not the
+        counts. *)
     Record tally_proof : Type := mk_tally_proof {
-      tp_encD'   : matrix G2;                       (* fresh Enc'(D_ij) *)
-      tp_dec     : matrix (@sigma_proto F G 2 1 1); (* Enc'(D_ij) / Enc(D_ij) decrypts to 1 *)
-      tp_enc_d   : matrix G2;                       (* Enc(d_ij) *)
-      tp_enc_p   : matrix G2;                       (* Enc(p_ij) *)
-      tp_d_range : matrix (membership_proof (S N)); (* d_ij ∈ {0..N} *)
-      tp_defeat  : matrix (or_proof (S N + N));     (* the defeat disjunction *)
-      tp_lower   : matrix (membership_proof (S N)); (* p_ij - d_ij ∈ {0..N} *)
-      tp_upper   : Vector.t (matrix (or_proof (S N + S N))) m; 
-                                                    (* [k][i][j] : p_ij ≥ p_ik ∨ p_ij ≥ p_kj *)
-      tp_paths   : matrix (list (Fin.t m));         (* witness path i :: ... :: j *)
-      tp_edges   : matrix (list (membership_proof (S N))); 
-                                                    (* d_uv - p_ij ∈ {0..N} per edge (u, v) *)
-      tp_winner  : Vector.t (membership_proof (S N)) m (* p_wj - p_jw ∈ {0..N} *)
+      tp_encD'   : matrix G2;
+      tp_dec     : matrix (@sigma_proto F G 2 1 1);
+      tp_enc_d   : matrix G2;
+      tp_enc_p   : matrix G2;
+      tp_d_range : matrix (membership_proof (S N));
+      tp_defeat  : matrix (or_proof (S N + N));
+      tp_lower   : matrix (membership_proof (S N));
+      tp_upper   : Vector.t (matrix (or_proof (S N + S N))) m;
+      tp_paths   : matrix (list (Fin.t m));
+      tp_edges   : matrix (list (membership_proof (S N)));
+      tp_winner  : Vector.t (membership_proof (S N)) m
     }.
 
-    (* the edges (u, v) of the path u :: l, with one proof each *)
-    Fixpoint verify_edges (enc_d : matrix G2) (pij : G2) (u : Fin.t m) 
+    (** Checks the edge proofs along the walk [u :: l]: for each edge [(u, v)],
+        [Enc(d_uv) / pij] is in range. The proof list must have exactly one
+        entry per edge. *)
+    Fixpoint verify_edges (enc_d : matrix G2) (pij : G2) (u : Fin.t m)
       (l : list (Fin.t m)) (pfs : list (membership_proof (S N))) : bool :=
       match l, pfs with
       | List.nil, List.nil => true
-      | List.cons v l', List.cons pf pfs' => 
-        (verify_range (cmul (mget enc_d u v) (cinv pij)) pf && 
+      | List.cons v l', List.cons pf pfs' =>
+        (verify_range (cmul (mget enc_d u v) (cinv pij)) pf &&
          verify_edges enc_d pij v l' pfs')%bool
       | _, _ => false
       end.
 
-    Definition verify_path (enc_d enc_p : matrix G2) (i j : Fin.t m) 
+    (** Checks that [l] is a path from [i] to [j] and verifies its edge proofs
+        against [Enc(p_ij)]. *)
+    Definition verify_path (enc_d enc_p : matrix G2) (i j : Fin.t m)
       (l : list (Fin.t m)) (pfs : list (membership_proof (S N))) : bool :=
       match l with
       | List.nil => false
-      | List.cons u l' => 
+      | List.cons u l' =>
         ((if Fin.eq_dec u i then true else false) &&
          (match l' with List.nil => false | _ => true end) &&
          (if Fin.eq_dec (List.last l' i) j then true else false) &&
          verify_edges enc_d (mget enc_p i j) u l' pfs)%bool
       end.
 
+    (** Boolean universal quantification over all pairs of candidates. *)
     Definition forall_pairs (f : Fin.t m -> Fin.t m -> bool) : bool :=
       forall_fin m (fun i => forall_fin m (fun j => f i j)).
 
-    (* the seven checks of the tally, separately (for diagnostics) *)
+    (** The seven checks of [verify_tally], kept as a list so that a failing
+        check can be identified. In order, they are:
+        re-encryption, defeat range, defeat disjunction, lower bound, closure
+        disjunction, witness paths, and winner. The challenges are taken from
+        the proofs themselves. In this interactive form they are not checked
+        against anything. *)
     Definition tally_checks (encD : matrix G2) (w : Fin.t m) (pf : tally_proof) : list bool :=
       let encD' := tp_encD' pf in
       let enc_d := tp_enc_d pf in
       let enc_p := tp_enc_p pf in
-      (* 1. Enc'(D_ij) / Enc(D_ij) decrypts to the identity *)
-      (forall_pairs (fun i j => 
+      (forall_pairs (fun i j =>
         let c := cmul (mget encD' i j) (cinv (mget encD i j)) in
-        decryption_proof_accepting_conversations (F := F) (G := G) (ginv := ginv) 
-          (gop := gop) (gpow := gpow) (Gdec := Gdec) g h 
+        decryption_proof_accepting_conversations (F := F) (G := G) (ginv := ginv)
+          (gop := gop) (gpow := gpow) (Gdec := Gdec) g h
           (fst c) (snd c) gid (mget (tp_dec pf) i j)) ::
-      (* 2. d_ij ∈ {0..N} and the defeat disjunction *)
        forall_pairs (fun i j => verify_range (mget enc_d i j) (mget (tp_d_range pf) i j)) ::
-       forall_pairs (fun i j => 
+       forall_pairs (fun i j =>
         verify_or (defeat_statements encD' enc_d i j) (mget (tp_defeat pf) i j)) ::
-      (* 3. closure: p ≥ d, one-step closed, witness paths *)
-       forall_pairs (fun i j => 
+       forall_pairs (fun i j =>
         verify_range (cmul (mget enc_p i j) (cinv (mget enc_d i j))) (mget (tp_lower pf) i j)) ::
-       forall_fin m (fun k => forall_pairs (fun i j => 
+       forall_fin m (fun k => forall_pairs (fun i j =>
         verify_or (upper_statements enc_p k i j) (mget (Vector.nth (tp_upper pf) k) i j))) ::
-       forall_pairs (fun i j => 
+       forall_pairs (fun i j =>
         verify_path enc_d enc_p i j (mget (tp_paths pf) i j) (mget (tp_edges pf) i j)) ::
-      (* 4. winner *)
-       forall_fin m (fun j => 
-        verify_range (cmul (mget enc_p w j) (cinv (mget enc_p j w))) 
+       forall_fin m (fun j =>
+        verify_range (cmul (mget enc_p w j) (cinv (mget enc_p j w)))
           (Vector.nth (tp_winner pf) j)) :: List.nil)%list.
 
+    (** The interactive tally verifier: all checks of [tally_checks] pass. *)
     Definition verify_tally (encD : matrix G2) (w : Fin.t m) (pf : tally_proof) : bool :=
       List.forallb (fun b => b) (tally_checks encD w pf).
 
   End Verifier.
 
-  (* ---------------------------------------------------------------- *)
-  (* the honest trustees: m = S n candidates, N = S n' ballots           *)
+  (** *** The honest prover (trustees)
 
+      Here [m = S n] candidates and [N = S n'] ballots, so that the vector
+      lengths have the [2 + k] shape required by [OrSigmaGen]. [x] is the
+      secret key. All proofs share the single challenge [chal]. *)
   Section Prover.
     Context {n n' : nat} (x : F) (g h : G).
     Local Notation m := (S n).
     Local Notation N := (S n').
     Local Notation matrix A := (Vector.t (Vector.t A m) m).
 
-    (* randomness: a source of field elements indexed by a slot number; 
-       slot (tag, i, j, k) spans [slot, slot + stride) *)
+    (** The prover's randomness is a function [rnd : nat -> F]. Each sub-proof
+        reads a disjoint window of [stride] consecutive indices starting at
+        [slot tag i j k], where [tag] identifies the kind of proof. [rvec rnd b k]
+        reads [k] values from base [b]. *)
     Definition stride : nat := 4 * N + 8.
-    Definition slot (tag i j k : nat) : nat := 
+    Definition slot (tag i j k : nat) : nat :=
       ((((tag * m + i) * m + j) * m + k) * stride)%nat.
     Definition rvec (rnd : nat -> F) (base : nat) (k : nat) : Vector.t F k :=
       Vector.map (fun t => rnd (base + fin_idx t)%nat) (fin_enum k).
 
+    (** Integers to naturals (truncating negatives to [0]). *)
     Definition nat_of_Z (z : Z) : nat := Z.to_nat z.
 
-    (* membership of the value v ∈ {0..N} in Enc(v) with randomness r *)
-    Definition prove_range (v : Z) (r : F) (uscs : Vector.t F ((2 + n') + (1 + n'))) 
+    (** A range proof that [cp = Enc(v; r)] encrypts [v ∈ {0..N}]. [uscs] are
+        the commitment randomness and simulated challenges of the membership
+        proof. *)
+    Definition prove_range (v : Z) (r : F) (uscs : Vector.t F ((2 + n') + (1 + n')))
       (cp : G2) (c : F) : membership_proof (S N) :=
-      prove_membership g h (msgs_range (N := N) g) (fin_of_nat_default (nat_of_Z v) N) 
+      prove_membership g h (msgs_range (N := N) g) (fin_of_nat_default (nat_of_Z v) N)
         r uscs cp c.
 
+    (** The honest OR prover for the true branch [rindex], with witness [r] such
+        that [hs[@rindex] = (g, h)^r]. *)
     Definition prove_or {k : nat} (rindex : Fin.t (2 + k)) (r : F) (hs : Vector.t G2 (2 + k))
       (uscs : Vector.t F ((2 + k) + (1 + k))) (c : F) : or_proof (2 + k) :=
-      generalised_construct_or_conversations_schnorr (F := F) (zero := zero) (add := add) 
-        (mul := mul) (sub := sub) (opp := opp) (G := G2) (gop := gop2) (gpow := gpow2) 
+      generalised_construct_or_conversations_schnorr (F := F) (zero := zero) (add := add)
+        (mul := mul) (sub := sub) (opp := opp) (G := G2) (gop := gop2) (gpow := gpow2)
         (n := k) rindex r (Vector.const (g, h) (2 + k)) hs uscs c.
 
+    (** [mat_of f] tabulates [f] as an [m × m] matrix, and [fun_of M] reads an
+        integer matrix back as a function. *)
     Definition mat_of {A : Type} (f : Fin.t m -> Fin.t m -> A) : matrix A :=
       Vector.map (fun i => Vector.map (fun j => f i j) (fin_enum m)) (fin_enum m).
 
     Definition fun_of (M : matrix Z) : Fin.t m -> Fin.t m -> Z := fun i j => mget M i j.
 
-    (* the plaintext margins, by decryption with x and a search up to N *)
+    (** The trustees decrypt every entry of [encD] with [x] and recover the
+        count in [0..N] with [dlog_le]. Failures map to [0]. *)
     Definition decrypt_margins (encD : matrix G2) : matrix Z :=
-      Vector.map (Vector.map (fun c => 
+      Vector.map (Vector.map (fun c =>
         match dlog_le g (cdec x c) N with Some k => Z.of_nat k | None => 0%Z end)) encD.
 
-    (* the edge proofs d_uv - p_ij ∈ {0..N} along the path u :: l, edge 
-       counter e *)
-    Fixpoint edge_proofs (d p : Fin.t m -> Fin.t m -> Z) (enc_d enc_p : matrix G2) 
-      (rd rp : Fin.t m -> Fin.t m -> F) (rnd : nat -> F) (chal : F) (i j u : Fin.t m) 
+    (** The edge proofs [d_uv - p_ij ∈ {0..N}] along the walk [u :: l]. The
+        counter [e] numbers the edges and selects their randomness slots. *)
+    Fixpoint edge_proofs (d p : Fin.t m -> Fin.t m -> Z) (enc_d enc_p : matrix G2)
+      (rd rp : Fin.t m -> Fin.t m -> F) (rnd : nat -> F) (chal : F) (i j u : Fin.t m)
       (l : list (Fin.t m)) (e : nat) : list (membership_proof (S N)) :=
       match l with
       | List.nil => List.nil
-      | List.cons v l' => 
-        List.cons (prove_range (d u v - p i j) (sub (rd u v) (rp i j)) 
+      | List.cons v l' =>
+        List.cons (prove_range (d u v - p i j) (sub (rd u v) (rp i j))
           (rvec rnd (slot 13 (fin_idx i) (fin_idx j) e) _)
-          (cmul (mget enc_d u v) (cinv (mget enc_p i j))) 
-          chal) 
+          (cmul (mget enc_d u v) (cinv (mget enc_p i j)))
+          chal)
           (edge_proofs d p enc_d enc_p rd rp rnd chal i j v l' (S e))
       end.
 
-    (* the tally proof for the winner w, with randomness rnd, from the 
-       trustees' plaintext margins D, strongest paths p and witness paths *)
-    Definition generate_tally_with (encD : matrix G2) 
+    (** The honest tally proof for the winner [w], from the plaintext counts
+        [D], strongest paths [p] and witness [paths], with randomness [rnd] and
+        challenge [chal]. The witnesses are as follows.
+
+        - Re-encryption: real decryption proofs with key [x].
+        - Defeat disjunction: if [Δ = D_ij - D_ji > 0], then [d_ij = D_ij] and
+          the true branch is [N + Δ] (on [V₁]) with witness
+          [K (rd - rD_ij) + (rD_ij - rD_ji)]. Otherwise [d_ij = 0] and the true
+          branch is [-Δ] (on [V₂]) with witness [K rd + (rD_ij - rD_ji)].
+        - Closure disjunction: the first branch when [p_ik ≤ p_ij], and
+          otherwise the second, since then [p_kj ≤ p_ij] by [cert_ok].
+        - Range proofs: the difference of the two encryption randomnesses. *)
+    Definition generate_tally_with (encD : matrix G2)
       (D p : Fin.t m -> Fin.t m -> Z) (paths : Fin.t m -> Fin.t m -> list (Fin.t m))
       (w : Fin.t m) (rnd : nat -> F) (chal : F) : @tally_proof m N :=
       let d := @defeat m D in
       let K := natF (tally_shift (N := N)) in
-      (* randomness of the ciphertexts *)
       let rD := fun i j => rnd (slot 0 (fin_idx i) (fin_idx j) 0) in
       let rd := fun i j => rnd (slot 3 (fin_idx i) (fin_idx j) 0) in
       let rp := fun i j => rnd (slot 4 (fin_idx i) (fin_idx j) 0) in
       let encD' := mat_of (fun i j => @enc F G gop gpow g h (natF (nat_of_Z (D i j))) (rD i j)) in
       let enc_d := mat_of (fun i j => @enc F G gop gpow g h (natF (nat_of_Z (d i j))) (rd i j)) in
       let enc_p := mat_of (fun i j => @enc F G gop gpow g h (natF (nat_of_Z (p i j))) (rp i j)) in
-      let dec := mat_of (fun i j => 
+      let dec := mat_of (fun i j =>
         let c := cmul (mget encD' i j) (cinv (mget encD i j)) in
-        construct_decryption_proof_elgamal_real (F := F) (add := add) (mul := mul) 
-          (G := G) (gpow := gpow) x g c 
+        construct_decryption_proof_elgamal_real (F := F) (add := add) (mul := mul)
+          (G := G) (gpow := gpow) x g c
           (rnd (slot 1 (fin_idx i) (fin_idx j) 0)) chal) in
-      let d_range := mat_of (fun i j => 
-        prove_range (d i j) (rd i j) (rvec rnd (slot 5 (fin_idx i) (fin_idx j) 0) _) 
+      let d_range := mat_of (fun i j =>
+        prove_range (d i j) (rd i j) (rvec rnd (slot 5 (fin_idx i) (fin_idx j) 0) _)
           (mget enc_d i j) chal) in
-      let defeat_pf := mat_of (fun i j => 
+      let defeat_pf := mat_of (fun i j =>
         let delta := (D i j - D j i)%Z in
         let rdelta := sub (rD i j) (rD j i) in
         let hs := defeat_statements (N := N) g encD' enc_d i j in
         let uscs := rvec rnd (slot 7 (fin_idx i) (fin_idx j) 0) _ in
         let c := chal in
         if Z.ltb 0 delta
-        then (* d = D_ij : branch S N + (Δ - 1) on V₁, randomness K (rd - rD) + rdelta *)
-          prove_or (k := n' + S n') (fin_of_nat_default (N + nat_of_Z delta) (N + N)) 
+        then
+          prove_or (k := n' + S n') (fin_of_nat_default (N + nat_of_Z delta) (N + N))
             ((K * sub (rd i j) (rD i j)) + rdelta) hs uscs c
-        else (* d = 0 : branch -Δ on V₂, randomness K rd + rdelta *)
-          prove_or (k := n' + S n') (fin_of_nat_default (nat_of_Z (- delta)) (N + N)) 
+        else
+          prove_or (k := n' + S n') (fin_of_nat_default (nat_of_Z (- delta)) (N + N))
             ((K * rd i j) + rdelta) hs uscs c) in
-      let lower := mat_of (fun i j => 
-        prove_range (p i j - d i j) (sub (rp i j) (rd i j)) 
+      let lower := mat_of (fun i j =>
+        prove_range (p i j - d i j) (sub (rp i j) (rd i j))
           (rvec rnd (slot 9 (fin_idx i) (fin_idx j) 0) _)
-          (cmul (mget enc_p i j) (cinv (mget enc_d i j))) 
+          (cmul (mget enc_p i j) (cinv (mget enc_d i j)))
           chal) in
-      let upper := Vector.map (fun k => mat_of (fun i j => 
+      let upper := Vector.map (fun k => mat_of (fun i j =>
         let hs := upper_statements (N := N) g enc_p k i j in
         let uscs := rvec rnd (slot 11 (fin_idx i) (fin_idx j) (fin_idx k)) _ in
         let c := chal in
         if Z.leb (p i k) (p i j)
-        then prove_or (k := n' + S (S n')) 
-          (fin_of_nat_default (nat_of_Z (p i j - p i k)) (N + S N)) 
+        then prove_or (k := n' + S (S n'))
+          (fin_of_nat_default (nat_of_Z (p i j - p i k)) (N + S N))
           (sub (rp i j) (rp i k)) hs uscs c
-        else prove_or (k := n' + S (S n')) 
-          (fin_of_nat_default (S N + nat_of_Z (p i j - p k j)) (N + S N)) 
+        else prove_or (k := n' + S (S n'))
+          (fin_of_nat_default (S N + nat_of_Z (p i j - p k j)) (N + S N))
           (sub (rp i j) (rp k j)) hs uscs c)) (fin_enum m) in
-      let edges := mat_of (fun i j => 
+      let edges := mat_of (fun i j =>
         match paths i j with
         | List.nil => List.nil
         | List.cons u l => edge_proofs d p enc_d enc_p rd rp rnd chal i j u l 0
         end) in
-      let winner := Vector.map (fun j => 
-        prove_range (p w j - p j w) (sub (rp w j) (rp j w)) 
+      let winner := Vector.map (fun j =>
+        prove_range (p w j - p j w) (sub (rp w j) (rp j w))
           (rvec rnd (slot 15 (fin_idx j) 0 0) _)
-          (cmul (mget enc_p w j) (cinv (mget enc_p j w))) 
+          (cmul (mget enc_p w j) (cinv (mget enc_p j w)))
           chal) (fin_enum m) in
-      mk_tally_proof encD' dec enc_d enc_p d_range defeat_pf lower upper 
+      mk_tally_proof encD' dec enc_d enc_p d_range defeat_pf lower upper
         (mat_of paths) edges winner.
 
-    (* the tally proof with the margins decrypted by the trustees and the 
-       closure and witness paths computed from them *)
-    Definition generate_tally (encD : matrix G2) (w : Fin.t m) (rnd : nat -> F) (chal : F) : 
+    (** The trustees' complete prover. It decrypts the counts, computes the
+        defeats, the closure ([minmax_closure]) and the witness paths, and calls
+        [generate_tally_with]. *)
+    Definition generate_tally (encD : matrix G2) (w : Fin.t m) (rnd : nat -> F) (chal : F) :
       @tally_proof m N :=
       let D := fun_of (decrypt_margins encD) in
       let d := @defeat m D in
       let p := @minmax_closure m d in
       generate_tally_with encD D p (@witness_path m d p) w rnd chal.
 
-    (* the winner the trustees announce *)
+    (** The winner the trustees announce: [winner_of] the computed closure. *)
     Definition tally_winner (encD : matrix G2) : option (Fin.t m) :=
       let D := fun_of (decrypt_margins encD) in
       @winner_of m (@minmax_closure m (@defeat m D)).
 
   End Prover.
 
-  (* ---------------------------------------------------------------- *)
-  (* non-interactive tally (Fiat-Shamir): one challenge for all the 
-     sub-proofs, the hash of the statement and of all announcements      *)
+  (** ** Non-interactive tally (Fiat–Shamir)
 
+      A single challenge is shared by every sub-proof. It is the hash [H] of
+      the statement (the winner and the aggregate) together with the
+      published ciphertexts, the paths and all announcements. *)
+
+  (** Items of the hashed transcript: a ciphertext ([TrC]), a group element
+      ([TrG]) or a natural number ([TrN]). *)
   Inductive tr_item : Type := TrC (c : G2) | TrG (a : G) | TrN (k : nat).
 
   Section TallyNIZK.
@@ -625,20 +807,23 @@ Section SchulzeTally.
     Local Notation N := (S n').
     Local Notation matrix A := (Vector.t (Vector.t A m) m).
 
+    (** Serialisation of a matrix entrywise in row-major order. [tr_ann2] and
+        [tr_ann1] serialise the announcements of [G2] and [G] sigma proofs. *)
     Definition tr_mat_pf {A : Type} (M : matrix A) (f : A -> list tr_item) : list tr_item :=
-      List.concat (Vector.to_list (Vector.map (fun i => 
-        List.concat (Vector.to_list (Vector.map (fun j => f (mget M i j)) (fin_enum m)))) 
+      List.concat (Vector.to_list (Vector.map (fun i =>
+        List.concat (Vector.to_list (Vector.map (fun j => f (mget M i j)) (fin_enum m))))
         (fin_enum m))).
     Definition tr_ann2 {k l r : nat} (pf : @sigma_proto F G2 k l r) : list tr_item :=
       List.map TrC (Vector.to_list (Sigma.announcement pf)).
     Definition tr_ann1 (pf : @sigma_proto F G 2 1 1) : list tr_item :=
       List.map TrG (Vector.to_list (Sigma.announcement pf)).
 
-    (* the statement (winner, aggregate, published ciphertexts, paths) and 
-       every announcement, in a fixed order *)
-    Definition tally_transcript (encD : matrix G2) (w : Fin.t m) (pf : @tally_proof m N) : 
+    (** The hashed transcript: the winner index, [encD], [Enc'(D)], [Enc(d)],
+        [Enc(p)], the paths, and then the announcements of every sub-proof in
+        a fixed order. *)
+    Definition tally_transcript (encD : matrix G2) (w : Fin.t m) (pf : @tally_proof m N) :
       list tr_item :=
-      (TrN (fin_idx w) :: 
+      (TrN (fin_idx w) ::
        tr_mat_pf encD (fun c => TrC c :: List.nil) ++
        tr_mat_pf (tp_encD' pf) (fun c => TrC c :: List.nil) ++
        tr_mat_pf (tp_enc_d pf) (fun c => TrC c :: List.nil) ++
@@ -648,17 +833,20 @@ Section SchulzeTally.
        tr_mat_pf (tp_d_range pf) tr_ann2 ++
        tr_mat_pf (tp_defeat pf) tr_ann2 ++
        tr_mat_pf (tp_lower pf) tr_ann2 ++
-       List.concat (Vector.to_list (Vector.map (fun k => tr_mat_pf (tp_upper pf)[@k] tr_ann2) 
+       List.concat (Vector.to_list (Vector.map (fun k => tr_mat_pf (tp_upper pf)[@k] tr_ann2)
          (fin_enum m))) ++
        tr_mat_pf (tp_edges pf) (fun l => List.concat (List.map tr_ann2 l)) ++
-       List.concat (Vector.to_list (Vector.map (fun j => tr_ann2 (tp_winner pf)[@j]) 
+       List.concat (Vector.to_list (Vector.map (fun j => tr_ann2 (tp_winner pf)[@j])
          (fin_enum m))))%list.
 
+    (** [is_chal1 c pf] and [is_chal2 c pf] test that the (first) challenge of
+        [pf] is [c]. *)
     Definition is_chal1 (c : F) (pf : @sigma_proto F G 2 1 1) : bool :=
       if Fdec (Vector.hd (Sigma.challenge pf)) c then true else false.
     Definition is_chal2 (c : F) {k l r : nat} (pf : @sigma_proto F G2 k (S l) r) : bool :=
       if Fdec (Vector.hd (Sigma.challenge pf)) c then true else false.
 
+    (** Every sub-proof of [pf] uses the challenge [c]. *)
     Definition tally_challenges_are (c : F) (pf : @tally_proof m N) : bool :=
       (forall_pairs (fun i j => is_chal1 c (mget (tp_dec pf) i j)) &&
        forall_pairs (fun i j => is_chal2 c (mget (tp_d_range pf) i j)) &&
@@ -668,19 +856,25 @@ Section SchulzeTally.
        forall_pairs (fun i j => List.forallb (is_chal2 c) (mget (tp_edges pf) i j)) &&
        forall_fin m (fun j => is_chal2 c (tp_winner pf)[@j]))%bool.
 
+    (** The non-interactive verifier. All challenges must equal the hash of
+        the transcript, and [verify_tally] must accept. *)
     Definition nizk_verify_tally (encD : matrix G2) (w : Fin.t m) (pf : @tally_proof m N) : bool :=
-      (tally_challenges_are (H (tally_transcript encD w pf)) pf && 
+      (tally_challenges_are (H (tally_transcript encD w pf)) pf &&
        verify_tally (N := N) g h encD w pf)%bool.
 
-    (* the trustees: announcements first (with the challenge zero), then the 
-       proofs with the hashed challenge *)
-    Definition nizk_generate_tally_with (encD : matrix G2) 
+    (** The non-interactive prover. The announcements do not depend on the
+        challenge ([tally_transcript_chal]). The prover therefore first builds
+        the proof with challenge [zero] to obtain the transcript, hashes it, and
+        rebuilds the proof with the hashed challenge from the same randomness. *)
+    Definition nizk_generate_tally_with (encD : matrix G2)
       (D p : Fin.t m -> Fin.t m -> Z) (paths : Fin.t m -> Fin.t m -> list (Fin.t m))
       (w : Fin.t m) (rnd : nat -> F) : @tally_proof m N :=
       let pf0 := generate_tally_with (n' := n') x g h encD D p paths w rnd zero in
       generate_tally_with (n' := n') x g h encD D p paths w rnd (H (tally_transcript encD w pf0)).
 
-    Definition nizk_generate_tally (encD : matrix G2) (w : Fin.t m) (rnd : nat -> F) : 
+    (** The non-interactive prover with decryption and the computed
+        certificate, analogous to [generate_tally]. *)
+    Definition nizk_generate_tally (encD : matrix G2) (w : Fin.t m) (rnd : nat -> F) :
       @tally_proof m N :=
       let D := fun_of (n := n) (decrypt_margins (n := n) (n' := n') x g encD) in
       let d := @defeat m D in
@@ -688,58 +882,62 @@ Section SchulzeTally.
       nizk_generate_tally_with encD D p (@witness_path m d p) w rnd.
   End TallyNIZK.
 
-  (* ---------------------------------------------------------------- *)
-  (* the tally as a state machine, in the style of HeliosTally.v: the 
-     ballots are read one by one, the valid ones are aggregated into the 
-     encrypted margins, and the published certificate is checked against 
-     the aggregate. count s is the evidence that s was reached by these 
-     rules; compute_final_count builds it (correct by construction).      *)
+  (** ** The counting state machine
 
+      This follows [Backend/HeliosTally.v]. Ballots are read one by one. Those
+      whose non-interactive ballot proofs ([Schulze.nizk_verify_ballot], hash
+      [Hb]) verify are added to the encrypted count matrix. The others are set
+      aside. At the end the published tally proof is checked against the
+      aggregate with [nizk_verify_tally] (hash [Ht]). [count s] is evidence
+      that the state [s] was reached by these rules. *)
   Section SchulzeCount.
     Context {n n' : nat} (g h : G) (Hb : list (G * G) -> F) (Ht : list tr_item -> F).
     Local Notation m := (S n).
     Local Notation N := (S n').
     Local Notation ballot := (@ballot F G m).
     Local Notation matrix A := (Vector.t (Vector.t A m) m).
-    Local Notation nizk_verify_ballot := (Schulze.nizk_verify_ballot (zero := zero) (one := one) 
+    Local Notation nizk_verify_ballot := (Schulze.nizk_verify_ballot (zero := zero) (one := one)
       (add := add) (Fdec := Fdec) (ginv := ginv) (gop := gop) (gpow := gpow) (Gdec := Gdec)).
     Local Notation ballot_bits := (Schulze.ballot_bits (F := F) (G := G)).
     Local Notation cid := (Schulze.cid (gid := gid)).
 
-    (* the running encrypted margins *)
+    (** The initial count matrix, an encryption of zero in every entry with
+        randomness zero. [add_ballot] multiplies a ballot's pairwise ciphertexts
+        into the counts, and [aggregate_list] folds it over a list of ballots. *)
     Definition init_margins : matrix G2 := Vector.const (Vector.const cid m) m.
     Definition add_ballot (b : ballot) (ms : matrix G2) : matrix G2 :=
       Vector.map2 (Vector.map2 cmul) (ballot_bits b) ms.
     Definition aggregate_list (vbs : list ballot) : matrix G2 :=
       List.fold_right add_ballot init_margins vbs.
 
-    (* partial us vbs inbs ms : ballots seen, valid, invalid, running margins;
-       finished us vbs inbs w pf b : the announced winner, the certificate 
-       and the verdict *)
+    (** The states. [partial us vbs inbs ms] records the ballots seen, the
+        valid ones, the invalid ones and the running encrypted counts.
+        [finished us vbs inbs w pf b] adds the announced winner, the tally proof
+        and the final verdict [b]. *)
     Inductive state : Type :=
     | partial : list ballot -> list ballot -> list ballot -> matrix G2 -> state
-    | finished : list ballot -> list ballot -> list ballot -> 
+    | finished : list ballot -> list ballot -> list ballot ->
         Fin.t m -> @tally_proof m N -> bool -> state.
 
+    (** The counting rules. [ax] starts with an all-identity matrix. [cvalid]
+        and [cinvalid] process one ballot according to its proofs. [finish]
+        computes the verdict: the number of valid ballots is at most [N] (the
+        range of the certificate), and the tally proof verifies on the aggregate.
+        The invariant [Permutation us (vbs ++ inbs)] is carried along. *)
     Inductive count : state -> Type :=
-    (* the initial margins encrypt zero everywhere *)
-    | ax (ms : matrix G2) : 
-        (∀ i j, mget ms i j = cid) -> 
+    | ax (ms : matrix G2) :
+        (∀ i j, mget ms i j = cid) ->
         count (partial List.nil List.nil List.nil ms)
-    (* a ballot whose proofs verify is aggregated *)
     | cvalid (b : ballot) (us vbs inbs : list ballot) (ms nms : matrix G2) :
         count (partial us vbs inbs ms) -> Permutation us (vbs ++ inbs) ->
         nizk_verify_ballot g h Hb b = true ->
         nms = add_ballot b ms ->
         count (partial (b :: us) (b :: vbs) inbs nms)
-    (* a ballot whose proofs do not verify is set aside *)
     | cinvalid (b : ballot) (us vbs inbs : list ballot) (ms : matrix G2) :
         count (partial us vbs inbs ms) -> Permutation us (vbs ++ inbs) ->
         nizk_verify_ballot g h Hb b = false ->
         count (partial (b :: us) vbs (b :: inbs) ms)
-    (* the certificate is checked against the aggregate; the number of 
-       valid ballots must be within the range N of the certificate *)
-    | finish (us vbs inbs : list ballot) (ms : matrix G2) (w : Fin.t m) 
+    | finish (us vbs inbs : list ballot) (ms : matrix G2) (w : Fin.t m)
         (pf : @tally_proof m N) (bsize bpf bfinal : bool) :
         count (partial us vbs inbs ms) -> Permutation us (vbs ++ inbs) ->
         Nat.leb (List.length vbs) N = bsize ->
@@ -747,15 +945,16 @@ Section SchulzeTally.
         bfinal = andb bsize bpf ->
         count (finished us vbs inbs w pf bfinal).
 
-    (* the running margins are the aggregate of the valid ballots *)
+    (** In every reachable partial state, the running counts are the aggregate
+        of the valid ballots. *)
     Lemma count_partial_aggregate : ∀ (us vbs inbs : list ballot) (ms : matrix G2),
       count (partial us vbs inbs ms) -> ms = aggregate_list vbs.
     Proof.
       intros * hc.
       remember (partial us vbs inbs ms) as st eqn:hst.
       revert us vbs inbs ms hst.
-      induction hc as [ms0 h0 | b us0 vbs0 inbs0 ms0 nms0 hc ih hp hv hn 
-        | b us0 vbs0 inbs0 ms0 hc ih hp hv | ]; intros us' vbs' inbs' ms' hst; 
+      induction hc as [ms0 h0 | b us0 vbs0 inbs0 ms0 nms0 hc ih hp hv hn
+        | b us0 vbs0 inbs0 ms0 hc ih hp hv | ]; intros us' vbs' inbs' ms' hst;
         try discriminate; injection hst; intros ? ? ? ?; subst.
       + apply (proj1 (Vector.eq_nth_iff _ _ _ _)); intros i i' <-.
         apply (proj1 (Vector.eq_nth_iff _ _ _ _)); intros j j' <-.
@@ -765,23 +964,27 @@ Section SchulzeTally.
       + exact (ih _ _ _ _ eq_refl).
     Qed.
 
+    (** In every reachable partial state, every valid ballot passes
+        [nizk_verify_ballot]. *)
     Lemma count_valid_ballots : ∀ (us vbs inbs : list ballot) (ms : matrix G2),
-      count (partial us vbs inbs ms) -> 
+      count (partial us vbs inbs ms) ->
       ∀ b, List.In b vbs -> nizk_verify_ballot g h Hb b = true.
     Proof.
       intros * hc.
       remember (partial us vbs inbs ms) as st eqn:hst.
       revert us vbs inbs ms hst.
-      induction hc as [ms0 h0 | b0 us0 vbs0 inbs0 ms0 nms0 hc ih hp hv hn 
-        | b0 us0 vbs0 inbs0 ms0 hc ih hp hv | ]; intros us' vbs' inbs' ms' hst; 
+      induction hc as [ms0 h0 | b0 us0 vbs0 inbs0 ms0 nms0 hc ih hp hv hn
+        | b0 us0 vbs0 inbs0 ms0 hc ih hp hv | ]; intros us' vbs' inbs' ms' hst;
         try discriminate; injection hst; intros ? ? ? ?; subst.
       + intros b hin; contradiction.
       + intros b' [<- | hin]; [exact hv | exact (ih _ _ _ _ eq_refl b' hin)].
       + exact (ih _ _ _ _ eq_refl).
     Qed.
 
-    (* what a successful final state means *)
-    Lemma count_finished_true : ∀ (us vbs inbs : list ballot) (w : Fin.t m) 
+    (** What a successful final state means: the valid ballots verify, there
+        are at most [N] of them, and the tally proof verifies on their
+        aggregate. *)
+    Lemma count_finished_true : ∀ (us vbs inbs : list ballot) (w : Fin.t m)
       (pf : @tally_proof m N),
       count (finished us vbs inbs w pf true) ->
       (∀ b, List.In b vbs -> nizk_verify_ballot g h Hb b = true) ∧
@@ -790,7 +993,7 @@ Section SchulzeTally.
     Proof.
       intros * hc.
       remember (finished us vbs inbs w pf true) as st eqn:hst.
-      destruct hc as [| | | us0 vbs0 inbs0 ms0 w0 pf0 bsize bpf bfinal hc hp hsize hpf hb]; 
+      destruct hc as [| | | us0 vbs0 inbs0 ms0 w0 pf0 bsize bpf bfinal hc hp hsize hpf hb];
         try discriminate.
       injection hst; intros; subst us vbs inbs w pf.
       assert (hb' : andb bsize bpf = true) by (rewrite <- hb; assumption).
@@ -800,9 +1003,11 @@ Section SchulzeTally.
       split; [apply Nat.leb_le; exact hb1 | exact hb2].
     Qed.
 
-    (* walking through the ballots *)
+    (** Processes a list of ballots, returning the valid and invalid ones, the
+        aggregate, and the [count] derivation. It is defined by structural
+        recursion, so it extracts to an executable counter. *)
     Definition compute_final_tally : ∀ (bs : list ballot),
-      existsT (vbs inbs : list ballot) (ms : matrix G2), 
+      existsT (vbs inbs : list ballot) (ms : matrix G2),
         (count (partial bs vbs inbs ms) * Permutation bs (vbs ++ inbs))%type.
     Proof.
       refine (fix fn (bs : list ballot) {struct bs} :=
@@ -810,21 +1015,26 @@ Section SchulzeTally.
         | List.nil => _
         | List.cons bh bt => _
         end).
+      (* No ballots: the initial state, by [ax]. *)
       + exists List.nil, List.nil, init_margins.
         refine (pair (ax init_margins _) (Permutation_refl _)).
         intros i j; unfold init_margins, mget; rewrite !Vector.const_nth; reflexivity.
-      + refine (match nizk_verify_ballot g h Hb bh as v 
-          return nizk_verify_ballot g h Hb bh = v -> 
-            existsT (vbs inbs : list ballot) (ms : matrix G2), 
+      (* Branch on the ballot's verdict, remembering the equation for [cvalid] or
+         [cinvalid]. *)
+      + refine (match nizk_verify_ballot g h Hb bh as v
+          return nizk_verify_ballot g h Hb bh = v ->
+            existsT (vbs inbs : list ballot) (ms : matrix G2),
               (count (partial (bh :: bt) vbs inbs ms) * Permutation (bh :: bt) (vbs ++ inbs))%type
           with
           | true => fun hv => _
           | false => fun hv => _
           end eq_refl).
+        (* Valid ballot: aggregate it. *)
         * destruct (fn bt) as (vbs & inbs & ms & hc & hp).
           exists (bh :: vbs)%list, inbs, (add_ballot bh ms).
           refine (pair (cvalid bh bt vbs inbs ms _ hc hp hv eq_refl) _).
           cbn; apply Permutation_cons; [reflexivity | exact hp].
+        (* Invalid ballot: set it aside, and move it into place in the permutation. *)
         * destruct (fn bt) as (vbs & inbs & ms & hc & hp).
           exists vbs, (bh :: inbs)%list, ms.
           refine (pair (cinvalid bh bt vbs inbs ms hc hp hv) _).
@@ -832,7 +1042,8 @@ Section SchulzeTally.
           apply Permutation_middle.
     Defined.
 
-    (* the whole verification: correct by construction *)
+    (** Completes [compute_final_tally] with the [finish] step for the
+        announced winner [w] and proof [pf]. *)
     Definition compute_final_count : ∀ (bs : list ballot) (w : Fin.t m) (pf : @tally_proof m N),
       existsT (bfinal : bool) (vbs inbs : list ballot), count (finished bs vbs inbs w pf bfinal).
     Proof.
@@ -842,15 +1053,23 @@ Section SchulzeTally.
       exact (finish bs vbs inbs ms w pf _ _ _ hc hp eq_refl eq_refl eq_refl).
     Defined.
 
+    (** The verdict of the count: [true] exactly when the proof is accepted on
+        the valid ballots ([count_finished_true]). *)
     Definition final_verdict (bs : list ballot) (w : Fin.t m) (pf : @tally_proof m N) : bool :=
       projT1 (compute_final_count bs w pf).
   End SchulzeCount.
 
-  (* ---------------------------------------------------------------- *)
+  (** ** Proofs
+
+      From here on [G] is assumed to be a vector space over [F]
+      ([vector_space], an abelian group with a compatible exponentiation).
+      The [field] tactic is enabled for [F], and the group lemmas and the
+      ElGamal lemmas ([enc_mul], [enc_div], and so on) are specialised to it
+      through local notations. *)
   Section Proofs.
 
     Context
-      {Hvec: @vector_space F (@eq F) zero one add mul sub 
+      {Hvec: @vector_space F (@eq F) zero one add mul sub
         div opp inv G (@eq G) gid ginv gop gpow}.
 
     Add Field field : (@field_theory_for_stdlib_tactic F
@@ -858,9 +1077,6 @@ Section SchulzeTally.
 
     Local Notation enc := (@enc F G gop gpow).
 
-    (* the algebra of Frontend/Schulze.v at this vector space; always used 
-       by name: Product_space's global instances make typeclass search for 
-       the group laws diverge in this file *)
     Local Notation gop_assoc := (gop_assoc (Hvec := Hvec)).
     Local Notation gop_comm := (gop_comm (Hvec := Hvec)).
     Local Notation gop_gid_l := (gop_gid_l (Hvec := Hvec)).
@@ -883,39 +1099,45 @@ Section SchulzeTally.
     Local Notation enc_div := (enc_div (Hvec := Hvec)).
     Local Notation prove_membership_valid := (prove_membership_valid (Hvec := Hvec)).
 
+    (** Rewrites [fin_idx (fin_of_nat_default i n)] to [i], discharging the
+        bound with [lia]. *)
     Ltac fin_idx_default :=
       match goal with
       | [ |- context [ @fin_idx ?N (fin_of_nat_default ?i ?n) ] ] =>
           let e := fresh "hidx" in
-          assert (e : @fin_idx N (fin_of_nat_default i n) = i) 
+          assert (e : @fin_idx N (fin_of_nat_default i n) = i)
             by (apply fin_of_nat_default_idx; lia);
           rewrite e; clear e
       end.
 
-    (* the product vector space G × G *)
+    (** The identity and inverse of [G2], and its vector-space structure
+        [vspace2] (the product of two copies of [Hvec]). *)
     Definition gid2 : G2 := pid (vid1 := gid) (vid2 := gid).
     Definition ginv2 : G2 -> G2 := popp (vopp1 := ginv) (vopp2 := ginv).
     Definition vspace2 : @vector_space F (@eq F) zero one add mul sub div opp inv
       G2 (@eq G2) gid2 ginv2 gop2 gpow2 := prod_vspace (H1 := Hvec) (H2 := Hvec).
 
-    (* ---------------------------------------------------------------- *)
-    (* plaintext facts about defeats, paths and certificates             *)
+    (** *** Plaintext facts about defeats, paths and certificates *)
 
+    (** For non-negative counts, [0 ≤ defeat D i j ≤ D i j]. *)
     Lemma defeat_le : ∀ {m : nat} (D : Fin.t m -> Fin.t m -> Z) (i j : Fin.t m),
       (0 <= D i j)%Z -> (0 <= defeat D i j <= D i j)%Z.
     Proof.
       intros; unfold defeat; destruct (Z.ltb (D j i) (D i j)); lia.
     Qed.
 
-    (* every edge of a walk is at least the strength of the walk *)
-    Fixpoint edges_ge {m : nat} (d : Fin.t m -> Fin.t m -> Z) (s : Z) 
+    (** [edges_ge d s u l]: every edge of the walk [u :: l] has weight at
+        least [s]. *)
+    Fixpoint edges_ge {m : nat} (d : Fin.t m -> Fin.t m -> Z) (s : Z)
       (u : Fin.t m) (l : list (Fin.t m)) : Prop :=
       match l with
       | List.nil => True
       | List.cons v l' => (s <= d u v)%Z ∧ edges_ge d s v l'
       end.
 
-    Lemma strength_edges_ge : ∀ {m : nat} (d : Fin.t m -> Fin.t m -> Z) (s : Z) 
+    (** If a non-empty walk has strength at least [s], then each of its edges
+        is at least [s]. *)
+    Lemma strength_edges_ge : ∀ {m : nat} (d : Fin.t m -> Fin.t m -> Z) (s : Z)
       (l : list (Fin.t m)) (u : Fin.t m),
       l <> List.nil -> (s <= strength d u l)%Z -> edges_ge d s u l.
     Proof.
@@ -928,8 +1150,10 @@ Section SchulzeTally.
           split; try lia; apply ih; [discriminate | lia | discriminate | lia].
     Qed.
 
-    (* a certified p is bounded by the bound of d *)
-    Lemma cert_ok_bound : ∀ {m : nat} (d p : Fin.t m -> Fin.t m -> Z) 
+    (** If [d ≤ B] everywhere, then a certified [p] satisfies [p ≤ B]. The
+        witness path's first edge is at least [p i j] and at most [B]. In
+        particular [p_ij ∈ {0..N}], which is what the range proofs need. *)
+    Lemma cert_ok_bound : ∀ {m : nat} (d p : Fin.t m -> Fin.t m -> Z)
       (paths : Fin.t m -> Fin.t m -> list (Fin.t m)) (B : Z),
       (∀ i j, d i j <= B)%Z -> cert_ok d p paths -> ∀ i j, (p i j <= B)%Z.
     Proof.
@@ -942,15 +1166,17 @@ Section SchulzeTally.
       specialize (hd i v); lia.
     Qed.
 
-    (* ---------------------------------------------------------------- *)
-    (* the statements of the sub-proofs                                   *)
+    (** *** The sub-proof statements *)
 
-    Lemma mget_mat_of : ∀ {n : nat} (A : Type) (f : Fin.t (S n) -> Fin.t (S n) -> A) 
+    (** [mget] of [mat_of f] is [f]. *)
+    Lemma mget_mat_of : ∀ {n : nat} (A : Type) (f : Fin.t (S n) -> Fin.t (S n) -> A)
       (i j : Fin.t (S n)),
       mget (mat_of (n := n) f) i j = f i j.
     Proof. intros; unfold mget, mat_of; apply nth_mat. Qed.
 
-
+    (** The [or_statement] of [Enc(m; r)] with message [g^m] is [(g, h)^r]. The
+        variant [or_statement_enc_ext] allows the randomness to be rewritten
+        first. *)
     Lemma or_statement_enc : ∀ (g h : G) (m r : F) (msg : G),
       msg = g ^ m -> or_statement (enc g h m r) msg = gpow2 (g, h) r.
     Proof.
@@ -962,8 +1188,8 @@ Section SchulzeTally.
       r = r' -> msg = g ^ m -> or_statement (enc g h m r) msg = gpow2 (g, h) r'.
     Proof. intros * -> ->; apply or_statement_enc; reflexivity. Qed.
 
-    (* natF of a difference of non-negative integers *)
-    Lemma natF_Z_sub : ∀ (a b : Z), (0 <= b <= a)%Z -> 
+    (** [natF] of a difference of non-negative integers [0 ≤ b ≤ a]. *)
+    Lemma natF_Z_sub : ∀ (a b : Z), (0 <= b <= a)%Z ->
       natF (Z.to_nat (a - b)) = sub (natF (Z.to_nat a)) (natF (Z.to_nat b)).
     Proof.
       intros a b hb.
@@ -972,19 +1198,23 @@ Section SchulzeTally.
       apply Z2Nat.inj_le; lia.
     Qed.
 
-    Lemma prove_or_valid : ∀ (g h : G) (k : nat) (rindex : Fin.t (2 + k)) (r : F) 
+    (** Completeness of [prove_or]: if the selected branch holds with
+        witness [r], then the OR proof verifies. *)
+    Lemma prove_or_valid : ∀ (g h : G) (k : nat) (rindex : Fin.t (2 + k)) (r : F)
       (hs : Vector.t G2 (2 + k)) (uscs : Vector.t F ((2 + k) + (1 + k))) (c : F),
       hs[@rindex] = gpow2 (g, h) r ->
       verify_or g h hs (prove_or g h rindex r hs uscs c) = true.
     Proof.
       intros * hr.
       unfold verify_or, prove_or.
-      apply (generalised_construct_or_conversations_schnorr_completeness 
+      apply (generalised_construct_or_conversations_schnorr_completeness
         (Hvec := prod_vspace (H1 := Hvec) (H2 := Hvec))).
       rewrite Vector.const_nth; exact hr.
     Qed.
 
-    Lemma prove_range_valid : ∀ (n' : nat) (g h : G) (v : Z) (r : F) 
+    (** Completeness of [prove_range] for [v ∈ {0..N}] and
+        [cp = Enc(v; r)]. *)
+    Lemma prove_range_valid : ∀ (n' : nat) (g h : G) (v : Z) (r : F)
       (uscs : Vector.t F ((2 + n') + (1 + n'))) (cp : G2) (c : F),
       (0 <= v <= Z.of_nat (S n'))%Z -> cp = enc g h (natF (Z.to_nat v)) r ->
       verify_range (N := S n') g h cp (prove_range (n' := n') g h v r uscs cp c) = true.
@@ -997,13 +1227,15 @@ Section SchulzeTally.
       unfold nat_of_Z; fin_idx_default; reflexivity.
     Qed.
 
-    (* the re-encryption proof *)
+    (** Completeness of the re-encryption check. If [c] decrypts to [g^D],
+        then [Enc(D; rD) / c] decrypts to the identity, and the real decryption
+        proof with key [x] verifies. *)
     Lemma reenc_dec_valid : ∀ (x : F) (g h : G) (c : G2) (D : nat) (rD u cc : F),
       h = g ^ x -> cdec x c = g ^ natF D ->
       let c' := cmul (enc g h (natF D) rD) (cinv c) in
-      decryption_proof_accepting_conversations (F := F) (G := G) (ginv := ginv) 
+      decryption_proof_accepting_conversations (F := F) (G := G) (ginv := ginv)
         (gop := gop) (gpow := gpow) (Gdec := Gdec) g h (fst c') (snd c') gid
-        (construct_decryption_proof_elgamal_real (F := F) (add := add) (mul := mul) 
+        (construct_decryption_proof_elgamal_real (F := F) (add := add) (mul := mul)
           (G := G) (gpow := gpow) x g c' u cc) = true.
     Proof.
       intros * hh hd; destruct c as (c1, c2); cbn.
@@ -1020,14 +1252,17 @@ Section SchulzeTally.
       f_equal; f_equal; field.
     Qed.
 
+    (** [z ≤ k] implies [Z.to_nat z ≤ k]. *)
     Lemma to_nat_le : ∀ (z : Z) (k : nat), (z <= Z.of_nat k)%Z -> Z.to_nat z <= k.
     Proof.
       intros z k hz; destruct z as [| q | q]; [cbn; lia | | cbn; lia].
       rewrite <- (Nat2Z.id k); apply Z2Nat.inj_le; lia.
     Qed.
 
-    Lemma defeat_statements_nth : ∀ (n n' : nat) (g : G) 
-      (encD' enc_d : Vector.t (Vector.t G2 (S n)) (S n)) (i j : Fin.t (S n)) 
+    (** The branch statement at index [idx] of [defeat_statements]: on [V₂]
+        for [idx ≤ N] and on [V₁] otherwise. *)
+    Lemma defeat_statements_nth : ∀ (n n' : nat) (g : G)
+      (encD' enc_d : Vector.t (Vector.t G2 (S n)) (S n)) (i j : Fin.t (S n))
       (idx : Fin.t (S (S n') + S n')),
       (defeat_statements (N := S n') g encD' enc_d i j)[@idx] =
       let Dij := mget encD' i j in
@@ -1036,7 +1271,7 @@ Section SchulzeTally.
       let delta := cmul Dij (cinv Dji) in
       let V2 := cmul (cpow dij (natF (tally_shift (N := S n')))) delta in
       let V1 := cmul (cpow (cmul dij (cinv Dij)) (natF (tally_shift (N := S n')))) delta in
-      if Nat.ltb (fin_idx idx) (S (S n')) 
+      if Nat.ltb (fin_idx idx) (S (S n'))
       then or_statement V2 (ginv (g ^ natF (fin_idx idx)))
       else or_statement V1 (g ^ natF (S (fin_idx idx - S (S n')))).
     Proof.
@@ -1047,19 +1282,20 @@ Section SchulzeTally.
       set (delta := cmul Dij (cinv Dji)).
       set (V2 := cmul (cpow dij (natF (tally_shift (N := S n')))) delta).
       set (V1 := cmul (cpow (cmul dij (cinv Dij)) (natF (tally_shift (N := S n')))) delta).
-      exact (nth_enum_append _ (S (S n')) (S n') 
-        (fun t => or_statement V2 (ginv (g ^ natF t))) 
+      exact (nth_enum_append _ (S (S n')) (S n')
+        (fun t => or_statement V2 (ginv (g ^ natF t)))
         (fun t => or_statement V1 (g ^ natF (S t))) idx).
     Qed.
 
-    Lemma upper_statements_nth : ∀ (n n' : nat) (g : G) 
-      (enc_p : Vector.t (Vector.t G2 (S n)) (S n)) (k i j : Fin.t (S n)) 
+    (** The branch statement at index [idx] of [upper_statements]. *)
+    Lemma upper_statements_nth : ∀ (n n' : nat) (g : G)
+      (enc_p : Vector.t (Vector.t G2 (S n)) (S n)) (k i j : Fin.t (S n))
       (idx : Fin.t (S (S n') + S (S n'))),
       (upper_statements (N := S n') g enc_p k i j)[@idx] =
       let pij := mget enc_p i j in
       let A := cmul pij (cinv (mget enc_p i k)) in
       let B := cmul pij (cinv (mget enc_p k j)) in
-      if Nat.ltb (fin_idx idx) (S (S n')) 
+      if Nat.ltb (fin_idx idx) (S (S n'))
       then or_statement A (g ^ natF (fin_idx idx))
       else or_statement B (g ^ natF (fin_idx idx - S (S n'))).
     Proof.
@@ -1067,23 +1303,25 @@ Section SchulzeTally.
       set (pij := mget enc_p i j).
       set (A := cmul pij (cinv (mget enc_p i k))).
       set (B := cmul pij (cinv (mget enc_p k j))).
-      exact (nth_enum_append _ (S (S n')) (S (S n')) 
-        (fun t => or_statement A (g ^ natF t)) 
+      exact (nth_enum_append _ (S (S n')) (S (S n'))
+        (fun t => or_statement A (g ^ natF t))
         (fun t => or_statement B (g ^ natF t)) idx).
     Qed.
 
-    Lemma edge_proofs_valid : ∀ (n n' : nat) (g h : G) 
+    (** Completeness of the edge proofs along a walk whose edges are all at
+        least [p i j]. *)
+    Lemma edge_proofs_valid : ∀ (n n' : nat) (g h : G)
       (d p : Fin.t (S n) -> Fin.t (S n) -> Z)
       (rd rp : Fin.t (S n) -> Fin.t (S n) -> F) (rnd : nat -> F) (chal : F) (i j : Fin.t (S n)),
       (∀ u v, (0 <= d u v <= Z.of_nat (S n'))%Z) -> (0 <= p i j)%Z ->
       ∀ (l : list (Fin.t (S n))) (u : Fin.t (S n)) (e : nat),
       edges_ge d (p i j) u l ->
-      verify_edges (N := S n') g h 
+      verify_edges (N := S n') g h
         (mat_of (n := n) (fun a b => enc g h (natF (nat_of_Z (d a b))) (rd a b)))
         (mget (mat_of (n := n) (fun a b => enc g h (natF (nat_of_Z (p a b))) (rp a b))) i j) u l
-        (edge_proofs (n' := n') g h d p 
+        (edge_proofs (n' := n') g h d p
           (mat_of (n := n) (fun a b => enc g h (natF (nat_of_Z (d a b))) (rd a b)))
-          (mat_of (n := n) (fun a b => enc g h (natF (nat_of_Z (p a b))) (rp a b))) 
+          (mat_of (n := n) (fun a b => enc g h (natF (nat_of_Z (p a b))) (rp a b)))
           rd rp rnd chal i j u l e) = true.
     Proof.
       intros * hd hp l; induction l as [| v l' ih]; intros u e hl.
@@ -1097,50 +1335,64 @@ Section SchulzeTally.
         - apply ih; exact hl'.
     Qed.
 
-    (* encD encrypts the margin matrix D under x *)
-    Definition encrypts {m : nat} (x : F) (g : G) 
+    (** [encrypts x g encD D]: every entry of [encD] decrypts, under [x], to
+        [g ^ D i j]. *)
+    Definition encrypts {m : nat} (x : F) (g : G)
       (encD : Vector.t (Vector.t (G * G) m) m) (D : Fin.t m -> Fin.t m -> Z) : Prop :=
       ∀ i j, cdec x (mget encD i j) = g ^ natF (Z.to_nat (D i j)).
 
-    (* completeness: honest trustees with a correct plaintext certificate 
-       produce an accepting transcript *)
-    Theorem verify_tally_complete : ∀ (n n' : nat) (x : F) (g h : G) 
-      (encD : Vector.t (Vector.t (G * G) (S n)) (S n)) 
-      (D p : Fin.t (S n) -> Fin.t (S n) -> Z) 
+    (** *** Completeness
+
+        Honest trustees are accepted. Suppose that [h = g^x], that [encD]
+        encrypts [D] with [D ∈ [0, N]], that [(p, paths)] is a certificate for
+        [defeat D], and that [w] is a winner of [p]. Then
+        [generate_tally_with] produces an accepting proof for any randomness and
+        challenge. The proof goes through the seven checks in turn, each one
+        reduced to the completeness of a sub-proof ([reenc_dec_valid],
+        [prove_range_valid], [prove_or_valid], [edge_proofs_valid]) and to the
+        arithmetic of the true branch. *)
+    Theorem verify_tally_complete : ∀ (n n' : nat) (x : F) (g h : G)
+      (encD : Vector.t (Vector.t (G * G) (S n)) (S n))
+      (D p : Fin.t (S n) -> Fin.t (S n) -> Z)
       (paths : Fin.t (S n) -> Fin.t (S n) -> list (Fin.t (S n)))
       (w : Fin.t (S n)) (rnd : nat -> F) (chal : F),
-      h = g ^ x -> encrypts x g encD D -> 
+      h = g ^ x -> encrypts x g encD D ->
       (∀ i j, (0 <= D i j <= Z.of_nat (S n'))%Z) ->
       cert_ok (defeat D) p paths -> schulze_winner p w ->
-      verify_tally (N := S n') g h encD w 
+      verify_tally (N := S n') g h encD w
         (generate_tally_with (n' := n') x g h encD D p paths w rnd chal) = true.
     Proof.
       intros * hh he hb hc hw.
-      assert (hdN : ∀ i j, (0 <= defeat D i j <= Z.of_nat (S n'))%Z) 
+      (* Bounds: [d] lies in [0, N] (as [D] does), hence so does [p] by
+         [cert_ok_bound]. *)
+      assert (hdN : ∀ i j, (0 <= defeat D i j <= Z.of_nat (S n'))%Z)
         by (intros i j; pose proof (defeat_le D i j (proj1 (hb i j))); specialize (hb i j); lia).
       pose proof (cert_ok_bound _ _ _ _ (fun i j => proj2 (hdN i j)) hc) as hpN.
-      assert (hp0 : ∀ i j, (0 <= p i j)%Z) 
+      assert (hp0 : ∀ i j, (0 <= p i j)%Z)
         by (intros i j; destruct hc as (h1 & _); specialize (h1 i j); specialize (hdN i j); lia).
       destruct hc as (hc1 & hc2 & hc3).
-      unfold verify_tally, tally_checks, generate_tally_with; 
-      cbn [List.forallb tp_encD' tp_dec tp_enc_d tp_enc_p tp_d_range tp_defeat 
+      (* Split the verdict into the seven checks. *)
+      unfold verify_tally, tally_checks, generate_tally_with;
+      cbn [List.forallb tp_encD' tp_dec tp_enc_d tp_enc_p tp_d_range tp_defeat
         tp_lower tp_upper tp_paths tp_edges tp_winner].
       rewrite !Bool.andb_true_iff; repeat split; try reflexivity.
-      (* 1. re-encryption *)
+      (* 1. Re-encryption: [Enc'(D_ij) / Enc(D_ij)] decrypts to the identity. *)
       - unfold forall_pairs; apply forall_fin_true; intro i; apply forall_fin_true; intro j.
         rewrite !mget_mat_of.
         apply reenc_dec_valid; [exact hh | apply he].
-      (* 2. d in range *)
+      (* 2. [d_ij] is in range. *)
       - unfold forall_pairs; apply forall_fin_true; intro i; apply forall_fin_true; intro j.
         rewrite !mget_mat_of.
         apply prove_range_valid; [apply hdN | reflexivity].
-      (* 3. the defeat disjunction *)
+      (* 3. The defeat disjunction, by cases on the sign of [D_ij - D_ji]. *)
       - unfold forall_pairs; apply forall_fin_true; intro i; apply forall_fin_true; intro j.
         rewrite !mget_mat_of.
         pose proof (hb i j) as hbij; pose proof (hb j i) as hbji.
         destruct (Z.ltb 0 (D i j - D j i)) eqn:hlt.
+        (* [i] beats [j]: [d_ij = D_ij], and the true branch is on [V₁] with
+           message [g ^ (D_ij - D_ji)]. *)
         + apply Z.ltb_lt in hlt.
-          assert (hd : defeat D i j = D i j) 
+          assert (hd : defeat D i j = D i j)
             by (unfold defeat; rewrite (proj2 (Z.ltb_lt _ _)); lia).
           pose proof (to_nat_le (D i j - D j i) (S n') ltac:(lia)) as hle.
           apply prove_or_valid.
@@ -1150,12 +1402,14 @@ Section SchulzeTally.
           rewrite !mget_mat_of.
           repeat (rewrite enc_div || rewrite enc_pow || rewrite enc_mul).
           apply or_statement_enc_ext; [field |].
-          replace (S (S n' + Z.to_nat (D i j - D j i) - S (S n'))) 
+          replace (S (S n' + Z.to_nat (D i j - D j i) - S (S n')))
             with (Z.to_nat (D i j - D j i)) by lia.
           rewrite hd, natF_Z_sub; [| lia].
           f_equal; field.
+        (* [i] does not beat [j]: [d_ij = 0], and the true branch is on [V₂] with
+           message [g ^ -(D_ji - D_ij)]. *)
         + apply Z.ltb_ge in hlt.
-          assert (hd : defeat D i j = 0%Z) 
+          assert (hd : defeat D i j = 0%Z)
             by (unfold defeat; rewrite (proj2 (Z.ltb_ge _ _)); lia).
           pose proof (to_nat_le (- (D i j - D j i)) (S n') ltac:(lia)) as hle.
           apply prove_or_valid.
@@ -1170,18 +1424,19 @@ Section SchulzeTally.
           replace (- (D i j - D j i))%Z with (D j i - D i j)%Z by lia.
           rewrite natF_Z_sub; [| lia].
           cbn [nat_to_F]; field.
-      (* 4. p ≥ d *)
+      (* 4. Lower bound [p_ij - d_ij] in range. *)
       - unfold forall_pairs; apply forall_fin_true; intro i; apply forall_fin_true; intro j.
         rewrite !mget_mat_of, enc_div.
         pose proof (hc1 i j); pose proof (hdN i j); pose proof (hpN i j).
         apply prove_range_valid; [lia |].
         apply enc_ext; [| reflexivity].
         unfold nat_of_Z; rewrite natF_Z_sub; [reflexivity | lia].
-      (* 5. one-step closed *)
-      - apply forall_fin_true; intro k; unfold forall_pairs; 
+      (* 5. Closure disjunction: the first branch if [p_ik ≤ p_ij], and otherwise
+         the second, since [min p_ik p_kj ≤ p_ij] forces [p_kj ≤ p_ij]. *)
+      - apply forall_fin_true; intro k; unfold forall_pairs;
         apply forall_fin_true; intro i; apply forall_fin_true; intro j.
         rewrite (Vector.nth_map _ _ k k eq_refl), fin_enum_nth, !mget_mat_of.
-        pose proof (hc2 i j k) as hmin; pose proof (hpN i j); pose proof (hpN i k); 
+        pose proof (hc2 i j k) as hmin; pose proof (hpN i j); pose proof (hpN i k);
         pose proof (hpN k j); pose proof (hp0 i j); pose proof (hp0 i k); pose proof (hp0 k j).
         destruct (Z.leb (p i k) (p i j)) eqn:hle.
         + apply Z.leb_le in hle.
@@ -1202,10 +1457,11 @@ Section SchulzeTally.
           rewrite (proj2 (Nat.ltb_ge _ _)); [| lia].
           rewrite !mget_mat_of, enc_div.
           apply or_statement_enc_ext; [reflexivity |].
-          replace (S (S n') + Z.to_nat (p i j - p k j) - S (S n')) 
+          replace (S (S n') + Z.to_nat (p i j - p k j) - S (S n'))
             with (Z.to_nat (p i j - p k j)) by lia.
           rewrite natF_Z_sub; [reflexivity | lia].
-      (* 6. witness paths *)
+      (* 6. Witness paths: the path check is the certificate's, and the edge
+         proofs need each edge to be at least [p_ij] ([strength_edges_ge]). *)
       - unfold forall_pairs; apply forall_fin_true; intro i; apply forall_fin_true; intro j.
         rewrite !mget_mat_of.
         destruct (hc3 i j) as (hpath & hstr).
@@ -1218,7 +1474,7 @@ Section SchulzeTally.
         cbn [andb].
         apply edge_proofs_valid; [exact hdN | apply hp0 |].
         apply strength_edges_ge; [exact hne | exact hstr].
-      (* 7. winner *)
+      (* 7. Winner: [p_wj - p_jw] in range. *)
       - apply forall_fin_true; intro j.
         rewrite (Vector.nth_map _ _ j j eq_refl), fin_enum_nth, !mget_mat_of, enc_div.
         pose proof (hw j); pose proof (hpN w j); pose proof (hp0 j w).
@@ -1227,17 +1483,17 @@ Section SchulzeTally.
         unfold nat_of_Z; rewrite natF_Z_sub; [reflexivity | lia].
     Qed.
 
-    (* the wrapper generate_tally, whose plaintext certificate is computed by 
-       minmax_closure and witness_path: complete whenever the computed 
-       certificate passes the boolean check (the trustees run it before 
-       publishing) and the decrypted margins are the true ones *)
-    Corollary verify_tally_complete_auto : ∀ (n n' : nat) (x : F) (g h : G) 
+    (** Completeness for the full prover [generate_tally]. It holds whenever
+        the decrypted counts are correct and in range, and the certificate
+        computed by [minmax_closure] and [witness_path] passes [cert_ok_b] and
+        [schulze_winner_b]. *)
+    Corollary verify_tally_complete_auto : ∀ (n n' : nat) (x : F) (g h : G)
       (encD : Vector.t (Vector.t (G * G) (S n)) (S n)) (w : Fin.t (S n)) (rnd : nat -> F) (chal : F),
       h = g ^ x ->
       let D := fun_of (n := n) (decrypt_margins (n := n) (n' := n') x g encD) in
       let d := defeat D in
       let p := minmax_closure d in
-      encrypts x g encD D -> 
+      encrypts x g encD D ->
       (∀ i j, (0 <= D i j <= Z.of_nat (S n'))%Z) ->
       cert_ok_b d p (witness_path d p) = true -> schulze_winner_b p w = true ->
       verify_tally (N := S n') g h encD w (generate_tally (n' := n') x g h encD w rnd chal) = true.
@@ -1247,11 +1503,8 @@ Section SchulzeTally.
       apply verify_tally_complete; auto using cert_ok_b_sound, schulze_winner_b_sound.
     Qed.
 
-    (* ---------------------------------------------------------------- *)
-    (* soundness                                 *)
-
     Local Notation exp_injective := (Schulze.exp_injective (gpow := gpow)).
-    Local Notation natF_injective := 
+    Local Notation natF_injective :=
       (Schulze.natF_injective (zero := zero) (one := one) (add := add)).
     Local Notation cdec_cmul := (cdec_cmul (Hvec := Hvec)).
     Local Notation cdec_cinv := (cdec_cinv (Hvec := Hvec)).
@@ -1261,9 +1514,13 @@ Section SchulzeTally.
     Local Notation natF_mul := (natF_mul (Hvec := Hvec)).
     Local Notation natF_add := (natF_add (Hvec := Hvec)).
 
-    (* the discrete-log search of the honest trustees is correct when 
-       exponentiation is injective and the field has characteristic > N *)
-    Lemma dlog_le_some : ∀ (g y : G) (N k : nat), 
+    (** *** Correct decryption of the counts
+
+        The trustees' discrete-log search is correct when [g ^ _] is injective
+        and the characteristic of [F] exceeds [N] ([natF_injective]). *)
+
+    (** A result of [dlog_le] is a discrete logarithm bounded by [N]. *)
+    Lemma dlog_le_some : ∀ (g y : G) (N k : nat),
       dlog_le g y N = Some k -> y = g ^ natF k ∧ k <= N.
     Proof.
       intros g y N; induction N as [| N ih]; intros k h; revert h; cbn.
@@ -1275,6 +1532,7 @@ Section SchulzeTally.
             [injection h as <-; split; [exact e | lia] | discriminate].
     Qed.
 
+    (** [dlog_le] finds every power [g ^ natF k] with [k ≤ N]. *)
     Lemma dlog_le_found : ∀ (g : G) (N k : nat), k <= N -> dlog_le g (g ^ natF k) N <> None.
     Proof.
       intros g N; induction N as [| N ih]; intros k hk; cbn.
@@ -1286,6 +1544,7 @@ Section SchulzeTally.
         exfalso; exact (ih k ltac:(lia) hr).
     Qed.
 
+    (** Under injectivity, [dlog_le] returns exactly [k]. *)
     Lemma dlog_le_inj : ∀ (g : G) (N k : nat), exp_injective g -> natF_injective N -> k <= N ->
       dlog_le g (g ^ natF k) N = Some k.
     Proof.
@@ -1296,14 +1555,16 @@ Section SchulzeTally.
       + exfalso; exact (dlog_le_found g N k hk hr).
     Qed.
 
-    Lemma decrypt_margins_correct : ∀ (n n' : nat) (x : F) (g : G) 
+    (** [decrypt_margins] recovers the counts [D] when [encD] encrypts [D] with
+        [D ∈ [0, N]]. *)
+    Lemma decrypt_margins_correct : ∀ (n n' : nat) (x : F) (g : G)
       (encD : Vector.t (Vector.t (G * G) (S n)) (S n)) (D : Fin.t (S n) -> Fin.t (S n) -> Z),
       exp_injective g -> natF_injective (S n') -> encrypts x g encD D ->
       (∀ i j, (0 <= D i j <= Z.of_nat (S n'))%Z) ->
       fun_of (n := n) (decrypt_margins (n := n) (n' := n') x g encD) = D.
     Proof.
       intros * hinj hchar he hb.
-      apply functional_extensionality_dep; intro i. 
+      apply functional_extensionality_dep; intro i.
       apply functional_extensionality_dep; intro j.
       unfold fun_of, decrypt_margins, mget.
       rewrite (Vector.nth_map _ _ i i eq_refl), (Vector.nth_map _ _ j j eq_refl).
@@ -1315,10 +1576,10 @@ Section SchulzeTally.
       rewrite Z2Nat.id; lia.
     Qed.
 
-    (* completeness stated with the true margins D: the honest trustees 
-       decrypt them correctly *)
-    Corollary verify_tally_complete_inj : ∀ (n n' : nat) (x : F) (g h : G) 
-      (encD : Vector.t (Vector.t (G * G) (S n)) (S n)) 
+    (** Completeness of [generate_tally] stated for the true counts [D]. It
+        combines [verify_tally_complete_auto] with [decrypt_margins_correct]. *)
+    Corollary verify_tally_complete_inj : ∀ (n n' : nat) (x : F) (g h : G)
+      (encD : Vector.t (Vector.t (G * G) (S n)) (S n))
       (D : Fin.t (S n) -> Fin.t (S n) -> Z) (w : Fin.t (S n)) (rnd : nat -> F) (chal : F),
       h = g ^ x -> exp_injective g -> natF_injective (S n') ->
       encrypts x g encD D -> (∀ i j, (0 <= D i j <= Z.of_nat (S n'))%Z) ->
@@ -1334,8 +1595,16 @@ Section SchulzeTally.
       exact (hauto he hb hc hw).
     Qed.
 
-    (* extractor for a disjunction over G × G *)
-    Lemma or_statement_sound : ∀ (g h : G) (V : G2) (msg : G) (y : F), 
+    (** *** Special soundness
+
+        Two accepting transcripts with the same announcements and different
+        challenges yield a witness for each sub-proof (rewinding extraction).
+        The decrypted statements are then decoded into facts about natural
+        numbers. *)
+
+    (** If the [or_statement] of [V] for [msg] is [(g, h)^y], then [V] is an
+        encryption of [msg] with randomness [y]. *)
+    Lemma or_statement_sound : ∀ (g h : G) (V : G2) (msg : G) (y : F),
       or_statement V msg = gpow2 (g, h) y -> V = (g ^ y, gop msg (h ^ y)).
     Proof.
       intros g h [v1 v2] msg y he; unfold or_statement, gpow2, psmul in he; cbn in he.
@@ -1343,10 +1612,12 @@ Section SchulzeTally.
       rewrite <- h2, (gop_comm v2), gop_assoc, gop_ginv_r, gop_gid_l; reflexivity.
     Qed.
 
+    (** Special soundness of an OR proof over [G2]: some branch has a
+        witness. *)
     Lemma or_sound : ∀ (g h : G) (k : nat) (hs : Vector.t G2 (2 + k)) (pf pf' : or_proof (2 + k)),
-      Sigma.announcement pf = Sigma.announcement pf' -> 
+      Sigma.announcement pf = Sigma.announcement pf' ->
       Vector.hd (Sigma.challenge pf) <> Vector.hd (Sigma.challenge pf') ->
-      verify_or g h hs pf = true -> verify_or g h hs pf' = true -> 
+      verify_or g h hs pf = true -> verify_or g h hs pf' = true ->
       ∃ (f : Fin.t (2 + k)) (y : F), hs[@f] = gpow2 (g, h) y.
     Proof.
       intros * ha hc h1 h2.
@@ -1354,38 +1625,42 @@ Section SchulzeTally.
       destruct (vector_inv_S c) as (c0 & cs & ->).
       destruct (vector_inv_S c') as (c0' & cs' & ->); cbn in hc.
       unfold verify_or in h1, h2.
-      destruct (generalised_or_sigma_soundness_main (Hvec := vspace2) 
+      destruct (generalised_or_sigma_soundness_main (Hvec := vspace2)
         (Vector.const (g, h) (2 + k)) hs a c0 c0' cs cs' r r' h1 h2 hc) as (f & y & hf).
       exists f, y; rewrite <- hf, Vector.const_nth; reflexivity.
     Qed.
 
-    (* a range proof: the ciphertext decrypts to some t ≤ N *)
-    Lemma range_sound : ∀ (n' : nat) (x : F) (g h : G) (cp : G2) 
+    (** Special soundness of a range proof: [cp] decrypts under [x] to [g^t]
+        for some [t ≤ N]. *)
+    Lemma range_sound : ∀ (n' : nat) (x : F) (g h : G) (cp : G2)
       (pf pf' : membership_proof (S (S n'))),
       h = g ^ x ->
-      Sigma.announcement pf = Sigma.announcement pf' -> 
+      Sigma.announcement pf = Sigma.announcement pf' ->
       Vector.hd (Sigma.challenge pf) <> Vector.hd (Sigma.challenge pf') ->
       verify_range (N := S n') g h cp pf = true -> verify_range (N := S n') g h cp pf' = true ->
       ∃ t : nat, t <= S n' ∧ cdec x cp = g ^ natF t.
     Proof.
       intros * hh ha hc h1 h2; unfold verify_range in h1, h2.
-      destruct (membership_sound (Hvec := Hvec) n' g h (msgs_range (N := S n') g) cp pf pf' 
+      destruct (membership_sound (Hvec := Hvec) n' g h (msgs_range (N := S n') g) cp pf pf'
         ha hc h1 h2) as (f & y & hf).
       exists (fin_idx f); split; [pose proof (fin_idx_lt _ f); lia |].
       rewrite (cdec_msg x g h cp _ y hh hf); unfold msgs_range.
       rewrite (nth_enum _ _ (fun k => g ^ natF k)); reflexivity.
     Qed.
 
-    (* a re-encryption proof: both ciphertexts decrypt to the same element *)
+    (** Special soundness of the re-encryption check. If [exp_injective g]
+        holds, then [c'] and [c] decrypt to the same group element. The
+        extracted discrete log of [h] must be [x], so [c' / c] decrypts to the
+        identity. *)
     Lemma reenc_sound : ∀ (x : F) (g h : G) (c c' : G2) (pf pf' : @sigma_proto F G 2 1 1),
       h = g ^ x -> exp_injective g ->
-      Sigma.announcement pf = Sigma.announcement pf' -> 
+      Sigma.announcement pf = Sigma.announcement pf' ->
       Vector.hd (Sigma.challenge pf) <> Vector.hd (Sigma.challenge pf') ->
-      decryption_proof_accepting_conversations (F := F) (G := G) (ginv := ginv) 
-        (gop := gop) (gpow := gpow) (Gdec := Gdec) g h 
+      decryption_proof_accepting_conversations (F := F) (G := G) (ginv := ginv)
+        (gop := gop) (gpow := gpow) (Gdec := Gdec) g h
         (fst (cmul c' (cinv c))) (snd (cmul c' (cinv c))) gid pf = true ->
-      decryption_proof_accepting_conversations (F := F) (G := G) (ginv := ginv) 
-        (gop := gop) (gpow := gpow) (Gdec := Gdec) g h 
+      decryption_proof_accepting_conversations (F := F) (G := G) (ginv := ginv)
+        (gop := gop) (gpow := gpow) (Gdec := Gdec) g h
         (fst (cmul c' (cinv c))) (snd (cmul c' (cinv c))) gid pf' = true ->
       cdec x c' = cdec x c.
     Proof.
@@ -1396,23 +1671,25 @@ Section SchulzeTally.
       destruct (vector_inv_S r) as (r0 & rs & ->).
       destruct (vector_inv_S r') as (r0' & rs' & ->).
       rewrite (vector_inv_0 cs), (vector_inv_0 cs'), (vector_inv_0 rs), (vector_inv_0 rs') in *.
-      destruct (special_soundness_construct_decryption_proof_elgamal (Hvec := Hvec) 
+      destruct (special_soundness_construct_decryption_proof_elgamal (Hvec := Hvec)
         g h gid _ _ a c0 r0 c0' r0' hc h1 h2) as (y & hy & hcp).
       rewrite hh in hy; apply hinj in hy; subst y.
       rewrite ginv_gid, gop_gid_r in hcp.
-      assert (hd : cdec x (cmul c' (cinv c)) = gid) 
+      assert (hd : cdec x (cmul c' (cinv c)) = gid)
         by (unfold cdec; rewrite <- hcp; apply gop_ginv_r).
       rewrite cdec_cmul, cdec_cinv in hd.
       apply (f_equal (fun z => gop z (cdec x c))) in hd.
       rewrite <- gop_assoc, gop_ginv_l, gop_gid_r, gop_gid_l in hd; exact hd.
     Qed.
 
-    (* the defeat disjunction, decrypted *)
-    Lemma defeat_sound : ∀ (n n' : nat) (x : F) (g h : G) 
+    (** Special soundness of the defeat disjunction, stated with decrypted
+        group elements. Either [V₂] decrypts to [g^-t] with [t ≤ N], or [V₁]
+        decrypts to [g^(t + 1)] with [t < N]. *)
+    Lemma defeat_sound : ∀ (n n' : nat) (x : F) (g h : G)
       (encD' enc_d : Vector.t (Vector.t G2 (S n)) (S n)) (i j : Fin.t (S n))
       (pf pf' : or_proof (S (S n') + S n')),
       h = g ^ x ->
-      Sigma.announcement pf = Sigma.announcement pf' -> 
+      Sigma.announcement pf = Sigma.announcement pf' ->
       Vector.hd (Sigma.challenge pf) <> Vector.hd (Sigma.challenge pf') ->
       verify_or g h (defeat_statements (N := S n') g encD' enc_d i j) pf = true ->
       verify_or g h (defeat_statements (N := S n') g encD' enc_d i j) pf' = true ->
@@ -1420,13 +1697,13 @@ Section SchulzeTally.
       let Dji := cdec x (mget encD' j i) in
       let dij := cdec x (mget enc_d i j) in
       let K := natF (tally_shift (N := S n')) in
-      ∃ t : nat, 
+      ∃ t : nat,
         (t <= S n' ∧ gop (dij ^ K) (gop Dij (ginv Dji)) = ginv (g ^ natF t)) ∨
         (t < S n' ∧ gop ((gop dij (ginv Dij)) ^ K) (gop Dij (ginv Dji)) = g ^ natF (S t)).
     Proof.
       intros * hh ha hc h1 h2; cbv zeta.
       destruct (or_sound g h (n' + S n') _ pf pf' ha hc h1 h2) as (f & y & hf).
-      pose proof (eq_trans (eq_sym (defeat_statements_nth _ _ _ _ _ _ _ f)) hf) as hf'; 
+      pose proof (eq_trans (eq_sym (defeat_statements_nth _ _ _ _ _ _ _ f)) hf) as hf';
       cbv zeta in hf'.
       pose proof (fin_idx_lt (S (S n') + S n')%nat f) as hfl.
       set (fi := @fin_idx (S (S n') + S n')%nat f) in *.
@@ -1441,22 +1718,24 @@ Section SchulzeTally.
         reflexivity.
     Qed.
 
-    (* the closure disjunction, decrypted *)
-    Lemma upper_sound : ∀ (n n' : nat) (x : F) (g h : G) 
+    (** Special soundness of the closure disjunction: either
+        [Enc(p_ij) / Enc(p_ik)] or [Enc(p_ij) / Enc(p_kj)] decrypts to [g^t]
+        with [t ≤ N]. *)
+    Lemma upper_sound : ∀ (n n' : nat) (x : F) (g h : G)
       (enc_p : Vector.t (Vector.t G2 (S n)) (S n)) (k i j : Fin.t (S n))
       (pf pf' : or_proof (S (S n') + S (S n'))),
       h = g ^ x ->
-      Sigma.announcement pf = Sigma.announcement pf' -> 
+      Sigma.announcement pf = Sigma.announcement pf' ->
       Vector.hd (Sigma.challenge pf) <> Vector.hd (Sigma.challenge pf') ->
       verify_or g h (upper_statements (N := S n') g enc_p k i j) pf = true ->
       verify_or g h (upper_statements (N := S n') g enc_p k i j) pf' = true ->
-      ∃ t : nat, t <= S n' ∧ 
+      ∃ t : nat, t <= S n' ∧
         (gop (cdec x (mget enc_p i j)) (ginv (cdec x (mget enc_p i k))) = g ^ natF t ∨
          gop (cdec x (mget enc_p i j)) (ginv (cdec x (mget enc_p k j))) = g ^ natF t).
     Proof.
       intros * hh ha hc h1 h2.
       destruct (or_sound g h (n' + S (S n')) _ pf pf' ha hc h1 h2) as (f & y & hf).
-      pose proof (eq_trans (eq_sym (upper_statements_nth _ _ _ _ _ _ _ f)) hf) as hf'; 
+      pose proof (eq_trans (eq_sym (upper_statements_nth _ _ _ _ _ _ _ f)) hf) as hf';
       cbv zeta in hf'.
       pose proof (fin_idx_lt (S (S n') + S (S n'))%nat f) as hfl.
       set (fi := @fin_idx (S (S n') + S (S n'))%nat f) in *.
@@ -1469,9 +1748,11 @@ Section SchulzeTally.
         rewrite <- (cdec_msg x g h _ _ y hh hf'), cdec_cmul, cdec_cinv; reflexivity.
     Qed.
 
-    (* decoding: g^(natF a - natF b) = g^(natF t) gives a = b + t *)
-    Lemma diff_decode : ∀ (B : nat) (g : G), exp_injective g -> natF_injective B -> 
-      ∀ (a b t : nat), a <= B -> (b + t <= B)%nat -> 
+    (** Decoding a difference. [g^a / g^b = g^t] with [a ≤ B] and [b + t ≤ B]
+        gives [a = b + t], provided [g ^ _] is injective and the characteristic
+        exceeds [B]. *)
+    Lemma diff_decode : ∀ (B : nat) (g : G), exp_injective g -> natF_injective B ->
+      ∀ (a b t : nat), a <= B -> (b + t <= B)%nat ->
       gop (g ^ natF a) (ginv (g ^ natF b)) = g ^ natF t -> a = (b + t)%nat.
     Proof.
       intros B g hinj hchar a b t ha hb he.
@@ -1480,30 +1761,38 @@ Section SchulzeTally.
       rewrite natF_add, <- he; field.
     Qed.
 
-    (* decoding the defeat disjunction: d = 0 ∧ D_ij ≤ D_ji, or 
-       d = D_ij ∧ D_ji < D_ij *)
-    Lemma defeat_decode : ∀ (N : nat) (g : G), exp_injective g -> 
-      natF_injective (2 * N * N + 3 * N)%nat -> 
+    (** Decoding the defeat disjunction over naturals in [0..N]. From either
+        branch, [(kd = 0 ∧ Dij ≤ Dji) ∨ (kd = Dij ∧ Dji < Dij)]. The integers
+        involved are below [2N² + 3N], so a characteristic above that bound
+        makes the field equations hold over [nat]. Then [nia] eliminates the
+        impossible cases: the shift [K = 2N + 1] keeps the two branches
+        apart. *)
+    Lemma defeat_decode : ∀ (N : nat) (g : G), exp_injective g ->
+      natF_injective (2 * N * N + 3 * N)%nat ->
       ∀ (kd Dij Dji t : nat), kd <= N -> Dij <= N -> Dji <= N ->
-      ((t <= N ∧ gop ((g ^ natF kd) ^ natF (S (N + N))) 
+      ((t <= N ∧ gop ((g ^ natF kd) ^ natF (S (N + N)))
           (gop (g ^ natF Dij) (ginv (g ^ natF Dji))) = ginv (g ^ natF t)) ∨
-       (t < N ∧ gop ((gop (g ^ natF kd) (ginv (g ^ natF Dij))) ^ natF (S (N + N))) 
+       (t < N ∧ gop ((gop (g ^ natF kd) (ginv (g ^ natF Dij))) ^ natF (S (N + N)))
           (gop (g ^ natF Dij) (ginv (g ^ natF Dji))) = g ^ natF (S t))) ->
       (kd = 0 ∧ Dij <= Dji) ∨ (kd = Dij ∧ Dji < Dij).
     Proof.
       intros N g hinj hchar kd Dij Dji t hkd hDij hDji [(ht & he) | (ht & he)].
+      (* First branch: [K kd + Dij + t = Dji] over [nat]. As [Dji ≤ N < K], this
+         forces [kd = 0]. *)
       + rewrite <- !pow_opp, <- !pow_mul, <- !pow_add in he; apply hinj in he.
         assert (h1 : natF (kd * S (N + N) + Dij + t) = natF Dji).
         { rewrite !natF_add, natF_mul.
-          transitivity ((natF kd * natF (S (N + N)) + (natF Dij + opp (natF Dji))) 
+          transitivity ((natF kd * natF (S (N + N)) + (natF Dij + opp (natF Dji)))
             + natF Dji + natF t); [field | rewrite he; field]. }
         apply hchar in h1; [| nia | nia].
         left; destruct kd; [lia | nia].
+      (* Second branch: [K kd + Dij = K Dij + Dji + t + 1] over [nat]. As the
+         residues are below [K], this forces [kd = Dij]. *)
       + rewrite <- !pow_opp, <- !pow_add, <- !pow_mul, <- !pow_add in he; apply hinj in he.
         assert (h1 : natF (kd * S (N + N) + Dij) = natF (Dij * S (N + N) + Dji + S t)).
         { rewrite !natF_add, !natF_mul.
-          transitivity (((natF kd + opp (natF Dij)) * natF (S (N + N)) 
-            + (natF Dij + opp (natF Dji))) + natF Dij * natF (S (N + N)) + natF Dji); 
+          transitivity (((natF kd + opp (natF Dij)) * natF (S (N + N))
+            + (natF Dij + opp (natF Dji))) + natF Dij * natF (S (N + N)) + natF Dji);
           [field | rewrite he; cbn [nat_to_F]; field]. }
         apply hchar in h1; [| nia | nia].
         right.
@@ -1511,8 +1800,9 @@ Section SchulzeTally.
         subst; split; [reflexivity | lia].
     Qed.
 
-    (* every edge of a walk at least s gives strength at least s *)
-    Lemma edges_ge_strength : ∀ {m : nat} (d : Fin.t m -> Fin.t m -> Z) (s : Z) 
+    (** Converse of [strength_edges_ge]: if every edge of a non-empty walk is
+        at least [s], then its strength is at least [s]. *)
+    Lemma edges_ge_strength : ∀ {m : nat} (d : Fin.t m -> Fin.t m -> Z) (s : Z)
       (l : list (Fin.t m)) (u : Fin.t m),
       l <> List.nil -> edges_ge d s u l -> (s <= strength d u l)%Z.
     Proof.
@@ -1525,24 +1815,26 @@ Section SchulzeTally.
         destruct (Z.min_spec (d u v) (strength d v (w :: l'')%list)) as [[? ?] | [? ?]]; lia.
     Qed.
 
-    (* the decrypted edge statements along a walk *)
-    Fixpoint edges_dec {n : nat} (N : nat) (x : F) (g : G) 
-      (enc_d : Vector.t (Vector.t G2 (S n)) (S n)) (pij : G2) (u : Fin.t (S n)) 
+    (** [edges_dec N x g enc_d pij u l]: for each edge [(u, v)] of the walk,
+        [Enc(d_uv) / pij] decrypts to some [g^t] with [t ≤ N]. *)
+    Fixpoint edges_dec {n : nat} (N : nat) (x : F) (g : G)
+      (enc_d : Vector.t (Vector.t G2 (S n)) (S n)) (pij : G2) (u : Fin.t (S n))
       (l : list (Fin.t (S n))) : Prop :=
       match l with
       | List.nil => True
-      | List.cons v l' => 
-        (∃ t : nat, t <= N ∧ cdec x (cmul (mget enc_d u v) (cinv pij)) = g ^ natF t) ∧ 
+      | List.cons v l' =>
+        (∃ t : nat, t <= N ∧ cdec x (cmul (mget enc_d u v) (cinv pij)) = g ^ natF t) ∧
         edges_dec N x g enc_d pij v l'
       end.
 
-    Lemma verify_edges_sound : ∀ (n n' : nat) (x : F) (g h : G) 
-      (enc_d : Vector.t (Vector.t G2 (S n)) (S n)) (pij : G2) 
+    (** Special soundness of the edge proofs along a walk. *)
+    Lemma verify_edges_sound : ∀ (n n' : nat) (x : F) (g h : G)
+      (enc_d : Vector.t (Vector.t G2 (S n)) (S n)) (pij : G2)
       (l : list (Fin.t (S n))) (pfs pfs' : list (membership_proof (S (S n')))) (u : Fin.t (S n)),
       h = g ^ x ->
       List.Forall2 (fun a b => Sigma.announcement a = Sigma.announcement b) pfs pfs' ->
       List.Forall2 (fun a b => Vector.hd (Sigma.challenge a) <> Vector.hd (Sigma.challenge b)) pfs pfs' ->
-      verify_edges (N := S n') g h enc_d pij u l pfs = true -> 
+      verify_edges (N := S n') g h enc_d pij u l pfs = true ->
       verify_edges (N := S n') g h enc_d pij u l pfs' = true ->
       edges_dec (S n') x g enc_d pij u l.
     Proof.
@@ -1559,14 +1851,16 @@ Section SchulzeTally.
         - exact (ih pfs pfs' v hh hal hcl h1' h2').
     Qed.
 
-    Lemma edges_dec_ge : ∀ (n N : nat) (x : F) (g : G) 
-      (enc_d : Vector.t (Vector.t G2 (S n)) (S n)) (pij : G2) 
+    (** Decoding the edge statements. With [d_uv] and [p_ij] known as
+        discrete logs, [edges_dec] implies [edges_ge] over the integers. *)
+    Lemma edges_dec_ge : ∀ (n N : nat) (x : F) (g : G)
+      (enc_d : Vector.t (Vector.t G2 (S n)) (S n)) (pij : G2)
       (kd : Fin.t (S n) -> Fin.t (S n) -> nat) (kp : nat) (B : nat),
-      exp_injective g -> natF_injective B -> 
+      exp_injective g -> natF_injective B ->
       (∀ u v, kd u v <= B) -> (kp + N <= B)%nat ->
       (∀ u v, cdec x (mget enc_d u v) = g ^ natF (kd u v)) -> cdec x pij = g ^ natF kp ->
       ∀ (l : list (Fin.t (S n))) (u : Fin.t (S n)),
-      edges_dec N x g enc_d pij u l -> 
+      edges_dec N x g enc_d pij u l ->
       edges_ge (fun u v => Z.of_nat (kd u v)) (Z.of_nat kp) u l.
     Proof.
       intros * hinj hchar hkd hkp hd hp l; induction l as [| v l' ih]; intros u hl.
@@ -1576,14 +1870,15 @@ Section SchulzeTally.
         pose proof (diff_decode B g hinj hchar (kd u v) kp t (hkd u v) ltac:(lia) he); lia.
     Qed.
 
-    Lemma verify_path_sound : ∀ (n n' : nat) (g h : G) 
-      (enc_d enc_p : Vector.t (Vector.t G2 (S n)) (S n)) (i j : Fin.t (S n)) 
+    (** [verify_path] splits into the path check and the edge proofs. *)
+    Lemma verify_path_sound : ∀ (n n' : nat) (g h : G)
+      (enc_d enc_p : Vector.t (Vector.t G2 (S n)) (S n)) (i j : Fin.t (S n))
       (l : list (Fin.t (S n))) (pfs : list (membership_proof (S (S n')))),
       verify_path (N := S n') g h enc_d enc_p i j l pfs = true ->
-      path_from_to_b i j l = true ∧ 
-      match l with 
-      | List.nil => False 
-      | List.cons u l' => verify_edges (N := S n') g h enc_d (mget enc_p i j) u l' pfs = true 
+      path_from_to_b i j l = true ∧
+      match l with
+      | List.nil => False
+      | List.cons u l' => verify_edges (N := S n') g h enc_d (mget enc_p i j) u l' pfs = true
       end.
     Proof.
       intros * hv; unfold verify_path in hv.
@@ -1592,6 +1887,8 @@ Section SchulzeTally.
       split; [exact h1 | exact h2].
     Qed.
 
+    (** Finite choice for two [Fin.t n] indices. It is used to collect the
+        extracted plaintexts into matrices. *)
     Lemma fin_choice2 : ∀ (n : nat) (A : Type) (P : Fin.t n -> Fin.t n -> A -> Prop),
       (∀ i j, ∃ a, P i j a) -> ∃ f : Fin.t n -> Fin.t n -> A, ∀ i j, P i j (f i j).
     Proof.
@@ -1601,62 +1898,71 @@ Section SchulzeTally.
       + exists f; exact hf.
     Qed.
 
-    (* two tally transcripts with the same ciphertexts, paths and 
-       announcements, and different challenges in every sub-proof *)
+    (** Two tally proofs with the same ciphertexts, paths and announcements in
+        every sub-proof. This is the first hypothesis of special soundness. *)
     Definition same_tally_announcements {m N : nat} (pf pf' : @tally_proof m N) : Prop :=
-      tp_encD' pf = tp_encD' pf' ∧ tp_enc_d pf = tp_enc_d pf' ∧ 
+      tp_encD' pf = tp_encD' pf' ∧ tp_enc_d pf = tp_enc_d pf' ∧
       tp_enc_p pf = tp_enc_p pf' ∧ tp_paths pf = tp_paths pf' ∧
-      (∀ i j, Sigma.announcement (mget (tp_dec pf) i j) = 
+      (∀ i j, Sigma.announcement (mget (tp_dec pf) i j) =
         Sigma.announcement (mget (tp_dec pf') i j)) ∧
-      (∀ i j, Sigma.announcement (mget (tp_d_range pf) i j) = 
+      (∀ i j, Sigma.announcement (mget (tp_d_range pf) i j) =
         Sigma.announcement (mget (tp_d_range pf') i j)) ∧
-      (∀ i j, Sigma.announcement (mget (tp_defeat pf) i j) = 
+      (∀ i j, Sigma.announcement (mget (tp_defeat pf) i j) =
         Sigma.announcement (mget (tp_defeat pf') i j)) ∧
-      (∀ i j, Sigma.announcement (mget (tp_lower pf) i j) = 
+      (∀ i j, Sigma.announcement (mget (tp_lower pf) i j) =
         Sigma.announcement (mget (tp_lower pf') i j)) ∧
-      (∀ k i j, Sigma.announcement (mget (tp_upper pf)[@k] i j) = 
+      (∀ k i j, Sigma.announcement (mget (tp_upper pf)[@k] i j) =
         Sigma.announcement (mget (tp_upper pf')[@k] i j)) ∧
-      (∀ i j, List.Forall2 (fun a b => Sigma.announcement a = Sigma.announcement b) 
+      (∀ i j, List.Forall2 (fun a b => Sigma.announcement a = Sigma.announcement b)
         (mget (tp_edges pf) i j) (mget (tp_edges pf') i j)) ∧
       (∀ j, Sigma.announcement (tp_winner pf)[@j] = Sigma.announcement (tp_winner pf')[@j]).
 
+    (** Two tally proofs whose challenges differ in every sub-proof. *)
     Definition different_tally_challenges {m N : nat} (pf pf' : @tally_proof m N) : Prop :=
-      (∀ i j, Vector.hd (Sigma.challenge (mget (tp_dec pf) i j)) <> 
+      (∀ i j, Vector.hd (Sigma.challenge (mget (tp_dec pf) i j)) <>
         Vector.hd (Sigma.challenge (mget (tp_dec pf') i j))) ∧
-      (∀ i j, Vector.hd (Sigma.challenge (mget (tp_d_range pf) i j)) <> 
+      (∀ i j, Vector.hd (Sigma.challenge (mget (tp_d_range pf) i j)) <>
         Vector.hd (Sigma.challenge (mget (tp_d_range pf') i j))) ∧
-      (∀ i j, Vector.hd (Sigma.challenge (mget (tp_defeat pf) i j)) <> 
+      (∀ i j, Vector.hd (Sigma.challenge (mget (tp_defeat pf) i j)) <>
         Vector.hd (Sigma.challenge (mget (tp_defeat pf') i j))) ∧
-      (∀ i j, Vector.hd (Sigma.challenge (mget (tp_lower pf) i j)) <> 
+      (∀ i j, Vector.hd (Sigma.challenge (mget (tp_lower pf) i j)) <>
         Vector.hd (Sigma.challenge (mget (tp_lower pf') i j))) ∧
-      (∀ k i j, Vector.hd (Sigma.challenge (mget (tp_upper pf)[@k] i j)) <> 
+      (∀ k i j, Vector.hd (Sigma.challenge (mget (tp_upper pf)[@k] i j)) <>
         Vector.hd (Sigma.challenge (mget (tp_upper pf')[@k] i j))) ∧
-      (∀ i j, List.Forall2 (fun a b => Vector.hd (Sigma.challenge a) <> Vector.hd (Sigma.challenge b)) 
+      (∀ i j, List.Forall2 (fun a b => Vector.hd (Sigma.challenge a) <> Vector.hd (Sigma.challenge b))
         (mget (tp_edges pf) i j) (mget (tp_edges pf') i j)) ∧
-      (∀ j, Vector.hd (Sigma.challenge (tp_winner pf)[@j]) <> 
+      (∀ j, Vector.hd (Sigma.challenge (tp_winner pf)[@j]) <>
         Vector.hd (Sigma.challenge (tp_winner pf')[@j])).
 
-    (* special soundness of the tally: two accepting transcripts with the 
-       same announcements and different challenges, on margins D ∈ [0, N] 
-       encrypted under x, certify the closure of the defeats of D and a 
-       Schulze winner (cert_winner then gives the winner of the unique 
-       closure). Hypotheses as for ballot_sound, with the characteristic 
-       above 2N² + 3N. *)
-    Theorem verify_tally_sound : ∀ (n n' : nat) (x : F) (g h : G) 
-      (encD : Vector.t (Vector.t (G * G) (S n)) (S n)) 
-      (D : Fin.t (S n) -> Fin.t (S n) -> Z) (w : Fin.t (S n)) 
+    (** Special soundness of the tally. Assume [h = g^x], [exp_injective g],
+        a characteristic above [2N² + 3N], and an [encD] that encrypts counts
+        [D ∈ [0, N]]. Then two accepting transcripts with the same
+        announcements and different challenges give a defeat matrix [d] equal
+        to [defeat D], a certificate [cert_ok d p paths] and [schulze_winner p w].
+        By [cert_winner], [w] is then a winner of the unique closure.
+
+        The proof extracts, for each pair, the plaintexts [kd] (defeats) and
+        [kl] (lower differences). It sets [p = kl + kd], decodes the defeat
+        disjunction ([defeat_decode]), the closure disjunctions and the winner
+        differences ([diff_decode]), and the edge proofs ([edges_dec_ge]). The
+        witness paths are the published ones. *)
+    Theorem verify_tally_sound : ∀ (n n' : nat) (x : F) (g h : G)
+      (encD : Vector.t (Vector.t (G * G) (S n)) (S n))
+      (D : Fin.t (S n) -> Fin.t (S n) -> Z) (w : Fin.t (S n))
       (pf pf' : @tally_proof (S n) (S n')),
       h = g ^ x -> exp_injective g -> natF_injective (2 * S n' * S n' + 3 * S n')%nat ->
       encrypts x g encD D -> (∀ i j, (0 <= D i j <= Z.of_nat (S n'))%Z) ->
       same_tally_announcements pf pf' -> different_tally_challenges pf pf' ->
-      verify_tally (N := S n') g h encD w pf = true -> 
+      verify_tally (N := S n') g h encD w pf = true ->
       verify_tally (N := S n') g h encD w pf' = true ->
       ∃ (d p : Fin.t (S n) -> Fin.t (S n) -> Z) (paths : Fin.t (S n) -> Fin.t (S n) -> list (Fin.t (S n))),
         (∀ i j, d i j = defeat D i j) ∧ cert_ok d p paths ∧ schulze_winner p w.
     Proof.
-      intros * hh hinj hchar he hb 
+      intros * hh hinj hchar he hb
         (hE & hd_eq & hp_eq & hpaths_eq & ha1 & ha2 & ha3 & ha4 & ha5 & ha6 & ha7)
         (hc1 & hc2 & hc3 & hc4 & hc5 & hc6 & hc7) hv hv'.
+      (* Split both verdicts into the seven checks and identify the ciphertexts
+         of the two transcripts. *)
       unfold verify_tally, tally_checks in hv, hv'; cbn [List.forallb] in hv, hv'.
       rewrite !Bool.andb_true_iff in hv, hv'.
       destruct hv as (h1 & h2 & h3 & h4 & h5 & h6 & h7 & _).
@@ -1666,37 +1972,38 @@ Section SchulzeTally.
       set (enc_d := tp_enc_d pf) in *.
       set (enc_p := tp_enc_p pf) in *.
       unfold forall_pairs in *.
-      assert (hpair : ∀ (f : Fin.t (S n) -> Fin.t (S n) -> bool), 
+      assert (hpair : ∀ (f : Fin.t (S n) -> Fin.t (S n) -> bool),
         forall_fin (S n) (fun i => forall_fin (S n) (fun j => f i j)) = true -> ∀ i j, f i j = true).
-      { intros f hf i j; rewrite forall_fin_true in hf; specialize (hf i); 
+      { intros f hf i j; rewrite forall_fin_true in hf; specialize (hf i);
         rewrite forall_fin_true in hf; exact (hf j). }
-      pose proof (hpair _ h1) as h1x; pose proof (hpair _ h2) as h2x; 
-      pose proof (hpair _ h3) as h3x; pose proof (hpair _ h4) as h4x; 
+      pose proof (hpair _ h1) as h1x; pose proof (hpair _ h2) as h2x;
+      pose proof (hpair _ h3) as h3x; pose proof (hpair _ h4) as h4x;
       pose proof (hpair _ h6) as h6x.
-      pose proof (hpair _ h1') as h1x'; pose proof (hpair _ h2') as h2x'; 
-      pose proof (hpair _ h3') as h3x'; pose proof (hpair _ h4') as h4x'; 
+      pose proof (hpair _ h1') as h1x'; pose proof (hpair _ h2') as h2x';
+      pose proof (hpair _ h3') as h3x'; pose proof (hpair _ h4') as h4x';
       pose proof (hpair _ h6') as h6x'.
       clear h1 h2 h3 h4 h6 h1' h2' h3' h4' h6'.
-      rename h1x into h1; rename h2x into h2; rename h3x into h3; 
+      rename h1x into h1; rename h2x into h2; rename h3x into h3;
       rename h4x into h4; rename h6x into h6.
-      rename h1x' into h1'; rename h2x' into h2'; rename h3x' into h3'; 
+      rename h1x' into h1'; rename h2x' into h2'; rename h3x' into h3';
       rename h4x' into h4'; rename h6x' into h6'.
       rewrite forall_fin_true in h5, h5', h7, h7'.
-      (* the margins as naturals *)
+      (* The counts as naturals. *)
       set (Dn := fun i j => Z.to_nat (D i j)).
-      assert (hDz : ∀ i j, D i j = Z.of_nat (Dn i j)) 
+      assert (hDz : ∀ i j, D i j = Z.of_nat (Dn i j))
         by (intros i j; unfold Dn; rewrite Z2Nat.id; [reflexivity | apply hb]).
       assert (hDn : ∀ i j, Dn i j <= S n') by (intros i j; apply to_nat_le; apply hb).
-      (* 1. the re-encryptions decrypt to the margins *)
+      (* Check 1: the re-encryptions decrypt to the counts. *)
       assert (hD' : ∀ i j, cdec x (mget encD' i j) = g ^ natF (Dn i j)).
       { intros i j; unfold Dn; rewrite <- (he i j).
         exact (reenc_sound x g h _ _ _ _ hh hinj (ha1 i j) (hc1 i j) (h1 i j) (h1' i j)). }
-      (* 2. the defeats decrypt to kd ≤ N *)
-      destruct (fin_choice2 _ _ (fun i j t => t <= S n' ∧ 
+      (* Check 2: extract the defeats [kd ≤ N]. *)
+      destruct (fin_choice2 _ _ (fun i j t => t <= S n' ∧
         cdec x (mget enc_d i j) = g ^ natF t)) as (kd & hkd).
       { intros i j; exact (range_sound n' x g h _ _ _ hh (ha2 i j) (hc2 i j) (h2 i j) (h2' i j)). }
-      (* 4. the lower proofs: p / d decrypts to kl ≤ N, so p decrypts to kl + kd *)
-      destruct (fin_choice2 _ _ (fun i j t => t <= S n' ∧ 
+      (* Check 4: extract the lower differences [kl ≤ N], so [Enc(p)] decrypts
+         to [kl + kd]. *)
+      destruct (fin_choice2 _ _ (fun i j t => t <= S n' ∧
         cdec x (cmul (mget enc_p i j) (cinv (mget enc_d i j))) = g ^ natF t)) as (kl & hkl).
       { intros i j; exact (range_sound n' x g h _ _ _ hh (ha4 i j) (hc4 i j) (h4 i j) (h4' i j)). }
       assert (hkp : ∀ i j, cdec x (mget enc_p i j) = g ^ natF (kl i j + kd i j)).
@@ -1705,40 +2012,43 @@ Section SchulzeTally.
         apply (f_equal (fun z => gop z (g ^ natF (kd i j)))) in hl.
         rewrite <- gop_assoc, gop_ginv_l, gop_gid_r in hl.
         rewrite hl, natF_add, pow_add; reflexivity. }
-      exists (fun i j => Z.of_nat (kd i j)), (fun i j => Z.of_nat (kl i j + kd i j)), 
+      (* The extracted certificate: [d = kd], [p = kl + kd], and the published
+         paths. *)
+      exists (fun i j => Z.of_nat (kd i j)), (fun i j => Z.of_nat (kl i j + kd i j)),
         (fun i j => mget (tp_paths pf) i j).
       split; [| split].
-      (* 3. d = defeat D *)
+      (* Check 3: [d = defeat D], by [defeat_decode]. *)
       - intros i j.
-        destruct (defeat_sound n n' x g h encD' enc_d i j _ _ hh (ha3 i j) (hc3 i j) 
+        destruct (defeat_sound n n' x g h encD' enc_d i j _ _ hh (ha3 i j) (hc3 i j)
           (h3 i j) (h3' i j)) as (t & ht); cbv zeta in ht.
         rewrite !hD', (proj2 (hkd i j)) in ht.
         unfold tally_shift in ht.
-        destruct (defeat_decode (S n') g hinj hchar (kd i j) (Dn i j) (Dn j i) t 
+        destruct (defeat_decode (S n') g hinj hchar (kd i j) (Dn i j) (Dn j i) t
           (proj1 (hkd i j)) (hDn i j) (hDn j i) ht) as [(hz & hle) | (heq & hlt)].
         + unfold defeat; rewrite !hDz, (proj2 (Z.ltb_ge _ _)); [| lia].
           rewrite hz; reflexivity.
         + unfold defeat; rewrite !hDz, (proj2 (Z.ltb_lt _ _)); [| lia].
           rewrite heq; reflexivity.
       - split; [| split].
-        (* p ≥ d *)
+        (* [p ≥ d] holds by construction. *)
         + intros i j; cbv beta; lia.
-        (* 5. one-step closed *)
+        (* Check 5: one-step closure, by decoding either branch. *)
         + intros i j k.
           pose proof (proj1 (hkd i j)); pose proof (proj1 (hkd i k)); pose proof (proj1 (hkd k j)).
           pose proof (proj1 (hkl i j)); pose proof (proj1 (hkl i k)); pose proof (proj1 (hkl k j)).
-          destruct (upper_sound n n' x g h enc_p k i j _ _ hh (ha5 k i j) (hc5 k i j) 
-            (hpair _ (h5 k) i j) (hpair _ (h5' k) i j)) as (t & ht & [hu | hu]); 
+          destruct (upper_sound n n' x g h enc_p k i j _ _ hh (ha5 k i j) (hc5 k i j)
+            (hpair _ (h5 k) i j) (hpair _ (h5' k) i j)) as (t & ht & [hu | hu]);
           rewrite !hkp in hu.
-          * pose proof (diff_decode _ g hinj hchar (kl i j + kd i j) (kl i k + kd i k) t 
+          * pose proof (diff_decode _ g hinj hchar (kl i j + kd i j) (kl i k + kd i k) t
               ltac:(lia) ltac:(lia) hu).
-            destruct (Z.min_spec (Z.of_nat (kl i k + kd i k)) (Z.of_nat (kl k j + kd k j))) 
+            destruct (Z.min_spec (Z.of_nat (kl i k + kd i k)) (Z.of_nat (kl k j + kd k j)))
               as [[? ?] | [? ?]]; lia.
-          * pose proof (diff_decode _ g hinj hchar (kl i j + kd i j) (kl k j + kd k j) t 
+          * pose proof (diff_decode _ g hinj hchar (kl i j + kd i j) (kl k j + kd k j) t
               ltac:(lia) ltac:(lia) hu).
-            destruct (Z.min_spec (Z.of_nat (kl i k + kd i k)) (Z.of_nat (kl k j + kd k j))) 
+            destruct (Z.min_spec (Z.of_nat (kl i k + kd i k)) (Z.of_nat (kl k j + kd k j)))
               as [[? ?] | [? ?]]; lia.
-        (* 6. witness paths *)
+        (* Check 6: the published paths are paths, and their edges are at least
+           [p_ij]. *)
         + intros i j; cbv beta.
           destruct (verify_path_sound n n' g h enc_d enc_p i j _ _ (h6 i j)) as (hpb & hedges).
           destruct (verify_path_sound n n' g h enc_d enc_p i j _ _ (h6' i j)) as (_ & hedges').
@@ -1748,45 +2058,46 @@ Section SchulzeTally.
           apply path_from_to_b_sound in hpb; destruct hpb as (-> & hne & _).
           apply edges_ge_strength; [exact hne |].
           pose proof (proj1 (hkd i j)); pose proof (proj1 (hkl i j)).
-          apply (edges_dec_ge n (S n') x g enc_d (mget enc_p i j) kd (kl i j + kd i j) 
-            (2 * S n' * S n' + 3 * S n')%nat hinj hchar 
-            (fun u v => ltac:(pose proof (proj1 (hkd u v)); lia)) ltac:(lia) 
+          apply (edges_dec_ge n (S n') x g enc_d (mget enc_p i j) kd (kl i j + kd i j)
+            (2 * S n' * S n' + 3 * S n')%nat hinj hchar
+            (fun u v => ltac:(pose proof (proj1 (hkd u v)); lia)) ltac:(lia)
             (fun u v => proj2 (hkd u v)) (hkp i j)).
-          exact (verify_edges_sound n n' x g h enc_d _ l' _ _ i hh (ha6 i j) (hc6 i j) 
+          exact (verify_edges_sound n n' x g h enc_d _ l' _ _ i hh (ha6 i j) (hc6 i j)
             hedges hedges').
-      (* 7. winner *)
+      (* Check 7: [w] is a winner. *)
       - intros j; cbv beta.
         destruct (range_sound n' x g h _ _ _ hh (ha7 j) (hc7 j) (h7 j) (h7' j)) as (t & ht & hw).
         rewrite cdec_cmul, cdec_cinv, !hkp in hw.
-        pose proof (proj1 (hkd w j)); pose proof (proj1 (hkd j w)); 
+        pose proof (proj1 (hkd w j)); pose proof (proj1 (hkd j w));
         pose proof (proj1 (hkl w j)); pose proof (proj1 (hkl j w)).
-        pose proof (diff_decode _ g hinj hchar (kl w j + kd w j) (kl j w + kd j w) t 
+        pose proof (diff_decode _ g hinj hchar (kl w j + kd w j) (kl j w + kd j w) t
           ltac:(lia) ltac:(lia) hw); lia.
     Qed.
 
+    (** *** Announcements are independent of witness and challenge
 
-
-    (* ---------------------------------------------------------------- *)
-    (* Fiat-Shamir for the tally: announcements of the OR and decryption 
-       provers do not depend on the witness or the challenge               *)
-
-    Local Notation or_real := (generalised_construct_or_conversations_schnorr (F := F) 
-      (zero := zero) (add := add) (mul := mul) (sub := sub) (opp := opp) (G := G2) 
+        The honest OR and decryption provers produce the same announcement for
+        any witness and challenge, and they use the given challenge. These are
+        the facts needed for the Fiat–Shamir prover. *)
+    Local Notation or_real := (generalised_construct_or_conversations_schnorr (F := F)
+      (zero := zero) (add := add) (mul := mul) (sub := sub) (opp := opp) (G := G2)
       (gop := gop2) (gpow := gpow2)).
 
-    Lemma or_real_announcement : ∀ (k : nat) (rindex : Fin.t (2 + k)) (x x' : F) 
+    (** The announcement of the honest OR prover does not depend on the
+        witness or the challenge. *)
+    Lemma or_real_announcement : ∀ (k : nat) (rindex : Fin.t (2 + k)) (x x' : F)
       (gs hs : Vector.t G2 (2 + k)) (uscs : Vector.t F ((2 + k) + (1 + k))) (c c' : F),
-      Sigma.announcement (or_real rindex x gs hs uscs c) = 
+      Sigma.announcement (or_real rindex x gs hs uscs c) =
       Sigma.announcement (or_real rindex x' gs hs uscs c').
     Proof.
       intros; unfold generalised_construct_or_conversations_schnorr.
       destruct (splitat (2 + k) uscs) as (us & cs).
-      destruct (vector_fin_app_pred (1 + k) rindex us cs) as 
+      destruct (vector_fin_app_pred (1 + k) rindex us cs) as
         (m₁ & m₂ & v₁ & v₃ & vm & v₂ & v₄ & pfaa & pfbb & _).
       destruct pfaa as [pfa]; destruct pfbb as [pfb].
-      assert (hrew : ∀ (A B : nat) (e : A = B) (P : @sigma_proto F G2 B (S B) B), 
-        Sigma.announcement (@eq_rect_r nat B (fun k => @sigma_proto F G2 k (S k) k) P A e) = 
-        @eq_rect_r nat B (fun k => Vector.t G2 k) (Sigma.announcement P) A e) 
+      assert (hrew : ∀ (A B : nat) (e : A = B) (P : @sigma_proto F G2 B (S B) B),
+        Sigma.announcement (@eq_rect_r nat B (fun k => @sigma_proto F G2 k (S k) k) P A e) =
+        @eq_rect_r nat B (fun k => Vector.t G2 k) (Sigma.announcement P) A e)
         by (intros A B e P; destruct e; reflexivity).
       rewrite !hrew; f_equal.
       unfold OrSigmaGen.construct_or_conversations_schnorr.
@@ -1797,18 +2108,19 @@ Section SchulzeTally.
       reflexivity.
     Qed.
 
-    Lemma or_real_challenge : ∀ (k : nat) (rindex : Fin.t (2 + k)) (x : F) 
+    (** The first challenge of the honest OR prover is the given [c]. *)
+    Lemma or_real_challenge : ∀ (k : nat) (rindex : Fin.t (2 + k)) (x : F)
       (gs hs : Vector.t G2 (2 + k)) (uscs : Vector.t F ((2 + k) + (1 + k))) (c : F),
       Vector.hd (Sigma.challenge (or_real rindex x gs hs uscs c)) = c.
     Proof.
       intros; unfold generalised_construct_or_conversations_schnorr.
       destruct (splitat (2 + k) uscs) as (us & cs).
-      destruct (vector_fin_app_pred (1 + k) rindex us cs) as 
+      destruct (vector_fin_app_pred (1 + k) rindex us cs) as
         (m₁ & m₂ & v₁ & v₃ & vm & v₂ & v₄ & pfaa & pfbb & _).
       destruct pfaa as [pfa]; destruct pfbb as [pfb].
-      assert (hrew : ∀ (A B : nat) (e : A = B) (P : @sigma_proto F G2 B (S B) B), 
-        Vector.hd (Sigma.challenge (@eq_rect_r nat B (fun k => @sigma_proto F G2 k (S k) k) P A e)) = 
-        Vector.hd (Sigma.challenge P)) 
+      assert (hrew : ∀ (A B : nat) (e : A = B) (P : @sigma_proto F G2 B (S B) B),
+        Vector.hd (Sigma.challenge (@eq_rect_r nat B (fun k => @sigma_proto F G2 k (S k) k) P A e)) =
+        Vector.hd (Sigma.challenge P))
         by (intros A B e P; destruct e; reflexivity).
       rewrite hrew.
       unfold OrSigmaGen.construct_or_conversations_schnorr.
@@ -1819,9 +2131,10 @@ Section SchulzeTally.
       reflexivity.
     Qed.
 
-    Local Notation dec_real := (construct_decryption_proof_elgamal_real (F := F) (add := add) 
+    Local Notation dec_real := (construct_decryption_proof_elgamal_real (F := F) (add := add)
       (mul := mul) (G := G) (gpow := gpow)).
 
+    (** The same two facts for the honest decryption prover. *)
     Lemma dec_real_announcement : ∀ (x x' : F) (g : G) (cp : G2) (u c c' : F),
       Sigma.announcement (dec_real x g cp u c) = Sigma.announcement (dec_real x' g cp u c').
     Proof. intros; reflexivity. Qed.
@@ -1830,63 +2143,79 @@ Section SchulzeTally.
       Vector.hd (Sigma.challenge (dec_real x g cp u c)) = c.
     Proof. intros; reflexivity. Qed.
 
-    (* ---------------------------------------------------------------- *)
-    (* end to end: accepting ballots and an accepting certificate make w a 
-       Schulze winner of the plaintext margins of the ballots' positions   *)
-
-    Local Notation verify_ballot := (Schulze.verify_ballot (zero := zero) (one := one) 
+    Local Notation verify_ballot := (Schulze.verify_ballot (zero := zero) (one := one)
       (add := add) (Fdec := Fdec) (ginv := ginv) (gop := gop) (gpow := gpow) (Gdec := Gdec)).
 
-    Lemma natF_injective_mono : ∀ (B B' : nat), B' <= B -> 
+    (** *** End-to-end soundness
+
+        Accepting ballots and an accepting tally make [w] a Schulze winner of
+        the voters' actual rankings. *)
+
+    (** [natF_injective] is monotone in its bound. *)
+    Lemma natF_injective_mono : ∀ (B B' : nat), B' <= B ->
       natF_injective B -> natF_injective B'.
     Proof. intros B B' hle hB a b ha hb he; apply hB; [lia | lia | exact he]. Qed.
 
-    Theorem schulze_end_to_end : ∀ (n n' k : nat) (x : F) (g h : G) 
-      (bs bs' : Vector.t (@ballot F G (S n)) k) (w : Fin.t (S n)) 
+    (** End-to-end special soundness. The hypotheses are:
+
+        - [k ≤ N] ballots [bs];
+        - for each ballot, a second accepting transcript [bs'] with the same
+          announcements and different challenges;
+        - two such transcripts [pf] and [pf'] of the tally on
+          [aggregate_margins bs];
+        - [h = g^x], [exp_injective g], and a characteristic above
+          [4m + 2 + 2N² + 3N].
+
+        Then there are rankings [ss] (positions in [0..m], one vector per
+        ballot) such that, for [D] the pairwise counts [margin_count ss], [w] is
+        a Schulze winner of every closure of [defeat D]. The proof extracts each
+        ballot's ranking with [Schulze.ballot_sound], shows that the aggregate
+        encrypts [D] ([cdec_aggregate]), and applies [verify_tally_sound] and
+        [cert_winner]. *)
+    Theorem schulze_end_to_end : ∀ (n n' k : nat) (x : F) (g h : G)
+      (bs bs' : Vector.t (@ballot F G (S n)) k) (w : Fin.t (S n))
       (pf pf' : @tally_proof (S n) (S n')),
-      h = g ^ x -> exp_injective g -> 
+      h = g ^ x -> exp_injective g ->
       natF_injective (4 * S n + 2 + (2 * S n' * S n' + 3 * S n'))%nat ->
-      (* at most N ballots, the range of the certificate *)
       k <= S n' ->
-      (* every ballot comes with a second accepting transcript on the same 
-         announcements and different challenges *)
       (∀ k, same_announcements bs[@k] bs'[@k] ∧ different_challenges bs[@k] bs'[@k] ∧
         verify_ballot g h bs[@k] = true ∧ verify_ballot g h bs'[@k] = true) ->
-      (* and so does the certificate, on the aggregate of the ballots *)
       same_tally_announcements pf pf' -> different_tally_challenges pf pf' ->
-      verify_tally (N := S n') g h (aggregate_margins (gid := gid) (gop := gop) bs) w pf = true -> 
+      verify_tally (N := S n') g h (aggregate_margins (gid := gid) (gop := gop) bs) w pf = true ->
       verify_tally (N := S n') g h (aggregate_margins (gid := gid) (gop := gop) bs) w pf' = true ->
       ∃ (ss : Vector.t (Vector.t nat (S n)) k),
         (∀ k i, ss[@k][@i] <= S n) ∧
         let D := fun i j => Z.of_nat (margin_count ss i j) in
-        ∃ (d p : Fin.t (S n) -> Fin.t (S n) -> Z) 
+        ∃ (d p : Fin.t (S n) -> Fin.t (S n) -> Z)
           (paths : Fin.t (S n) -> Fin.t (S n) -> list (Fin.t (S n))),
           (∀ i j, d i j = defeat D i j) ∧ cert_ok d p paths ∧ schulze_winner p w ∧
           (∀ p', is_closure d p' -> schulze_winner p' w).
     Proof.
       intros * hh hinj hchar hk hbal hsa hdc hv hv'.
-      (* the positions of every ballot *)
-      destruct (fin_choice k (Vector.t nat (S n)) (fun k' s => 
-        (∀ i, s[@i] <= S n) ∧ 
-        (∀ i j, plaintext_bit (ginv := ginv) (gop := gop) (gpow := gpow) x bs[@k'] i j = 
+      (* Extract every ballot's ranking with [ballot_sound]. *)
+      destruct (fin_choice k (Vector.t nat (S n)) (fun k' s =>
+        (∀ i, s[@i] <= S n) ∧
+        (∀ i j, plaintext_bit (ginv := ginv) (gop := gop) (gpow := gpow) x bs[@k'] i j =
           g ^ (if Nat.ltb s[@i] s[@j] then one else zero)))) as (sf & hsf).
       { intro k'; destruct (hbal k') as (h1 & h2 & h3 & h4).
-        exact (ballot_sound (Hvec := Hvec) n x g h bs[@k'] bs'[@k'] hh hinj 
-          (natF_injective_mono (4 * S n + 2 + (2 * S n' * S n' + 3 * S n'))%nat 
+        exact (ballot_sound (Hvec := Hvec) n x g h bs[@k'] bs'[@k'] hh hinj
+          (natF_injective_mono (4 * S n + 2 + (2 * S n' * S n' + 3 * S n'))%nat
             (4 * S n + 2)%nat ltac:(lia) hchar) h1 h2 h3 h4). }
       exists (Vector.map sf (fin_enum k)).
       split; [intros k' i; rewrite (Vector.nth_map _ _ k' k' eq_refl), fin_enum_nth; apply hsf |].
       cbv zeta.
       set (D := fun i j => Z.of_nat (margin_count (Vector.map sf (fin_enum k)) i j)).
+      (* The aggregate encrypts the pairwise counts of these rankings. *)
       assert (he : encrypts x g (aggregate_margins (gid := gid) (gop := gop) bs) D).
       { intros i j; unfold D, encrypts, mget; rewrite Nat2Z.id.
         apply (cdec_aggregate (Hvec := Hvec) x g bs); intro k'.
         rewrite (Vector.nth_map _ _ k' k' eq_refl), fin_enum_nth; apply hsf. }
       assert (hb : ∀ i j, (0 <= D i j <= Z.of_nat (S n'))%Z).
       { intros i j; unfold D; pose proof (margin_count_le (Vector.map sf (fin_enum k)) i j); lia. }
-      destruct (verify_tally_sound n n' x g h _ D w pf pf' hh hinj 
-        (natF_injective_mono (4 * S n + 2 + (2 * S n' * S n' + 3 * S n'))%nat 
-          (2 * S n' * S n' + 3 * S n')%nat ltac:(lia) hchar) he hb hsa hdc hv hv') 
+      (* Tally soundness on the aggregate, followed by [cert_winner]. *)
+      destruct (verify_tally_sound n n' x g h _ D w pf pf' hh hinj
+        (natF_injective_mono (4 * S n + 2 + (2 * S n' * S n' + 3 * S n'))%nat
+          (2 * S n' * S n' + 3 * S n')%nat ltac:(lia) hchar) he hb hsa hdc hv hv')
         as (d & p & paths & hd & hc & hw).
       exists d, p, paths; split; [exact hd | split; [exact hc | split; [exact hw |]]].
       intros p' hp'.
@@ -1894,13 +2223,16 @@ Section SchulzeTally.
       intros i j; rewrite hd; pose proof (defeat_le D i j (proj1 (hb i j))); lia.
     Qed.
 
-    Lemma of_list_nth_In : ∀ (A : Type) (l : list A) (k : Fin.t (List.length l)), 
+    (** Every entry of [Vector.of_list l] is in [l]. *)
+    Lemma of_list_nth_In : ∀ (A : Type) (l : list A) (k : Fin.t (List.length l)),
       List.In (Vector.of_list l)[@k] l.
     Proof.
       intros A l; induction l as [| a l ih]; intro k; [inversion k |].
       apply (Fin.caseS' k); [left; reflexivity | intro k'; right; apply ih].
     Qed.
 
+    (** The list aggregate of the state machine coincides with the vector
+        aggregate [aggregate_margins] of [Frontend/Schulze.v]. *)
     Lemma aggregate_list_of_list : ∀ (n k : nat) (bs : Vector.t (@ballot F G (S n)) k),
       aggregate_list (n := n) (Vector.to_list bs) = aggregate_margins (gid := gid) (gop := gop) bs.
     Proof.
@@ -1912,17 +2244,18 @@ Section SchulzeTally.
         rewrite ih; reflexivity.
     Qed.
 
-    (* a successful count, with rewinding transcripts for the valid ballots 
-       and for the certificate, certifies the winner of the plaintext 
-       margins of the valid ballots *)
-    Corollary count_sound : ∀ (n n' : nat) (x : F) (g h : G) 
+    (** Soundness of a successful count. If [count] reaches
+        [finished us vbs inbs w pf true], and rewinding transcripts exist for
+        the valid ballots and for the tally proof, then [w] is a Schulze winner
+        of every closure of the defeats of the valid ballots' rankings. *)
+    Corollary count_sound : ∀ (n n' : nat) (x : F) (g h : G)
       (Hb : list (G * G) -> F) (Ht : list tr_item -> F)
       (us vbs inbs : list (@ballot F G (S n))) (w : Fin.t (S n)) (pf pf' : @tally_proof (S n) (S n')),
-      h = g ^ x -> exp_injective g -> 
+      h = g ^ x -> exp_injective g ->
       natF_injective (4 * S n + 2 + (2 * S n' * S n' + 3 * S n'))%nat ->
       count (n' := n') g h Hb Ht (finished us vbs inbs w pf true) ->
-      (∃ bs' : Vector.t (@ballot F G (S n)) (List.length vbs), ∀ k, 
-        same_announcements (Vector.of_list vbs)[@k] bs'[@k] ∧ 
+      (∃ bs' : Vector.t (@ballot F G (S n)) (List.length vbs), ∀ k,
+        same_announcements (Vector.of_list vbs)[@k] bs'[@k] ∧
         different_challenges (Vector.of_list vbs)[@k] bs'[@k] ∧
         verify_ballot g h bs'[@k] = true) ->
       same_tally_announcements pf pf' -> different_tally_challenges pf pf' ->
@@ -1930,7 +2263,7 @@ Section SchulzeTally.
       ∃ (ss : Vector.t (Vector.t nat (S n)) (List.length vbs)),
         (∀ k i, ss[@k][@i] <= S n) ∧
         let D := fun i j => Z.of_nat (margin_count ss i j) in
-        ∃ (d p : Fin.t (S n) -> Fin.t (S n) -> Z) 
+        ∃ (d p : Fin.t (S n) -> Fin.t (S n) -> Z)
           (paths : Fin.t (S n) -> Fin.t (S n) -> list (Fin.t (S n))),
           (∀ i j, d i j = defeat D i j) ∧ cert_ok d p paths ∧ schulze_winner p w ∧
           (∀ p', is_closure d p' -> schulze_winner p' w).
@@ -1940,7 +2273,7 @@ Section SchulzeTally.
       apply andb_prop in hpf; destruct hpf as (_ & hpf).
       rewrite <- (Vector.to_list_of_list_opp vbs) in hpf, hv'.
       rewrite aggregate_list_of_list in hpf, hv'.
-      apply (schulze_end_to_end n n' (List.length vbs) x g h (Vector.of_list vbs) bs' w pf pf' 
+      apply (schulze_end_to_end n n' (List.length vbs) x g h (Vector.of_list vbs) bs' w pf pf'
         hh hinj hchar hlen); try assumption.
       intro k; destruct (hbs' k) as (h1 & h2 & h3).
       pose proof (hvb _ (of_list_nth_In _ vbs k)) as hb.
@@ -1948,10 +2281,10 @@ Section SchulzeTally.
       split; [exact h1 | split; [exact h2 | split; [exact hb | exact h3]]].
     Qed.
 
-    (* ---------------------------------------------------------------- *)
-    (* completeness of the non-interactive tally                          *)
+    (** *** Completeness of the non-interactive tally *)
 
-    Lemma tr_mat_pf_ext : ∀ {n : nat} {A : Type} (M M' : Vector.t (Vector.t A (S n)) (S n)) 
+    (** [tr_mat_pf] depends only on the serialisation of each entry. *)
+    Lemma tr_mat_pf_ext : ∀ {n : nat} {A : Type} (M M' : Vector.t (Vector.t A (S n)) (S n))
       (f : A -> list tr_item),
       (∀ i j, f (mget M i j) = f (mget M' i j)) -> tr_mat_pf M f = tr_mat_pf M' f.
     Proof.
@@ -1959,11 +2292,13 @@ Section SchulzeTally.
       f_equal; f_equal; apply VectorSpec.map_ext; intro j; auto.
     Qed.
 
-    Lemma edge_proofs_ann : ∀ (n n' : nat) (g h : G) 
+    (** The announcements of the honest edge proofs do not depend on the
+        challenge. *)
+    Lemma edge_proofs_ann : ∀ (n n' : nat) (g h : G)
       (d p : Fin.t (S n) -> Fin.t (S n) -> Z) (enc_d enc_p : Vector.t (Vector.t G2 (S n)) (S n))
       (rd rp : Fin.t (S n) -> Fin.t (S n) -> F) (rnd : nat -> F) (c c' : F) (i j : Fin.t (S n))
       (l : list (Fin.t (S n))) (u : Fin.t (S n)) (e : nat),
-      List.map tr_ann2 (edge_proofs (n' := n') g h d p enc_d enc_p rd rp rnd c i j u l e) = 
+      List.map tr_ann2 (edge_proofs (n' := n') g h d p enc_d enc_p rd rp rnd c i j u l e) =
       List.map tr_ann2 (edge_proofs (n' := n') g h d p enc_d enc_p rd rp rnd c' i j u l e).
     Proof.
       intros * ; revert u e; induction l as [| v l' ih]; intros u e; cbn [edge_proofs List.map].
@@ -1972,11 +2307,12 @@ Section SchulzeTally.
         unfold tr_ann2, prove_range; f_equal; f_equal; apply prove_membership_announcement.
     Qed.
 
-    Lemma edge_proofs_chal : ∀ (n n' : nat) (g h : G) 
+    (** The honest edge proofs all use the given challenge. *)
+    Lemma edge_proofs_chal : ∀ (n n' : nat) (g h : G)
       (d p : Fin.t (S n) -> Fin.t (S n) -> Z) (enc_d enc_p : Vector.t (Vector.t G2 (S n)) (S n))
       (rd rp : Fin.t (S n) -> Fin.t (S n) -> F) (rnd : nat -> F) (c : F) (i j : Fin.t (S n))
       (l : list (Fin.t (S n))) (u : Fin.t (S n)) (e : nat),
-      List.forallb (is_chal2 c) 
+      List.forallb (is_chal2 c)
         (edge_proofs (n' := n') g h d p enc_d enc_p rd rp rnd c i j u l e) = true.
     Proof.
       intros *; revert u e; induction l as [| v l' ih]; intros u e; cbn [edge_proofs List.forallb].
@@ -1986,104 +2322,126 @@ Section SchulzeTally.
         destruct (Fdec c c) as [_ | hne]; [reflexivity | contradiction].
     Qed.
 
-    (* the transcript of the honest tally does not depend on the challenge *)
-    Lemma tally_transcript_chal : ∀ (n n' : nat) (x : F) (g h : G) 
-      (encD : Vector.t (Vector.t G2 (S n)) (S n)) (D p : Fin.t (S n) -> Fin.t (S n) -> Z) 
-      (paths : Fin.t (S n) -> Fin.t (S n) -> list (Fin.t (S n))) (w : Fin.t (S n)) 
+    (** The transcript of the honest tally proof does not depend on the
+        challenge. Hence the hash computed from the [zero]-challenge proof is
+        also the hash of the final proof. *)
+    Lemma tally_transcript_chal : ∀ (n n' : nat) (x : F) (g h : G)
+      (encD : Vector.t (Vector.t G2 (S n)) (S n)) (D p : Fin.t (S n) -> Fin.t (S n) -> Z)
+      (paths : Fin.t (S n) -> Fin.t (S n) -> list (Fin.t (S n))) (w : Fin.t (S n))
       (rnd : nat -> F) (c c' : F),
-      tally_transcript (n' := n') encD w (generate_tally_with (n' := n') x g h encD D p paths w rnd c) = 
+      tally_transcript (n' := n') encD w (generate_tally_with (n' := n') x g h encD D p paths w rnd c) =
       tally_transcript (n' := n') encD w (generate_tally_with (n' := n') x g h encD D p paths w rnd c').
     Proof.
-      intros; unfold tally_transcript, generate_tally_with; 
-      cbn [tp_encD' tp_enc_d tp_enc_p tp_dec tp_d_range tp_defeat tp_lower tp_upper tp_paths 
+      intros; unfold tally_transcript, generate_tally_with;
+      cbn [tp_encD' tp_enc_d tp_enc_p tp_dec tp_d_range tp_defeat tp_lower tp_upper tp_paths
         tp_edges tp_winner].
+      (* The statement, ciphertexts and paths are syntactically the same. What
+         remains is the announcements, one sub-proof family at a time. *)
       f_equal; f_equal; f_equal; f_equal; f_equal; f_equal.
-      (* decryption proofs *)
       f_equal.
+      (* Decryption proofs. *)
       { apply tr_mat_pf_ext; intros i j; rewrite !mget_mat_of.
         unfold tr_ann1; f_equal; f_equal; apply dec_real_announcement. }
-      (* d ranges *)
       f_equal.
+      (* Defeat ranges. *)
       { apply tr_mat_pf_ext; intros i j; rewrite !mget_mat_of.
         unfold tr_ann2, prove_range; f_equal; f_equal; apply prove_membership_announcement. }
-      (* defeats *)
       f_equal.
+      (* Defeat disjunctions. *)
       { apply tr_mat_pf_ext; intros i j; rewrite !mget_mat_of; cbv zeta.
-        destruct (Z.ltb 0 (D i j - D j i)); 
+        destruct (Z.ltb 0 (D i j - D j i));
         unfold tr_ann2, prove_or; f_equal; f_equal; apply or_real_announcement. }
-      (* lower *)
       f_equal.
+      (* Lower bounds. *)
       { apply tr_mat_pf_ext; intros i j; rewrite !mget_mat_of.
         unfold tr_ann2, prove_range; f_equal; f_equal; apply prove_membership_announcement. }
-      (* upper *)
       f_equal.
+      (* Closure disjunctions. *)
       { f_equal; f_equal; apply VectorSpec.map_ext; intro k.
         rewrite !(Vector.nth_map _ _ k k eq_refl), !fin_enum_nth.
         apply tr_mat_pf_ext; intros i j; rewrite !mget_mat_of; cbv zeta.
-        destruct (Z.leb (p i k) (p i j)); 
+        destruct (Z.leb (p i k) (p i j));
         unfold tr_ann2, prove_or; f_equal; f_equal; apply or_real_announcement. }
-      (* edges *)
       f_equal.
+      (* Edge proofs. *)
       { apply tr_mat_pf_ext; intros i j; rewrite !mget_mat_of.
         destruct (paths i j) as [| u l]; [reflexivity |].
         f_equal; apply edge_proofs_ann. }
-      (* winner *)
+      (* Winner proofs. *)
       f_equal; f_equal; apply VectorSpec.map_ext; intro j.
       rewrite !(Vector.nth_map _ _ j j eq_refl), !fin_enum_nth.
       unfold tr_ann2, prove_range; f_equal; f_equal; apply prove_membership_announcement.
     Qed.
 
+    (** Completeness of the Fiat–Shamir tally. Under the hypotheses of
+        [verify_tally_complete], [nizk_generate_tally_with] is accepted by
+        [nizk_verify_tally] for every hash function [H]. *)
     Theorem nizk_tally_complete : ∀ (n n' : nat) (x : F) (g h : G) (H : list tr_item -> F)
-      (encD : Vector.t (Vector.t (G * G) (S n)) (S n)) 
-      (D p : Fin.t (S n) -> Fin.t (S n) -> Z) 
+      (encD : Vector.t (Vector.t (G * G) (S n)) (S n))
+      (D p : Fin.t (S n) -> Fin.t (S n) -> Z)
       (paths : Fin.t (S n) -> Fin.t (S n) -> list (Fin.t (S n)))
       (w : Fin.t (S n)) (rnd : nat -> F),
-      h = g ^ x -> encrypts x g encD D -> 
+      h = g ^ x -> encrypts x g encD D ->
       (∀ i j, (0 <= D i j <= Z.of_nat (S n'))%Z) ->
       cert_ok (defeat D) p paths -> schulze_winner p w ->
-      nizk_verify_tally (n' := n') g h H encD w 
+      nizk_verify_tally (n' := n') g h H encD w
         (nizk_generate_tally_with (n' := n') x g h H encD D p paths w rnd) = true.
     Proof.
       intros * hh he hb hc hw.
       unfold nizk_verify_tally, nizk_generate_tally_with; cbv zeta.
+      (* The hashed challenge [c] is the hash of the final proof's transcript.
+         It remains to show that every sub-proof uses [c]. *)
       rewrite tally_transcript_chal with (c' := zero).
       apply Bool.andb_true_iff; split; [| apply verify_tally_complete; assumption].
       set (c := H (tally_transcript encD w (generate_tally_with x g h encD D p paths w rnd zero))).
-      unfold tally_challenges_are, generate_tally_with; 
+      unfold tally_challenges_are, generate_tally_with;
       cbn [tp_dec tp_d_range tp_defeat tp_lower tp_upper tp_edges tp_winner].
       rewrite !Bool.andb_true_iff; repeat split.
+      (* Decryption proofs. *)
       + unfold forall_pairs; apply forall_fin_true; intro i; apply forall_fin_true; intro j.
         rewrite mget_mat_of; unfold is_chal1; rewrite dec_real_challenge.
         destruct (Fdec c c) as [_ | hne]; [reflexivity | contradiction].
+      (* Defeat ranges. *)
       + unfold forall_pairs; apply forall_fin_true; intro i; apply forall_fin_true; intro j.
         rewrite mget_mat_of; unfold is_chal2, prove_range; rewrite (prove_membership_challenge n').
         destruct (Fdec c c) as [_ | hne]; [reflexivity | contradiction].
+      (* Defeat disjunctions, in both branches. *)
       + unfold forall_pairs; apply forall_fin_true; intro i; apply forall_fin_true; intro j.
         rewrite mget_mat_of; cbv zeta; unfold is_chal2.
         destruct (Z.ltb 0 (D i j - D j i)); unfold prove_or; rewrite (or_real_challenge (n' + S n'));
         destruct (Fdec c c) as [_ | hne]; [reflexivity | contradiction | reflexivity | contradiction].
+      (* Lower bounds. *)
       + unfold forall_pairs; apply forall_fin_true; intro i; apply forall_fin_true; intro j.
         rewrite mget_mat_of; unfold is_chal2, prove_range; rewrite (prove_membership_challenge n').
         destruct (Fdec c c) as [_ | hne]; [reflexivity | contradiction].
-      + apply forall_fin_true; intro k; unfold forall_pairs; 
+      (* Closure disjunctions, in both branches. *)
+      + apply forall_fin_true; intro k; unfold forall_pairs;
         apply forall_fin_true; intro i; apply forall_fin_true; intro j.
         rewrite (Vector.nth_map _ _ k k eq_refl), fin_enum_nth, mget_mat_of; cbv zeta; unfold is_chal2.
         destruct (Z.leb (p i k) (p i j)); unfold prove_or; rewrite (or_real_challenge (n' + S (S n')));
         destruct (Fdec c c) as [_ | hne]; [reflexivity | contradiction | reflexivity | contradiction].
+      (* Edge proofs. *)
       + unfold forall_pairs; apply forall_fin_true; intro i; apply forall_fin_true; intro j.
         rewrite mget_mat_of.
         destruct (paths i j) as [| u l]; [reflexivity | apply edge_proofs_chal].
+      (* Winner proofs. *)
       + apply forall_fin_true; intro j.
         rewrite (Vector.nth_map _ _ j j eq_refl), fin_enum_nth.
         unfold is_chal2, prove_range; rewrite (prove_membership_challenge n').
         destruct (Fdec c c) as [_ | hne]; [reflexivity | contradiction].
     Qed.
 
-    (* ---------------------------------------------------------------- *)
-    (* special honest-verifier zero knowledge of the tally                *)
+    (** *** Special honest-verifier zero knowledge
 
-    (* the relations of the honest sub-proofs, factored out of 
-       verify_tally_complete *)
+        Each honest sub-proof is a permutation of its simulator's distribution
+        when its relation holds. The tally proof is a nested [Bind] of these
+        distributions, so the whole proof is simulatable from the public
+        ciphertexts, the paths and the challenges. Distributions are finite
+        lists ([Probability/Distr.v]), and equality in distribution is
+        [Permutation]. *)
+
+    (** The relation of the honest re-encryption proof, factored out of
+        [reenc_dec_valid]. *)
     Lemma reenc_relation : ∀ (x : F) (g h : G) (c : G2) (D : nat) (rD : F),
       h = g ^ x -> cdec x c = g ^ natF D ->
       let c' := cmul (enc g h (natF D) rD) (cinv c) in
@@ -2102,6 +2460,7 @@ Section SchulzeTally.
       f_equal; f_equal; field.
     Qed.
 
+    (** The message at the honest index of [msgs_range] is [g ^ v]. *)
     Lemma range_index : ∀ (n' : nat) (g : G) (v : Z), (0 <= v <= Z.of_nat (S n'))%Z ->
       (msgs_range (N := S n') g)[@fin_of_nat_default (nat_of_Z v) (S n')] = g ^ natF (Z.to_nat v).
     Proof.
@@ -2109,7 +2468,10 @@ Section SchulzeTally.
       unfold nat_of_Z; fin_idx_default; reflexivity.
     Qed.
 
-    Lemma defeat_relation : ∀ (n n' : nat) (g h : G) (D : Fin.t (S n) -> Fin.t (S n) -> Z) 
+    (** The relation of the honest defeat disjunction: the selected branch is
+        [(g, h)] raised to the prover's witness, in both cases of the sign of
+        [Δ]. It is factored out of [verify_tally_complete]. *)
+    Lemma defeat_relation : ∀ (n n' : nat) (g h : G) (D : Fin.t (S n) -> Fin.t (S n) -> Z)
       (rD rd : Fin.t (S n) -> Fin.t (S n) -> F) (i j : Fin.t (S n)),
       (∀ i j, (0 <= D i j <= Z.of_nat (S n'))%Z) ->
       let encD' := mat_of (n := n) (fun i j => enc g h (natF (nat_of_Z (D i j))) (rD i j)) in
@@ -2117,19 +2479,20 @@ Section SchulzeTally.
       let K := natF (tally_shift (N := S n')) in
       let delta := (D i j - D j i)%Z in
       let rdelta := sub (rD i j) (rD j i) in
-      (if Z.ltb 0 delta 
+      (if Z.ltb 0 delta
        then (defeat_statements (N := S n') g encD' enc_d i j)
-              [@fin_of_nat_default (S n' + nat_of_Z delta) (S n' + S n')] = 
+              [@fin_of_nat_default (S n' + nat_of_Z delta) (S n' + S n')] =
             gpow2 (g, h) ((K * sub (rd i j) (rD i j)) + rdelta)
        else (defeat_statements (N := S n') g encD' enc_d i j)
-              [@fin_of_nat_default (nat_of_Z (- delta)) (S n' + S n')] = 
+              [@fin_of_nat_default (nat_of_Z (- delta)) (S n' + S n')] =
             gpow2 (g, h) ((K * rd i j) + rdelta)).
     Proof.
       intros * hb; cbv zeta.
       pose proof (hb i j) as hbij; pose proof (hb j i) as hbji.
       destruct (Z.ltb 0 (D i j - D j i)) eqn:hlt.
+      (* [Δ > 0]: [d_ij = D_ij], and branch [N + Δ] on [V₁]. *)
       + apply Z.ltb_lt in hlt.
-        assert (hd : defeat D i j = D i j) 
+        assert (hd : defeat D i j = D i j)
           by (unfold defeat; rewrite (proj2 (Z.ltb_lt _ _)); lia).
         pose proof (to_nat_le (D i j - D j i) (S n') ltac:(lia)) as hle.
         etransitivity; [exact (defeat_statements_nth _ _ _ _ _ _ _ _) |]; cbv zeta.
@@ -2138,12 +2501,13 @@ Section SchulzeTally.
         rewrite !mget_mat_of.
         repeat (rewrite enc_div || rewrite enc_pow || rewrite enc_mul).
         apply or_statement_enc_ext; [field |].
-        replace (S (S n' + Z.to_nat (D i j - D j i) - S (S n'))) 
+        replace (S (S n' + Z.to_nat (D i j - D j i) - S (S n')))
           with (Z.to_nat (D i j - D j i)) by lia.
         rewrite hd, natF_Z_sub; [| lia].
         f_equal; field.
+      (* [Δ ≤ 0]: [d_ij = 0], and branch [-Δ] on [V₂]. *)
       + apply Z.ltb_ge in hlt.
-        assert (hd : defeat D i j = 0%Z) 
+        assert (hd : defeat D i j = 0%Z)
           by (unfold defeat; rewrite (proj2 (Z.ltb_ge _ _)); lia).
         pose proof (to_nat_le (- (D i j - D j i)) (S n') ltac:(lia)) as hle.
         etransitivity; [exact (defeat_statements_nth _ _ _ _ _ _ _ _) |]; cbv zeta.
@@ -2159,22 +2523,25 @@ Section SchulzeTally.
         cbn [nat_to_F]; field.
     Qed.
 
-    Lemma upper_relation : ∀ (n n' : nat) (g h : G) (p : Fin.t (S n) -> Fin.t (S n) -> Z) 
+    (** The relation of the honest closure disjunction, under the bound
+        [p ∈ [0, N]] and the closure property for [(i, k, j)]. *)
+    Lemma upper_relation : ∀ (n n' : nat) (g h : G) (p : Fin.t (S n) -> Fin.t (S n) -> Z)
       (rp : Fin.t (S n) -> Fin.t (S n) -> F) (k i j : Fin.t (S n)),
       (∀ i j, (0 <= p i j <= Z.of_nat (S n'))%Z) ->
       (Z.min (p i k) (p k j) <= p i j)%Z ->
       let enc_p := mat_of (n := n) (fun i j => enc g h (natF (nat_of_Z (p i j))) (rp i j)) in
       (if Z.leb (p i k) (p i j)
        then (upper_statements (N := S n') g enc_p k i j)
-              [@fin_of_nat_default (nat_of_Z (p i j - p i k)) (S n' + S (S n'))] = 
+              [@fin_of_nat_default (nat_of_Z (p i j - p i k)) (S n' + S (S n'))] =
             gpow2 (g, h) (sub (rp i j) (rp i k))
        else (upper_statements (N := S n') g enc_p k i j)
-              [@fin_of_nat_default (S (S n') + nat_of_Z (p i j - p k j)) (S n' + S (S n'))] = 
+              [@fin_of_nat_default (S (S n') + nat_of_Z (p i j - p k j)) (S n' + S (S n'))] =
             gpow2 (g, h) (sub (rp i j) (rp k j))).
     Proof.
       intros * hp hmin; cbv zeta.
       pose proof (hp i j); pose proof (hp i k); pose proof (hp k j).
       destruct (Z.leb (p i k) (p i j)) eqn:hle.
+      (* [p_ik ≤ p_ij]: the first half. *)
       + apply Z.leb_le in hle.
         pose proof (to_nat_le (p i j - p i k) (S n') ltac:(lia)) as hle'.
         etransitivity; [exact (upper_statements_nth _ _ _ _ _ _ _ _) |]; cbv zeta.
@@ -2183,6 +2550,7 @@ Section SchulzeTally.
         rewrite !mget_mat_of, enc_div.
         apply or_statement_enc_ext; [reflexivity |].
         rewrite natF_Z_sub; [reflexivity | lia].
+      (* Otherwise [p_kj ≤ p_ij] by the closure property: the second half. *)
       + apply Z.leb_gt in hle.
         destruct (Z.min_spec (p i k) (p k j)) as [[? ?] | [? ?]]; [lia |].
         pose proof (to_nat_le (p i j - p k j) (S n') ltac:(lia)) as hle'.
@@ -2191,20 +2559,22 @@ Section SchulzeTally.
         rewrite (proj2 (Nat.ltb_ge _ _)); [| lia].
         rewrite !mget_mat_of, enc_div.
         apply or_statement_enc_ext; [reflexivity |].
-        replace (S (S n') + Z.to_nat (p i j - p k j) - S (S n')) 
+        replace (S (S n') + Z.to_nat (p i j - p k j) - S (S n'))
           with (Z.to_nat (p i j - p k j)) by lia.
         rewrite natF_Z_sub; [reflexivity | lia].
     Qed.
 
-    (* the edges of the walk u :: l with their counters *)
-    Fixpoint edges_of {m : nat} (u : Fin.t m) (l : list (Fin.t m)) (e : nat) : 
+    (** The edges of the walk [u :: l] together with their counters, starting
+        at [e]. *)
+    Fixpoint edges_of {m : nat} (u : Fin.t m) (l : list (Fin.t m)) (e : nat) :
       list (Fin.t m * Fin.t m * nat) :=
       match l with
       | List.nil => List.nil
       | List.cons v l' => List.cons (u, v, e) (edges_of v l' (S e))
       end.
 
-    Lemma edges_of_ge : ∀ {m : nat} (d : Fin.t m -> Fin.t m -> Z) (s : Z) 
+    (** Every listed edge of a walk satisfying [edges_ge] is at least [s]. *)
+    Lemma edges_of_ge : ∀ {m : nat} (d : Fin.t m -> Fin.t m -> Z) (s : Z)
       (l : list (Fin.t m)) (u : Fin.t m) (e : nat) (a b : Fin.t m) (k : nat),
       edges_ge d s u l -> List.In (a, b, k) (edges_of u l e) -> (s <= d a b)%Z.
     Proof.
@@ -2215,16 +2585,17 @@ Section SchulzeTally.
         - exact (ih v (S e) a b k hl hin).
     Qed.
 
-    (* the membership-proof distributions of Frontend/Schulze.v at this 
-       section's operations *)
-    Local Notation mem_real_dist := (Schulze.mem_real_dist (zero := zero) (add := add) 
+    (** The membership-proof distributions and their zero-knowledge lemma from
+        [Frontend/Schulze.v]. *)
+    Local Notation mem_real_dist := (Schulze.mem_real_dist (zero := zero) (add := add)
       (mul := mul) (sub := sub) (opp := opp) (ginv := ginv) (gop := gop) (gpow := gpow)).
-    Local Notation mem_sim_dist := (Schulze.mem_sim_dist (zero := zero) (add := add) 
+    Local Notation mem_sim_dist := (Schulze.mem_sim_dist (zero := zero) (add := add)
       (sub := sub) (opp := opp) (ginv := ginv) (gop := gop) (gpow := gpow)).
     Local Notation mem_zk := (Schulze.mem_zk (Hvec := Hvec)).
 
+    (** [Bind] respects [Permutation] in both arguments. *)
     Lemma bind_perm : ∀ {A B : Type} (d d' : dist A) (f f' : A -> dist B),
-      Permutation d d' -> (∀ a, Permutation (f a) (f' a)) -> 
+      Permutation d d' -> (∀ a, Permutation (f a) (f' a)) ->
       Permutation (Bind d f) (Bind d' f').
     Proof.
       intros * hd hf.
@@ -2232,15 +2603,16 @@ Section SchulzeTally.
       apply bind_perm_right; intros a p _; exact (hf a).
     Qed.
 
-    (* products of distributions *)
+    (** The product distribution of a list of distributions. *)
     Fixpoint dist_list {A : Type} (ds : list (dist A)) : dist (list A) :=
       match ds with
       | List.nil => Ret List.nil
       | List.cons d ds' => Bind d (fun a => Bind (dist_list ds') (fun l => Ret (List.cons a l)))
       end.
 
+    (** [dist_list] of pointwise-permuted distributions. *)
     Lemma dist_list_map_perm : ∀ {A B : Type} (f f' : B -> dist A) (l : list B),
-      (∀ b, List.In b l -> Permutation (f b) (f' b)) -> 
+      (∀ b, List.In b l -> Permutation (f b) (f' b)) ->
       Permutation (dist_list (List.map f l)) (dist_list (List.map f' l)).
     Proof.
       intros A B f f' l; induction l as [| b l ih]; intro hp; cbn [List.map dist_list].
@@ -2250,85 +2622,99 @@ Section SchulzeTally.
         apply ih; intros b' hin; apply hp; right; exact hin.
     Qed.
 
+    (** *** Zero knowledge of the tally
+
+        [lf] enumerates [F] without duplicates. The real and simulated
+        distributions sample the proof randomness uniformly from [lf]. *)
     Section TallyZK.
-      Context (lf : list F) (Hlfn : lf <> List.nil) 
+      Context (lf : list F) (Hlfn : lf <> List.nil)
         (hnd : List.NoDup lf) (hall : ∀ y : F, List.In y lf).
       Context {n n' : nat} (x : F) (g h : G).
       Local Notation m := (S n).
       Local Notation N := (S n').
       Local Notation matrix A := (Vector.t (Vector.t A m) m).
 
+      (** The product distribution over an [m × m] matrix. *)
       Definition dist_mat {A : Type} (f : Fin.t m -> Fin.t m -> dist A) : dist (matrix A) :=
-        dist_vec (Vector.map (fun i => dist_vec (Vector.map (fun j => f i j) (fin_enum m))) 
+        dist_vec (Vector.map (fun i => dist_vec (Vector.map (fun j => f i j) (fin_enum m)))
           (fin_enum m)).
 
+      (** [dist_mat] of pointwise-permuted distributions. *)
       Lemma dist_mat_perm : ∀ {A : Type} (f f' : Fin.t m -> Fin.t m -> dist A),
         (∀ i j, Permutation (f i j) (f' i j)) -> Permutation (dist_mat f) (dist_mat f').
       Proof.
-        intros; unfold dist_mat; apply dist_vec_map_perm; intro i; 
+        intros; unfold dist_mat; apply dist_vec_map_perm; intro i;
         apply dist_vec_map_perm; intro j; auto.
       Qed.
 
-      (* the re-encryption proofs *)
+      (** The real and simulated distributions of a decryption proof. *)
       Definition dec_real_dist (c1 : G) (c : F) : dist (@sigma_proto F G 2 1 1) :=
-        construct_decryption_proof_elgamal_real_distribution (F := F) (add := add) 
+        construct_decryption_proof_elgamal_real_distribution (F := F) (add := add)
           (mul := mul) (G := G) (gpow := gpow) lf Hlfn x g c1 c.
       Definition dec_sim_dist (c1 c2 : G) (c : F) : dist (@sigma_proto F G 2 1 1) :=
-        construct_decryption_proof_elgama_simulator_distribution (F := F) (opp := opp) 
+        construct_decryption_proof_elgama_simulator_distribution (F := F) (opp := opp)
           (G := G) (ginv := ginv) (gop := gop) (gpow := gpow) lf Hlfn g h c1 c2 gid c.
 
-      Lemma dec_zk : ∀ (cp : G2) (D : nat) (rD c : F), 
+      (** Zero knowledge of the honest re-encryption proof. *)
+      Lemma dec_zk : ∀ (cp : G2) (D : nat) (rD c : F),
         h = g ^ x -> cdec x cp = g ^ natF D ->
         let c' := cmul (enc g h (natF D) rD) (cinv cp) in
         Permutation (dec_real_dist (fst c') c) (dec_sim_dist (fst c') (snd c') c).
       Proof.
         intros * hh hd; cbv zeta.
-        apply (construct_decryption_proof_elgamal_special_honest_verifier_zkp_enum (Hvec := Hvec)); 
+        apply (construct_decryption_proof_elgamal_special_honest_verifier_zkp_enum (Hvec := Hvec));
         [exact (reenc_relation x g h cp D rD hh hd) | exact hnd | exact hall].
       Qed.
 
-      (* the range proofs *)
-      Definition range_real_dist (v : Z) (r : F) (cp : G2) (c : F) : 
+      (** The real distribution of a range proof for value [v] and randomness
+          [r], and its simulator, which only sees the ciphertext. *)
+      Definition range_real_dist (v : Z) (r : F) (cp : G2) (c : F) :
         dist (membership_proof (S N)) :=
         mem_real_dist lf Hlfn g h (msgs_range (N := N) g) (fin_of_nat_default (nat_of_Z v) N) r cp c.
       Definition range_sim_dist (cp : G2) (c : F) : dist (membership_proof (S N)) :=
         mem_sim_dist lf Hlfn g h (msgs_range (N := N) g) cp c.
 
-      Lemma range_zk : ∀ (v : Z) (r : F) (cp : G2) (c : F), 
+      (** Zero knowledge of a range proof for [v ∈ {0..N}]. *)
+      Lemma range_zk : ∀ (v : Z) (r : F) (cp : G2) (c : F),
         (0 <= v <= Z.of_nat N)%Z -> cp = enc g h (natF (Z.to_nat v)) r ->
         Permutation (range_real_dist v r cp c) (range_sim_dist cp c).
       Proof.
         intros * hv hc.
-        apply (mem_zk lf Hlfn hnd hall g h _ _ _ (natF (Z.to_nat v))); 
+        apply (mem_zk lf Hlfn hnd hall g h _ _ _ (natF (Z.to_nat v)));
         [exact hc | apply range_index; exact hv].
       Qed.
 
-      (* the disjunctions *)
-      Definition or_real_dist {k : nat} (rindex : Fin.t (2 + k)) (r : F) 
+      (** The real distribution of a disjunction with true branch [rindex], and
+          its simulator. *)
+      Definition or_real_dist {k : nat} (rindex : Fin.t (2 + k)) (r : F)
         (hs : Vector.t G2 (2 + k)) (c : F) : dist (or_proof (2 + k)) :=
-        generalised_or_schnorr_distribution (F := F) (zero := zero) (add := add) (mul := mul) 
-          (sub := sub) (opp := opp) (G := G2) (gop := gop2) (gpow := gpow2) 
+        generalised_or_schnorr_distribution (F := F) (zero := zero) (add := add) (mul := mul)
+          (sub := sub) (opp := opp) (G := G2) (gop := gop2) (gpow := gpow2)
           lf Hlfn rindex r (Vector.const (g, h) (2 + k)) hs c.
       Definition or_sim_dist {k : nat} (hs : Vector.t G2 (2 + k)) (c : F) : dist (or_proof (2 + k)) :=
-        generalised_or_simulator_distribution (F := F) (zero := zero) (add := add) 
-          (sub := sub) (opp := opp) (G := G2) (gop := gop2) (gpow := gpow2) 
+        generalised_or_simulator_distribution (F := F) (zero := zero) (add := add)
+          (sub := sub) (opp := opp) (G := G2) (gop := gop2) (gpow := gpow2)
           lf Hlfn (Vector.const (g, h) (2 + k)) hs c.
 
+      (** Zero knowledge of a disjunction whose true branch holds. *)
       Lemma or_zk : ∀ (k : nat) (rindex : Fin.t (2 + k)) (r : F) (hs : Vector.t G2 (2 + k)) (c : F),
         hs[@rindex] = gpow2 (g, h) r -> Permutation (or_real_dist rindex r hs c) (or_sim_dist hs c).
       Proof.
         intros * hr.
-        apply (generalised_or_special_honest_verifier_zkp_perm (Hvec := vspace2)); 
+        apply (generalised_or_special_honest_verifier_zkp_perm (Hvec := vspace2));
         [rewrite Vector.const_nth; exact hr | exact hnd | exact hall].
       Qed.
 
-      (* the honest trustees' data: the aggregate encD, the plaintext 
-         certificate, the randomness of their ciphertexts and the challenges *)
-      Variables (encD : matrix G2) (D p : Fin.t m -> Fin.t m -> Z) 
+      (** The honest trustees' data. It consists of the aggregate [encD], the
+          plaintext certificate [(D, p, paths)] and winner [w], the randomness
+          [rD], [rd], [rp] of the published ciphertexts, and an independent
+          challenge for every sub-proof. The derived ciphertexts are the [Let]s
+          below. *)
+      Variables (encD : matrix G2) (D p : Fin.t m -> Fin.t m -> Z)
         (paths : Fin.t m -> Fin.t m -> list (Fin.t m)) (w : Fin.t m)
         (rD rd rp : Fin.t m -> Fin.t m -> F)
-        (c_dec c_rng c_def c_low : Fin.t m -> Fin.t m -> F) 
-        (c_up : Fin.t m -> Fin.t m -> Fin.t m -> F) 
+        (c_dec c_rng c_def c_low : Fin.t m -> Fin.t m -> F)
+        (c_up : Fin.t m -> Fin.t m -> Fin.t m -> F)
         (c_edge : Fin.t m -> Fin.t m -> nat -> F) (c_win : Fin.t m -> F).
 
       Let d := defeat D.
@@ -2337,135 +2723,144 @@ Section SchulzeTally.
       Let enc_p := mat_of (n := n) (fun i j => enc g h (natF (nat_of_Z (p i j))) (rp i j)).
       Let K := natF (tally_shift (N := N)).
 
+      (** The edges of the published path for [(i, j)], with counters. *)
       Definition path_edges (i j : Fin.t m) : list (Fin.t m * Fin.t m * nat) :=
         match paths i j with
         | List.nil => List.nil
         | List.cons u l => edges_of u l 0
         end.
 
-      (* the distribution of the honest tally proof (generate_tally_with with 
-         the proof randomness drawn uniformly) *)
+      (** The distribution of the honest tally proof: [generate_tally_with] with
+          the proof randomness drawn uniformly (the challenges are fixed). *)
       Definition tally_real_dist : dist (@tally_proof m N) :=
-        Bind (dist_mat (fun i j => 
+        Bind (dist_mat (fun i j =>
           dec_real_dist (fst (cmul (mget encD' i j) (cinv (mget encD i j)))) (c_dec i j))) (fun dec =>
-        Bind (dist_mat (fun i j => 
+        Bind (dist_mat (fun i j =>
           range_real_dist (d i j) (rd i j) (mget enc_d i j) (c_rng i j))) (fun d_range =>
-        Bind (dist_mat (fun i j => 
+        Bind (dist_mat (fun i j =>
           let delta := (D i j - D j i)%Z in
           let rdelta := sub (rD i j) (rD j i) in
           let hs := defeat_statements (N := N) g encD' enc_d i j in
-          if Z.ltb 0 delta 
-          then or_real_dist (k := n' + S n') 
-            (fin_of_nat_default (N + nat_of_Z delta) (N + N)) 
+          if Z.ltb 0 delta
+          then or_real_dist (k := n' + S n')
+            (fin_of_nat_default (N + nat_of_Z delta) (N + N))
             ((K * sub (rd i j) (rD i j)) + rdelta) hs (c_def i j)
-          else or_real_dist (k := n' + S n') 
-            (fin_of_nat_default (nat_of_Z (- delta)) (N + N)) 
+          else or_real_dist (k := n' + S n')
+            (fin_of_nat_default (nat_of_Z (- delta)) (N + N))
             ((K * rd i j) + rdelta) hs (c_def i j))) (fun defeat_pf =>
-        Bind (dist_mat (fun i j => 
-          range_real_dist (p i j - d i j) (sub (rp i j) (rd i j)) 
+        Bind (dist_mat (fun i j =>
+          range_real_dist (p i j - d i j) (sub (rp i j) (rd i j))
             (cmul (mget enc_p i j) (cinv (mget enc_d i j))) (c_low i j))) (fun lower =>
-        Bind (dist_vec (Vector.map (fun k => dist_mat (fun i j => 
+        Bind (dist_vec (Vector.map (fun k => dist_mat (fun i j =>
           let hs := upper_statements (N := N) g enc_p k i j in
           if Z.leb (p i k) (p i j)
-          then or_real_dist (k := n' + S (S n')) 
-            (fin_of_nat_default (nat_of_Z (p i j - p i k)) (N + S N)) 
+          then or_real_dist (k := n' + S (S n'))
+            (fin_of_nat_default (nat_of_Z (p i j - p i k)) (N + S N))
             (sub (rp i j) (rp i k)) hs (c_up k i j)
-          else or_real_dist (k := n' + S (S n')) 
-            (fin_of_nat_default (S N + nat_of_Z (p i j - p k j)) (N + S N)) 
+          else or_real_dist (k := n' + S (S n'))
+            (fin_of_nat_default (S N + nat_of_Z (p i j - p k j)) (N + S N))
             (sub (rp i j) (rp k j)) hs (c_up k i j))) (fin_enum m))) (fun upper =>
-        Bind (dist_mat (fun i j => dist_list (List.map (fun '(u, v, e) => 
-          range_real_dist (d u v - p i j) (sub (rd u v) (rp i j)) 
-            (cmul (mget enc_d u v) (cinv (mget enc_p i j))) (c_edge i j e)) 
+        Bind (dist_mat (fun i j => dist_list (List.map (fun '(u, v, e) =>
+          range_real_dist (d u v - p i j) (sub (rd u v) (rp i j))
+            (cmul (mget enc_d u v) (cinv (mget enc_p i j))) (c_edge i j e))
           (path_edges i j)))) (fun edges =>
-        Bind (dist_vec (Vector.map (fun j => 
-          range_real_dist (p w j - p j w) (sub (rp w j) (rp j w)) 
+        Bind (dist_vec (Vector.map (fun j =>
+          range_real_dist (p w j - p j w) (sub (rp w j) (rp j w))
             (cmul (mget enc_p w j) (cinv (mget enc_p j w))) (c_win j)) (fin_enum m))) (fun winner =>
-        Ret (mk_tally_proof encD' dec enc_d enc_p d_range defeat_pf lower upper 
+        Ret (mk_tally_proof encD' dec enc_d enc_p d_range defeat_pf lower upper
           (mat_of paths) edges winner)))))))).
 
-      (* the simulator: from the published ciphertexts, paths and challenges *)
+      (** The simulator. It uses only the public ciphertexts [encD], [Enc'(D)],
+          [Enc(d)], [Enc(p)], the paths and the challenges. *)
       Definition tally_sim_dist : dist (@tally_proof m N) :=
-        Bind (dist_mat (fun i j => 
+        Bind (dist_mat (fun i j =>
           let c' := cmul (mget encD' i j) (cinv (mget encD i j)) in
           dec_sim_dist (fst c') (snd c') (c_dec i j))) (fun dec =>
         Bind (dist_mat (fun i j => range_sim_dist (mget enc_d i j) (c_rng i j))) (fun d_range =>
-        Bind (dist_mat (fun i j => 
-          or_sim_dist (k := n' + S n') (defeat_statements (N := N) g encD' enc_d i j) (c_def i j))) 
+        Bind (dist_mat (fun i j =>
+          or_sim_dist (k := n' + S n') (defeat_statements (N := N) g encD' enc_d i j) (c_def i j)))
           (fun defeat_pf =>
-        Bind (dist_mat (fun i j => 
+        Bind (dist_mat (fun i j =>
           range_sim_dist (cmul (mget enc_p i j) (cinv (mget enc_d i j))) (c_low i j))) (fun lower =>
-        Bind (dist_vec (Vector.map (fun k => dist_mat (fun i j => 
-          or_sim_dist (k := n' + S (S n')) (upper_statements (N := N) g enc_p k i j) (c_up k i j))) 
+        Bind (dist_vec (Vector.map (fun k => dist_mat (fun i j =>
+          or_sim_dist (k := n' + S (S n')) (upper_statements (N := N) g enc_p k i j) (c_up k i j)))
           (fin_enum m))) (fun upper =>
-        Bind (dist_mat (fun i j => dist_list (List.map (fun '(u, v, e) => 
-          range_sim_dist (cmul (mget enc_d u v) (cinv (mget enc_p i j))) (c_edge i j e)) 
+        Bind (dist_mat (fun i j => dist_list (List.map (fun '(u, v, e) =>
+          range_sim_dist (cmul (mget enc_d u v) (cinv (mget enc_p i j))) (c_edge i j e))
           (path_edges i j)))) (fun edges =>
-        Bind (dist_vec (Vector.map (fun j => 
-          range_sim_dist (cmul (mget enc_p w j) (cinv (mget enc_p j w))) (c_win j)) (fin_enum m))) 
+        Bind (dist_vec (Vector.map (fun j =>
+          range_sim_dist (cmul (mget enc_p w j) (cinv (mget enc_p j w))) (c_win j)) (fin_enum m)))
           (fun winner =>
-        Ret (mk_tally_proof encD' dec enc_d enc_p d_range defeat_pf lower upper 
+        Ret (mk_tally_proof encD' dec enc_d enc_p d_range defeat_pf lower upper
           (mat_of paths) edges winner)))))))).
 
-      (* SHVZK of the tally: for a correct plaintext certificate, the honest 
-         proofs are distributed exactly as the simulated ones, which depend 
-         only on the published ciphertexts and paths; so the tally reveals 
-         nothing about the margins beyond the ciphertexts and the winner *)
-      Theorem tally_zk : 
-        h = g ^ x -> encrypts x g encD D -> 
+      (** Special honest-verifier zero knowledge of the tally. Assume [h = g^x],
+          [encD] encrypts [D ∈ [0, N]], [(p, paths)] certifies [defeat D] and [w]
+          wins. Then the real and simulated distributions are permutations of each
+          other. The proof applies [bind_perm] layer by layer, using the
+          relations established for completeness. Note that the fresh ciphertexts
+          themselves (with their randomness [rD], [rd], [rp]) are shared by both
+          sides. Their indistinguishability is a separate (IND-CPA) argument that
+          is not made here. *)
+      Theorem tally_zk :
+        h = g ^ x -> encrypts x g encD D ->
         (∀ i j, (0 <= D i j <= Z.of_nat N)%Z) ->
         cert_ok d p paths -> schulze_winner p w ->
         Permutation tally_real_dist tally_sim_dist.
       Proof.
         intros hh he hb hc hw.
-        assert (hdN : ∀ i j, (0 <= d i j <= Z.of_nat N)%Z) 
-          by (intros i j; unfold d; pose proof (defeat_le D i j (proj1 (hb i j))); 
+        (* The bounds [d, p ∈ [0, N]] needed by the range relations. *)
+        assert (hdN : ∀ i j, (0 <= d i j <= Z.of_nat N)%Z)
+          by (intros i j; unfold d; pose proof (defeat_le D i j (proj1 (hb i j)));
               specialize (hb i j); lia).
         pose proof (cert_ok_bound _ _ _ _ (fun i j => proj2 (hdN i j)) hc) as hpN.
-        assert (hp0 : ∀ i j, (0 <= p i j)%Z) 
+        assert (hp0 : ∀ i j, (0 <= p i j)%Z)
           by (intros i j; destruct hc as (h1 & _); specialize (h1 i j); specialize (hdN i j); lia).
         assert (hpb : ∀ i j, (0 <= p i j <= Z.of_nat N)%Z) by (intros; split; auto).
         destruct hc as (hc1 & hc2 & hc3).
+        (* Peel off the [Bind] layers one by one. Each layer is the zero-knowledge
+           lemma of one sub-proof family, applied under its relation. *)
         unfold tally_real_dist, tally_sim_dist.
-        (* 1. re-encryption *)
         apply bind_perm; [apply dist_mat_perm; intros i j | intro dec].
+        (* Decryption proofs. *)
         { unfold encD'; rewrite mget_mat_of.
           exact (dec_zk (mget encD i j) (nat_of_Z (D i j)) (rD i j) (c_dec i j) hh (he i j)). }
-        (* 2. d in range *)
         apply bind_perm; [apply dist_mat_perm; intros i j | intro d_range].
+        (* Defeat ranges. *)
         { apply range_zk; [apply hdN | unfold enc_d; rewrite mget_mat_of; reflexivity]. }
-        (* 3. defeats *)
         apply bind_perm; [apply dist_mat_perm; intros i j | intro defeat_pf].
+        (* Defeat disjunctions. *)
         { cbv zeta.
           pose proof (defeat_relation n n' g h D rD rd i j hb) as hr; cbv zeta in hr.
           destruct (Z.ltb 0 (D i j - D j i)) eqn:hlt; apply or_zk; exact hr. }
-        (* 4. p ≥ d *)
         apply bind_perm; [apply dist_mat_perm; intros i j | intro lower].
+        (* Lower bounds. *)
         { pose proof (hc1 i j); pose proof (hdN i j); pose proof (hpN i j).
           apply range_zk; [lia |].
           unfold enc_p, enc_d; rewrite !mget_mat_of, enc_div.
           apply enc_ext; [| reflexivity].
           unfold nat_of_Z; rewrite natF_Z_sub; [reflexivity | lia]. }
-        (* 5. closed *)
         apply bind_perm; [apply dist_vec_map_perm; intro k; apply dist_mat_perm; intros i j | intro upper].
+        (* Closure disjunctions. *)
         { cbv zeta.
           pose proof (upper_relation n n' g h p rp k i j hpb (hc2 i j k)) as hr; cbv zeta in hr.
           destruct (Z.leb (p i k) (p i j)) eqn:hle; apply or_zk; exact hr. }
-        (* 6. witness paths *)
         apply bind_perm; [apply dist_mat_perm; intros i j | intro edges].
+        (* Edge proofs: every edge of a witness path is at least [p_ij]. *)
         { apply dist_list_map_perm; intros ((u, v), e) hin.
           destruct (hc3 i j) as (hpath & hstr).
           unfold path_edges in hin.
           destruct (paths i j) as [| u0 l] eqn:hl; [contradiction |].
           destruct hpath as (-> & hne & _); cbn in hstr.
-          pose proof (edges_of_ge d (p i j) l i 0 u v e 
+          pose proof (edges_of_ge d (p i j) l i 0 u v e
             (strength_edges_ge d (p i j) l i hne hstr) hin) as hge.
           pose proof (hdN u v); pose proof (hp0 i j).
           apply range_zk; [lia |].
           unfold enc_d, enc_p; rewrite !mget_mat_of, enc_div.
           apply enc_ext; [| reflexivity].
           unfold nat_of_Z; rewrite natF_Z_sub; [reflexivity | lia]. }
-        (* 7. winner *)
         apply bind_perm; [apply dist_vec_map_perm; intro j | intro winner].
+        (* Winner proofs. *)
         { pose proof (hw j); pose proof (hpN w j); pose proof (hp0 j w).
           apply range_zk; [lia |].
           unfold enc_p; rewrite !mget_mat_of, enc_div.

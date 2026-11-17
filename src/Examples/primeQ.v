@@ -1,6 +1,33 @@
+(** * Primality certificate for the 256-bit Helios subgroup order q *)
+
+(** This file proves that the 256-bit integer
+
+[[
+q = 61329566248342901292543872769978950870633559608669337131139375508370458778917
+]]
+
+is prime. It is the order of the subgroup of [Z_p^*] used by the default
+ElGamal parameters of Helios, where [p] is the 2048-bit prime of
+[primeP.v] and [p = k·q + 1]. The same group is used by the Helios tally
+instance ([Examples/HeliosTallyIns.v]) and by the Verificatum instance
+([Examples/VerificatumIns.v]).
+
+The proof is a Pocklington certificate checked by reflection with Coqprime.
+Pocklington's criterion states that [N] is prime if some factored part [F] of
+[N - 1] with [F² > N] admits a witness [a] with [a^(N-1) ≡ 1 mod N] and
+[gcd(a^((N-1)/r) - 1, N) = 1] for every prime [r] dividing [F]. Each
+[Pock_certif N a factors sqrt] entry records the base [a], the factored
+part of [N - 1] as a list of (prime, exponent) pairs and an auxiliary
+square-root hint; each smaller prime factor in turn carries its own
+certificate, and the small primes 2 to 139 are closed by Coqprime's
+precomputed lemmas. [Pocklington_refl] reduces the whole chain to a
+boolean check, evaluated with [vm_compute] (via [vm_cast_no_check]). *)
+
 From Coqprime Require Import PocklingtonRefl.
 Local Open Scope positive_scope.
 
+(** [prime_q]: the Helios subgroup order [q] is prime, by the Pocklington
+    certificate described above. *)
 Lemma prime_q : prime 61329566248342901292543872769978950870633559608669337131139375508370458778917.
 Proof.
  apply (Pocklington_refl

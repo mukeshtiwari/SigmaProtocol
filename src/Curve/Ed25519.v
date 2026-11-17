@@ -1,28 +1,53 @@
-(* Ed25519 instantiation of the vector-space class.
+(** * Ed25519 as a vector space over [Z_l] *)
 
-   The field is Z/lZ, l the prime order of the Ed25519 base point, and the
-   group is the order-l subgroup of the twisted Edwards curve Curve25519.
-   The curve itself comes from the vendored specification layer of
-   fiat-crypto (src/Fiat): Fiat.Spec.Curve25519 fixes the parameters and
-   proves the hypotheses of the complete addition law,
-   Fiat.Curves.Edwards.AffineProofs proves that the affine points form a
-   commutative group up to coordinate equality, and Fiat.Algebra.ScalarMult
-   provides scalar multiplication with its homomorphism laws. Everything
-   here is stated with Leibniz equality, which the library needs: the
-   coordinates live in Zmod p with Leibniz equality, and the proof
-   components of points and subgroup elements are irrelevant because the
-   underlying propositions are decidable equalities. *)
+(** This file instantiates the [vector_space] class of
+    [Algebra/Hierarchy.v] with the prime-order subgroup of the Edwards
+    curve Ed25519 (Bernstein, Duif, Lange, Schwabe, Yang 2012; RFC 8032),
+    building on the verified curve arithmetic of fiat-crypto vendored under
+    [src/Fiat]. The curve is the twisted Edwards curve
+    [-x ^ 2 + y ^ 2 = 1 + d x ^ 2 y ^ 2] over [F_p] with [p = 2 ^ 255 - 19];
+    its group of points has order [8 l] where
+    [l = 2 ^ 252 + 27742317777372353535851937790883648493] is prime.
 
+    Structure of the file:
+
+    - [Zl]: the scalar field [Z_l], implemented with the standard library's
+      [Zmod l], and its [field] instance [zl_field].
+    - [Ed]: the curve. fiat-crypto's affine points and their commutative
+      group (proved there with respect to a coordinate-wise equivalence
+      [peq]) are transferred to Leibniz equality ([peq_leibniz]). Scalar
+      multiplication is fiat-crypto's reference implementation
+      [scalarmult_ref]. The type [G] is the subgroup of points [P] with
+      [l · P = 0] (a sigma type, with proof irrelevance from decidable
+      equality), and [gpow x k] multiplies [x] by the canonical
+      representative of [k ∈ Z_l]. The instance [ed25519_vspace] makes
+      [(G, Z_l)] a vector space, so every generic Sigma-protocol, ElGamal
+      and shuffle result applies to Ed25519.
+    - A faster scalar multiplication [fast_smul] by double-and-add in
+      extended twisted Edwards coordinates (fiat-crypto's [m1add] and
+      [m1double], valid since [a = -1]), proved equal to the reference
+      implementation ([fast_smul_eq]); the instance [ed25519_vspace_fast]
+      uses it and is the one to extract. The double-and-add loop is not
+      constant time.
+    - The standard base point [B] and a proof, by computation, that it lies
+      in the order-[l] subgroup ([B_in_subgroup]).
+
+    Instances are used in [Examples/Ed25519Ins.v] and other example files.
+    [Curve/P256.v] follows the same structure for NIST P-256. *)
 From Stdlib Require Import
   ZArith Znumtheory Zmod Lia Utf8 Eqdep_dec Morphisms RelationClasses.
 From Fiat Require
   Spec.Curve25519 Spec.CompleteEdwardsCurve Curves.Edwards.AffineProofs
-  Curves.Edwards.XYZT.Basic Algebra.ScalarMult Algebra.Hierarchy 
+  Curves.Edwards.XYZT.Basic Algebra.ScalarMult Algebra.Hierarchy
   Arithmetic.PrimeFieldTheorems Util.Decidable.
 From Algebra Require Import Hierarchy.
 
+(** ** The module [Ed25519] *)
 Module Ed25519.
 
+  (** Short names for the fiat-crypto modules used below: the Curve25519
+      specification, affine Edwards proofs, scalar multiplication, extended
+      coordinates and fiat's algebraic hierarchy. *)
   Module C := Fiat.Spec.Curve25519.
   Module CE := Fiat.Spec.Curve25519.E.
   Module AP := Fiat.Curves.Edwards.AffineProofs.E.
@@ -31,9 +56,11 @@ Module Ed25519.
   Module FH := Fiat.Algebra.Hierarchy.
 
   Local Open Scope Z_scope.
+  (** The base-field modulus [p] and the prime subgroup order [l]. *)
   Local Notation p := (2^255 - 19).
   Local Notation l := (2^252 + 27742317777372353535851937790883648493).
 
+  (** [l > 0], [l ≠ 0] and [|l| ≥ 2], by computation. *)
   Lemma l_pos : 0 < l.
   Proof. vm_compute; reflexivity. Qed.
 
@@ -43,12 +70,13 @@ Module Ed25519.
   Lemma l_ge_2 : 2 <= Z.abs l.
   Proof. vm_compute; intro h; discriminate h. Qed.
 
-  (* ------------------------------------------------------------------ *)
-  (* The scalar field Z/lZ                                               *)
-  (* ------------------------------------------------------------------ *)
+  (** *** The scalar field [Z_l] *)
 
+  (** Integers modulo [l] using the standard library's [Zmod]. The
+      operations are the [Zmod] ones; division is [mdiv]. *)
   Module Zl.
 
+    (** Carrier and operations of [Z_l]. *)
     Definition F : Type := Zmod l.
     Definition zero : F := Zmod.zero.
     Definition one : F := Zmod.one.
@@ -59,8 +87,11 @@ Module Ed25519.
     Definition inv : F -> F := Zmod.inv.
     Definition div : F -> F -> F := Zmod.mdiv.
 
+    (** Primality of [l], taken from fiat-crypto's Curve25519
+        specification. *)
     Definition prime_l : prime l := C.prime_l.
 
+    (** Decidable equality, by comparing canonical representatives. *)
     Definition Fdec : forall x y : F, {x = y} + {x <> y}.
     Proof.
       intros x y.
@@ -69,6 +100,10 @@ Module Ed25519.
       + right; intro e; apply h; rewrite e; reflexivity.
     Defined.
 
+    (** [unsigned_nonneg], [unsigned_one], [unsigned_zero], [unsigned_add]
+        and [unsigned_mul]: the canonical representative [u] (with [0 ≤ u < l]) of
+        constants, sums and products. Used to relate [gpow] to integer
+        scalar multiplication. *)
     Lemma unsigned_nonneg : forall x : F, 0 <= Zmod.unsigned x.
     Proof.
       intro x. pose proof (Zmod.unsigned_pos_bound x l_pos) as h; lia.
@@ -88,7 +123,9 @@ Module Ed25519.
       Zmod.unsigned (mul x y) = (Zmod.unsigned x * Zmod.unsigned y) mod l.
     Proof. intros; apply Zmod.unsigned_mul. Qed.
 
-    (* leaf laws, in the shape of the project's classes *)
+    (** The field axioms of [Z_l], one lemma per axiom, each a direct
+        consequence of the corresponding [Zmod] lemma; the inverse axiom
+        uses primality of [l] via fiat-crypto's [Zmod.inv_nonzero]. *)
     Lemma add_assoc : @is_associative F eq add.
     Proof. intros x y z; apply Zmod.add_assoc. Qed.
     Lemma add_0_l : @is_left_identity F eq add zero.
@@ -126,6 +163,7 @@ Module Ed25519.
     Lemma div_def : forall x y : F, div x y = mul x (inv y).
     Proof. intros; symmetry; apply Zmod.mul_inv_r. Qed.
 
+    (** [Z_l] is a [field] in the sense of [Algebra/Hierarchy.v]. *)
     Global Instance zl_field :
       @field F (@eq F) zero one opp add sub mul inv div.
     Proof.
@@ -166,12 +204,10 @@ Module Ed25519.
 
   End Zl.
 
-  (* ------------------------------------------------------------------ *)
-  (* The curve, with Leibniz equality                                    *)
-  (* ------------------------------------------------------------------ *)
-
+  (** *** Curve points and the order-[l] subgroup *)
   Module Ed.
 
+    (** The base field [F_p] and its decidable equality. *)
     Definition Fp : Type := Zmod p.
 
     Definition Fp_dec : forall x y : Fp, {x = y} + {x <> y}.
@@ -182,8 +218,9 @@ Module Ed25519.
       + right; intro e; apply h; rewrite e; reflexivity.
     Defined.
 
-    (* the affine points of Curve25519, its addition, neutral element and
-      negation, and coordinate equality, all from fiat-crypto *)
+    (** Affine points (with an on-curve proof), addition, identity,
+        negation and the coordinate-wise equivalence [peq], all taken
+        from fiat-crypto. *)
     Definition point : Type := CE.point.
     Definition padd : point -> point -> point := CE.add.
     Definition pzero : point := CE.zero.
@@ -192,6 +229,8 @@ Module Ed25519.
     Definition peq : point -> point -> Prop :=
       @Fiat.Spec.CompleteEdwardsCurve.E.eq Fp eq Zmod.one Zmod.add Zmod.mul CE.a CE.d.
 
+    (** fiat-crypto's proof that the affine points form a commutative group
+        (for [a] a square and [d] a non-square). *)
     Definition fiat_group : @FH.commutative_group point peq padd pzero popp :=
       AP.edwards_curve_commutative_group (field := C.field) (char_ge_3 := C.char_ge_3)
         (a := CE.a) (d := CE.d) (nonzero_a := CE.nonzero_a)
@@ -199,8 +238,9 @@ Module Ed25519.
     Definition fiat_grp : @FH.group point peq padd pzero popp :=
       FH.commutative_group_group fiat_group.
 
-    (* coordinate equality is Leibniz equality: the on-curve proof is a
-      proof of a decidable equality in Zmod p *)
+    (** [peq] coincides with Leibniz equality on points, because the
+        on-curve proofs are irrelevant (UIP on a type with decidable
+        equality). *)
     Lemma peq_leibniz : forall P Q : point, peq P Q -> P = Q.
     Proof.
       intros [[x1 y1] h1] [[x2 y2] h2] [hx hy]; cbn in hx, hy; subst.
@@ -210,6 +250,7 @@ Module Ed25519.
     Lemma leibniz_peq : forall P Q : point, P = Q -> peq P Q.
     Proof. intros P Q h; subst; destruct Q as [[x y] h]; split; reflexivity. Qed.
 
+    (** Decidable equality on points. *)
     Definition point_dec : forall P Q : point, {P = Q} + {P <> Q}.
     Proof.
       intros [[x1 y1] h1] [[x2 y2] h2].
@@ -221,8 +262,10 @@ Module Ed25519.
         exact (f_equal (fun z => fst (proj1_sig z)) h).
     Defined.
 
-    (* Leibniz versions of the group laws *)
     Local Notation fmon := (@FH.group_monoid point peq padd pzero popp fiat_grp).
+    (** The group laws of fiat-crypto transferred to Leibniz equality:
+        associativity, identities, inverses and commutativity of [padd],
+        and [popp pzero = pzero]. *)
     Lemma padd_assoc : forall x y z : point, padd x (padd y z) = padd (padd x y) z.
     Proof.
       intros; apply peq_leibniz.
@@ -256,12 +299,18 @@ Module Ed25519.
     Lemma popp_zero : popp pzero = pzero.
     Proof. rewrite <-(padd_zero_r (popp pzero)); apply padd_opp_l. Qed.
 
-    (* scalar multiplication by an integer, from fiat-crypto, with the
-      laws in Leibniz form *)
+    (** Scalar multiplication [smul n P] (for [n : Z]) is fiat-crypto's
+        reference implementation, which satisfies its [is_scalarmult]
+        specification. *)
     Local Notation smul := (@SM.scalarmult_ref point padd pzero popp).
     Definition smul_is : @SM.is_scalarmult point peq padd pzero popp smul :=
       @SM.scalarmult_ref_is_scalarmult point peq padd pzero popp fiat_grp.
 
+    (** Properties of [smul] transferred to Leibniz equality: [0 · P = 0],
+        [1 · P = P], [(n + 1) · P = P + n · P], [(n + m) · P = n · P + m · P],
+        [n · (m · P) = (m n) · P], [n · 0 = 0], [n · (-P) = -(n · P)], and,
+        for [P] with [l · P = 0], [(n mod l) · P = n · P] and
+        [(l n) · P = 0]. *)
     Lemma smul_0_l : forall P : point, smul 0 P = pzero.
     Proof. intros; apply peq_leibniz; apply (@SM.scalarmult_0_l point peq padd pzero popp smul smul_is). Qed.
     Lemma smul_1_l : forall P : point, smul 1 P = P.
@@ -291,8 +340,8 @@ Module Ed25519.
       apply leibniz_peq; exact hP.
     Qed.
 
-    (* scalar multiplication distributes over the group operation
-      (the group is commutative) *)
+    (** [n · (P + Q) = n · P + n · Q] for [n ≥ 0], by induction on [n]
+        using commutativity. *)
     Lemma smul_add_r : forall (n : Z) (P Q : point), 0 <= n ->
       smul n (padd P Q) = padd (smul n P) (smul n Q).
     Proof.
@@ -304,23 +353,24 @@ Module Ed25519.
         rewrite !padd_assoc, (padd_comm Q). reflexivity.
     Qed.
 
-    (* ---------------------------------------------------------------- *)
-    (* The order-l subgroup                                              *)
-    (* ---------------------------------------------------------------- *)
-
+    (** Membership in the prime-order subgroup: [l · P = 0]. *)
     Definition in_subgroup (P : point) : Prop := smul l P = pzero.
 
+    (** Proofs of subgroup membership are unique. *)
     Lemma in_subgroup_irrel : forall (P : point) (h1 h2 : in_subgroup P), h1 = h2.
     Proof. intros; apply Eqdep_dec.UIP_dec; exact point_dec. Qed.
 
+    (** The prime-order subgroup [G] of Ed25519, as a sigma type. *)
     Definition G : Type := { P : point | in_subgroup P }.
 
+    (** Elements of [G] are equal when their underlying points are. *)
     Lemma G_eq : forall x y : G, proj1_sig x = proj1_sig y -> x = y.
     Proof.
       intros [x hx] [y hy] h; cbn in h; subst.
       f_equal; apply in_subgroup_irrel.
     Qed.
 
+    (** Decidable equality on [G]. *)
     Definition Gdec : forall x y : G, {x = y} + {x <> y}.
     Proof.
       intros [x hx] [y hy]; destruct (point_dec x y) as [h | h].
@@ -328,6 +378,8 @@ Module Ed25519.
       + right; intro e; apply h; exact (f_equal (@proj1_sig _ _) e).
     Defined.
 
+    (** The subgroup is closed under the identity, addition, negation and
+        scalar multiplication. *)
     Lemma closed_zero : in_subgroup pzero.
     Proof. unfold in_subgroup; apply smul_zero_r. Qed.
     Lemma closed_add : forall P Q, in_subgroup P -> in_subgroup Q -> in_subgroup (padd P Q).
@@ -343,6 +395,9 @@ Module Ed25519.
       rewrite smul_assoc, Z.mul_comm. apply smul_times_order; exact hP.
     Qed.
 
+    (** The group operations on [G] and the scalar action
+        [gpow x k = (unsigned k) · x], using the canonical representative
+        of [k ∈ Z_l]. *)
     Definition gid : G := exist _ pzero closed_zero.
     Definition gop (x y : G) : G :=
       exist _ (padd (proj1_sig x) (proj1_sig y)) (closed_add _ _ (proj2_sig x) (proj2_sig y)).
@@ -351,6 +406,7 @@ Module Ed25519.
     Definition gpow (x : G) (k : Zl.F) : G :=
       exist _ (smul (Zmod.unsigned k) (proj1_sig x)) (closed_smul _ _ (proj2_sig x)).
 
+    (** [G] is a commutative group. *)
     Global Instance ed25519_comm_group : @commutative_group G (@eq G) gop gid ginv.
     Proof.
       refine {|
@@ -367,14 +423,13 @@ Module Ed25519.
         commutative_group_is_commutative := _ |}.
       all: try (repeat intro; subst; reflexivity).
       all: hnf; intros; apply G_eq; cbn;
-        first [apply padd_assoc | apply padd_zero_l | apply padd_zero_r | 
+        first [apply padd_assoc | apply padd_zero_l | apply padd_zero_r |
                apply padd_opp_l | apply padd_opp_r | apply padd_comm].
     Qed.
 
-    (* ---------------------------------------------------------------- *)
-    (* The vector space                                                  *)
-    (* ---------------------------------------------------------------- *)
-
+    (** The action axioms for [gpow]. Associativity and distributivity over
+        scalar addition reduce modulo [l], which is sound because every
+        element of [G] is killed by [l] ([smul_mod_order]). *)
     Lemma gpow_one : forall x : G, gpow x Zl.one = x.
     Proof.
       intros x; apply G_eq; unfold gpow, gop, gid; cbn [proj1_sig]. rewrite Zl.unsigned_one; apply smul_1_l.
@@ -399,53 +454,55 @@ Module Ed25519.
       apply smul_add_r; apply Zl.unsigned_nonneg.
     Qed.
 
+    (** _Ed25519 as a vector space._ [G] is a vector space over [Z_l] with
+        the reference scalar multiplication. *)
     Global Instance ed25519_vspace :
       @vector_space Zl.F (@eq Zl.F) Zl.zero Zl.one Zl.add Zl.mul Zl.sub Zl.div Zl.opp Zl.inv
         G (@eq G) gid ginv gop gpow.
     Proof.
       econstructor.
       all: try (repeat intro; subst; reflexivity).
-      all: hnf; first [apply ed25519_comm_group | apply Zl.zl_field | apply gpow_one | 
-                  apply gpow_zero | apply gpow_assoc | apply gpow_distr_fadd | 
+      all: hnf; first [apply ed25519_comm_group | apply Zl.zl_field | apply gpow_one |
+                  apply gpow_zero | apply gpow_assoc | apply gpow_distr_fadd |
                   apply gpow_distr_vadd].
     Qed.
 
+    (** *** Fast scalar multiplication
 
-    (* ---------------------------------------------------------------- *)
-    (* Fast scalar multiplication                                        *)
-    (*                                                                   *)
-    (* smul is fiat-crypto's reference scalar multiplication, defined by *)
-    (* Peano recursion on the exponent and by affine additions with one  *)
-    (* field inversion each; it is what the proofs talk about, and it is *)
-    (* unusable for 253-bit exponents. fast_smul is a double-and-add in  *)
-    (* the extended coordinates of fiat-crypto's XYZT module (a = -1     *)
-    (* formulas, no inversion until the final conversion), proved equal  *)
-    (* to smul. The vector-space instance used for extraction is the one *)
-    (* built on fast_smul.                                               *)
-    (* ---------------------------------------------------------------- *)
+        Double-and-add in extended twisted Edwards coordinates
+        [(X : Y : Z : T)], using fiat-crypto's verified formulas for
+        [a = -1], and its proof of agreement with [smul]. *)
 
+    (** Points in extended coordinates. *)
     Definition xpoint : Type := @X.point Fp eq Zmod.zero Zmod.add Zmod.mul CE.a CE.d.
 
-    Definition from_affine : point -> xpoint := 
+    (** Conversion between affine and extended coordinates. *)
+    Definition from_affine : point -> xpoint :=
       X.from_affine (field := C.field) (a := CE.a) (d := CE.d) (nonzero_a := CE.nonzero_a).
-    Definition to_affine : xpoint -> point := 
+    Definition to_affine : xpoint -> point :=
       X.to_affine (field := C.field) (a := CE.a) (d := CE.d) (nonzero_a := CE.nonzero_a).
 
+    (** The curve parameter [a] is [-1], and [twice_d = 2 d]; both are
+        side conditions of the [a = -1] formulas. *)
     Lemma a_eq_minus1 : CE.a = Zmod.opp Zmod.one.
     Proof. reflexivity. Qed.
     Definition twice_d : Fp := Zmod.add CE.d CE.d.
     Lemma k_eq_2d : twice_d = Zmod.add CE.d CE.d.
     Proof. reflexivity. Qed.
 
-    Definition xadd : xpoint -> xpoint -> xpoint := 
-      X.m1add (field := C.field) (char_ge_3 := C.char_ge_3) (a := CE.a) (d := CE.d) 
+    (** Addition and doubling in extended coordinates. *)
+    Definition xadd : xpoint -> xpoint -> xpoint :=
+      X.m1add (field := C.field) (char_ge_3 := C.char_ge_3) (a := CE.a) (d := CE.d)
         (nonzero_a := CE.nonzero_a) (square_a := CE.square_a) (nonsquare_d := CE.nonsquare_d)
         (a_eq_minus1 := a_eq_minus1) (twice_d := twice_d) (k_eq_2d := k_eq_2d).
-    Definition xdouble : xpoint -> xpoint := 
-      X.m1double (field := C.field) (char_ge_3 := C.char_ge_3) (a := CE.a) (d := CE.d) 
+    Definition xdouble : xpoint -> xpoint :=
+      X.m1double (field := C.field) (char_ge_3 := C.char_ge_3) (a := CE.a) (d := CE.d)
         (nonzero_a := CE.nonzero_a) (square_a := CE.square_a) (nonsquare_d := CE.nonsquare_d)
         (a_eq_minus1 := a_eq_minus1) (twice_d := twice_d) (k_eq_2d := k_eq_2d).
 
+    (** Multiplication by a positive integer, by recursion on its binary
+        representation, most significant bit first: [xO n] doubles,
+        [xI n] doubles and adds [P]. *)
     Fixpoint xmul_pos (n : positive) (P : xpoint) : xpoint :=
       match n with
       | xH => P
@@ -453,21 +510,26 @@ Module Ed25519.
       | xI n' => xadd P (xdouble (xmul_pos n' P))
       end.
 
+    (** Scalar multiplication through extended coordinates for positive
+        scalars, falling back to [smul] for zero and negative ones. *)
     Definition fast_smul (n : Z) (P : point) : point :=
       match n with
       | Zpos q => to_affine (xmul_pos q (from_affine P))
       | _ => smul n P
       end.
 
-    Lemma to_affine_xadd : forall P Q : xpoint, 
+    (** Converting back to affine coordinates commutes with addition and
+        doubling, and inverts [from_affine]. *)
+    Lemma to_affine_xadd : forall P Q : xpoint,
       to_affine (xadd P Q) = padd (to_affine P) (to_affine Q).
     Proof. intros; apply peq_leibniz; apply X.to_affine_m1add. Qed.
-    Lemma to_affine_xdouble : forall P : xpoint, 
+    Lemma to_affine_xdouble : forall P : xpoint,
       to_affine (xdouble P) = padd (to_affine P) (to_affine P).
     Proof. intros; apply peq_leibniz; apply X.to_affine_m1double. Qed.
     Lemma to_from_affine : forall P : point, to_affine (from_affine P) = P.
     Proof. intros; apply peq_leibniz; apply X.to_affine_from_affine. Qed.
 
+    (** [xmul_pos] computes [q · P], by induction on [q]. *)
     Lemma xmul_pos_correct : forall (q : positive) (P : xpoint),
       to_affine (xmul_pos q P) = smul (Zpos q) (to_affine P).
     Proof.
@@ -476,28 +538,36 @@ Module Ed25519.
         replace (Zpos q~1) with (Z.succ (Zpos q + Zpos q)) by lia.
         rewrite smul_succ_l; reflexivity.
       + rewrite to_affine_xdouble, ih, <-smul_add_l.
-        replace (Zpos q~0) with (Zpos q + Zpos q) by lia. 
+        replace (Zpos q~0) with (Zpos q + Zpos q) by lia.
         reflexivity.
       + rewrite smul_1_l; reflexivity.
     Qed.
 
+    (** _Correctness of fast scalar multiplication:_
+        [fast_smul n P = smul n P]. *)
     Lemma fast_smul_eq : forall (n : Z) (P : point), fast_smul n P = smul n P.
     Proof.
       intros [| q | q] P; cbn [fast_smul]; try reflexivity.
       rewrite xmul_pos_correct, to_from_affine; reflexivity.
     Qed.
 
+    (** The subgroup is closed under [fast_smul]. *)
     Lemma closed_fast_smul : forall n P, in_subgroup P -> in_subgroup (fast_smul n P).
     Proof. intros n P hP; rewrite fast_smul_eq; apply closed_smul; exact hP. Qed.
 
-    Definition gpow_fast (x : G) (k : Zl.F) : G := 
+    (** The scalar action using [fast_smul], and its agreement with
+        [gpow]. *)
+    Definition gpow_fast (x : G) (k : Zl.F) : G :=
       exist _ (fast_smul (Zmod.unsigned k) (proj1_sig x)) (closed_fast_smul _ _ (proj2_sig x)).
 
     Lemma gpow_fast_eq : forall (x : G) (k : Zl.F), gpow_fast x k = gpow x k.
     Proof. intros; apply G_eq; unfold gpow_fast, gpow; cbn [proj1_sig]; apply fast_smul_eq. Qed.
 
-    Global Instance ed25519_vspace_fast : 
-      @vector_space Zl.F (@eq Zl.F) Zl.zero Zl.one Zl.add Zl.mul Zl.sub Zl.div Zl.opp Zl.inv 
+    (** [G] is a vector space over [Z_l] with the fast scalar
+        multiplication; all laws are inherited from [ed25519_vspace]
+        through [gpow_fast_eq]. *)
+    Global Instance ed25519_vspace_fast :
+      @vector_space Zl.F (@eq Zl.F) Zl.zero Zl.one Zl.add Zl.mul Zl.sub Zl.div Zl.opp Zl.inv
         G (@eq G) gid ginv gop gpow_fast.
     Proof.
       refine {|
@@ -510,36 +580,37 @@ Module Ed25519.
         vector_space_smul_distributive_vadd := _;
         vector_space_smul_Proper := _ |}.
       all: try (repeat intro; subst; reflexivity).
-      all: hnf; intros; rewrite ?gpow_fast_eq; 
-        first [apply gpow_one | apply gpow_zero | apply gpow_assoc | 
+      all: hnf; intros; rewrite ?gpow_fast_eq;
+        first [apply gpow_one | apply gpow_zero | apply gpow_assoc |
                apply gpow_distr_fadd | apply gpow_distr_vadd].
     Qed.
 
-    (* ---------------------------------------------------------------- *)
-    (* The base point has order l, by computation with fast_smul.        *)
-    (* ---------------------------------------------------------------- *)
+    (** *** The base point *)
 
-    (* Two points are equal when their coordinates are, as integers. Stated 
-      so that a goal about a computed point can be handed to vm_compute 
-      without any other tactic reducing the point first. *)
+    (** Points are equal when the canonical representatives of their
+        coordinates are equal. Used to check equalities of concrete points
+        by computation. *)
     Lemma point_coords_eq : forall P Q : point,
-      (Zmod.unsigned (fst (proj1_sig P)), Zmod.unsigned (snd (proj1_sig P))) = 
-      (Zmod.unsigned (fst (proj1_sig Q)), Zmod.unsigned (snd (proj1_sig Q))) -> 
+      (Zmod.unsigned (fst (proj1_sig P)), Zmod.unsigned (snd (proj1_sig P))) =
+      (Zmod.unsigned (fst (proj1_sig Q)), Zmod.unsigned (snd (proj1_sig Q))) ->
       P = Q.
     Proof.
-      intros [[x1 y1] h1] [[x2 y2] h2] h; cbn in h. 
+      intros [[x1 y1] h1] [[x2 y2] h2] h; cbn in h.
       injection h as hx hy.
       apply (Zmod.unsigned_inj p) in hx; apply (Zmod.unsigned_inj p) in hy; subst.
       f_equal; apply Eqdep_dec.UIP_dec; exact Fp_dec.
     Qed.
 
-    (* about ten seconds of vm_compute, checked again by the kernel *)
+    (** The standard Ed25519 base point lies in the order-[l] subgroup,
+        checked by computing [l · B] with [fast_smul] under
+        [vm_compute]. *)
     Lemma B_in_subgroup : in_subgroup CE.B.
     Proof.
       unfold in_subgroup; rewrite <-fast_smul_eq.
       apply point_coords_eq; vm_compute; reflexivity.
     Qed.
 
+    (** The base point as an element of [G]. *)
     Definition B : G := exist _ CE.B B_in_subgroup.
 
   End Ed.

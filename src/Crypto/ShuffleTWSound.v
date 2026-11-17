@@ -1,28 +1,33 @@
-(* Soundness of the Terelius–Wikström proof of a shuffle, part 1: the
-   algebra of extraction (Step 1.3 of plans/ZK_APPLICATIONS_PLAN.md).
+(** * Terelius–Wikström shuffle soundness, part 1: the algebra of extraction
 
-   The round-2 protocol is special sound (tw_special_soundness in
-   Crypto/ShuffleTW.v): two accepting transcripts with distinct challenges
-   for the same e give a witness of the five equations. This file works
-   with such witnesses directly, as hypotheses "the five equations hold",
-   and derives what Terelius and Wikström derive from them:
+    The round-two protocol of [Crypto/ShuffleTW.v] is special sound
+    ([tw_special_soundness]): two accepting transcripts with distinct
+    challenges for the same batching vector [e] yield a witness of the five
+    equations [ShuffleTW.equations]. This file takes such witnesses as
+    hypotheses and derives the consequences that Terelius and Wikström
+    (AFRICACRYPT 2010) draw from them. Each consequence is stated as either
+    a non-trivial discrete-logarithm relation among [g, h_0, …, h_N] (a
+    break of the binding property of the generalised Pedersen commitment),
+    or, when that relation is trivial, an algebraic identity:
 
-   - from a witness for each unit vector e = δ_j, an opening of every
-     component u_j = g^{a_j} ∏_i h_i^{m_ji} of the permutation commitment
-     (openings_from_unit_rounds); the rows m_j form a matrix over F;
-   - from a witness for any further e, either the discrete-logarithm
-     relation g^{x_0} ∏ h_i^{x_i} = 1 with a non-zero exponent vector (a
-     binding break of the Pedersen commitment), or
-       e' = Mᵀ e            (relation_A)
-       ∏_i (Mᵀ e)_i = ∏_j e_j and the column sums of M are 1  (relation_C,
-                                                              relation_D)
-   - from the unit-vector rounds also w_j = Enc(1; −f_j) ∏_i w'_i^{m_ji}
-     (relation_F), which for a permutation matrix is the re-encryption
-     witness w'_{π(j)} = w_j · Enc(1; f_j).
+    - [opening_from_unit]: a witness for a unit vector [e = δ_j] opens the
+      commitment component [u_j = g^{a_j} · ∏_i h_i^{m_{ji}}]; collecting
+      these rows gives a matrix [M = (m_{ji})] over [F];
+    - [relation_A]: with all [u_j] opened, a witness for any [e] gives the
+      relation [g^{a - ⟨a⃗, e⟩} · ∏ h^{e' - Mᵀ e} = 1]; if trivial,
+      [e' = Mᵀ e] ([relation_A_trivial]);
+    - [relation_C]: the [C] equation gives a relation whose triviality
+      means the column sums of [M] are all [1] ([relation_C_trivial]);
+    - [relation_D]: the [D] and [B] equations give a relation whose
+      triviality means [∏ e'_i = ∏ e_i] ([relation_D_trivial]);
+    - [relation_F]: at [e = δ_j] the [F] equation reads
+      [w_j = Enc(1; -f) · ∏_i w'_i^{e'_i}], which for a permutation matrix
+      says [w'_{π(j)}] is a re-encryption of [w_j].
 
-   Crypto/ShuffleTWSound2.v turns the polynomial identity into a
-   permutation matrix and assembles the soundness theorem. *)
-
+    Here [h_0 = B_{-1}] is the first independent generator, as fixed by
+    [public_of]. [Crypto/ShuffleTWSound2.v] turns [∏_i (Mᵀ e)_i = ∏ e_i]
+    for enough [e] into the statement that [M] is a permutation matrix and
+    assembles the soundness theorem. *)
 From Stdlib Require Import Utf8 Vector Fin Lia Bool List setoid_ring.Field.
 From Algebra Require Import Hierarchy Group Monoid Field Integral_domain Ring
   Vector_space Vector_product_space.
@@ -30,6 +35,10 @@ From Crypto Require Import Sigma Okamoto MultiExp ShuffleTW ShuffleTWProps.
 From Utility Require Import Util.
 Import VectorNotations.
 
+(** ** Parameters and group-law helpers
+
+    A field [F], a group [G] that is an [F]-vector space, and [M = N + 1]
+    ciphertexts. *)
 Section Sound.
 
   Context
@@ -49,6 +58,7 @@ Section Sound.
   Local Infix "*" := mul.
   Local Infix "+" := add.
 
+  (** Names for the group laws of [G], extracted from [Hvec]. *)
   Local Notation hcg := (@vector_space_commutative_group F (@eq F) zero one add mul sub div opp inv
     G (@eq G) gid ginv gop gpow Hvec).
   Local Notation gassoc := (@associative G (@eq G) gop (@monoid_is_associative G (@eq G) gop gid
@@ -63,6 +73,8 @@ Section Sound.
     (@commutative_group_group G (@eq G) gop gid ginv hcg))).
   Local Notation gcomm := (@commutative G (@eq G) gop (@commutative_group_is_commutative G (@eq G) gop gid ginv hcg)).
 
+  (** The vector-space laws of [G] as lemmas: [x^{r1+r2} = x^{r1} x^{r2}],
+      [(xy)^r = x^r y^r], [x^{r1 r2} = (x^{r1})^{r2}], [x^0 = 1], [x^1 = x]. *)
   Lemma smul_fadd : forall (r1 r2 : F) (x : G), x ^ (r1 + r2) = gop (x ^ r1) (x ^ r2).
   Proof. pose proof (@vector_space_smul_distributive_fadd _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ Hvec) as h; hnf in h; exact h. Qed.
   Lemma smul_vadd : forall (r : F) (x y : G), (gop x y) ^ r = gop (x ^ r) (y ^ r).
@@ -74,6 +86,8 @@ Section Sound.
   Lemma smul_one : forall x : G, x ^ one = x.
   Proof. pose proof (@vector_space_field_one _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ Hvec) as h; hnf in h; exact h. Qed.
 
+  (** Abbreviations for multi-exponentiation and the folds and helpers of
+      [ShuffleTW] and [ShuffleTWProps], specialised to this section. *)
   Local Notation gexp := (mexp (vid := gid) (vadd := gop) (smul := gpow)).
   Local Notation cexp := (mexp (vid := (gid, gid)) (vadd := fun x y : G * G => (gop (fst x) (fst y), gop (snd x) (snd y)))
     (smul := fun (x : G * G) (r : F) => (gpow (fst x) r, gpow (snd x) r))).
@@ -86,21 +100,25 @@ Section Sound.
   Local Notation gop_cancel := (gop_cancel (Hvec := Hvec)).
   Local Notation chain := (ShuffleTWProps.chain (gop := gop) (gpow := gpow)).
 
-  (* ---------------------------------------------------------------- *)
-  (* Vectors of exponents                                             *)
-  (* ---------------------------------------------------------------- *)
+  (** ** Vectors of exponents
 
+      Zero vectors, pointwise sum, scaling and difference of exponent
+      vectors, unit vectors, and how multi-exponentiation interacts with
+      them. *)
   Local Notation vzero m := (Vector.const zero m).
   Local Notation vadd := (Vector.map2 add).
   Local Notation vscale := (fun (v : Vector.t F M) (c : F) => Vector.map (fun x => x * c) v).
+  (** Pointwise difference [v - w]. *)
   Definition vsub {m} (v w : Vector.t F m) : Vector.t F m := Vector.map2 (fun x y => x + opp y) v w.
 
+  (** The unit vector [δ_j]: [1] at position [j], [0] elsewhere. *)
   Fixpoint unit_vec {m : nat} (j : Fin.t m) : Vector.t F m :=
     match j with
     | Fin.F1 => one :: vzero _
     | Fin.FS j' => zero :: unit_vec j'
     end.
 
+  (** [∏ gs_i^0 = 1]. *)
   Lemma gexp_zeros : forall (m : nat) (gs : Vector.t G m), gexp gs (vzero m) = gid.
   Proof.
     induction m as [| m ih]; intro gs.
@@ -109,6 +127,8 @@ Section Sound.
       rewrite const_S, mexp_cons, ih, smul_zero, gid_l; reflexivity.
   Qed.
 
+  (** [∏ gs_i^{(δ_j)_i} = gs_j]: multi-exponentiation by a unit vector
+      selects one base. *)
   Lemma gexp_unit : forall (m : nat) (j : Fin.t m) (gs : Vector.t G m), gexp gs (unit_vec j) = gs[@j].
   Proof.
     intros m j; induction j as [m | m j ih]; intro gs.
@@ -118,6 +138,9 @@ Section Sound.
       cbn [unit_vec]; rewrite mexp_cons, ih, smul_zero, gid_l; reflexivity.
   Qed.
 
+  (** Multi-exponentiation is a homomorphism in the exponent vector:
+      sums go to products ([gexp_exp_add]) and scaling by [c] to the [c]-th
+      power ([gexp_exp_scale]). *)
   Lemma gexp_exp_add : forall (m : nat) (gs : Vector.t G m) (x y : Vector.t F m),
     gexp gs (vadd x y) = gop (gexp gs x) (gexp gs y).
   Proof.
@@ -140,24 +163,29 @@ Section Sound.
       cbn [Vector.map]; rewrite !mexp_cons, ih, smul_vadd, smul_fmul; reflexivity.
   Qed.
 
-  (* group helpers *)
+  (** *** Group helpers *)
+
+  (** Uniqueness of inverses: [a · b = 1] implies [b = a⁻¹]. *)
   Lemma inv_unique : forall a b : G, gop a b = gid -> b = ginv a.
   Proof.
     intros a b h.
     rewrite <-(gid_l b), <-(ginv_l a), <-gassoc, h, gid_r; reflexivity.
   Qed.
 
+  (** Rearranging four factors in a commutative group. *)
   Lemma gop4 : forall a b c d : G, gop (gop a b) (gop c d) = gop (gop a c) (gop b d).
   Proof.
     intros. rewrite <-!gassoc; f_equal. rewrite !gassoc; f_equal; apply gcomm.
   Qed.
 
+  (** [(a · b)⁻¹ = a⁻¹ · b⁻¹] (the group is commutative). *)
   Lemma ginv_gop : forall a b : G, ginv (gop a b) = gop (ginv a) (ginv b).
   Proof.
     intros; symmetry; apply inv_unique.
     rewrite gop4, !ginv_r, gid_l; reflexivity.
   Qed.
 
+  (** [z^{-1} = z⁻¹] and, more generally, [z^{-r} = (z^r)⁻¹]. *)
   Lemma pow_opp_one : forall z : G, z ^ (opp one) = ginv z.
   Proof.
     intro z; apply inv_unique.
@@ -171,6 +199,8 @@ Section Sound.
     intros; rewrite <-pow_opp_one, <-smul_fmul; f_equal; field.
   Qed.
 
+  (** Differences of exponent vectors go to quotients:
+      [∏ gs^{x - y} = ∏ gs^x · (∏ gs^y)⁻¹]. *)
   Lemma gexp_exp_sub : forall (m : nat) (gs : Vector.t G m) (x y : Vector.t F m),
     gexp gs (vsub x y) = gop (gexp gs x) (ginv (gexp gs y)).
   Proof.
@@ -182,6 +212,7 @@ Section Sound.
       f_equal; field.
   Qed.
 
+  (** Multi-exponentiation by the all-ones vector is the plain product. *)
   Lemma gprod_ones : forall (m : nat) (gs : Vector.t G m), gexp gs (Vector.const one m) = gprod gs.
   Proof.
     induction m as [| m ih]; intro gs.
@@ -190,17 +221,24 @@ Section Sound.
       rewrite const_S, mexp_cons, ih, smul_one; reflexivity.
   Qed.
 
-  (* Mᵀ e = Σ_j e_j m_j, for a matrix given by its rows *)
+  (** *** Matrices and openings *)
+
+  (** [matT_mul mat e = Mᵀ e = Σ_j e_j · m_j], for a matrix given by its
+      rows [m_j ∈ F^M]. *)
   Definition matT_mul {m : nat} (mat : Vector.t (Vector.t F M) m) (e : Vector.t F m) : Vector.t F M :=
     Vector.fold_right (fun '(row, ej) acc => vadd (Vector.map (fun x => x * ej) row) acc)
       (Vector.map2 pair mat e) (vzero M).
 
+  (** The column sums of a matrix, [Mᵀ (1, …, 1)]. *)
   Definition colsum {m : nat} (mat : Vector.t (Vector.t F M) m) : Vector.t F M := matT_mul mat (Vector.const one m).
 
-  (* the product of the openings of the commitments *)
+  (** The commitments determined by openings: entry [j] is
+      [g^{as'_j} · ∏_i h_i^{m_{ji}}]. *)
   Definition open (g : G) (hs : Vector.t G M) {m : nat} (as' : Vector.t F m) (mat : Vector.t (Vector.t F M) m) : Vector.t G m :=
     Vector.map2 (fun a row => gop (g ^ a) (gexp hs row)) as' mat.
 
+  (** Batching opened commitments:
+      [∏_j (g^{a_j} ∏_i h_i^{m_{ji}})^{e_j} = g^{⟨a, e⟩} · ∏ h^{Mᵀ e}]. *)
   Lemma gexp_open : forall (g : G) (hs : Vector.t G M) (m : nat) (as' : Vector.t F m)
     (mat : Vector.t (Vector.t F M) m) (e : Vector.t F m),
     gexp (open g hs as' mat) e = gop (g ^ inner as' e) (gexp hs (matT_mul mat e)).
@@ -216,6 +254,7 @@ Section Sound.
       rewrite <-!gassoc; f_equal. rewrite !gassoc; f_equal; apply gcomm.
   Qed.
 
+  (** Product of opened commitments: [g^{Σ a} · ∏ h^{colsum M}]. *)
   Lemma gprod_open : forall (g : G) (hs : Vector.t G M) (m : nat) (as' : Vector.t F m) (mat : Vector.t (Vector.t F M) m),
     gprod (open g hs as' mat) = gop (g ^ fsum as') (gexp hs (colsum mat)).
   Proof.
@@ -224,16 +263,22 @@ Section Sound.
     rewrite (Vector.nth_map2 _ _ _ i i i eq_refl eq_refl), Vector.const_nth; field.
   Qed.
 
-  (* ---------------------------------------------------------------- *)
-  (* Discrete-logarithm relations                                      *)
-  (* ---------------------------------------------------------------- *)
+  (** ** Discrete-logarithm relations
 
-  (* g^{x_0} ∏ h_i^{x_i} = 1 *)
+      A relation is a representation of the identity in the bases
+      [g, h_0, …, h_N]. It is trivial if all exponents are zero. A non-trivial
+      relation breaks the binding property of the generalised Pedersen
+      commitment, which is assumed infeasible to find (this assumption is not
+      formalised here). *)
+
+  (** [dl_rel g hs x0 xs] holds iff [g^{x0} · ∏ h_i^{xs_i} = 1]. *)
   Definition dl_rel (g : G) (hs : Vector.t G M) (x0 : F) (xs : Vector.t F M) : Prop :=
     gop (g ^ x0) (gexp hs xs) = gid.
 
+  (** The trivial exponent vector. *)
   Definition trivial (x0 : F) (xs : Vector.t F M) : Prop := x0 = zero /\ xs = vzero M.
 
+  (** Triviality is decidable, using decidable equality on [F]. *)
   Lemma trivial_dec : forall x0 xs, {trivial x0 xs} + {~ trivial x0 xs}.
   Proof.
     intros x0 xs; unfold trivial.
@@ -241,7 +286,8 @@ Section Sound.
     destruct (vec_dec (V := F) Fdec xs (vzero M)) as [-> | h]; [left; split; reflexivity | right; intros [_ e]; contradiction].
   Qed.
 
-  (* two representations of the same element give a relation *)
+  (** Two representations of the same element give a relation whose
+      exponents are the differences. *)
   Lemma rel_of_eq : forall g hs x0 xs y0 ys,
     gop (g ^ x0) (gexp hs xs) = gop (g ^ y0) (gexp hs ys) ->
     dl_rel g hs (x0 + opp y0) (vsub xs ys).
@@ -250,10 +296,13 @@ Section Sound.
     rewrite gexp_exp_sub, smul_fadd, pow_opp, gop4, <-ginv_gop, h, ginv_r; reflexivity.
   Qed.
 
+  (** Every relation is either trivial or non-trivial (case split for use
+      in the soundness proof). *)
   Lemma rel_cases : forall g hs x0 xs, dl_rel g hs x0 xs ->
     (x0 = zero /\ xs = vzero M) \/ (~ (x0 = zero /\ xs = vzero M) /\ dl_rel g hs x0 xs).
   Proof. intros * h; destruct (trivial_dec x0 xs) as [t | t]; [left; exact t | right; split; assumption]. Qed.
 
+  (** [v - 0 = v], and [v - w = 0] implies [v = w]. *)
   Lemma vsub_zero_r : forall (m : nat) (v : Vector.t F m), vsub v (Vector.const zero m) = v.
   Proof.
     intros; apply Vector.eq_nth_iff; intros i j <-; unfold vsub.
@@ -268,20 +317,25 @@ Section Sound.
     replace v[@i] with (v[@i] + opp w[@i] + w[@i]) by field. rewrite h; field.
   Qed.
 
+  (** [x - y = 0] implies [x = y] in [F]. *)
   Lemma add_opp_eq_zero : forall x y : F, x + opp y = zero -> x = y.
   Proof. intros x y h; replace x with (x + opp y + y) by field; rewrite h; field. Qed.
 
-  (* ---------------------------------------------------------------- *)
-  (* The five equations, exploited                                     *)
-  (* ---------------------------------------------------------------- *)
+  (** ** The five equations, exploited
 
+      Each lemma takes a witness of [ShuffleTW.equations] for a public input
+      with [h0 = h_0] and extracts one relation or identity. *)
+
+  (** Public data with [h0] set to the first independent generator. *)
   Definition public_of (g : G) (hs : Vector.t G M) (y : G) (us : Vector.t G M) (e : Vector.t F M)
     (Bs : Vector.t G M) (ws ws' : Vector.t (G * G) M) : @public F G N :=
     @ShuffleTW.mk_public F G N g (Vector.hd hs) hs y us e Bs ws ws'.
 
+  (** The five equations, with implicit arguments fixed. *)
   Local Notation eqs := (@equations F one mul G gid ginv gop gpow N).
 
-  (* a witness for the unit vector δ_j opens u_j *)
+  (** A witness for [e = δ_j] opens [u_j]: from the [A] equation,
+      [u_j = g^a · ∏ h_i^{e'_i}]. *)
   Lemma opening_from_unit : forall g hs y us Bs ws ws' (j : Fin.t M) a c d f betas e',
     eqs (public_of g hs y us (unit_vec j) Bs ws ws') a c d f betas e' ->
     us[@j] = gop (g ^ a) (gexp hs e').
@@ -290,7 +344,9 @@ Section Sound.
     rewrite gexp_unit in hA; exact hA.
   Qed.
 
-  (* with the commitments opened, the A equation at e is a relation *)
+  (** With the commitments opened as [open g hs as' mat], the [A] equation at
+      any [e] yields the relation with exponents [a - ⟨as', e⟩] on [g] and
+      [e' - Mᵀ e] on [hs]. *)
   Lemma relation_A : forall g hs y (as' : Vector.t F M) (mat : Vector.t (Vector.t F M) M) e Bs ws ws' a c d f betas e',
     eqs (public_of g hs y (open g hs as' mat) e Bs ws ws') a c d f betas e' ->
     dl_rel g hs (a + opp (inner as' e)) (vsub e' (matT_mul mat e)).
@@ -299,7 +355,8 @@ Section Sound.
     rewrite gexp_open in hA. apply rel_of_eq; symmetry; exact hA.
   Qed.
 
-  (* the C equation: the column sums *)
+  (** With the commitments opened, the [C] equation yields the relation with
+      exponents [Σ as' - c] on [g] and [colsum M - 1] on [hs]. *)
   Lemma relation_C : forall g hs y (as' : Vector.t F M) (mat : Vector.t (Vector.t F M) M) e Bs ws ws' a c d f betas e',
     eqs (public_of g hs y (open g hs as' mat) e Bs ws ws') a c d f betas e' ->
     dl_rel g hs (fsum as' + opp c) (vsub (colsum mat) (Vector.const one M)).
@@ -310,7 +367,8 @@ Section Sound.
     apply rel_of_eq. rewrite hC, gexp_zeros, gid_r; reflexivity.
   Qed.
 
-  (* the B equations determine the chain *)
+  (** The bridging equations determine the chain: if [Bs] satisfies them
+      for [β] and [e'], then [Bs = chain g h0 β e']. *)
   Lemma chain_unique : forall (g : G) (m : nat) (h0 : G) (Bs : Vector.t G m) (betas e' : Vector.t F m),
     Bs = Vector.map2 gop (Vector.map2 gpow (Vector.const g m) betas)
            (Vector.map2 gpow (Vector.shiftout (h0 :: Bs)) e') ->
@@ -327,10 +385,15 @@ Section Sound.
       rewrite <-hB0. f_equal. apply ih; exact hBs.
   Qed.
 
+  (** Index [0] of a vector is its head. *)
   Lemma nth_hd : forall (m : nat) (v : Vector.t G (S m)), v[@Fin.F1] = Vector.hd v.
   Proof. intros m v; destruct (vector_inv_S v) as (a & v' & ->); reflexivity. Qed.
 
-  (* the D equation: the product of the e' equals the product of the e *)
+  (** The [D] and [B] equations at any [e] yield the relation with
+      exponent [chain_exp β e' - d] on [g] and [∏ e' - ∏ e] on [h_0] (zero on
+      the other [h_i]). Proof: [chain_unique] identifies [Bs] as a chain,
+      [chain_last] computes [B_N = g^{chain_exp} · h_0^{∏ e'}], and the [D]
+      equation says [B_N · h_0^{-∏ e} = g^d]. *)
   Lemma relation_D : forall g hs y us e Bs ws ws' a c d f betas e',
     eqs (public_of g hs y us e Bs ws ws') a c d f betas e' ->
     dl_rel g hs (chain_exp (zero := zero) (one := one) (add := add) (mul := mul) betas e' + opp d)
@@ -346,7 +409,9 @@ Section Sound.
     rewrite smul_fadd, pow_opp, gassoc; reflexivity.
   Qed.
 
-  (* the F equation at δ_j: w_j = Enc(1; −f) ∏_i w'_i^{e'_i} *)
+  (** At [e = δ_j] the [F] equation reads
+      [w_j = ((g⁻¹)^f · ∏ (w'_i).1^{e'_i}, (y⁻¹)^f · ∏ (w'_i).2^{e'_i})],
+      i.e. [w_j = Enc(1; -f) · ∏ w'^{e'}]. *)
   Lemma relation_F : forall g hs y us Bs ws ws' (j : Fin.t M) a c d f betas e',
     eqs (public_of g hs y us (unit_vec j) Bs ws ws') a c d f betas e' ->
     ws[@j] = (gop ((ginv g) ^ f) (gexp (Vector.map fst ws') e'), gop ((ginv y) ^ f) (gexp (Vector.map snd ws') e')).
@@ -357,7 +422,9 @@ Section Sound.
     rewrite <-hF; destruct (ws[@j]); reflexivity.
   Qed.
 
-  (* the consequences when the relations are trivial *)
+  (** Consequences of triviality: of the [A] relation, [a = ⟨as', e⟩] and
+      [e' = Mᵀ e]; of the [C] relation, all column sums are [1]; of the [D]
+      relation, [∏ e' = ∏ e]. *)
   Lemma relation_A_trivial : forall (as' : Vector.t F M) (mat : Vector.t (Vector.t F M) M) e a e',
     a + opp (inner as' e) = zero -> vsub e' (matT_mul mat e) = vzero M ->
     a = inner as' e /\ e' = matT_mul mat e.

@@ -1,0 +1,380 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<link href="coqdoc.css" rel="stylesheet" type="text/css" />
+<title>Examples.EncProofIns</title>
+</head>
+
+<body>
+
+<div id="page">
+
+<div id="header">
+</div>
+
+<div id="main">
+
+<h1 class="libtitle">Library Examples.EncProofIns</h1>
+
+<div class="code">
+</div>
+
+<div class="doc">
+<a id="lab395"></a><h1 class="section">Proof that an ElGamal ciphertext encrypts one of a list of messages</h1>
+
+<div class="paragraph"> </div>
+
+ A concrete instance of the disjunctive encryption proof of
+<span class="inlinecode"><span class="id" title="var">Crypto</span>/<span class="id" title="var">EncProof.v</span></span>: given a ciphertext <span class="inlinecode"><span class="id" title="var">cp</span></span> <span class="inlinecode">=</span> <span class="inlinecode">(<span class="id" title="var">c₁</span>,</span> <span class="inlinecode"><span class="id" title="var">c₂</span>)</span> under public key
+<span class="inlinecode"><span class="id" title="var">h</span></span> and a public list of candidate plaintexts <span class="inlinecode">[<span class="id" title="var">m₀</span>;</span> <span class="inlinecode"><span class="id" title="var">m₁</span>;</span> <span class="inlinecode"><span class="id" title="var">m₂</span>]</span> (group
+elements), the prover shows that <span class="inlinecode"><span class="id" title="var">cp</span></span> encrypts one of them without
+revealing which. Statement <span class="inlinecode"><span class="id" title="var">i</span></span> is the Chaum–Pedersen relation
+
+<div class="paragraph"> </div>
+
+<br/>
+<span class="inlinecode">∃ <span class="id" title="var">r</span>,  <span class="id" title="var">c₁</span> = <span class="id" title="var">g</span>^<span class="id" title="var">r</span>  ∧  <span class="id" title="var">c₂</span>·<span class="id" title="var">m</span>ᵢ<span class="id" title="var">⁻¹</span> = <span class="id" title="var">h</span>^<span class="id" title="var">r</span>,
+<div class="paragraph"> </div>
+
+</span>
+<div class="paragraph"> </div>
+
+and the proof is their OR-composition in the style of Cramer, Damgård and
+Schoenmakers (CRYPTO 1994): two branches are simulated with self-chosen
+challenges, the real one is run with the remaining share of the
+verifier's challenge. This is the ballot-validity proof of Helios-like
+systems. The file is extracted to OCaml by <span class="inlinecode"><span class="id" title="var">src</span>/<span class="id" title="keyword">Extraction</span>/<span class="id" title="var">EncProoflib</span></span>.
+
+<div class="paragraph"> </div>
+
+The group is the order-<span class="inlinecode"><span class="id" title="var">q</span></span> subgroup of <span class="inlinecode"><span class="id" title="var">Z_p</span>^*</span> for the toy safe prime
+<span class="inlinecode"><span class="id" title="var">p</span></span> <span class="inlinecode">=</span> <span class="inlinecode">2<span class="id" title="var">q</span></span> <span class="inlinecode">+</span> <span class="inlinecode">1</span> <span class="inlinecode">=</span> <span class="inlinecode">5927</span> with <span class="inlinecode"><span class="id" title="var">q</span></span> <span class="inlinecode">=</span> <span class="inlinecode">2963</span> (from <span class="inlinecode"><span class="id" title="var">Utility</span>/<span class="id" title="var">Zpstar.v</span></span>: <span class="inlinecode"><span class="id" title="var">Zp</span></span> <span class="inlinecode"><span class="id" title="var">q</span></span> is
+the scalar field and <span class="inlinecode"><span class="id" title="var">Schnorr_group</span></span> <span class="inlinecode"><span class="id" title="var">p</span></span> <span class="inlinecode"><span class="id" title="var">q</span></span> the group of quadratic residues
+mod <span class="inlinecode"><span class="id" title="var">p</span></span>). The parameters are far too small to be secure; they are chosen so
+that primality can be proved by trial division (<span class="inlinecode"><span class="id" title="var">Examples</span>/<span class="id" title="var">Prime.v</span></span>) and
+the extracted code runs instantly.
+
+<div class="paragraph"> </div>
+
+Here <span class="inlinecode"><span class="id" title="var">g</span></span> <span class="inlinecode">=</span> <span class="inlinecode">12</span>, the public key is <span class="inlinecode"><span class="id" title="var">h</span></span> <span class="inlinecode">=</span> <span class="inlinecode">25</span>, and the ciphertext <span class="inlinecode"><span class="id" title="var">cp</span></span>
+encrypts <span class="inlinecode"><span class="id" title="var">m₂</span></span> <span class="inlinecode">=</span> <span class="inlinecode">38</span> with randomness <span class="inlinecode"><span class="id" title="var">r</span></span> <span class="inlinecode">=</span> <span class="inlinecode">1876</span>; the prover knows that it is
+branch 2 (<span class="inlinecode"><span class="id" title="var">Fin.FS</span></span> <span class="inlinecode">(<span class="id" title="var">Fin.FS</span></span> <span class="inlinecode"><span class="id" title="var">Fin.F1</span>)</span>). The transcript has three commitments
+(pairs of group elements), four challenges and three responses. 
+</div>
+<div class="code">
+<span class="id" title="keyword">From</span> <span class="id" title="var">Stdlib</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="library">Utf8</span> <span class="id" title="library">ZArith</span><br/>
+<span class="id" title="library">Vector</span> <span class="id" title="library">Fin</span>.<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">Crypto</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <a class="idref" href="Crypto.Sigma.html#"><span class="id" title="library">Sigma</span></a> <a class="idref" href="Crypto.EncProof.html#"><span class="id" title="library">EncProof</span></a>.<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">Utility</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <a class="idref" href="Utility.Zpstar.html#"><span class="id" title="library">Zpstar</span></a>.<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">Examples</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <a class="idref" href="Examples.Prime.html#"><span class="id" title="library">Prime</span></a>.<br/>
+<span class="id" title="keyword">Import</span> <a class="idref" href="Utility.Zpstar.html#Vspace"><span class="id" title="module">Vspace</span></a> <a class="idref" href="Utility.Zpstar.html#Schnorr"><span class="id" title="module">Schnorr</span></a> <a class="idref" href="Utility.Zpstar.html#Zpfield"><span class="id" title="module">Zpfield</span></a> <a class="idref" href="Utility.Zpstar.html#Zpgroup"><span class="id" title="module">Zpgroup</span></a><br/>
+<span class="id" title="module">VectorNotations</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<a id="lab396"></a><h2 class="section">Parameters and the instance</h2>
+
+</div>
+<div class="code">
+<span class="id" title="keyword">Section</span> <a id="Ins" class="idref" href="#Ins"><span class="id" title="section">Ins</span></a>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+The subgroup order <span class="inlinecode"><span class="id" title="var">q</span></span> <span class="inlinecode">=</span> <span class="inlinecode">2963</span>. 
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <a id="q" class="idref" href="#q"><span class="id" title="definition">q</span></a> : <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Numbers.BinNums.html#Z"><span class="id" title="inductive">Z</span></a> := 2963.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+The modulus <span class="inlinecode"><span class="id" title="var">p</span></span> <span class="inlinecode">=</span> <span class="inlinecode">2<span class="id" title="var">q</span></span> <span class="inlinecode">+</span> <span class="inlinecode">1</span> <span class="inlinecode">=</span> <span class="inlinecode">5927</span>, a safe prime. 
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <a id="p" class="idref" href="#p"><span class="id" title="definition">p</span></a> : <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Numbers.BinNums.html#Z"><span class="id" title="inductive">Z</span></a> := 2 <span class="id" title="notation">×</span> <a class="idref" href="Examples.EncProofIns.html#q"><span class="id" title="definition">q</span></a> <span class="id" title="notation">+</span> 1.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<span class="inlinecode"><span class="id" title="var">q</span></span> is prime, by trial division (<span class="inlinecode"><span class="id" title="var">is_prime_sqrt_correct</span></span>). 
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Theorem</span> <a id="prime_q" class="idref" href="#prime_q"><span class="id" title="lemma">prime_q</span></a> : <span class="id" title="inductive">Znumtheory.prime</span> <a class="idref" href="Examples.EncProofIns.html#q"><span class="id" title="definition">q</span></a> : <span class="id" title="keyword">Prop</span> : <span class="id" title="keyword">Type</span>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">eapply</span> <a class="idref" href="Examples.Prime.html#is_prime_sqrt_correct"><span class="id" title="lemma">is_prime_sqrt_correct</span></a>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">compute</span>; <span class="id" title="tactic">reflexivity</span>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Qed</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<span class="inlinecode"><span class="id" title="var">p</span></span> is prime, by trial division. 
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Theorem</span> <a id="prime_p" class="idref" href="#prime_p"><span class="id" title="lemma">prime_p</span></a> : <span class="id" title="inductive">Znumtheory.prime</span> <a class="idref" href="Examples.EncProofIns.html#p"><span class="id" title="definition">p</span></a> : <span class="id" title="keyword">Prop</span> : <span class="id" title="keyword">Type</span>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">eapply</span> <a class="idref" href="Examples.Prime.html#is_prime_sqrt_correct"><span class="id" title="lemma">is_prime_sqrt_correct</span></a>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">compute</span>; <span class="id" title="tactic">reflexivity</span>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Qed</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<span class="inlinecode"><span class="id" title="var">p</span></span> <span class="inlinecode">=</span> <span class="inlinecode">2<span class="id" title="var">q</span></span> <span class="inlinecode">+</span> <span class="inlinecode">1</span>, the shape required by the <span class="inlinecode"><span class="id" title="var">Zpstar</span></span> group operations. 
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Theorem</span> <a id="safe_prime" class="idref" href="#safe_prime"><span class="id" title="lemma">safe_prime</span></a> : <a class="idref" href="Examples.EncProofIns.html#p"><span class="id" title="definition">p</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Logic.html#6cd0f7b28b6092304087c7049437bb1a"><span class="id" title="notation">=</span></a> (2 <span class="id" title="notation">×</span> <a class="idref" href="Examples.EncProofIns.html#q"><span class="id" title="definition">q</span></a> <span class="id" title="notation">+</span> 1)%<span class="id" title="var">Z</span>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>. <span class="id" title="tactic">compute</span>. <span class="id" title="tactic">exact</span> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Logic.html#eq_refl"><span class="id" title="constructor">eq_refl</span></a>. <span class="id" title="keyword">Qed</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+The generator <span class="inlinecode"><span class="id" title="var">g</span></span> <span class="inlinecode">=</span> <span class="inlinecode">12</span>, an element of the order-<span class="inlinecode"><span class="id" title="var">q</span></span> subgroup
+      (membership checked by <span class="inlinecode"><span class="id" title="keyword">vm_compute</span></span>). 
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <a id="g" class="idref" href="#g"><span class="id" title="definition">g</span></a> : @<a class="idref" href="Utility.Zpstar.html#Schnorr.Schnorr_group"><span class="id" title="record">Schnorr_group</span></a> <a class="idref" href="Examples.EncProofIns.html#p"><span class="id" title="definition">p</span></a> <a class="idref" href="Examples.EncProofIns.html#q"><span class="id" title="definition">q</span></a>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">refine</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;{| <a class="idref" href="Utility.Zpstar.html#Schnorr.v"><span class="id" title="projection">Schnorr.v</span></a> := 12;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="Utility.Zpstar.html#Schnorr.Ha"><span class="id" title="projection">Ha</span></a> := <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Logic.html#conj"><span class="id" title="constructor">conj</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Logic.html#eq_refl"><span class="id" title="constructor">eq_refl</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Logic.html#eq_refl"><span class="id" title="constructor">eq_refl</span></a> : (0 <span class="id" title="notation">&lt;</span> 12 <span class="id" title="notation">&lt;</span> <a class="idref" href="Examples.EncProofIns.html#p"><span class="id" title="definition">p</span></a>)%<span class="id" title="var">Z</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="Utility.Zpstar.html#Schnorr.Hb"><span class="id" title="projection">Hb</span></a> := <span class="id" title="var">_</span> |}.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">vm_cast_no_check</span> (<a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Logic.html#eq_refl"><span class="id" title="constructor">eq_refl</span></a> (<span class="id" title="definition">Zpow_facts.Zpow_mod</span> 12 <a class="idref" href="Examples.EncProofIns.html#q"><span class="id" title="definition">q</span></a> <a class="idref" href="Examples.EncProofIns.html#p"><span class="id" title="definition">p</span></a>)).<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Defined</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+The encryption public key <span class="inlinecode"><span class="id" title="var">h</span></span> <span class="inlinecode">=</span> <span class="inlinecode">25</span>; its secret key is not used. 
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <a id="h" class="idref" href="#h"><span class="id" title="definition">h</span></a> : @<a class="idref" href="Utility.Zpstar.html#Schnorr.Schnorr_group"><span class="id" title="record">Schnorr_group</span></a> <a class="idref" href="Examples.EncProofIns.html#p"><span class="id" title="definition">p</span></a> <a class="idref" href="Examples.EncProofIns.html#q"><span class="id" title="definition">q</span></a>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">refine</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;{| <a class="idref" href="Utility.Zpstar.html#Schnorr.v"><span class="id" title="projection">Schnorr.v</span></a> := 25;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="Utility.Zpstar.html#Schnorr.Ha"><span class="id" title="projection">Ha</span></a> := <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Logic.html#conj"><span class="id" title="constructor">conj</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Logic.html#eq_refl"><span class="id" title="constructor">eq_refl</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Logic.html#eq_refl"><span class="id" title="constructor">eq_refl</span></a> : (0 <span class="id" title="notation">&lt;</span> 25 <span class="id" title="notation">&lt;</span> <a class="idref" href="Examples.EncProofIns.html#p"><span class="id" title="definition">p</span></a>)%<span class="id" title="var">Z</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="Utility.Zpstar.html#Schnorr.Hb"><span class="id" title="projection">Hb</span></a> := <span class="id" title="var">_</span> |}.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">vm_cast_no_check</span> (<a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Logic.html#eq_refl"><span class="id" title="constructor">eq_refl</span></a> (<span class="id" title="definition">Zpow_facts.Zpow_mod</span> 25 <a class="idref" href="Examples.EncProofIns.html#q"><span class="id" title="definition">q</span></a> <a class="idref" href="Examples.EncProofIns.html#p"><span class="id" title="definition">p</span></a>)).<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Defined</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+Candidate plaintext <span class="inlinecode"><span class="id" title="var">m₀</span></span> <span class="inlinecode">=</span> <span class="inlinecode">28</span>, a group element. 
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <a id="f2a85ca78390916ac0a62a3aef310edf" class="idref" href="#f2a85ca78390916ac0a62a3aef310edf"><span class="id" title="definition">m₀</span></a> : @<a class="idref" href="Utility.Zpstar.html#Schnorr.Schnorr_group"><span class="id" title="record">Schnorr_group</span></a> <a class="idref" href="Examples.EncProofIns.html#p"><span class="id" title="definition">p</span></a> <a class="idref" href="Examples.EncProofIns.html#q"><span class="id" title="definition">q</span></a>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">refine</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;{| <a class="idref" href="Utility.Zpstar.html#Schnorr.v"><span class="id" title="projection">Schnorr.v</span></a> := 28;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="Utility.Zpstar.html#Schnorr.Ha"><span class="id" title="projection">Ha</span></a> := <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Logic.html#conj"><span class="id" title="constructor">conj</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Logic.html#eq_refl"><span class="id" title="constructor">eq_refl</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Logic.html#eq_refl"><span class="id" title="constructor">eq_refl</span></a> : (0 <span class="id" title="notation">&lt;</span> 28 <span class="id" title="notation">&lt;</span> <a class="idref" href="Examples.EncProofIns.html#p"><span class="id" title="definition">p</span></a>)%<span class="id" title="var">Z</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="Utility.Zpstar.html#Schnorr.Hb"><span class="id" title="projection">Hb</span></a> := <span class="id" title="var">_</span> |}.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">vm_cast_no_check</span> (<a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Logic.html#eq_refl"><span class="id" title="constructor">eq_refl</span></a> (<span class="id" title="definition">Zpow_facts.Zpow_mod</span> 28 <a class="idref" href="Examples.EncProofIns.html#q"><span class="id" title="definition">q</span></a> <a class="idref" href="Examples.EncProofIns.html#p"><span class="id" title="definition">p</span></a>)).<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Defined</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+Candidate plaintext <span class="inlinecode"><span class="id" title="var">m₁</span></span> <span class="inlinecode">=</span> <span class="inlinecode">134</span>, a group element. 
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <a id="879a6ba6f15173139038a2029de50c60" class="idref" href="#879a6ba6f15173139038a2029de50c60"><span class="id" title="definition">m₁</span></a> : @<a class="idref" href="Utility.Zpstar.html#Schnorr.Schnorr_group"><span class="id" title="record">Schnorr_group</span></a> <a class="idref" href="Examples.EncProofIns.html#p"><span class="id" title="definition">p</span></a> <a class="idref" href="Examples.EncProofIns.html#q"><span class="id" title="definition">q</span></a>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">refine</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;{| <a class="idref" href="Utility.Zpstar.html#Schnorr.v"><span class="id" title="projection">Schnorr.v</span></a> := 134;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="Utility.Zpstar.html#Schnorr.Ha"><span class="id" title="projection">Ha</span></a> := <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Logic.html#conj"><span class="id" title="constructor">conj</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Logic.html#eq_refl"><span class="id" title="constructor">eq_refl</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Logic.html#eq_refl"><span class="id" title="constructor">eq_refl</span></a> : (0 <span class="id" title="notation">&lt;</span> 134 <span class="id" title="notation">&lt;</span> <a class="idref" href="Examples.EncProofIns.html#p"><span class="id" title="definition">p</span></a>)%<span class="id" title="var">Z</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="Utility.Zpstar.html#Schnorr.Hb"><span class="id" title="projection">Hb</span></a> := <span class="id" title="var">_</span> |}.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">vm_cast_no_check</span> (<a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Logic.html#eq_refl"><span class="id" title="constructor">eq_refl</span></a> (<span class="id" title="definition">Zpow_facts.Zpow_mod</span> 134 <a class="idref" href="Examples.EncProofIns.html#q"><span class="id" title="definition">q</span></a> <a class="idref" href="Examples.EncProofIns.html#p"><span class="id" title="definition">p</span></a>)).<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Defined</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+Candidate plaintext <span class="inlinecode"><span class="id" title="var">m₂</span></span> <span class="inlinecode">=</span> <span class="inlinecode">38</span>, a group element. 
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <a id="4b041d8a28913ae390e2057df5e8c495" class="idref" href="#4b041d8a28913ae390e2057df5e8c495"><span class="id" title="definition">m₂</span></a> : @<a class="idref" href="Utility.Zpstar.html#Schnorr.Schnorr_group"><span class="id" title="record">Schnorr_group</span></a> <a class="idref" href="Examples.EncProofIns.html#p"><span class="id" title="definition">p</span></a> <a class="idref" href="Examples.EncProofIns.html#q"><span class="id" title="definition">q</span></a>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">refine</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;{| <a class="idref" href="Utility.Zpstar.html#Schnorr.v"><span class="id" title="projection">Schnorr.v</span></a> := 38;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="Utility.Zpstar.html#Schnorr.Ha"><span class="id" title="projection">Ha</span></a> := <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Logic.html#conj"><span class="id" title="constructor">conj</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Logic.html#eq_refl"><span class="id" title="constructor">eq_refl</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Logic.html#eq_refl"><span class="id" title="constructor">eq_refl</span></a> : (0 <span class="id" title="notation">&lt;</span> 38 <span class="id" title="notation">&lt;</span> <a class="idref" href="Examples.EncProofIns.html#p"><span class="id" title="definition">p</span></a>)%<span class="id" title="var">Z</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="Utility.Zpstar.html#Schnorr.Hb"><span class="id" title="projection">Hb</span></a> := <span class="id" title="var">_</span> |}.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">vm_cast_no_check</span> (<a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Logic.html#eq_refl"><span class="id" title="constructor">eq_refl</span></a> (<span class="id" title="definition">Zpow_facts.Zpow_mod</span> 38 <a class="idref" href="Examples.EncProofIns.html#q"><span class="id" title="definition">q</span></a> <a class="idref" href="Examples.EncProofIns.html#p"><span class="id" title="definition">p</span></a>)).<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Defined</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+A fourth element (<span class="inlinecode">25</span>) not encrypted by <span class="inlinecode"><span class="id" title="var">cp</span></span>; substituting it for one of
+      the candidates makes an honest proof fail when the real branch is
+      replaced. 
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <a id="mfake" class="idref" href="#mfake"><span class="id" title="definition">mfake</span></a> : @<a class="idref" href="Utility.Zpstar.html#Schnorr.Schnorr_group"><span class="id" title="record">Schnorr_group</span></a> <a class="idref" href="Examples.EncProofIns.html#p"><span class="id" title="definition">p</span></a> <a class="idref" href="Examples.EncProofIns.html#q"><span class="id" title="definition">q</span></a>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">refine</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;{| <a class="idref" href="Utility.Zpstar.html#Schnorr.v"><span class="id" title="projection">Schnorr.v</span></a> := 25;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="Utility.Zpstar.html#Schnorr.Ha"><span class="id" title="projection">Ha</span></a> := <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Logic.html#conj"><span class="id" title="constructor">conj</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Logic.html#eq_refl"><span class="id" title="constructor">eq_refl</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Logic.html#eq_refl"><span class="id" title="constructor">eq_refl</span></a> : (0 <span class="id" title="notation">&lt;</span> 25 <span class="id" title="notation">&lt;</span> <a class="idref" href="Examples.EncProofIns.html#p"><span class="id" title="definition">p</span></a>)%<span class="id" title="var">Z</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="Utility.Zpstar.html#Schnorr.Hb"><span class="id" title="projection">Hb</span></a> := <span class="id" title="var">_</span> |}.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">vm_cast_no_check</span> (<a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Logic.html#eq_refl"><span class="id" title="constructor">eq_refl</span></a> (<span class="id" title="definition">Zpow_facts.Zpow_mod</span> 25 <a class="idref" href="Examples.EncProofIns.html#q"><span class="id" title="definition">q</span></a> <a class="idref" href="Examples.EncProofIns.html#p"><span class="id" title="definition">p</span></a>)).<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Defined</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+The encryption randomness <span class="inlinecode"><span class="id" title="var">r</span></span> <span class="inlinecode">=</span> <span class="inlinecode">1876</span>. 
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <a id="r" class="idref" href="#r"><span class="id" title="definition">r</span></a> : @<a class="idref" href="Utility.Zpstar.html#Zpfield.Zp"><span class="id" title="record">Zp</span></a> <a class="idref" href="Examples.EncProofIns.html#q"><span class="id" title="definition">q</span></a>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">refine</span> {| <a class="idref" href="Utility.Zpstar.html#Zpfield.v"><span class="id" title="projection">Zpfield.v</span></a> := 1876; <a class="idref" href="Utility.Zpstar.html#Zpfield.Hv"><span class="id" title="projection">Zpfield.Hv</span></a> := <span class="id" title="var">_</span> |}.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">vm_cast_no_check</span> (<a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Logic.html#eq_refl"><span class="id" title="constructor">eq_refl</span></a> ((1876 <span class="id" title="notation">mod</span> <a class="idref" href="Examples.EncProofIns.html#q"><span class="id" title="definition">q</span></a>)%<span class="id" title="var">Z</span>)).<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Defined</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+The ciphertext <span class="inlinecode"><span class="id" title="var">cp</span></span> <span class="inlinecode">=</span> <span class="inlinecode">(<span class="id" title="var">g</span>^<span class="id" title="var">r</span>,</span> <span class="inlinecode"><span class="id" title="var">m₂</span>·<span class="id" title="var">h</span>^<span class="id" title="var">r</span>)</span>: plain (not exponential) ElGamal
+      encryption of <span class="inlinecode"><span class="id" title="var">m₂</span></span>. 
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <a id="cp" class="idref" href="#cp"><span class="id" title="definition">cp</span></a> : (@<a class="idref" href="Utility.Zpstar.html#Schnorr.Schnorr_group"><span class="id" title="record">Schnorr_group</span></a> <a class="idref" href="Examples.EncProofIns.html#p"><span class="id" title="definition">p</span></a> <a class="idref" href="Examples.EncProofIns.html#q"><span class="id" title="definition">q</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Datatypes.html#11c698c8685bb8ab1cf725545c085ac4"><span class="id" title="notation">×</span></a> @<a class="idref" href="Utility.Zpstar.html#Schnorr.Schnorr_group"><span class="id" title="record">Schnorr_group</span></a> <a class="idref" href="Examples.EncProofIns.html#p"><span class="id" title="definition">p</span></a> <a class="idref" href="Examples.EncProofIns.html#q"><span class="id" title="definition">q</span></a>).<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">exact</span> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Datatypes.html#e6756e10c36f149b18b4a8741ed83079"><span class="id" title="notation">(</span></a>@<a class="idref" href="Utility.Zpstar.html#Vspace.pow"><span class="id" title="definition">pow</span></a> <span class="id" title="var">_</span> <span class="id" title="var">_</span> <span class="id" title="var">_</span> <a class="idref" href="Examples.EncProofIns.html#safe_prime"><span class="id" title="lemma">safe_prime</span></a> <a class="idref" href="Examples.EncProofIns.html#prime_p"><span class="id" title="lemma">prime_p</span></a> <a class="idref" href="Examples.EncProofIns.html#prime_q"><span class="id" title="lemma">prime_q</span></a> <a class="idref" href="Examples.EncProofIns.html#g"><span class="id" title="definition">g</span></a> <a class="idref" href="Examples.EncProofIns.html#r"><span class="id" title="definition">r</span></a><a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Datatypes.html#e6756e10c36f149b18b4a8741ed83079"><span class="id" title="notation">,</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Datatypes.html#e6756e10c36f149b18b4a8741ed83079"><span class="id" title="notation">(</span></a>@<a class="idref" href="Utility.Zpstar.html#Schnorr.mul_schnorr_group"><span class="id" title="definition">mul_schnorr_group</span></a> <a class="idref" href="Examples.EncProofIns.html#p"><span class="id" title="definition">p</span></a> <a class="idref" href="Examples.EncProofIns.html#q"><span class="id" title="definition">q</span></a> <a class="idref" href="Examples.EncProofIns.html#prime_p"><span class="id" title="lemma">prime_p</span></a> <a class="idref" href="Examples.EncProofIns.html#prime_q"><span class="id" title="lemma">prime_q</span></a> <a class="idref" href="Examples.EncProofIns.html#4b041d8a28913ae390e2057df5e8c495"><span class="id" title="definition">m₂</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(@<a class="idref" href="Utility.Zpstar.html#Vspace.pow"><span class="id" title="definition">pow</span></a> <span class="id" title="var">_</span> <span class="id" title="var">_</span> <span class="id" title="var">_</span> <a class="idref" href="Examples.EncProofIns.html#safe_prime"><span class="id" title="lemma">safe_prime</span></a> <a class="idref" href="Examples.EncProofIns.html#prime_p"><span class="id" title="lemma">prime_p</span></a> <a class="idref" href="Examples.EncProofIns.html#prime_q"><span class="id" title="lemma">prime_q</span></a> <a class="idref" href="Examples.EncProofIns.html#h"><span class="id" title="definition">h</span></a> <a class="idref" href="Examples.EncProofIns.html#r"><span class="id" title="definition">r</span></a>)<a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Datatypes.html#e6756e10c36f149b18b4a8741ed83079"><span class="id" title="notation">))</span></a>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Defined</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+The three commitments, each a pair: <span class="inlinecode">(<span class="id" title="var">g</span>^<span class="id" title="var">u</span>,</span> <span class="inlinecode"><span class="id" title="var">h</span>^<span class="id" title="var">u</span>)</span> for the branch treated
+      as real and a simulated <span class="inlinecode">(<span class="id" title="var">g</span>^<span class="id" title="var">u</span>ᵢ·<span class="id" title="var">c₁</span>^(-<span class="id" title="var">c</span>ᵢ),</span> <span class="inlinecode"><span class="id" title="var">h</span>^<span class="id" title="var">u</span>ᵢ·(<span class="id" title="var">c₂</span>·<span class="id" title="var">m</span>ᵢ<span class="id" title="var">⁻¹</span>)^(-<span class="id" title="var">c</span>ᵢ))</span> for the
+      others, computed from <span class="inlinecode"><span class="id" title="var">uscs</span></span> (three <span class="inlinecode"><span class="id" title="var">u</span></span>s followed by the two simulated
+      challenges). The split <span class="inlinecode"><span class="id" title="var">m</span></span> <span class="inlinecode">=</span> <span class="inlinecode">2,</span> <span class="inlinecode"><span class="id" title="var">n</span></span> <span class="inlinecode">=</span> <span class="inlinecode">0</span> places the real branch at
+      position 2 (<span class="inlinecode"><span class="id" title="var">m₂</span></span>), the same position the prover below uses
+      (<span class="inlinecode"><span class="id" title="var">Fin.FS</span></span> <span class="inlinecode">(<span class="id" title="var">Fin.FS</span></span> <span class="inlinecode"><span class="id" title="var">Fin.F1</span>)</span>). The two must agree: the non-interactive
+      prover hashes these commitments, and with any other split the hashed
+      commitments would differ from the announcement in its transcript, so a
+      verifier could not recompute the Fiat–Shamir challenge. The test
+      <span class="inlinecode"><span class="id" title="var">src</span>/<span class="id" title="var">Executable</span>/<span class="id" title="var">EncProofcode</span>/<span class="id" title="var">fs_binding_test.ml</span></span> checks this. 
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <a id="construct_encryption_proof_elgamal_commitment_ins" class="idref" href="#construct_encryption_proof_elgamal_commitment_ins"><span class="id" title="definition">construct_encryption_proof_elgamal_commitment_ins</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<a id="uscs:1" class="idref" href="#uscs:1"><span class="id" title="binder">uscs</span></a> : <span class="id" title="inductive">Vector.t</span> (@<a class="idref" href="Utility.Zpstar.html#Zpfield.Zp"><span class="id" title="record">Zp</span></a> <a class="idref" href="Examples.EncProofIns.html#q"><span class="id" title="definition">q</span></a>) 5) :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="inductive">Vector.t</span> (@<a class="idref" href="Utility.Zpstar.html#Schnorr.Schnorr_group"><span class="id" title="record">Schnorr_group</span></a> <a class="idref" href="Examples.EncProofIns.html#p"><span class="id" title="definition">p</span></a> <a class="idref" href="Examples.EncProofIns.html#q"><span class="id" title="definition">q</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Datatypes.html#11c698c8685bb8ab1cf725545c085ac4"><span class="id" title="notation">×</span></a> @<a class="idref" href="Utility.Zpstar.html#Schnorr.Schnorr_group"><span class="id" title="record">Schnorr_group</span></a> <a class="idref" href="Examples.EncProofIns.html#p"><span class="id" title="definition">p</span></a> <a class="idref" href="Examples.EncProofIns.html#q"><span class="id" title="definition">q</span></a>) 3.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">refine</span>(@<a class="idref" href="Crypto.EncProof.html#construct_encryption_proof_elgamal_commitment"><span class="id" title="definition">construct_encryption_proof_elgamal_commitment</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(@<a class="idref" href="Utility.Zpstar.html#Zpfield.Zp"><span class="id" title="record">Zp</span></a> <a class="idref" href="Examples.EncProofIns.html#q"><span class="id" title="definition">q</span></a>) <a class="idref" href="Utility.Zpstar.html#Zpfield.zp_opp"><span class="id" title="definition">zp_opp</span></a> (@<a class="idref" href="Utility.Zpstar.html#Schnorr.Schnorr_group"><span class="id" title="record">Schnorr_group</span></a> <a class="idref" href="Examples.EncProofIns.html#p"><span class="id" title="definition">p</span></a> <a class="idref" href="Examples.EncProofIns.html#q"><span class="id" title="definition">q</span></a>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(@<a class="idref" href="Utility.Zpstar.html#Schnorr.inv_schnorr_group"><span class="id" title="definition">inv_schnorr_group</span></a> 2 <a class="idref" href="Examples.EncProofIns.html#p"><span class="id" title="definition">p</span></a> <a class="idref" href="Examples.EncProofIns.html#q"><span class="id" title="definition">q</span></a> <a class="idref" href="Examples.EncProofIns.html#safe_prime"><span class="id" title="lemma">safe_prime</span></a> <a class="idref" href="Examples.EncProofIns.html#prime_p"><span class="id" title="lemma">prime_p</span></a> <a class="idref" href="Examples.EncProofIns.html#prime_q"><span class="id" title="lemma">prime_q</span></a>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(@<a class="idref" href="Utility.Zpstar.html#Schnorr.mul_schnorr_group"><span class="id" title="definition">mul_schnorr_group</span></a> <a class="idref" href="Examples.EncProofIns.html#p"><span class="id" title="definition">p</span></a> <a class="idref" href="Examples.EncProofIns.html#q"><span class="id" title="definition">q</span></a> <a class="idref" href="Examples.EncProofIns.html#prime_p"><span class="id" title="lemma">prime_p</span></a> <a class="idref" href="Examples.EncProofIns.html#prime_q"><span class="id" title="lemma">prime_q</span></a>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="Utility.Zpstar.html#Vspace.pow"><span class="id" title="definition">pow</span></a> 2 0 (<span class="id" title="var">uscs</span>) <span class="id" title="notation">[</span><a class="idref" href="Examples.EncProofIns.html#f2a85ca78390916ac0a62a3aef310edf"><span class="id" title="definition">m₀</span></a><span class="id" title="notation">;</span> <a class="idref" href="Examples.EncProofIns.html#879a6ba6f15173139038a2029de50c60"><span class="id" title="definition">m₁</span></a><span class="id" title="notation">;</span> <a class="idref" href="Examples.EncProofIns.html#4b041d8a28913ae390e2057df5e8c495"><span class="id" title="definition">m₂</span></a><span class="id" title="notation">]</span> <a class="idref" href="Examples.EncProofIns.html#g"><span class="id" title="definition">g</span></a> <a class="idref" href="Examples.EncProofIns.html#h"><span class="id" title="definition">h</span></a> <a class="idref" href="Examples.EncProofIns.html#cp"><span class="id" title="definition">cp</span></a>).<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">eapply</span> <a class="idref" href="Examples.EncProofIns.html#prime_q"><span class="id" title="lemma">prime_q</span></a>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">exact</span> <a class="idref" href="Examples.EncProofIns.html#safe_prime"><span class="id" title="lemma">safe_prime</span></a>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">eapply</span> <a class="idref" href="Examples.EncProofIns.html#prime_p"><span class="id" title="lemma">prime_p</span></a>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">eapply</span> <a class="idref" href="Examples.EncProofIns.html#prime_q"><span class="id" title="lemma">prime_q</span></a>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Defined</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+The full proof for the verifier's challenge <span class="inlinecode"><span class="id" title="var">c</span></span>, with real branch 2 and
+      witness <span class="inlinecode"><span class="id" title="var">r</span></span>. 
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <a id="generalised_construct_encryption_proof_elgamal_real_ins" class="idref" href="#generalised_construct_encryption_proof_elgamal_real_ins"><span class="id" title="definition">generalised_construct_encryption_proof_elgamal_real_ins</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<a id="uscs:2" class="idref" href="#uscs:2"><span class="id" title="binder">uscs</span></a> : <span class="id" title="inductive">Vector.t</span> (@<a class="idref" href="Utility.Zpstar.html#Zpfield.Zp"><span class="id" title="record">Zp</span></a> <a class="idref" href="Examples.EncProofIns.html#q"><span class="id" title="definition">q</span></a>) 5) (<a id="c:3" class="idref" href="#c:3"><span class="id" title="binder">c</span></a> : (@<a class="idref" href="Utility.Zpstar.html#Zpfield.Zp"><span class="id" title="record">Zp</span></a> <a class="idref" href="Examples.EncProofIns.html#q"><span class="id" title="definition">q</span></a>)) :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;@<a class="idref" href="Crypto.Sigma.html#sigma_proto"><span class="id" title="record">sigma_proto</span></a> (@<a class="idref" href="Utility.Zpstar.html#Zpfield.Zp"><span class="id" title="record">Zp</span></a> <a class="idref" href="Examples.EncProofIns.html#q"><span class="id" title="definition">q</span></a>) (@<a class="idref" href="Utility.Zpstar.html#Schnorr.Schnorr_group"><span class="id" title="record">Schnorr_group</span></a> <a class="idref" href="Examples.EncProofIns.html#p"><span class="id" title="definition">p</span></a> <a class="idref" href="Examples.EncProofIns.html#q"><span class="id" title="definition">q</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Datatypes.html#11c698c8685bb8ab1cf725545c085ac4"><span class="id" title="notation">×</span></a> @<a class="idref" href="Utility.Zpstar.html#Schnorr.Schnorr_group"><span class="id" title="record">Schnorr_group</span></a> <a class="idref" href="Examples.EncProofIns.html#p"><span class="id" title="definition">p</span></a> <a class="idref" href="Examples.EncProofIns.html#q"><span class="id" title="definition">q</span></a>) 3 4 3.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">refine</span>(@<a class="idref" href="Crypto.EncProof.html#generalised_construct_encryption_proof_elgamal_real"><span class="id" title="definition">generalised_construct_encryption_proof_elgamal_real</span></a> (@<a class="idref" href="Utility.Zpstar.html#Zpfield.Zp"><span class="id" title="record">Zp</span></a> <a class="idref" href="Examples.EncProofIns.html#q"><span class="id" title="definition">q</span></a>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="Utility.Zpstar.html#Zpfield.zero"><span class="id" title="definition">Zpfield.zero</span></a> <a class="idref" href="Utility.Zpstar.html#Zpfield.zp_add"><span class="id" title="definition">zp_add</span></a> <a class="idref" href="Utility.Zpstar.html#Zpfield.zp_mul"><span class="id" title="definition">zp_mul</span></a> <a class="idref" href="Utility.Zpstar.html#Zpfield.zp_sub"><span class="id" title="definition">zp_sub</span></a> <a class="idref" href="Utility.Zpstar.html#Zpfield.zp_opp"><span class="id" title="definition">zp_opp</span></a> (@<a class="idref" href="Utility.Zpstar.html#Schnorr.Schnorr_group"><span class="id" title="record">Schnorr_group</span></a> <a class="idref" href="Examples.EncProofIns.html#p"><span class="id" title="definition">p</span></a> <a class="idref" href="Examples.EncProofIns.html#q"><span class="id" title="definition">q</span></a>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(@<a class="idref" href="Utility.Zpstar.html#Schnorr.inv_schnorr_group"><span class="id" title="definition">inv_schnorr_group</span></a> 2 <a class="idref" href="Examples.EncProofIns.html#p"><span class="id" title="definition">p</span></a> <a class="idref" href="Examples.EncProofIns.html#q"><span class="id" title="definition">q</span></a> <a class="idref" href="Examples.EncProofIns.html#safe_prime"><span class="id" title="lemma">safe_prime</span></a> <a class="idref" href="Examples.EncProofIns.html#prime_p"><span class="id" title="lemma">prime_p</span></a> <a class="idref" href="Examples.EncProofIns.html#prime_q"><span class="id" title="lemma">prime_q</span></a>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(@<a class="idref" href="Utility.Zpstar.html#Schnorr.mul_schnorr_group"><span class="id" title="definition">mul_schnorr_group</span></a> <a class="idref" href="Examples.EncProofIns.html#p"><span class="id" title="definition">p</span></a> <a class="idref" href="Examples.EncProofIns.html#q"><span class="id" title="definition">q</span></a> <a class="idref" href="Examples.EncProofIns.html#prime_p"><span class="id" title="lemma">prime_p</span></a> <a class="idref" href="Examples.EncProofIns.html#prime_q"><span class="id" title="lemma">prime_q</span></a>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="Utility.Zpstar.html#Vspace.pow"><span class="id" title="definition">pow</span></a> 1 (<span class="id" title="constructor">Fin.FS</span> (<span class="id" title="constructor">Fin.FS</span> <span class="id" title="constructor">Fin.F1</span>)) <a class="idref" href="Examples.EncProofIns.html#r"><span class="id" title="definition">r</span></a> (<span class="id" title="var">uscs</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="notation">[</span><a class="idref" href="Examples.EncProofIns.html#f2a85ca78390916ac0a62a3aef310edf"><span class="id" title="definition">m₀</span></a><span class="id" title="notation">;</span> <a class="idref" href="Examples.EncProofIns.html#879a6ba6f15173139038a2029de50c60"><span class="id" title="definition">m₁</span></a><span class="id" title="notation">;</span> <a class="idref" href="Examples.EncProofIns.html#4b041d8a28913ae390e2057df5e8c495"><span class="id" title="definition">m₂</span></a><span class="id" title="notation">]</span> <a class="idref" href="Examples.EncProofIns.html#g"><span class="id" title="definition">g</span></a> <a class="idref" href="Examples.EncProofIns.html#h"><span class="id" title="definition">h</span></a> <a class="idref" href="Examples.EncProofIns.html#cp"><span class="id" title="definition">cp</span></a> <span class="id" title="var">c</span>).<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">eapply</span> <a class="idref" href="Examples.EncProofIns.html#prime_q"><span class="id" title="lemma">prime_q</span></a>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">eapply</span> <a class="idref" href="Examples.EncProofIns.html#prime_q"><span class="id" title="lemma">prime_q</span></a>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">exact</span> <a class="idref" href="Examples.EncProofIns.html#safe_prime"><span class="id" title="lemma">safe_prime</span></a>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">eapply</span> <a class="idref" href="Examples.EncProofIns.html#prime_p"><span class="id" title="lemma">prime_p</span></a>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">eapply</span> <a class="idref" href="Examples.EncProofIns.html#prime_q"><span class="id" title="lemma">prime_q</span></a>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Defined</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+The non-interactive proof: <span class="inlinecode"><span class="id" title="var">c</span></span> is <span class="inlinecode"><span class="id" title="var">fn</span></span> applied to <span class="inlinecode"><span class="id" title="var">p</span></span>, <span class="inlinecode"><span class="id" title="var">q</span></span>, <span class="inlinecode"><span class="id" title="var">g</span></span>, <span class="inlinecode"><span class="id" title="var">h</span></span>,
+      the candidates, the ciphertext and the commitments; <span class="inlinecode"><span class="id" title="var">fn</span></span> is a hash
+      function supplied by the OCaml caller (strong Fiat–Shamir). 
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <a id="nizk_generalised_construct_encryption_proof_elgamal_real_ins" class="idref" href="#nizk_generalised_construct_encryption_proof_elgamal_real_ins"><span class="id" title="definition">nizk_generalised_construct_encryption_proof_elgamal_real_ins</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<a id="fn:5" class="idref" href="#fn:5"><span class="id" title="binder">fn</span></a>  : <span class="id" title="notation">∀</span> <span class="id" title="notation">{</span><a id="m:4" class="idref" href="#m:4"><span class="id" title="binder">m</span></a> : <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Datatypes.html#nat"><span class="id" title="inductive">nat</span></a><span class="id" title="notation">},</span> <span class="id" title="inductive">Vector.t</span> (<a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Numbers.BinNums.html#Z"><span class="id" title="inductive">Z</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Datatypes.html#e03f39daf98516fa530d3f6f5a1b4d92"><span class="id" title="notation">+</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Datatypes.html#e03f39daf98516fa530d3f6f5a1b4d92"><span class="id" title="notation">((</span></a>@<a class="idref" href="Utility.Zpstar.html#Schnorr.Schnorr_group"><span class="id" title="record">Schnorr_group</span></a> <a class="idref" href="Examples.EncProofIns.html#p"><span class="id" title="definition">p</span></a> <a class="idref" href="Examples.EncProofIns.html#q"><span class="id" title="definition">q</span></a><a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Datatypes.html#e03f39daf98516fa530d3f6f5a1b4d92"><span class="id" title="notation">)</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Datatypes.html#e03f39daf98516fa530d3f6f5a1b4d92"><span class="id" title="notation">+</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Datatypes.html#e03f39daf98516fa530d3f6f5a1b4d92"><span class="id" title="notation">(</span></a>@<a class="idref" href="Utility.Zpstar.html#Schnorr.Schnorr_group"><span class="id" title="record">Schnorr_group</span></a> <a class="idref" href="Examples.EncProofIns.html#p"><span class="id" title="definition">p</span></a> <a class="idref" href="Examples.EncProofIns.html#q"><span class="id" title="definition">q</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Datatypes.html#11c698c8685bb8ab1cf725545c085ac4"><span class="id" title="notation">×</span></a> @<a class="idref" href="Utility.Zpstar.html#Schnorr.Schnorr_group"><span class="id" title="record">Schnorr_group</span></a> <a class="idref" href="Examples.EncProofIns.html#p"><span class="id" title="definition">p</span></a> <a class="idref" href="Examples.EncProofIns.html#q"><span class="id" title="definition">q</span></a><a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Datatypes.html#e03f39daf98516fa530d3f6f5a1b4d92"><span class="id" title="notation">))</span></a>) <a class="idref" href="Examples.EncProofIns.html#m:4"><span class="id" title="variable">m</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Notations.html#::type_scope:x_'-&gt;'_x"><span class="id" title="notation">→</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Notations.html#::type_scope:x_'-&gt;'_x"><span class="id" title="notation">(</span></a>@<a class="idref" href="Utility.Zpstar.html#Zpfield.Zp"><span class="id" title="record">Zp</span></a> <a class="idref" href="Examples.EncProofIns.html#q"><span class="id" title="definition">q</span></a><a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Notations.html#::type_scope:x_'-&gt;'_x"><span class="id" title="notation">)</span></a>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<a id="uscs:6" class="idref" href="#uscs:6"><span class="id" title="binder">uscs</span></a> : <span class="id" title="inductive">Vector.t</span> (@<a class="idref" href="Utility.Zpstar.html#Zpfield.Zp"><span class="id" title="record">Zp</span></a> <a class="idref" href="Examples.EncProofIns.html#q"><span class="id" title="definition">q</span></a>) 5) :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;@<a class="idref" href="Crypto.Sigma.html#sigma_proto"><span class="id" title="record">sigma_proto</span></a> (@<a class="idref" href="Utility.Zpstar.html#Zpfield.Zp"><span class="id" title="record">Zp</span></a> <a class="idref" href="Examples.EncProofIns.html#q"><span class="id" title="definition">q</span></a>) (@<a class="idref" href="Utility.Zpstar.html#Schnorr.Schnorr_group"><span class="id" title="record">Schnorr_group</span></a> <a class="idref" href="Examples.EncProofIns.html#p"><span class="id" title="definition">p</span></a> <a class="idref" href="Examples.EncProofIns.html#q"><span class="id" title="definition">q</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Datatypes.html#11c698c8685bb8ab1cf725545c085ac4"><span class="id" title="notation">×</span></a> @<a class="idref" href="Utility.Zpstar.html#Schnorr.Schnorr_group"><span class="id" title="record">Schnorr_group</span></a> <a class="idref" href="Examples.EncProofIns.html#p"><span class="id" title="definition">p</span></a> <a class="idref" href="Examples.EncProofIns.html#q"><span class="id" title="definition">q</span></a>) 3 4 3.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">set</span> (<span class="id" title="var">comm</span> := <a class="idref" href="Examples.EncProofIns.html#construct_encryption_proof_elgamal_commitment_ins"><span class="id" title="definition">construct_encryption_proof_elgamal_commitment_ins</span></a> <span class="id" title="var">uscs</span>).<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">set</span> (<span class="id" title="var">c</span> := <span class="id" title="var">fn</span> <span class="id" title="var">_</span> (<span class="id" title="notation">[</span><a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Datatypes.html#inl"><span class="id" title="constructor">inl</span></a> <a class="idref" href="Examples.EncProofIns.html#p"><span class="id" title="definition">p</span></a><span class="id" title="notation">;</span> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Datatypes.html#inl"><span class="id" title="constructor">inl</span></a> <a class="idref" href="Examples.EncProofIns.html#q"><span class="id" title="definition">q</span></a><span class="id" title="notation">;</span> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Datatypes.html#inr"><span class="id" title="constructor">inr</span></a> (<a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Datatypes.html#inl"><span class="id" title="constructor">inl</span></a> <a class="idref" href="Examples.EncProofIns.html#g"><span class="id" title="definition">g</span></a>)<span class="id" title="notation">;</span> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Datatypes.html#inr"><span class="id" title="constructor">inr</span></a> (<a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Datatypes.html#inl"><span class="id" title="constructor">inl</span></a> <a class="idref" href="Examples.EncProofIns.html#h"><span class="id" title="definition">h</span></a>)<span class="id" title="notation">;</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Datatypes.html#inr"><span class="id" title="constructor">inr</span></a> (<a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Datatypes.html#inl"><span class="id" title="constructor">inl</span></a> <a class="idref" href="Examples.EncProofIns.html#f2a85ca78390916ac0a62a3aef310edf"><span class="id" title="definition">m₀</span></a>)<span class="id" title="notation">;</span> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Datatypes.html#inr"><span class="id" title="constructor">inr</span></a> (<a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Datatypes.html#inl"><span class="id" title="constructor">inl</span></a> <a class="idref" href="Examples.EncProofIns.html#879a6ba6f15173139038a2029de50c60"><span class="id" title="definition">m₁</span></a>)<span class="id" title="notation">;</span> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Datatypes.html#inr"><span class="id" title="constructor">inr</span></a> (<a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Datatypes.html#inl"><span class="id" title="constructor">inl</span></a> <a class="idref" href="Examples.EncProofIns.html#4b041d8a28913ae390e2057df5e8c495"><span class="id" title="definition">m₂</span></a>)<span class="id" title="notation">]</span> <span class="id" title="notation">++</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="definition">Vector.map</span> (<span class="id" title="keyword">fun</span> <a id="x:7" class="idref" href="#x:7"><span class="id" title="binder"><span id="x:8" class="id">x</span></span></a> ⇒ <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Datatypes.html#inr"><span class="id" title="constructor">inr</span></a> (<a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Datatypes.html#inr"><span class="id" title="constructor">inr</span></a> <a class="idref" href="Examples.EncProofIns.html#x:7"><span class="id" title="variable">x</span></a>)) (<a class="idref" href="Examples.EncProofIns.html#cp"><span class="id" title="definition">cp</span></a> <span class="id" title="notation">::</span> <span class="id" title="var">comm</span>))).<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">refine</span>(<a class="idref" href="Examples.EncProofIns.html#generalised_construct_encryption_proof_elgamal_real_ins"><span class="id" title="definition">generalised_construct_encryption_proof_elgamal_real_ins</span></a> <span class="id" title="var">uscs</span> <span class="id" title="var">c</span>).<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Defined</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+The verifier: the sub-challenges sum to the main challenge and each
+      branch is an accepting Chaum–Pedersen transcript for <span class="inlinecode">(<span class="id" title="var">g</span>,</span> <span class="inlinecode"><span class="id" title="var">h</span>)</span> and
+      <span class="inlinecode">(<span class="id" title="var">c₁</span>,</span> <span class="inlinecode"><span class="id" title="var">c₂</span>·<span class="id" title="var">m</span>ᵢ<span class="id" title="var">⁻¹</span>)</span>. 
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <a id="generalised_accepting_encryption_proof_elgamal_ins" class="idref" href="#generalised_accepting_encryption_proof_elgamal_ins"><span class="id" title="definition">generalised_accepting_encryption_proof_elgamal_ins</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<a id="proof:9" class="idref" href="#proof:9"><span class="id" title="binder">proof</span></a> : @<a class="idref" href="Crypto.Sigma.html#sigma_proto"><span class="id" title="record">sigma_proto</span></a> (@<a class="idref" href="Utility.Zpstar.html#Zpfield.Zp"><span class="id" title="record">Zp</span></a> <a class="idref" href="Examples.EncProofIns.html#q"><span class="id" title="definition">q</span></a>) (@<a class="idref" href="Utility.Zpstar.html#Schnorr.Schnorr_group"><span class="id" title="record">Schnorr_group</span></a> <a class="idref" href="Examples.EncProofIns.html#p"><span class="id" title="definition">p</span></a> <a class="idref" href="Examples.EncProofIns.html#q"><span class="id" title="definition">q</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Datatypes.html#11c698c8685bb8ab1cf725545c085ac4"><span class="id" title="notation">×</span></a> @<a class="idref" href="Utility.Zpstar.html#Schnorr.Schnorr_group"><span class="id" title="record">Schnorr_group</span></a> <a class="idref" href="Examples.EncProofIns.html#p"><span class="id" title="definition">p</span></a> <a class="idref" href="Examples.EncProofIns.html#q"><span class="id" title="definition">q</span></a>) 3 4 3) : <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Datatypes.html#bool"><span class="id" title="inductive">bool</span></a>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">refine</span>(@<a class="idref" href="Crypto.EncProof.html#generalised_accepting_encryption_proof_elgamal"><span class="id" title="definition">generalised_accepting_encryption_proof_elgamal</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(@<a class="idref" href="Utility.Zpstar.html#Zpfield.Zp"><span class="id" title="record">Zp</span></a> <a class="idref" href="Examples.EncProofIns.html#q"><span class="id" title="definition">q</span></a>) <a class="idref" href="Utility.Zpstar.html#Zpfield.zero"><span class="id" title="definition">Zpfield.zero</span></a> <a class="idref" href="Utility.Zpstar.html#Zpfield.zp_add"><span class="id" title="definition">zp_add</span></a> <a class="idref" href="Utility.Zpstar.html#Zpfield.zp_dec"><span class="id" title="lemma">zp_dec</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(@<a class="idref" href="Utility.Zpstar.html#Schnorr.Schnorr_group"><span class="id" title="record">Schnorr_group</span></a> <a class="idref" href="Examples.EncProofIns.html#p"><span class="id" title="definition">p</span></a> <a class="idref" href="Examples.EncProofIns.html#q"><span class="id" title="definition">q</span></a>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(@<a class="idref" href="Utility.Zpstar.html#Schnorr.inv_schnorr_group"><span class="id" title="definition">inv_schnorr_group</span></a> 2 <a class="idref" href="Examples.EncProofIns.html#p"><span class="id" title="definition">p</span></a> <a class="idref" href="Examples.EncProofIns.html#q"><span class="id" title="definition">q</span></a> <a class="idref" href="Examples.EncProofIns.html#safe_prime"><span class="id" title="lemma">safe_prime</span></a> <a class="idref" href="Examples.EncProofIns.html#prime_p"><span class="id" title="lemma">prime_p</span></a> <a class="idref" href="Examples.EncProofIns.html#prime_q"><span class="id" title="lemma">prime_q</span></a>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(@<a class="idref" href="Utility.Zpstar.html#Schnorr.mul_schnorr_group"><span class="id" title="definition">mul_schnorr_group</span></a> <a class="idref" href="Examples.EncProofIns.html#p"><span class="id" title="definition">p</span></a> <a class="idref" href="Examples.EncProofIns.html#q"><span class="id" title="definition">q</span></a> <a class="idref" href="Examples.EncProofIns.html#prime_p"><span class="id" title="lemma">prime_p</span></a> <a class="idref" href="Examples.EncProofIns.html#prime_q"><span class="id" title="lemma">prime_q</span></a>) <a class="idref" href="Utility.Zpstar.html#Vspace.pow"><span class="id" title="definition">pow</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="Utility.Zpstar.html#Schnorr.dec_zpstar"><span class="id" title="lemma">Schnorr.dec_zpstar</span></a> <span class="id" title="var">_</span>  <span class="id" title="notation">[</span><a class="idref" href="Examples.EncProofIns.html#f2a85ca78390916ac0a62a3aef310edf"><span class="id" title="definition">m₀</span></a><span class="id" title="notation">;</span> <a class="idref" href="Examples.EncProofIns.html#879a6ba6f15173139038a2029de50c60"><span class="id" title="definition">m₁</span></a><span class="id" title="notation">;</span> <a class="idref" href="Examples.EncProofIns.html#4b041d8a28913ae390e2057df5e8c495"><span class="id" title="definition">m₂</span></a><span class="id" title="notation">]</span> <a class="idref" href="Examples.EncProofIns.html#g"><span class="id" title="definition">g</span></a> <a class="idref" href="Examples.EncProofIns.html#h"><span class="id" title="definition">h</span></a> <a class="idref" href="Examples.EncProofIns.html#cp"><span class="id" title="definition">cp</span></a> <span class="id" title="var">proof</span>).<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">eapply</span> <a class="idref" href="Examples.EncProofIns.html#prime_q"><span class="id" title="lemma">prime_q</span></a>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">exact</span> <a class="idref" href="Examples.EncProofIns.html#safe_prime"><span class="id" title="lemma">safe_prime</span></a>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">eapply</span> <a class="idref" href="Examples.EncProofIns.html#prime_p"><span class="id" title="lemma">prime_p</span></a>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">eapply</span> <a class="idref" href="Examples.EncProofIns.html#prime_q"><span class="id" title="lemma">prime_q</span></a>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Defined</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">End</span> <a class="idref" href="Examples.EncProofIns.html#Ins"><span class="id" title="section">Ins</span></a>.<br/>
+</div>
+</div>
+
+<div id="footer">
+<hr/><a href="index_symbols.html">Index</a><hr/>This page has been generated by <a href="http://rocq-prover.org/">coqdoc</a>
+</div>
+
+</div>
+
+</body>
+</html>

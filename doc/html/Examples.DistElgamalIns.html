@@ -1,0 +1,394 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<link href="coqdoc.css" rel="stylesheet" type="text/css" />
+<title>Examples.DistElgamalIns</title>
+</head>
+
+<body>
+
+<div id="page">
+
+<div id="header">
+</div>
+
+<div id="main">
+
+<h1 class="libtitle">Library Examples.DistElgamalIns</h1>
+
+<div class="code">
+</div>
+
+<div class="doc">
+<a id="lab378"></a><h1 class="section">Distributed (n-out-of-n) ElGamal over a toy Schnorr group</h1>
+
+<div class="paragraph"> </div>
+
+ A concrete instance of the distributed ElGamal scheme of
+<span class="inlinecode"><span class="id" title="var">Crypto</span>/<span class="id" title="var">DistElgamal.v</span></span> with three trustees, as used by Helios-style
+elections. Trustee <span class="inlinecode"><span class="id" title="var">i</span></span> holds a secret share <span class="inlinecode"><span class="id" title="var">x</span>ᵢ</span> and publishes
+<span class="inlinecode"><span class="id" title="var">h</span>ᵢ</span> <span class="inlinecode">=</span> <span class="inlinecode"><span class="id" title="var">g</span>^<span class="id" title="var">x</span>ᵢ</span>; the joint public key is <span class="inlinecode"><span class="id" title="var">h</span></span> <span class="inlinecode">=</span> <span class="inlinecode"><span class="id" title="var">h₁</span>·<span class="id" title="var">h₂</span>·<span class="id" title="var">h₃</span></span>, whose secret
+<span class="inlinecode"><span class="id" title="var">x₁</span></span> <span class="inlinecode">+</span> <span class="inlinecode"><span class="id" title="var">x₂</span></span> <span class="inlinecode">+</span> <span class="inlinecode"><span class="id" title="var">x₃</span></span> no single trustee knows. Encryption is exponential ElGamal under <span class="inlinecode"><span class="id" title="var">h</span></span>:
+<span class="inlinecode">(<span class="id" title="var">c₁</span>,</span> <span class="inlinecode"><span class="id" title="var">c₂</span>)</span> <span class="inlinecode">=</span> <span class="inlinecode">(<span class="id" title="var">g</span>^<span class="id" title="var">r</span>,</span> <span class="inlinecode"><span class="id" title="var">g</span>^<span class="id" title="var">m</span>·<span class="id" title="var">h</span>^<span class="id" title="var">r</span>)</span>. To decrypt, every trustee publishes a
+decryption factor <span class="inlinecode"><span class="id" title="var">c₁</span>^<span class="id" title="var">x</span>ᵢ</span>, and anyone combines them as
+<span class="inlinecode"><span class="id" title="var">c₂</span>·(<span class="id" title="var">c₁</span>^<span class="id" title="var">x₁</span>·<span class="id" title="var">c₁</span>^<span class="id" title="var">x₂</span>·<span class="id" title="var">c₁</span>^<span class="id" title="var">x₃</span>)<span class="id" title="var">⁻¹</span></span> <span class="inlinecode">=</span> <span class="inlinecode"><span class="id" title="var">g</span>^<span class="id" title="var">m</span></span>. All three trustees are needed; this is
+not a threshold scheme. The file is extracted to OCaml by
+<span class="inlinecode"><span class="id" title="var">src</span>/<span class="id" title="keyword">Extraction</span>/<span class="id" title="var">DistElgamallib</span></span>.
+
+<div class="paragraph"> </div>
+
+The group is the order-<span class="inlinecode"><span class="id" title="var">q</span></span> subgroup of <span class="inlinecode"><span class="id" title="var">Z_p</span>^*</span> for the toy safe prime
+<span class="inlinecode"><span class="id" title="var">p</span></span> <span class="inlinecode">=</span> <span class="inlinecode">2<span class="id" title="var">q</span></span> <span class="inlinecode">+</span> <span class="inlinecode">1</span> <span class="inlinecode">=</span> <span class="inlinecode">5927</span> with <span class="inlinecode"><span class="id" title="var">q</span></span> <span class="inlinecode">=</span> <span class="inlinecode">2963</span> (from <span class="inlinecode"><span class="id" title="var">Utility</span>/<span class="id" title="var">Zpstar.v</span></span>: <span class="inlinecode"><span class="id" title="var">Zp</span></span> <span class="inlinecode"><span class="id" title="var">q</span></span> is
+the scalar field and <span class="inlinecode"><span class="id" title="var">Schnorr_group</span></span> <span class="inlinecode"><span class="id" title="var">p</span></span> <span class="inlinecode"><span class="id" title="var">q</span></span> the group of quadratic residues
+mod <span class="inlinecode"><span class="id" title="var">p</span></span>). The parameters are far too small to be secure; they are chosen so
+that primality can be proved by trial division (<span class="inlinecode"><span class="id" title="var">Examples</span>/<span class="id" title="var">Prime.v</span></span>) and
+the extracted code runs instantly.
+
+<div class="paragraph"> </div>
+
+The trustees' shares are <span class="inlinecode"><span class="id" title="var">x₁</span></span> <span class="inlinecode">=</span> <span class="inlinecode">3</span>, <span class="inlinecode"><span class="id" title="var">x₂</span></span> <span class="inlinecode">=</span> <span class="inlinecode">5</span> and <span class="inlinecode"><span class="id" title="var">x₃</span></span> <span class="inlinecode">=</span> <span class="inlinecode">7</span>. Each operation
+is given for a single value and pointwise for a ballot of <span class="inlinecode"><span class="id" title="var">n</span></span> values. The
+proofs of correct decryption that normally accompany each factor are not
+part of this file (see <span class="inlinecode"><span class="id" title="var">ChaumPedersenIns.v</span></span>). 
+</div>
+<div class="code">
+<span class="id" title="keyword">From</span> <span class="id" title="var">Stdlib</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="library">Utf8</span> <span class="id" title="library">ZArith</span> <span class="id" title="library">Vector</span>.<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">Crypto</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <a class="idref" href="Crypto.DistElgamal.html#"><span class="id" title="library">DistElgamal</span></a>.<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">Utility</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <a class="idref" href="Utility.Zpstar.html#"><span class="id" title="library">Zpstar</span></a>.<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">Examples</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <a class="idref" href="Examples.Prime.html#"><span class="id" title="library">Prime</span></a>.<br/>
+<span class="id" title="keyword">Import</span> <a class="idref" href="Utility.Zpstar.html#Vspace"><span class="id" title="module">Vspace</span></a> <a class="idref" href="Utility.Zpstar.html#Schnorr"><span class="id" title="module">Schnorr</span></a> <a class="idref" href="Utility.Zpstar.html#Zpfield"><span class="id" title="module">Zpfield</span></a> <a class="idref" href="Utility.Zpstar.html#Zpgroup"><span class="id" title="module">Zpgroup</span></a><br/>
+<span class="id" title="module">VectorNotations</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<a id="lab379"></a><h2 class="section">Parameters and the instance</h2>
+
+</div>
+<div class="code">
+<span class="id" title="keyword">Section</span> <a id="Ins" class="idref" href="#Ins"><span class="id" title="section">Ins</span></a>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+The subgroup order <span class="inlinecode"><span class="id" title="var">q</span></span> <span class="inlinecode">=</span> <span class="inlinecode">2963</span>. 
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <a id="q" class="idref" href="#q"><span class="id" title="definition">q</span></a> : <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Numbers.BinNums.html#Z"><span class="id" title="inductive">Z</span></a> := 2963.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+The modulus <span class="inlinecode"><span class="id" title="var">p</span></span> <span class="inlinecode">=</span> <span class="inlinecode">2<span class="id" title="var">q</span></span> <span class="inlinecode">+</span> <span class="inlinecode">1</span> <span class="inlinecode">=</span> <span class="inlinecode">5927</span>, a safe prime. 
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <a id="p" class="idref" href="#p"><span class="id" title="definition">p</span></a> : <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Numbers.BinNums.html#Z"><span class="id" title="inductive">Z</span></a> := 2 <span class="id" title="notation">×</span> <a class="idref" href="Examples.DistElgamalIns.html#q"><span class="id" title="definition">q</span></a> <span class="id" title="notation">+</span> 1.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<span class="inlinecode"><span class="id" title="var">q</span></span> is prime, by trial division (<span class="inlinecode"><span class="id" title="var">is_prime_sqrt_correct</span></span>). 
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Theorem</span> <a id="prime_q" class="idref" href="#prime_q"><span class="id" title="lemma">prime_q</span></a> : <span class="id" title="inductive">Znumtheory.prime</span> <a class="idref" href="Examples.DistElgamalIns.html#q"><span class="id" title="definition">q</span></a> : <span class="id" title="keyword">Prop</span> : <span class="id" title="keyword">Type</span>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">eapply</span> <a class="idref" href="Examples.Prime.html#is_prime_sqrt_correct"><span class="id" title="lemma">is_prime_sqrt_correct</span></a>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">compute</span>; <span class="id" title="tactic">reflexivity</span>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Qed</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<span class="inlinecode"><span class="id" title="var">p</span></span> is prime, by trial division. 
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Theorem</span> <a id="prime_p" class="idref" href="#prime_p"><span class="id" title="lemma">prime_p</span></a> : <span class="id" title="inductive">Znumtheory.prime</span> <a class="idref" href="Examples.DistElgamalIns.html#p"><span class="id" title="definition">p</span></a> : <span class="id" title="keyword">Prop</span> : <span class="id" title="keyword">Type</span>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">eapply</span> <a class="idref" href="Examples.Prime.html#is_prime_sqrt_correct"><span class="id" title="lemma">is_prime_sqrt_correct</span></a>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">compute</span>; <span class="id" title="tactic">reflexivity</span>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Qed</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<span class="inlinecode"><span class="id" title="var">p</span></span> <span class="inlinecode">=</span> <span class="inlinecode">2<span class="id" title="var">q</span></span> <span class="inlinecode">+</span> <span class="inlinecode">1</span>, the shape required by the <span class="inlinecode"><span class="id" title="var">Zpstar</span></span> group operations. 
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Theorem</span> <a id="safe_prime" class="idref" href="#safe_prime"><span class="id" title="lemma">safe_prime</span></a> : <a class="idref" href="Examples.DistElgamalIns.html#p"><span class="id" title="definition">p</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Logic.html#6cd0f7b28b6092304087c7049437bb1a"><span class="id" title="notation">=</span></a> (2 <span class="id" title="notation">×</span> <a class="idref" href="Examples.DistElgamalIns.html#q"><span class="id" title="definition">q</span></a> <span class="id" title="notation">+</span> 1)%<span class="id" title="var">Z</span>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>. <span class="id" title="tactic">compute</span>. <span class="id" title="tactic">exact</span> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Logic.html#eq_refl"><span class="id" title="constructor">eq_refl</span></a>. <span class="id" title="keyword">Qed</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+The generator <span class="inlinecode"><span class="id" title="var">g</span></span> <span class="inlinecode">=</span> <span class="inlinecode">4</span> <span class="inlinecode">=</span> <span class="inlinecode">2²</span>: a quadratic residue, hence of order <span class="inlinecode"><span class="id" title="var">q</span></span>;
+      membership (<span class="inlinecode">4^<span class="id" title="var">q</span></span> <span class="inlinecode"><span class="id" title="var">mod</span></span> <span class="inlinecode"><span class="id" title="var">p</span></span> <span class="inlinecode">=</span> <span class="inlinecode">1</span>) is checked by <span class="inlinecode"><span class="id" title="keyword">vm_compute</span></span>. 
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <a id="g" class="idref" href="#g"><span class="id" title="definition">g</span></a> : @<a class="idref" href="Utility.Zpstar.html#Schnorr.Schnorr_group"><span class="id" title="record">Schnorr_group</span></a> <a class="idref" href="Examples.DistElgamalIns.html#p"><span class="id" title="definition">p</span></a> <a class="idref" href="Examples.DistElgamalIns.html#q"><span class="id" title="definition">q</span></a>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">refine</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;{| <a class="idref" href="Utility.Zpstar.html#Schnorr.v"><span class="id" title="projection">Schnorr.v</span></a> := 4;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="Utility.Zpstar.html#Schnorr.Ha"><span class="id" title="projection">Ha</span></a> := <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Logic.html#conj"><span class="id" title="constructor">conj</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Logic.html#eq_refl"><span class="id" title="constructor">eq_refl</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Logic.html#eq_refl"><span class="id" title="constructor">eq_refl</span></a> : (0 <span class="id" title="notation">&lt;</span> 4 <span class="id" title="notation">&lt;</span> <a class="idref" href="Examples.DistElgamalIns.html#p"><span class="id" title="definition">p</span></a>)%<span class="id" title="var">Z</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="Utility.Zpstar.html#Schnorr.Hb"><span class="id" title="projection">Hb</span></a> := <span class="id" title="var">_</span> |}.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">vm_cast_no_check</span> (<a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Logic.html#eq_refl"><span class="id" title="constructor">eq_refl</span></a> (<span class="id" title="definition">Zpow_facts.Zpow_mod</span> 4 <a class="idref" href="Examples.DistElgamalIns.html#q"><span class="id" title="definition">q</span></a> <a class="idref" href="Examples.DistElgamalIns.html#p"><span class="id" title="definition">p</span></a>)).<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Defined</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+Secret share of trustee 1, <span class="inlinecode"><span class="id" title="var">x₁</span></span> <span class="inlinecode">=</span> <span class="inlinecode">3</span>. 
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <a id="a2b3673cec6531323f2e669d630bc7d1" class="idref" href="#a2b3673cec6531323f2e669d630bc7d1"><span class="id" title="definition">x₁</span></a> : @<a class="idref" href="Utility.Zpstar.html#Zpfield.Zp"><span class="id" title="record">Zp</span></a> <a class="idref" href="Examples.DistElgamalIns.html#q"><span class="id" title="definition">q</span></a> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;{| <a class="idref" href="Utility.Zpstar.html#Zpfield.v"><span class="id" title="projection">Zpfield.v</span></a> := 3; <a class="idref" href="Utility.Zpstar.html#Zpfield.Hv"><span class="id" title="projection">Zpfield.Hv</span></a> := <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Logic.html#eq_refl"><span class="id" title="constructor">eq_refl</span></a> : (3 <span class="id" title="notation">mod</span> <a class="idref" href="Examples.DistElgamalIns.html#q"><span class="id" title="definition">q</span></a>)%<span class="id" title="var">Z</span> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Logic.html#6cd0f7b28b6092304087c7049437bb1a"><span class="id" title="notation">=</span></a> 3%<span class="id" title="var">Z</span> |}.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+Public share of trustee 1, <span class="inlinecode"><span class="id" title="var">h₁</span></span> <span class="inlinecode">=</span> <span class="inlinecode"><span class="id" title="var">g</span>^<span class="id" title="var">x₁</span></span>. 
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <a id="ab25cf2b5a81c35313967e20911c1f27" class="idref" href="#ab25cf2b5a81c35313967e20911c1f27"><span class="id" title="definition">h₁</span></a> : @<a class="idref" href="Utility.Zpstar.html#Schnorr.Schnorr_group"><span class="id" title="record">Schnorr_group</span></a> <a class="idref" href="Examples.DistElgamalIns.html#p"><span class="id" title="definition">p</span></a> <a class="idref" href="Examples.DistElgamalIns.html#q"><span class="id" title="definition">q</span></a> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Eval</span> <span class="id" title="tactic">compute</span> <span class="id" title="tactic">in</span> @<a class="idref" href="Utility.Zpstar.html#Vspace.pow"><span class="id" title="definition">pow</span></a> <span class="id" title="var">_</span> <span class="id" title="var">_</span> <span class="id" title="var">_</span> <a class="idref" href="Examples.DistElgamalIns.html#safe_prime"><span class="id" title="lemma">safe_prime</span></a> <a class="idref" href="Examples.DistElgamalIns.html#prime_p"><span class="id" title="lemma">prime_p</span></a> <a class="idref" href="Examples.DistElgamalIns.html#prime_q"><span class="id" title="lemma">prime_q</span></a> <a class="idref" href="Examples.DistElgamalIns.html#g"><span class="id" title="definition">g</span></a> <a class="idref" href="Examples.DistElgamalIns.html#a2b3673cec6531323f2e669d630bc7d1"><span class="id" title="definition">x₁</span></a>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+Secret share of trustee 2, <span class="inlinecode"><span class="id" title="var">x₂</span></span> <span class="inlinecode">=</span> <span class="inlinecode">5</span>. 
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <a id="e82a155eb364fc2d05d8a81e34f0aac5" class="idref" href="#e82a155eb364fc2d05d8a81e34f0aac5"><span class="id" title="definition">x₂</span></a> : @<a class="idref" href="Utility.Zpstar.html#Zpfield.Zp"><span class="id" title="record">Zp</span></a> <a class="idref" href="Examples.DistElgamalIns.html#q"><span class="id" title="definition">q</span></a> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;{| <a class="idref" href="Utility.Zpstar.html#Zpfield.v"><span class="id" title="projection">Zpfield.v</span></a> := 5; <a class="idref" href="Utility.Zpstar.html#Zpfield.Hv"><span class="id" title="projection">Zpfield.Hv</span></a> := <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Logic.html#eq_refl"><span class="id" title="constructor">eq_refl</span></a> : (5 <span class="id" title="notation">mod</span> <a class="idref" href="Examples.DistElgamalIns.html#q"><span class="id" title="definition">q</span></a>)%<span class="id" title="var">Z</span> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Logic.html#6cd0f7b28b6092304087c7049437bb1a"><span class="id" title="notation">=</span></a> 5%<span class="id" title="var">Z</span> |}.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+Public share of trustee 2, <span class="inlinecode"><span class="id" title="var">h₂</span></span> <span class="inlinecode">=</span> <span class="inlinecode"><span class="id" title="var">g</span>^<span class="id" title="var">x₂</span></span>. 
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <a id="77c71d81ef7ae45696adf0036fdd8849" class="idref" href="#77c71d81ef7ae45696adf0036fdd8849"><span class="id" title="definition">h₂</span></a> : @<a class="idref" href="Utility.Zpstar.html#Schnorr.Schnorr_group"><span class="id" title="record">Schnorr_group</span></a> <a class="idref" href="Examples.DistElgamalIns.html#p"><span class="id" title="definition">p</span></a> <a class="idref" href="Examples.DistElgamalIns.html#q"><span class="id" title="definition">q</span></a> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Eval</span> <span class="id" title="tactic">compute</span> <span class="id" title="tactic">in</span> @<a class="idref" href="Utility.Zpstar.html#Vspace.pow"><span class="id" title="definition">pow</span></a> <span class="id" title="var">_</span> <span class="id" title="var">_</span> <span class="id" title="var">_</span> <a class="idref" href="Examples.DistElgamalIns.html#safe_prime"><span class="id" title="lemma">safe_prime</span></a> <a class="idref" href="Examples.DistElgamalIns.html#prime_p"><span class="id" title="lemma">prime_p</span></a> <a class="idref" href="Examples.DistElgamalIns.html#prime_q"><span class="id" title="lemma">prime_q</span></a> <a class="idref" href="Examples.DistElgamalIns.html#g"><span class="id" title="definition">g</span></a> <a class="idref" href="Examples.DistElgamalIns.html#e82a155eb364fc2d05d8a81e34f0aac5"><span class="id" title="definition">x₂</span></a>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+Secret share of trustee 3, <span class="inlinecode"><span class="id" title="var">x₃</span></span> <span class="inlinecode">=</span> <span class="inlinecode">7</span>. 
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <a id="b70d86439f30ac02dd56318565495315" class="idref" href="#b70d86439f30ac02dd56318565495315"><span class="id" title="definition">x₃</span></a> : @<a class="idref" href="Utility.Zpstar.html#Zpfield.Zp"><span class="id" title="record">Zp</span></a> <a class="idref" href="Examples.DistElgamalIns.html#q"><span class="id" title="definition">q</span></a> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;{| <a class="idref" href="Utility.Zpstar.html#Zpfield.v"><span class="id" title="projection">Zpfield.v</span></a> := 7; <a class="idref" href="Utility.Zpstar.html#Zpfield.Hv"><span class="id" title="projection">Zpfield.Hv</span></a> := <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Logic.html#eq_refl"><span class="id" title="constructor">eq_refl</span></a> : (7 <span class="id" title="notation">mod</span> <a class="idref" href="Examples.DistElgamalIns.html#q"><span class="id" title="definition">q</span></a>)%<span class="id" title="var">Z</span> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Logic.html#6cd0f7b28b6092304087c7049437bb1a"><span class="id" title="notation">=</span></a> 7%<span class="id" title="var">Z</span> |}.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+Public share of trustee 3, <span class="inlinecode"><span class="id" title="var">h₃</span></span> <span class="inlinecode">=</span> <span class="inlinecode"><span class="id" title="var">g</span>^<span class="id" title="var">x₃</span></span>. 
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <a id="75e38b057c4ac2005307a549084ab116" class="idref" href="#75e38b057c4ac2005307a549084ab116"><span class="id" title="definition">h₃</span></a> : @<a class="idref" href="Utility.Zpstar.html#Schnorr.Schnorr_group"><span class="id" title="record">Schnorr_group</span></a> <a class="idref" href="Examples.DistElgamalIns.html#p"><span class="id" title="definition">p</span></a> <a class="idref" href="Examples.DistElgamalIns.html#q"><span class="id" title="definition">q</span></a> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Eval</span> <span class="id" title="tactic">compute</span> <span class="id" title="tactic">in</span> @<a class="idref" href="Utility.Zpstar.html#Vspace.pow"><span class="id" title="definition">pow</span></a> <span class="id" title="var">_</span> <span class="id" title="var">_</span> <span class="id" title="var">_</span> <a class="idref" href="Examples.DistElgamalIns.html#safe_prime"><span class="id" title="lemma">safe_prime</span></a> <a class="idref" href="Examples.DistElgamalIns.html#prime_p"><span class="id" title="lemma">prime_p</span></a> <a class="idref" href="Examples.DistElgamalIns.html#prime_q"><span class="id" title="lemma">prime_q</span></a> <a class="idref" href="Examples.DistElgamalIns.html#g"><span class="id" title="definition">g</span></a> <a class="idref" href="Examples.DistElgamalIns.html#b70d86439f30ac02dd56318565495315"><span class="id" title="definition">x₃</span></a>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+The joint public key <span class="inlinecode"><span class="id" title="var">h</span></span> <span class="inlinecode">=</span> <span class="inlinecode"><span class="id" title="var">h₁</span>·(<span class="id" title="var">h₂</span>·<span class="id" title="var">h₃</span>)</span> <span class="inlinecode">=</span> <span class="inlinecode"><span class="id" title="var">g</span>^(<span class="id" title="var">x₁</span>+<span class="id" title="var">x₂</span>+<span class="id" title="var">x₃</span>)</span>. It is not used
+      below: the encryption functions recompute the product from <span class="inlinecode">[<span class="id" title="var">h₁</span>;</span> <span class="inlinecode"><span class="id" title="var">h₂</span>;</span> <span class="inlinecode"><span class="id" title="var">h₃</span>]</span>. 
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <a id="h" class="idref" href="#h"><span class="id" title="definition">h</span></a> : @<a class="idref" href="Utility.Zpstar.html#Schnorr.Schnorr_group"><span class="id" title="record">Schnorr_group</span></a> <a class="idref" href="Examples.DistElgamalIns.html#p"><span class="id" title="definition">p</span></a> <a class="idref" href="Examples.DistElgamalIns.html#q"><span class="id" title="definition">q</span></a>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">refine</span>(@<a class="idref" href="Utility.Zpstar.html#Schnorr.mul_schnorr_group"><span class="id" title="definition">mul_schnorr_group</span></a> <a class="idref" href="Examples.DistElgamalIns.html#p"><span class="id" title="definition">p</span></a> <a class="idref" href="Examples.DistElgamalIns.html#q"><span class="id" title="definition">q</span></a> <a class="idref" href="Examples.DistElgamalIns.html#prime_p"><span class="id" title="lemma">prime_p</span></a> <a class="idref" href="Examples.DistElgamalIns.html#prime_q"><span class="id" title="lemma">prime_q</span></a> <a class="idref" href="Examples.DistElgamalIns.html#ab25cf2b5a81c35313967e20911c1f27"><span class="id" title="definition">h₁</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(@<a class="idref" href="Utility.Zpstar.html#Schnorr.mul_schnorr_group"><span class="id" title="definition">mul_schnorr_group</span></a> <a class="idref" href="Examples.DistElgamalIns.html#p"><span class="id" title="definition">p</span></a> <a class="idref" href="Examples.DistElgamalIns.html#q"><span class="id" title="definition">q</span></a> <a class="idref" href="Examples.DistElgamalIns.html#prime_p"><span class="id" title="lemma">prime_p</span></a> <a class="idref" href="Examples.DistElgamalIns.html#prime_q"><span class="id" title="lemma">prime_q</span></a> <a class="idref" href="Examples.DistElgamalIns.html#77c71d81ef7ae45696adf0036fdd8849"><span class="id" title="definition">h₂</span></a> <a class="idref" href="Examples.DistElgamalIns.html#75e38b057c4ac2005307a549084ab116"><span class="id" title="definition">h₃</span></a>)).<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Defined</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+Encrypts the value <span class="inlinecode"><span class="id" title="var">m</span></span> (as <span class="inlinecode"><span class="id" title="var">g</span>^<span class="id" title="var">m</span></span>) with randomness <span class="inlinecode"><span class="id" title="var">r</span></span> under the joint
+      key computed from <span class="inlinecode">[<span class="id" title="var">h₁</span>;</span> <span class="inlinecode"><span class="id" title="var">h₂</span>;</span> <span class="inlinecode"><span class="id" title="var">h₃</span>]</span>. 
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <a id="encrypt_dist_value_ins" class="idref" href="#encrypt_dist_value_ins"><span class="id" title="definition">encrypt_dist_value_ins</span></a> (<a id="m:1" class="idref" href="#m:1"><span class="id" title="binder">m</span></a> <a id="r:2" class="idref" href="#r:2"><span class="id" title="binder">r</span></a> : @<a class="idref" href="Utility.Zpstar.html#Zpfield.Zp"><span class="id" title="record">Zp</span></a> <a class="idref" href="Examples.DistElgamalIns.html#q"><span class="id" title="definition">q</span></a>) :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;@<a class="idref" href="Utility.Zpstar.html#Schnorr.Schnorr_group"><span class="id" title="record">Schnorr_group</span></a> <a class="idref" href="Examples.DistElgamalIns.html#p"><span class="id" title="definition">p</span></a> <a class="idref" href="Examples.DistElgamalIns.html#q"><span class="id" title="definition">q</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Datatypes.html#11c698c8685bb8ab1cf725545c085ac4"><span class="id" title="notation">×</span></a> @<a class="idref" href="Utility.Zpstar.html#Schnorr.Schnorr_group"><span class="id" title="record">Schnorr_group</span></a> <a class="idref" href="Examples.DistElgamalIns.html#p"><span class="id" title="definition">p</span></a> <a class="idref" href="Examples.DistElgamalIns.html#q"><span class="id" title="definition">q</span></a>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">refine</span>(@<a class="idref" href="Crypto.DistElgamal.html#encrypt_value_dist"><span class="id" title="definition">DistElgamal.encrypt_value_dist</span></a> (@<a class="idref" href="Utility.Zpstar.html#Zpfield.Zp"><span class="id" title="record">Zp</span></a> <a class="idref" href="Examples.DistElgamalIns.html#q"><span class="id" title="definition">q</span></a>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(@<a class="idref" href="Utility.Zpstar.html#Schnorr.Schnorr_group"><span class="id" title="record">Schnorr_group</span></a> <a class="idref" href="Examples.DistElgamalIns.html#p"><span class="id" title="definition">p</span></a> <a class="idref" href="Examples.DistElgamalIns.html#q"><span class="id" title="definition">q</span></a>) (@<a class="idref" href="Utility.Zpstar.html#Schnorr.one"><span class="id" title="definition">Schnorr.one</span></a> <a class="idref" href="Examples.DistElgamalIns.html#p"><span class="id" title="definition">p</span></a> <a class="idref" href="Examples.DistElgamalIns.html#q"><span class="id" title="definition">q</span></a> <a class="idref" href="Examples.DistElgamalIns.html#prime_p"><span class="id" title="lemma">prime_p</span></a> <a class="idref" href="Examples.DistElgamalIns.html#prime_q"><span class="id" title="lemma">prime_q</span></a>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(@<a class="idref" href="Utility.Zpstar.html#Schnorr.mul_schnorr_group"><span class="id" title="definition">mul_schnorr_group</span></a> <a class="idref" href="Examples.DistElgamalIns.html#p"><span class="id" title="definition">p</span></a> <a class="idref" href="Examples.DistElgamalIns.html#q"><span class="id" title="definition">q</span></a> <a class="idref" href="Examples.DistElgamalIns.html#prime_p"><span class="id" title="lemma">prime_p</span></a> <a class="idref" href="Examples.DistElgamalIns.html#prime_q"><span class="id" title="lemma">prime_q</span></a>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(@<a class="idref" href="Utility.Zpstar.html#Vspace.pow"><span class="id" title="definition">pow</span></a> 2 <a class="idref" href="Examples.DistElgamalIns.html#p"><span class="id" title="definition">p</span></a> <a class="idref" href="Examples.DistElgamalIns.html#q"><span class="id" title="definition">q</span></a> <a class="idref" href="Examples.DistElgamalIns.html#safe_prime"><span class="id" title="lemma">safe_prime</span></a> <a class="idref" href="Examples.DistElgamalIns.html#prime_p"><span class="id" title="lemma">prime_p</span></a> <a class="idref" href="Examples.DistElgamalIns.html#prime_q"><span class="id" title="lemma">prime_q</span></a>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">_</span> <a class="idref" href="Examples.DistElgamalIns.html#g"><span class="id" title="definition">g</span></a> <span class="id" title="notation">[</span><a class="idref" href="Examples.DistElgamalIns.html#ab25cf2b5a81c35313967e20911c1f27"><span class="id" title="definition">h₁</span></a><span class="id" title="notation">;</span> <a class="idref" href="Examples.DistElgamalIns.html#77c71d81ef7ae45696adf0036fdd8849"><span class="id" title="definition">h₂</span></a><span class="id" title="notation">;</span> <a class="idref" href="Examples.DistElgamalIns.html#75e38b057c4ac2005307a549084ab116"><span class="id" title="definition">h₃</span></a><span class="id" title="notation">]</span> <span class="id" title="var">m</span> <span class="id" title="var">r</span>).<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Defined</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+The first trustee's decryption factor <span class="inlinecode"><span class="id" title="var">c₁</span>^<span class="id" title="var">x₁</span></span> for ciphertext <span class="inlinecode"><span class="id" title="var">c</span></span>. 
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <a id="decryption_factor_value_first_ins" class="idref" href="#decryption_factor_value_first_ins"><span class="id" title="definition">decryption_factor_value_first_ins</span></a> (<a id="c:3" class="idref" href="#c:3"><span class="id" title="binder">c</span></a> :  @<a class="idref" href="Utility.Zpstar.html#Schnorr.Schnorr_group"><span class="id" title="record">Schnorr_group</span></a> <a class="idref" href="Examples.DistElgamalIns.html#p"><span class="id" title="definition">p</span></a> <a class="idref" href="Examples.DistElgamalIns.html#q"><span class="id" title="definition">q</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Datatypes.html#11c698c8685bb8ab1cf725545c085ac4"><span class="id" title="notation">×</span></a> @<a class="idref" href="Utility.Zpstar.html#Schnorr.Schnorr_group"><span class="id" title="record">Schnorr_group</span></a> <a class="idref" href="Examples.DistElgamalIns.html#p"><span class="id" title="definition">p</span></a> <a class="idref" href="Examples.DistElgamalIns.html#q"><span class="id" title="definition">q</span></a>) :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;@<a class="idref" href="Utility.Zpstar.html#Schnorr.Schnorr_group"><span class="id" title="record">Schnorr_group</span></a> <a class="idref" href="Examples.DistElgamalIns.html#p"><span class="id" title="definition">p</span></a> <a class="idref" href="Examples.DistElgamalIns.html#q"><span class="id" title="definition">q</span></a>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">refine</span>(@<a class="idref" href="Crypto.DistElgamal.html#decrypt_value_partial"><span class="id" title="definition">DistElgamal.decrypt_value_partial</span></a> (@<a class="idref" href="Utility.Zpstar.html#Zpfield.Zp"><span class="id" title="record">Zp</span></a> <a class="idref" href="Examples.DistElgamalIns.html#q"><span class="id" title="definition">q</span></a>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(@<a class="idref" href="Utility.Zpstar.html#Schnorr.Schnorr_group"><span class="id" title="record">Schnorr_group</span></a> <a class="idref" href="Examples.DistElgamalIns.html#p"><span class="id" title="definition">p</span></a> <a class="idref" href="Examples.DistElgamalIns.html#q"><span class="id" title="definition">q</span></a>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(@<a class="idref" href="Utility.Zpstar.html#Vspace.pow"><span class="id" title="definition">pow</span></a> 2 <a class="idref" href="Examples.DistElgamalIns.html#p"><span class="id" title="definition">p</span></a> <a class="idref" href="Examples.DistElgamalIns.html#q"><span class="id" title="definition">q</span></a> <a class="idref" href="Examples.DistElgamalIns.html#safe_prime"><span class="id" title="lemma">safe_prime</span></a> <a class="idref" href="Examples.DistElgamalIns.html#prime_p"><span class="id" title="lemma">prime_p</span></a> <a class="idref" href="Examples.DistElgamalIns.html#prime_q"><span class="id" title="lemma">prime_q</span></a>) <span class="id" title="var">c</span> <a class="idref" href="Examples.DistElgamalIns.html#a2b3673cec6531323f2e669d630bc7d1"><span class="id" title="definition">x₁</span></a>).<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Defined</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+The second trustee's decryption factor <span class="inlinecode"><span class="id" title="var">c₁</span>^<span class="id" title="var">x₂</span></span> for ciphertext <span class="inlinecode"><span class="id" title="var">c</span></span>. 
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <a id="decryption_factor_value_second_ins" class="idref" href="#decryption_factor_value_second_ins"><span class="id" title="definition">decryption_factor_value_second_ins</span></a> (<a id="c:4" class="idref" href="#c:4"><span class="id" title="binder">c</span></a> :  @<a class="idref" href="Utility.Zpstar.html#Schnorr.Schnorr_group"><span class="id" title="record">Schnorr_group</span></a> <a class="idref" href="Examples.DistElgamalIns.html#p"><span class="id" title="definition">p</span></a> <a class="idref" href="Examples.DistElgamalIns.html#q"><span class="id" title="definition">q</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Datatypes.html#11c698c8685bb8ab1cf725545c085ac4"><span class="id" title="notation">×</span></a> @<a class="idref" href="Utility.Zpstar.html#Schnorr.Schnorr_group"><span class="id" title="record">Schnorr_group</span></a> <a class="idref" href="Examples.DistElgamalIns.html#p"><span class="id" title="definition">p</span></a> <a class="idref" href="Examples.DistElgamalIns.html#q"><span class="id" title="definition">q</span></a>) :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;@<a class="idref" href="Utility.Zpstar.html#Schnorr.Schnorr_group"><span class="id" title="record">Schnorr_group</span></a> <a class="idref" href="Examples.DistElgamalIns.html#p"><span class="id" title="definition">p</span></a> <a class="idref" href="Examples.DistElgamalIns.html#q"><span class="id" title="definition">q</span></a>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">refine</span>(@<a class="idref" href="Crypto.DistElgamal.html#decrypt_value_partial"><span class="id" title="definition">DistElgamal.decrypt_value_partial</span></a> (@<a class="idref" href="Utility.Zpstar.html#Zpfield.Zp"><span class="id" title="record">Zp</span></a> <a class="idref" href="Examples.DistElgamalIns.html#q"><span class="id" title="definition">q</span></a>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(@<a class="idref" href="Utility.Zpstar.html#Schnorr.Schnorr_group"><span class="id" title="record">Schnorr_group</span></a> <a class="idref" href="Examples.DistElgamalIns.html#p"><span class="id" title="definition">p</span></a> <a class="idref" href="Examples.DistElgamalIns.html#q"><span class="id" title="definition">q</span></a>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(@<a class="idref" href="Utility.Zpstar.html#Vspace.pow"><span class="id" title="definition">pow</span></a> 2 <a class="idref" href="Examples.DistElgamalIns.html#p"><span class="id" title="definition">p</span></a> <a class="idref" href="Examples.DistElgamalIns.html#q"><span class="id" title="definition">q</span></a> <a class="idref" href="Examples.DistElgamalIns.html#safe_prime"><span class="id" title="lemma">safe_prime</span></a> <a class="idref" href="Examples.DistElgamalIns.html#prime_p"><span class="id" title="lemma">prime_p</span></a> <a class="idref" href="Examples.DistElgamalIns.html#prime_q"><span class="id" title="lemma">prime_q</span></a>) <span class="id" title="var">c</span> <a class="idref" href="Examples.DistElgamalIns.html#e82a155eb364fc2d05d8a81e34f0aac5"><span class="id" title="definition">x₂</span></a>).<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Defined</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+The third trustee's decryption factor <span class="inlinecode"><span class="id" title="var">c₁</span>^<span class="id" title="var">x₃</span></span> for ciphertext <span class="inlinecode"><span class="id" title="var">c</span></span>. 
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <a id="decryption_factor_value_third_ins" class="idref" href="#decryption_factor_value_third_ins"><span class="id" title="definition">decryption_factor_value_third_ins</span></a> (<a id="c:5" class="idref" href="#c:5"><span class="id" title="binder">c</span></a> :  @<a class="idref" href="Utility.Zpstar.html#Schnorr.Schnorr_group"><span class="id" title="record">Schnorr_group</span></a> <a class="idref" href="Examples.DistElgamalIns.html#p"><span class="id" title="definition">p</span></a> <a class="idref" href="Examples.DistElgamalIns.html#q"><span class="id" title="definition">q</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Datatypes.html#11c698c8685bb8ab1cf725545c085ac4"><span class="id" title="notation">×</span></a> @<a class="idref" href="Utility.Zpstar.html#Schnorr.Schnorr_group"><span class="id" title="record">Schnorr_group</span></a> <a class="idref" href="Examples.DistElgamalIns.html#p"><span class="id" title="definition">p</span></a> <a class="idref" href="Examples.DistElgamalIns.html#q"><span class="id" title="definition">q</span></a>) :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;@<a class="idref" href="Utility.Zpstar.html#Schnorr.Schnorr_group"><span class="id" title="record">Schnorr_group</span></a> <a class="idref" href="Examples.DistElgamalIns.html#p"><span class="id" title="definition">p</span></a> <a class="idref" href="Examples.DistElgamalIns.html#q"><span class="id" title="definition">q</span></a>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">refine</span>(@<a class="idref" href="Crypto.DistElgamal.html#decrypt_value_partial"><span class="id" title="definition">DistElgamal.decrypt_value_partial</span></a> (@<a class="idref" href="Utility.Zpstar.html#Zpfield.Zp"><span class="id" title="record">Zp</span></a> <a class="idref" href="Examples.DistElgamalIns.html#q"><span class="id" title="definition">q</span></a>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(@<a class="idref" href="Utility.Zpstar.html#Schnorr.Schnorr_group"><span class="id" title="record">Schnorr_group</span></a> <a class="idref" href="Examples.DistElgamalIns.html#p"><span class="id" title="definition">p</span></a> <a class="idref" href="Examples.DistElgamalIns.html#q"><span class="id" title="definition">q</span></a>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(@<a class="idref" href="Utility.Zpstar.html#Vspace.pow"><span class="id" title="definition">pow</span></a> 2 <a class="idref" href="Examples.DistElgamalIns.html#p"><span class="id" title="definition">p</span></a> <a class="idref" href="Examples.DistElgamalIns.html#q"><span class="id" title="definition">q</span></a> <a class="idref" href="Examples.DistElgamalIns.html#safe_prime"><span class="id" title="lemma">safe_prime</span></a> <a class="idref" href="Examples.DistElgamalIns.html#prime_p"><span class="id" title="lemma">prime_p</span></a> <a class="idref" href="Examples.DistElgamalIns.html#prime_q"><span class="id" title="lemma">prime_q</span></a>) <span class="id" title="var">c</span> <a class="idref" href="Examples.DistElgamalIns.html#b70d86439f30ac02dd56318565495315"><span class="id" title="definition">x₃</span></a>).<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Defined</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+Combines the three factors: <span class="inlinecode"><span class="id" title="var">c₂</span>·(<span class="id" title="var">df₁</span>·<span class="id" title="var">df₂</span>·<span class="id" title="var">df₃</span>)<span class="id" title="var">⁻¹</span></span>, equal to <span class="inlinecode"><span class="id" title="var">g</span>^<span class="id" title="var">m</span></span> when the
+      factors are honest. 
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <a id="decrypt_dist_value_ins" class="idref" href="#decrypt_dist_value_ins"><span class="id" title="definition">decrypt_dist_value_ins</span></a> (<a id="c:6" class="idref" href="#c:6"><span class="id" title="binder">c</span></a> :  @<a class="idref" href="Utility.Zpstar.html#Schnorr.Schnorr_group"><span class="id" title="record">Schnorr_group</span></a> <a class="idref" href="Examples.DistElgamalIns.html#p"><span class="id" title="definition">p</span></a> <a class="idref" href="Examples.DistElgamalIns.html#q"><span class="id" title="definition">q</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Datatypes.html#11c698c8685bb8ab1cf725545c085ac4"><span class="id" title="notation">×</span></a> @<a class="idref" href="Utility.Zpstar.html#Schnorr.Schnorr_group"><span class="id" title="record">Schnorr_group</span></a> <a class="idref" href="Examples.DistElgamalIns.html#p"><span class="id" title="definition">p</span></a> <a class="idref" href="Examples.DistElgamalIns.html#q"><span class="id" title="definition">q</span></a>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<a id="3fe3613a537a81f7c0b3f86ff1e94dae" class="idref" href="#3fe3613a537a81f7c0b3f86ff1e94dae"><span class="id" title="binder">df₁</span></a> <a id="f94885c90ea06ae3fae480e10002e003" class="idref" href="#f94885c90ea06ae3fae480e10002e003"><span class="id" title="binder">df₂</span></a> <a id="06ac3a69ba9e4b9a026d8b08597c5865" class="idref" href="#06ac3a69ba9e4b9a026d8b08597c5865"><span class="id" title="binder">df₃</span></a> : @<a class="idref" href="Utility.Zpstar.html#Schnorr.Schnorr_group"><span class="id" title="record">Schnorr_group</span></a> <a class="idref" href="Examples.DistElgamalIns.html#p"><span class="id" title="definition">p</span></a> <a class="idref" href="Examples.DistElgamalIns.html#q"><span class="id" title="definition">q</span></a>) : @<a class="idref" href="Utility.Zpstar.html#Schnorr.Schnorr_group"><span class="id" title="record">Schnorr_group</span></a> <a class="idref" href="Examples.DistElgamalIns.html#p"><span class="id" title="definition">p</span></a> <a class="idref" href="Examples.DistElgamalIns.html#q"><span class="id" title="definition">q</span></a>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">refine</span>(@<a class="idref" href="Crypto.DistElgamal.html#decrypt_value"><span class="id" title="definition">DistElgamal.decrypt_value</span></a> (@<a class="idref" href="Utility.Zpstar.html#Schnorr.Schnorr_group"><span class="id" title="record">Schnorr_group</span></a> <a class="idref" href="Examples.DistElgamalIns.html#p"><span class="id" title="definition">p</span></a> <a class="idref" href="Examples.DistElgamalIns.html#q"><span class="id" title="definition">q</span></a>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(@<a class="idref" href="Utility.Zpstar.html#Schnorr.one"><span class="id" title="definition">Schnorr.one</span></a> <a class="idref" href="Examples.DistElgamalIns.html#p"><span class="id" title="definition">p</span></a> <a class="idref" href="Examples.DistElgamalIns.html#q"><span class="id" title="definition">q</span></a> <a class="idref" href="Examples.DistElgamalIns.html#prime_p"><span class="id" title="lemma">prime_p</span></a> <a class="idref" href="Examples.DistElgamalIns.html#prime_q"><span class="id" title="lemma">prime_q</span></a>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(@<a class="idref" href="Utility.Zpstar.html#Schnorr.inv_schnorr_group"><span class="id" title="definition">inv_schnorr_group</span></a> 2 <a class="idref" href="Examples.DistElgamalIns.html#p"><span class="id" title="definition">p</span></a> <a class="idref" href="Examples.DistElgamalIns.html#q"><span class="id" title="definition">q</span></a> <a class="idref" href="Examples.DistElgamalIns.html#safe_prime"><span class="id" title="lemma">safe_prime</span></a> <a class="idref" href="Examples.DistElgamalIns.html#prime_p"><span class="id" title="lemma">prime_p</span></a> <a class="idref" href="Examples.DistElgamalIns.html#prime_q"><span class="id" title="lemma">prime_q</span></a>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(@<a class="idref" href="Utility.Zpstar.html#Schnorr.mul_schnorr_group"><span class="id" title="definition">mul_schnorr_group</span></a> <a class="idref" href="Examples.DistElgamalIns.html#p"><span class="id" title="definition">p</span></a> <a class="idref" href="Examples.DistElgamalIns.html#q"><span class="id" title="definition">q</span></a> <a class="idref" href="Examples.DistElgamalIns.html#prime_p"><span class="id" title="lemma">prime_p</span></a> <a class="idref" href="Examples.DistElgamalIns.html#prime_q"><span class="id" title="lemma">prime_q</span></a>) <span class="id" title="var">_</span> <span class="id" title="var">c</span> <span class="id" title="notation">[</span><span class="id" title="var">df₁</span><span class="id" title="notation">;</span> <span class="id" title="var">df₂</span><span class="id" title="notation">;</span> <span class="id" title="var">df₃</span><span class="id" title="notation">]</span>).<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Defined</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+Encrypts a vector of <span class="inlinecode"><span class="id" title="var">n</span></span> values under the joint key, pointwise with the
+      randomness vector <span class="inlinecode"><span class="id" title="var">rs</span></span>. 
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <a id="encrypt_dist_ballot_ins" class="idref" href="#encrypt_dist_ballot_ins"><span class="id" title="definition">encrypt_dist_ballot_ins</span></a> {<a id="n:10" class="idref" href="#n:10"><span class="id" title="binder">n</span></a> : <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Datatypes.html#nat"><span class="id" title="inductive">nat</span></a>} (<a id="ms:11" class="idref" href="#ms:11"><span class="id" title="binder">ms</span></a> : <span class="id" title="inductive">Vector.t</span> (@<a class="idref" href="Utility.Zpstar.html#Zpfield.Zp"><span class="id" title="record">Zp</span></a> <a class="idref" href="Examples.DistElgamalIns.html#q"><span class="id" title="definition">q</span></a>) <a class="idref" href="Examples.DistElgamalIns.html#n:10"><span class="id" title="variable">n</span></a>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<a id="rs:12" class="idref" href="#rs:12"><span class="id" title="binder">rs</span></a> : <span class="id" title="inductive">Vector.t</span> (@<a class="idref" href="Utility.Zpstar.html#Zpfield.Zp"><span class="id" title="record">Zp</span></a> <a class="idref" href="Examples.DistElgamalIns.html#q"><span class="id" title="definition">q</span></a>) <a class="idref" href="Examples.DistElgamalIns.html#n:10"><span class="id" title="variable">n</span></a>) :  <span class="id" title="inductive">Vector.t</span> (@<a class="idref" href="Utility.Zpstar.html#Schnorr.Schnorr_group"><span class="id" title="record">Schnorr_group</span></a> <a class="idref" href="Examples.DistElgamalIns.html#p"><span class="id" title="definition">p</span></a> <a class="idref" href="Examples.DistElgamalIns.html#q"><span class="id" title="definition">q</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Datatypes.html#11c698c8685bb8ab1cf725545c085ac4"><span class="id" title="notation">×</span></a> @<a class="idref" href="Utility.Zpstar.html#Schnorr.Schnorr_group"><span class="id" title="record">Schnorr_group</span></a> <a class="idref" href="Examples.DistElgamalIns.html#p"><span class="id" title="definition">p</span></a> <a class="idref" href="Examples.DistElgamalIns.html#q"><span class="id" title="definition">q</span></a>) <a class="idref" href="Examples.DistElgamalIns.html#n:10"><span class="id" title="variable">n</span></a>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">refine</span>(@<a class="idref" href="Crypto.DistElgamal.html#encrypt_ballot_dist"><span class="id" title="definition">DistElgamal.encrypt_ballot_dist</span></a> (@<a class="idref" href="Utility.Zpstar.html#Zpfield.Zp"><span class="id" title="record">Zp</span></a> <a class="idref" href="Examples.DistElgamalIns.html#q"><span class="id" title="definition">q</span></a>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(@<a class="idref" href="Utility.Zpstar.html#Schnorr.Schnorr_group"><span class="id" title="record">Schnorr_group</span></a> <a class="idref" href="Examples.DistElgamalIns.html#p"><span class="id" title="definition">p</span></a> <a class="idref" href="Examples.DistElgamalIns.html#q"><span class="id" title="definition">q</span></a>) (@<a class="idref" href="Utility.Zpstar.html#Schnorr.one"><span class="id" title="definition">Schnorr.one</span></a> <a class="idref" href="Examples.DistElgamalIns.html#p"><span class="id" title="definition">p</span></a> <a class="idref" href="Examples.DistElgamalIns.html#q"><span class="id" title="definition">q</span></a> <a class="idref" href="Examples.DistElgamalIns.html#prime_p"><span class="id" title="lemma">prime_p</span></a> <a class="idref" href="Examples.DistElgamalIns.html#prime_q"><span class="id" title="lemma">prime_q</span></a>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(@<a class="idref" href="Utility.Zpstar.html#Schnorr.mul_schnorr_group"><span class="id" title="definition">mul_schnorr_group</span></a> <a class="idref" href="Examples.DistElgamalIns.html#p"><span class="id" title="definition">p</span></a> <a class="idref" href="Examples.DistElgamalIns.html#q"><span class="id" title="definition">q</span></a> <a class="idref" href="Examples.DistElgamalIns.html#prime_p"><span class="id" title="lemma">prime_p</span></a> <a class="idref" href="Examples.DistElgamalIns.html#prime_q"><span class="id" title="lemma">prime_q</span></a>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(@<a class="idref" href="Utility.Zpstar.html#Vspace.pow"><span class="id" title="definition">pow</span></a> 2 <a class="idref" href="Examples.DistElgamalIns.html#p"><span class="id" title="definition">p</span></a> <a class="idref" href="Examples.DistElgamalIns.html#q"><span class="id" title="definition">q</span></a> <a class="idref" href="Examples.DistElgamalIns.html#safe_prime"><span class="id" title="lemma">safe_prime</span></a> <a class="idref" href="Examples.DistElgamalIns.html#prime_p"><span class="id" title="lemma">prime_p</span></a> <a class="idref" href="Examples.DistElgamalIns.html#prime_q"><span class="id" title="lemma">prime_q</span></a>) <span class="id" title="var">_</span> <span class="id" title="var">n</span> <a class="idref" href="Examples.DistElgamalIns.html#g"><span class="id" title="definition">g</span></a> <span class="id" title="notation">[</span><a class="idref" href="Examples.DistElgamalIns.html#ab25cf2b5a81c35313967e20911c1f27"><span class="id" title="definition">h₁</span></a><span class="id" title="notation">;</span> <a class="idref" href="Examples.DistElgamalIns.html#77c71d81ef7ae45696adf0036fdd8849"><span class="id" title="definition">h₂</span></a><span class="id" title="notation">;</span> <a class="idref" href="Examples.DistElgamalIns.html#75e38b057c4ac2005307a549084ab116"><span class="id" title="definition">h₃</span></a><span class="id" title="notation">]</span> <span class="id" title="var">ms</span> <span class="id" title="var">rs</span>).<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Defined</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+The first trustee's decryption factors for a ballot, pointwise. 
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <a id="decrypt_ballot_partial_first_ins" class="idref" href="#decrypt_ballot_partial_first_ins"><span class="id" title="definition">decrypt_ballot_partial_first_ins</span></a> {<a id="n:13" class="idref" href="#n:13"><span class="id" title="binder">n</span></a> : <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Datatypes.html#nat"><span class="id" title="inductive">nat</span></a>}<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<a id="cs:14" class="idref" href="#cs:14"><span class="id" title="binder">cs</span></a> : <span class="id" title="inductive">Vector.t</span> (@<a class="idref" href="Utility.Zpstar.html#Schnorr.Schnorr_group"><span class="id" title="record">Schnorr_group</span></a> <a class="idref" href="Examples.DistElgamalIns.html#p"><span class="id" title="definition">p</span></a> <a class="idref" href="Examples.DistElgamalIns.html#q"><span class="id" title="definition">q</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Datatypes.html#11c698c8685bb8ab1cf725545c085ac4"><span class="id" title="notation">×</span></a> @<a class="idref" href="Utility.Zpstar.html#Schnorr.Schnorr_group"><span class="id" title="record">Schnorr_group</span></a> <a class="idref" href="Examples.DistElgamalIns.html#p"><span class="id" title="definition">p</span></a> <a class="idref" href="Examples.DistElgamalIns.html#q"><span class="id" title="definition">q</span></a>) <a class="idref" href="Examples.DistElgamalIns.html#n:13"><span class="id" title="variable">n</span></a>) :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="inductive">Vector.t</span> (@<a class="idref" href="Utility.Zpstar.html#Schnorr.Schnorr_group"><span class="id" title="record">Schnorr_group</span></a> <a class="idref" href="Examples.DistElgamalIns.html#p"><span class="id" title="definition">p</span></a> <a class="idref" href="Examples.DistElgamalIns.html#q"><span class="id" title="definition">q</span></a>) <a class="idref" href="Examples.DistElgamalIns.html#n:13"><span class="id" title="variable">n</span></a>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">refine</span>(@<a class="idref" href="Crypto.DistElgamal.html#decrypt_ballot_partial"><span class="id" title="definition">DistElgamal.decrypt_ballot_partial</span></a> (@<a class="idref" href="Utility.Zpstar.html#Zpfield.Zp"><span class="id" title="record">Zp</span></a> <a class="idref" href="Examples.DistElgamalIns.html#q"><span class="id" title="definition">q</span></a>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(@<a class="idref" href="Utility.Zpstar.html#Schnorr.Schnorr_group"><span class="id" title="record">Schnorr_group</span></a> <a class="idref" href="Examples.DistElgamalIns.html#p"><span class="id" title="definition">p</span></a> <a class="idref" href="Examples.DistElgamalIns.html#q"><span class="id" title="definition">q</span></a>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(@<a class="idref" href="Utility.Zpstar.html#Vspace.pow"><span class="id" title="definition">pow</span></a> 2 <a class="idref" href="Examples.DistElgamalIns.html#p"><span class="id" title="definition">p</span></a> <a class="idref" href="Examples.DistElgamalIns.html#q"><span class="id" title="definition">q</span></a> <a class="idref" href="Examples.DistElgamalIns.html#safe_prime"><span class="id" title="lemma">safe_prime</span></a> <a class="idref" href="Examples.DistElgamalIns.html#prime_p"><span class="id" title="lemma">prime_p</span></a> <a class="idref" href="Examples.DistElgamalIns.html#prime_q"><span class="id" title="lemma">prime_q</span></a>) <span class="id" title="var">n</span> <span class="id" title="var">cs</span> <a class="idref" href="Examples.DistElgamalIns.html#a2b3673cec6531323f2e669d630bc7d1"><span class="id" title="definition">x₁</span></a>).<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Defined</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+The second trustee's decryption factors for a ballot, pointwise. 
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <a id="decrypt_ballot_partial_second_ins" class="idref" href="#decrypt_ballot_partial_second_ins"><span class="id" title="definition">decrypt_ballot_partial_second_ins</span></a> {<a id="n:15" class="idref" href="#n:15"><span class="id" title="binder">n</span></a> : <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Datatypes.html#nat"><span class="id" title="inductive">nat</span></a>}<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<a id="cs:16" class="idref" href="#cs:16"><span class="id" title="binder">cs</span></a> : <span class="id" title="inductive">Vector.t</span> (@<a class="idref" href="Utility.Zpstar.html#Schnorr.Schnorr_group"><span class="id" title="record">Schnorr_group</span></a> <a class="idref" href="Examples.DistElgamalIns.html#p"><span class="id" title="definition">p</span></a> <a class="idref" href="Examples.DistElgamalIns.html#q"><span class="id" title="definition">q</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Datatypes.html#11c698c8685bb8ab1cf725545c085ac4"><span class="id" title="notation">×</span></a> @<a class="idref" href="Utility.Zpstar.html#Schnorr.Schnorr_group"><span class="id" title="record">Schnorr_group</span></a> <a class="idref" href="Examples.DistElgamalIns.html#p"><span class="id" title="definition">p</span></a> <a class="idref" href="Examples.DistElgamalIns.html#q"><span class="id" title="definition">q</span></a>) <a class="idref" href="Examples.DistElgamalIns.html#n:15"><span class="id" title="variable">n</span></a>) :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="inductive">Vector.t</span> (@<a class="idref" href="Utility.Zpstar.html#Schnorr.Schnorr_group"><span class="id" title="record">Schnorr_group</span></a> <a class="idref" href="Examples.DistElgamalIns.html#p"><span class="id" title="definition">p</span></a> <a class="idref" href="Examples.DistElgamalIns.html#q"><span class="id" title="definition">q</span></a>) <a class="idref" href="Examples.DistElgamalIns.html#n:15"><span class="id" title="variable">n</span></a>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">refine</span>(@<a class="idref" href="Crypto.DistElgamal.html#decrypt_ballot_partial"><span class="id" title="definition">DistElgamal.decrypt_ballot_partial</span></a> (@<a class="idref" href="Utility.Zpstar.html#Zpfield.Zp"><span class="id" title="record">Zp</span></a> <a class="idref" href="Examples.DistElgamalIns.html#q"><span class="id" title="definition">q</span></a>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(@<a class="idref" href="Utility.Zpstar.html#Schnorr.Schnorr_group"><span class="id" title="record">Schnorr_group</span></a> <a class="idref" href="Examples.DistElgamalIns.html#p"><span class="id" title="definition">p</span></a> <a class="idref" href="Examples.DistElgamalIns.html#q"><span class="id" title="definition">q</span></a>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(@<a class="idref" href="Utility.Zpstar.html#Vspace.pow"><span class="id" title="definition">pow</span></a> 2 <a class="idref" href="Examples.DistElgamalIns.html#p"><span class="id" title="definition">p</span></a> <a class="idref" href="Examples.DistElgamalIns.html#q"><span class="id" title="definition">q</span></a> <a class="idref" href="Examples.DistElgamalIns.html#safe_prime"><span class="id" title="lemma">safe_prime</span></a> <a class="idref" href="Examples.DistElgamalIns.html#prime_p"><span class="id" title="lemma">prime_p</span></a> <a class="idref" href="Examples.DistElgamalIns.html#prime_q"><span class="id" title="lemma">prime_q</span></a>) <span class="id" title="var">n</span> <span class="id" title="var">cs</span> <a class="idref" href="Examples.DistElgamalIns.html#e82a155eb364fc2d05d8a81e34f0aac5"><span class="id" title="definition">x₂</span></a>).<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Defined</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+The third trustee's decryption factors for a ballot, pointwise. 
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <a id="decrypt_ballot_partial_third_ins" class="idref" href="#decrypt_ballot_partial_third_ins"><span class="id" title="definition">decrypt_ballot_partial_third_ins</span></a> {<a id="n:17" class="idref" href="#n:17"><span class="id" title="binder">n</span></a> : <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Datatypes.html#nat"><span class="id" title="inductive">nat</span></a>}<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<a id="cs:18" class="idref" href="#cs:18"><span class="id" title="binder">cs</span></a> : <span class="id" title="inductive">Vector.t</span> (@<a class="idref" href="Utility.Zpstar.html#Schnorr.Schnorr_group"><span class="id" title="record">Schnorr_group</span></a> <a class="idref" href="Examples.DistElgamalIns.html#p"><span class="id" title="definition">p</span></a> <a class="idref" href="Examples.DistElgamalIns.html#q"><span class="id" title="definition">q</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Datatypes.html#11c698c8685bb8ab1cf725545c085ac4"><span class="id" title="notation">×</span></a> @<a class="idref" href="Utility.Zpstar.html#Schnorr.Schnorr_group"><span class="id" title="record">Schnorr_group</span></a> <a class="idref" href="Examples.DistElgamalIns.html#p"><span class="id" title="definition">p</span></a> <a class="idref" href="Examples.DistElgamalIns.html#q"><span class="id" title="definition">q</span></a>) <a class="idref" href="Examples.DistElgamalIns.html#n:17"><span class="id" title="variable">n</span></a>) :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="inductive">Vector.t</span> (@<a class="idref" href="Utility.Zpstar.html#Schnorr.Schnorr_group"><span class="id" title="record">Schnorr_group</span></a> <a class="idref" href="Examples.DistElgamalIns.html#p"><span class="id" title="definition">p</span></a> <a class="idref" href="Examples.DistElgamalIns.html#q"><span class="id" title="definition">q</span></a>) <a class="idref" href="Examples.DistElgamalIns.html#n:17"><span class="id" title="variable">n</span></a>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">refine</span>(@<a class="idref" href="Crypto.DistElgamal.html#decrypt_ballot_partial"><span class="id" title="definition">DistElgamal.decrypt_ballot_partial</span></a> (@<a class="idref" href="Utility.Zpstar.html#Zpfield.Zp"><span class="id" title="record">Zp</span></a> <a class="idref" href="Examples.DistElgamalIns.html#q"><span class="id" title="definition">q</span></a>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(@<a class="idref" href="Utility.Zpstar.html#Schnorr.Schnorr_group"><span class="id" title="record">Schnorr_group</span></a> <a class="idref" href="Examples.DistElgamalIns.html#p"><span class="id" title="definition">p</span></a> <a class="idref" href="Examples.DistElgamalIns.html#q"><span class="id" title="definition">q</span></a>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(@<a class="idref" href="Utility.Zpstar.html#Vspace.pow"><span class="id" title="definition">pow</span></a> 2 <a class="idref" href="Examples.DistElgamalIns.html#p"><span class="id" title="definition">p</span></a> <a class="idref" href="Examples.DistElgamalIns.html#q"><span class="id" title="definition">q</span></a> <a class="idref" href="Examples.DistElgamalIns.html#safe_prime"><span class="id" title="lemma">safe_prime</span></a> <a class="idref" href="Examples.DistElgamalIns.html#prime_p"><span class="id" title="lemma">prime_p</span></a> <a class="idref" href="Examples.DistElgamalIns.html#prime_q"><span class="id" title="lemma">prime_q</span></a>) <span class="id" title="var">n</span> <span class="id" title="var">cs</span> <a class="idref" href="Examples.DistElgamalIns.html#b70d86439f30ac02dd56318565495315"><span class="id" title="definition">x₃</span></a>).<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Defined</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+Combines the three trustees' factor vectors with the ballot, pointwise,
+      giving <span class="inlinecode"><span class="id" title="var">g</span>^<span class="id" title="var">m</span>ᵢ</span> for each entry. 
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <a id="decrypt_ballot_value_ins" class="idref" href="#decrypt_ballot_value_ins"><span class="id" title="definition">decrypt_ballot_value_ins</span></a> {<a id="n:19" class="idref" href="#n:19"><span class="id" title="binder">n</span></a> : <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Datatypes.html#nat"><span class="id" title="inductive">nat</span></a>}<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<a id="cs:20" class="idref" href="#cs:20"><span class="id" title="binder">cs</span></a> : <span class="id" title="inductive">Vector.t</span> (@<a class="idref" href="Utility.Zpstar.html#Schnorr.Schnorr_group"><span class="id" title="record">Schnorr_group</span></a> <a class="idref" href="Examples.DistElgamalIns.html#p"><span class="id" title="definition">p</span></a> <a class="idref" href="Examples.DistElgamalIns.html#q"><span class="id" title="definition">q</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Datatypes.html#11c698c8685bb8ab1cf725545c085ac4"><span class="id" title="notation">×</span></a> @<a class="idref" href="Utility.Zpstar.html#Schnorr.Schnorr_group"><span class="id" title="record">Schnorr_group</span></a> <a class="idref" href="Examples.DistElgamalIns.html#p"><span class="id" title="definition">p</span></a> <a class="idref" href="Examples.DistElgamalIns.html#q"><span class="id" title="definition">q</span></a>) <a class="idref" href="Examples.DistElgamalIns.html#n:19"><span class="id" title="variable">n</span></a>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<a id="c15f8a945426cc5b5d6d92b897c996ea" class="idref" href="#c15f8a945426cc5b5d6d92b897c996ea"><span class="id" title="binder">dfs₁</span></a> <a id="d5ba13e166a78ed4daa2595c750a750d" class="idref" href="#d5ba13e166a78ed4daa2595c750a750d"><span class="id" title="binder">dfs₂</span></a> <a id="8771505610f5d2bb48003a9ccf723aec" class="idref" href="#8771505610f5d2bb48003a9ccf723aec"><span class="id" title="binder">dfs₃</span></a> : <span class="id" title="inductive">Vector.t</span> (@<a class="idref" href="Utility.Zpstar.html#Schnorr.Schnorr_group"><span class="id" title="record">Schnorr_group</span></a> <a class="idref" href="Examples.DistElgamalIns.html#p"><span class="id" title="definition">p</span></a> <a class="idref" href="Examples.DistElgamalIns.html#q"><span class="id" title="definition">q</span></a>) <a class="idref" href="Examples.DistElgamalIns.html#n:19"><span class="id" title="variable">n</span></a>) :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="inductive">Vector.t</span> (@<a class="idref" href="Utility.Zpstar.html#Schnorr.Schnorr_group"><span class="id" title="record">Schnorr_group</span></a> <a class="idref" href="Examples.DistElgamalIns.html#p"><span class="id" title="definition">p</span></a> <a class="idref" href="Examples.DistElgamalIns.html#q"><span class="id" title="definition">q</span></a>) <a class="idref" href="Examples.DistElgamalIns.html#n:19"><span class="id" title="variable">n</span></a>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">refine</span>(@<a class="idref" href="Crypto.DistElgamal.html#decrypt_ballot_value"><span class="id" title="definition">DistElgamal.decrypt_ballot_value</span></a> (@<a class="idref" href="Utility.Zpstar.html#Schnorr.Schnorr_group"><span class="id" title="record">Schnorr_group</span></a> <a class="idref" href="Examples.DistElgamalIns.html#p"><span class="id" title="definition">p</span></a> <a class="idref" href="Examples.DistElgamalIns.html#q"><span class="id" title="definition">q</span></a>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(@<a class="idref" href="Utility.Zpstar.html#Schnorr.inv_schnorr_group"><span class="id" title="definition">inv_schnorr_group</span></a> 2 <a class="idref" href="Examples.DistElgamalIns.html#p"><span class="id" title="definition">p</span></a> <a class="idref" href="Examples.DistElgamalIns.html#q"><span class="id" title="definition">q</span></a> <a class="idref" href="Examples.DistElgamalIns.html#safe_prime"><span class="id" title="lemma">safe_prime</span></a> <a class="idref" href="Examples.DistElgamalIns.html#prime_p"><span class="id" title="lemma">prime_p</span></a> <a class="idref" href="Examples.DistElgamalIns.html#prime_q"><span class="id" title="lemma">prime_q</span></a>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(@<a class="idref" href="Utility.Zpstar.html#Schnorr.mul_schnorr_group"><span class="id" title="definition">mul_schnorr_group</span></a> <a class="idref" href="Examples.DistElgamalIns.html#p"><span class="id" title="definition">p</span></a> <a class="idref" href="Examples.DistElgamalIns.html#q"><span class="id" title="definition">q</span></a> <a class="idref" href="Examples.DistElgamalIns.html#prime_p"><span class="id" title="lemma">prime_p</span></a> <a class="idref" href="Examples.DistElgamalIns.html#prime_q"><span class="id" title="lemma">prime_q</span></a>) <span class="id" title="var">_</span> <span class="id" title="var">n</span> <span class="id" title="var">cs</span> <span class="id" title="notation">[</span><span class="id" title="var">dfs₁</span><span class="id" title="notation">;</span> <span class="id" title="var">dfs₂</span><span class="id" title="notation">;</span> <span class="id" title="var">dfs₃</span><span class="id" title="notation">]</span>).<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Defined</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">End</span> <a class="idref" href="Examples.DistElgamalIns.html#Ins"><span class="id" title="section">Ins</span></a>.<br/>
+</div>
+</div>
+
+<div id="footer">
+<hr/><a href="index_symbols.html">Index</a><hr/>This page has been generated by <a href="http://rocq-prover.org/">coqdoc</a>
+</div>
+
+</div>
+
+</body>
+</html>

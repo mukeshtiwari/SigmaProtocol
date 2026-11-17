@@ -1,0 +1,313 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<link href="coqdoc.css" rel="stylesheet" type="text/css" />
+<title>Examples.AndSigmaIns</title>
+</head>
+
+<body>
+
+<div id="page">
+
+<div id="header">
+</div>
+
+<div id="main">
+
+<h1 class="libtitle">Library Examples.AndSigmaIns</h1>
+
+<div class="code">
+</div>
+
+<div class="doc">
+<a id="lab326"></a><h1 class="section">AND-composition of Schnorr protocols over a toy Schnorr group</h1>
+
+<div class="paragraph"> </div>
+
+ A concrete instance of the AND-composition of Schnorr protocols
+(<span class="inlinecode"><span class="id" title="var">Crypto</span>/<span class="id" title="var">AndSigma.v</span></span>): a proof of knowledge of three discrete logarithms
+<span class="inlinecode"><span class="id" title="var">x₁</span></span>, <span class="inlinecode"><span class="id" title="var">x₂</span></span>, <span class="inlinecode"><span class="id" title="var">x₃</span></span> with <span class="inlinecode"><span class="id" title="var">h</span>ᵢ</span> <span class="inlinecode">=</span> <span class="inlinecode"><span class="id" title="var">g</span>^<span class="id" title="var">x</span>ᵢ</span>, all answered with one shared challenge.
+The prover sends <span class="inlinecode"><span class="id" title="var">g</span>^<span class="id" title="var">u</span>ᵢ</span> for each statement, receives <span class="inlinecode"><span class="id" title="var">c</span></span> and answers
+<span class="inlinecode"><span class="id" title="var">r</span>ᵢ</span> <span class="inlinecode">=</span> <span class="inlinecode"><span class="id" title="var">u</span>ᵢ</span> <span class="inlinecode">+</span> <span class="inlinecode"><span class="id" title="var">c</span>·<span class="id" title="var">x</span>ᵢ</span>; the verifier checks <span class="inlinecode"><span class="id" title="var">g</span>^<span class="id" title="var">r</span>ᵢ</span> <span class="inlinecode">=</span> <span class="inlinecode">(<span class="id" title="var">g</span>^<span class="id" title="var">u</span>ᵢ)·<span class="id" title="var">h</span>ᵢ^<span class="id" title="var">c</span></span> for every <span class="inlinecode"><span class="id" title="var">i</span></span>.
+The file is extracted to OCaml by <span class="inlinecode"><span class="id" title="var">src</span>/<span class="id" title="keyword">Extraction</span>/<span class="id" title="var">AndSigmalib</span></span>.
+
+<div class="paragraph"> </div>
+
+The group is the order-<span class="inlinecode"><span class="id" title="var">q</span></span> subgroup of <span class="inlinecode"><span class="id" title="var">Z_p</span>^*</span> for the toy safe prime
+<span class="inlinecode"><span class="id" title="var">p</span></span> <span class="inlinecode">=</span> <span class="inlinecode">2<span class="id" title="var">q</span></span> <span class="inlinecode">+</span> <span class="inlinecode">1</span> <span class="inlinecode">=</span> <span class="inlinecode">5927</span> with <span class="inlinecode"><span class="id" title="var">q</span></span> <span class="inlinecode">=</span> <span class="inlinecode">2963</span> (from <span class="inlinecode"><span class="id" title="var">Utility</span>/<span class="id" title="var">Zpstar.v</span></span>: <span class="inlinecode"><span class="id" title="var">Zp</span></span> <span class="inlinecode"><span class="id" title="var">q</span></span> is
+the scalar field and <span class="inlinecode"><span class="id" title="var">Schnorr_group</span></span> <span class="inlinecode"><span class="id" title="var">p</span></span> <span class="inlinecode"><span class="id" title="var">q</span></span> the group of quadratic residues
+mod <span class="inlinecode"><span class="id" title="var">p</span></span>). The parameters are far too small to be secure; they are chosen so
+that primality can be proved by trial division (<span class="inlinecode"><span class="id" title="var">Examples</span>/<span class="id" title="var">Prime.v</span></span>) and
+the extracted code runs instantly.
+
+<div class="paragraph"> </div>
+
+The secrets are <span class="inlinecode"><span class="id" title="var">x₁</span></span> <span class="inlinecode">=</span> <span class="inlinecode">3</span>, <span class="inlinecode"><span class="id" title="var">x₂</span></span> <span class="inlinecode">=</span> <span class="inlinecode">5</span> and <span class="inlinecode"><span class="id" title="var">x₃</span></span> <span class="inlinecode">=</span> <span class="inlinecode">8</span>. 
+</div>
+<div class="code">
+<span class="id" title="keyword">From</span> <span class="id" title="var">Stdlib</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="library">Utf8</span> <span class="id" title="library">ZArith</span> <span class="id" title="library">Vector</span>.<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">Crypto</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <a class="idref" href="Crypto.Sigma.html#"><span class="id" title="library">Sigma</span></a><br/>
+&nbsp;&nbsp;<a class="idref" href="Crypto.AndSigma.html#"><span class="id" title="library">AndSigma</span></a>.<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">Utility</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <a class="idref" href="Utility.Zpstar.html#"><span class="id" title="library">Zpstar</span></a>.<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">Examples</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <a class="idref" href="Examples.Prime.html#"><span class="id" title="library">Prime</span></a>.<br/>
+<span class="id" title="keyword">Import</span> <a class="idref" href="Utility.Zpstar.html#Vspace"><span class="id" title="module">Vspace</span></a> <a class="idref" href="Utility.Zpstar.html#Schnorr"><span class="id" title="module">Schnorr</span></a> <a class="idref" href="Utility.Zpstar.html#Zpfield"><span class="id" title="module">Zpfield</span></a> <a class="idref" href="Utility.Zpstar.html#Zpgroup"><span class="id" title="module">Zpgroup</span></a><br/>
+&nbsp;&nbsp;<span class="id" title="module">VectorNotations</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<a id="lab327"></a><h2 class="section">Parameters and the instance</h2>
+
+</div>
+<div class="code">
+<span class="id" title="keyword">Section</span> <a id="Ins" class="idref" href="#Ins"><span class="id" title="section">Ins</span></a>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+The subgroup order <span class="inlinecode"><span class="id" title="var">q</span></span> <span class="inlinecode">=</span> <span class="inlinecode">2963</span>. 
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <a id="q" class="idref" href="#q"><span class="id" title="definition">q</span></a> : <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Numbers.BinNums.html#Z"><span class="id" title="inductive">Z</span></a> := 2963.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+The modulus <span class="inlinecode"><span class="id" title="var">p</span></span> <span class="inlinecode">=</span> <span class="inlinecode">2<span class="id" title="var">q</span></span> <span class="inlinecode">+</span> <span class="inlinecode">1</span> <span class="inlinecode">=</span> <span class="inlinecode">5927</span>, a safe prime. 
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <a id="p" class="idref" href="#p"><span class="id" title="definition">p</span></a> : <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Numbers.BinNums.html#Z"><span class="id" title="inductive">Z</span></a> := 2 <span class="id" title="notation">×</span> <a class="idref" href="Examples.AndSigmaIns.html#q"><span class="id" title="definition">q</span></a> <span class="id" title="notation">+</span> 1.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<span class="inlinecode"><span class="id" title="var">q</span></span> is prime, by trial division (<span class="inlinecode"><span class="id" title="var">is_prime_sqrt_correct</span></span>). 
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Theorem</span> <a id="prime_q" class="idref" href="#prime_q"><span class="id" title="lemma">prime_q</span></a> : <span class="id" title="inductive">Znumtheory.prime</span> <a class="idref" href="Examples.AndSigmaIns.html#q"><span class="id" title="definition">q</span></a> : <span class="id" title="keyword">Prop</span> : <span class="id" title="keyword">Type</span>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">eapply</span> <a class="idref" href="Examples.Prime.html#is_prime_sqrt_correct"><span class="id" title="lemma">is_prime_sqrt_correct</span></a>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">compute</span>; <span class="id" title="tactic">reflexivity</span>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Qed</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<span class="inlinecode"><span class="id" title="var">p</span></span> is prime, by trial division. 
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Theorem</span> <a id="prime_p" class="idref" href="#prime_p"><span class="id" title="lemma">prime_p</span></a> : <span class="id" title="inductive">Znumtheory.prime</span> <a class="idref" href="Examples.AndSigmaIns.html#p"><span class="id" title="definition">p</span></a> : <span class="id" title="keyword">Prop</span> : <span class="id" title="keyword">Type</span>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">eapply</span> <a class="idref" href="Examples.Prime.html#is_prime_sqrt_correct"><span class="id" title="lemma">is_prime_sqrt_correct</span></a>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">compute</span>; <span class="id" title="tactic">reflexivity</span>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Qed</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<span class="inlinecode"><span class="id" title="var">p</span></span> <span class="inlinecode">=</span> <span class="inlinecode">2<span class="id" title="var">q</span></span> <span class="inlinecode">+</span> <span class="inlinecode">1</span>, the shape required by the <span class="inlinecode"><span class="id" title="var">Zpstar</span></span> group operations. 
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Theorem</span> <a id="safe_prime" class="idref" href="#safe_prime"><span class="id" title="lemma">safe_prime</span></a> : <a class="idref" href="Examples.AndSigmaIns.html#p"><span class="id" title="definition">p</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Logic.html#6cd0f7b28b6092304087c7049437bb1a"><span class="id" title="notation">=</span></a> (2 <span class="id" title="notation">×</span> <a class="idref" href="Examples.AndSigmaIns.html#q"><span class="id" title="definition">q</span></a> <span class="id" title="notation">+</span> 1)%<span class="id" title="var">Z</span>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>. <span class="id" title="tactic">compute</span>. <span class="id" title="tactic">exact</span> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Logic.html#eq_refl"><span class="id" title="constructor">eq_refl</span></a>. <span class="id" title="keyword">Qed</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+The generator <span class="inlinecode"><span class="id" title="var">g</span></span> <span class="inlinecode">=</span> <span class="inlinecode">4</span> <span class="inlinecode">=</span> <span class="inlinecode">2²</span>: a quadratic residue, hence of order <span class="inlinecode"><span class="id" title="var">q</span></span>;
+      membership (<span class="inlinecode">4^<span class="id" title="var">q</span></span> <span class="inlinecode"><span class="id" title="var">mod</span></span> <span class="inlinecode"><span class="id" title="var">p</span></span> <span class="inlinecode">=</span> <span class="inlinecode">1</span>) is checked by <span class="inlinecode"><span class="id" title="keyword">vm_compute</span></span>. 
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <a id="g" class="idref" href="#g"><span class="id" title="definition">g</span></a> : @<a class="idref" href="Utility.Zpstar.html#Schnorr.Schnorr_group"><span class="id" title="record">Schnorr_group</span></a> <a class="idref" href="Examples.AndSigmaIns.html#p"><span class="id" title="definition">p</span></a> <a class="idref" href="Examples.AndSigmaIns.html#q"><span class="id" title="definition">q</span></a>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">refine</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;{| <a class="idref" href="Utility.Zpstar.html#Schnorr.v"><span class="id" title="projection">Schnorr.v</span></a> := 4;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="Utility.Zpstar.html#Schnorr.Ha"><span class="id" title="projection">Ha</span></a> := <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Logic.html#conj"><span class="id" title="constructor">conj</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Logic.html#eq_refl"><span class="id" title="constructor">eq_refl</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Logic.html#eq_refl"><span class="id" title="constructor">eq_refl</span></a> : (0 <span class="id" title="notation">&lt;</span> 4 <span class="id" title="notation">&lt;</span> <a class="idref" href="Examples.AndSigmaIns.html#p"><span class="id" title="definition">p</span></a>)%<span class="id" title="var">Z</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="Utility.Zpstar.html#Schnorr.Hb"><span class="id" title="projection">Hb</span></a> := <span class="id" title="var">_</span> |}.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">vm_cast_no_check</span> (<a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Logic.html#eq_refl"><span class="id" title="constructor">eq_refl</span></a> (<span class="id" title="definition">Zpow_facts.Zpow_mod</span> 4 <a class="idref" href="Examples.AndSigmaIns.html#q"><span class="id" title="definition">q</span></a> <a class="idref" href="Examples.AndSigmaIns.html#p"><span class="id" title="definition">p</span></a>)).<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Defined</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+First secret, <span class="inlinecode"><span class="id" title="var">x₁</span></span> <span class="inlinecode">=</span> <span class="inlinecode">3</span>. 
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <a id="a2b3673cec6531323f2e669d630bc7d1" class="idref" href="#a2b3673cec6531323f2e669d630bc7d1"><span class="id" title="definition">x₁</span></a> : @<a class="idref" href="Utility.Zpstar.html#Zpfield.Zp"><span class="id" title="record">Zp</span></a> <a class="idref" href="Examples.AndSigmaIns.html#q"><span class="id" title="definition">q</span></a> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;{| <a class="idref" href="Utility.Zpstar.html#Zpfield.v"><span class="id" title="projection">Zpfield.v</span></a> := 3; <a class="idref" href="Utility.Zpstar.html#Zpfield.Hv"><span class="id" title="projection">Zpfield.Hv</span></a> := <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Logic.html#eq_refl"><span class="id" title="constructor">eq_refl</span></a> : (3 <span class="id" title="notation">mod</span> <a class="idref" href="Examples.AndSigmaIns.html#q"><span class="id" title="definition">q</span></a>)%<span class="id" title="var">Z</span> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Logic.html#6cd0f7b28b6092304087c7049437bb1a"><span class="id" title="notation">=</span></a> 3%<span class="id" title="var">Z</span> |}.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+Second secret, <span class="inlinecode"><span class="id" title="var">x₂</span></span> <span class="inlinecode">=</span> <span class="inlinecode">5</span>. 
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <a id="e82a155eb364fc2d05d8a81e34f0aac5" class="idref" href="#e82a155eb364fc2d05d8a81e34f0aac5"><span class="id" title="definition">x₂</span></a> : @<a class="idref" href="Utility.Zpstar.html#Zpfield.Zp"><span class="id" title="record">Zp</span></a> <a class="idref" href="Examples.AndSigmaIns.html#q"><span class="id" title="definition">q</span></a> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;{| <a class="idref" href="Utility.Zpstar.html#Zpfield.v"><span class="id" title="projection">Zpfield.v</span></a> := 5; <a class="idref" href="Utility.Zpstar.html#Zpfield.Hv"><span class="id" title="projection">Zpfield.Hv</span></a> := <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Logic.html#eq_refl"><span class="id" title="constructor">eq_refl</span></a> : (5 <span class="id" title="notation">mod</span> <a class="idref" href="Examples.AndSigmaIns.html#q"><span class="id" title="definition">q</span></a>)%<span class="id" title="var">Z</span> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Logic.html#6cd0f7b28b6092304087c7049437bb1a"><span class="id" title="notation">=</span></a> 5%<span class="id" title="var">Z</span> |}.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+Third secret, <span class="inlinecode"><span class="id" title="var">x₃</span></span> <span class="inlinecode">=</span> <span class="inlinecode">8</span>. 
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <a id="b70d86439f30ac02dd56318565495315" class="idref" href="#b70d86439f30ac02dd56318565495315"><span class="id" title="definition">x₃</span></a> : @<a class="idref" href="Utility.Zpstar.html#Zpfield.Zp"><span class="id" title="record">Zp</span></a> <a class="idref" href="Examples.AndSigmaIns.html#q"><span class="id" title="definition">q</span></a> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;{| <a class="idref" href="Utility.Zpstar.html#Zpfield.v"><span class="id" title="projection">Zpfield.v</span></a> := 8; <a class="idref" href="Utility.Zpstar.html#Zpfield.Hv"><span class="id" title="projection">Zpfield.Hv</span></a> := <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Logic.html#eq_refl"><span class="id" title="constructor">eq_refl</span></a> : (8 <span class="id" title="notation">mod</span> <a class="idref" href="Examples.AndSigmaIns.html#q"><span class="id" title="definition">q</span></a>)%<span class="id" title="var">Z</span> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Logic.html#6cd0f7b28b6092304087c7049437bb1a"><span class="id" title="notation">=</span></a> 8%<span class="id" title="var">Z</span> |}.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<span class="inlinecode"><span class="id" title="var">h₁</span></span> <span class="inlinecode">=</span> <span class="inlinecode"><span class="id" title="var">g</span>^<span class="id" title="var">x₁</span></span>, built directly from <span class="inlinecode"><span class="id" title="var">Zpow_mod</span></span>. Its membership
+      obligation is discharged by a cast of the proof term for <span class="inlinecode"><span class="id" title="var">g</span>^<span class="id" title="var">q</span></span> <span class="inlinecode"><span class="id" title="var">mod</span></span> <span class="inlinecode"><span class="id" title="var">p</span></span> <span class="inlinecode">=</span> <span class="inlinecode">1</span>;
+      the kernel accepts it because both sides compute to the same value. 
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <a id="ab25cf2b5a81c35313967e20911c1f27" class="idref" href="#ab25cf2b5a81c35313967e20911c1f27"><span class="id" title="definition">h₁</span></a> : @<a class="idref" href="Utility.Zpstar.html#Schnorr.Schnorr_group"><span class="id" title="record">Schnorr_group</span></a> <a class="idref" href="Examples.AndSigmaIns.html#p"><span class="id" title="definition">p</span></a> <a class="idref" href="Examples.AndSigmaIns.html#q"><span class="id" title="definition">q</span></a>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">refine</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;{| <a class="idref" href="Utility.Zpstar.html#Schnorr.v"><span class="id" title="projection">Schnorr.v</span></a> := <span class="id" title="definition">Zpow_facts.Zpow_mod</span> (<a class="idref" href="Utility.Zpstar.html#Schnorr.v"><span class="id" title="projection">Schnorr.v</span></a> <a class="idref" href="Examples.AndSigmaIns.html#g"><span class="id" title="definition">g</span></a>) (<a class="idref" href="Utility.Zpstar.html#Zpfield.v"><span class="id" title="projection">Zpfield.v</span></a> <a class="idref" href="Examples.AndSigmaIns.html#a2b3673cec6531323f2e669d630bc7d1"><span class="id" title="definition">x₁</span></a>) <a class="idref" href="Examples.AndSigmaIns.html#p"><span class="id" title="definition">p</span></a>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="Utility.Zpstar.html#Schnorr.Ha"><span class="id" title="projection">Ha</span></a> := <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Logic.html#conj"><span class="id" title="constructor">conj</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Logic.html#eq_refl"><span class="id" title="constructor">eq_refl</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Logic.html#eq_refl"><span class="id" title="constructor">eq_refl</span></a> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(0 <span class="id" title="notation">&lt;</span> <span class="id" title="definition">Zpow_facts.Zpow_mod</span> (<a class="idref" href="Utility.Zpstar.html#Schnorr.v"><span class="id" title="projection">Schnorr.v</span></a> <a class="idref" href="Examples.AndSigmaIns.html#g"><span class="id" title="definition">g</span></a>) (<a class="idref" href="Utility.Zpstar.html#Zpfield.v"><span class="id" title="projection">Zpfield.v</span></a> <a class="idref" href="Examples.AndSigmaIns.html#a2b3673cec6531323f2e669d630bc7d1"><span class="id" title="definition">x₁</span></a>) <a class="idref" href="Examples.AndSigmaIns.html#p"><span class="id" title="definition">p</span></a> <span class="id" title="notation">&lt;</span> <a class="idref" href="Examples.AndSigmaIns.html#p"><span class="id" title="definition">p</span></a>)%<span class="id" title="var">Z</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="Utility.Zpstar.html#Schnorr.Hb"><span class="id" title="projection">Hb</span></a> := <span class="id" title="var">_</span> |}.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">vm_cast_no_check</span> (<a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Logic.html#eq_refl"><span class="id" title="constructor">eq_refl</span></a> (<span class="id" title="definition">Zpow_facts.Zpow_mod</span> (<a class="idref" href="Utility.Zpstar.html#Schnorr.v"><span class="id" title="projection">Schnorr.v</span></a> <a class="idref" href="Examples.AndSigmaIns.html#g"><span class="id" title="definition">g</span></a>) <a class="idref" href="Examples.AndSigmaIns.html#q"><span class="id" title="definition">q</span></a> <a class="idref" href="Examples.AndSigmaIns.html#p"><span class="id" title="definition">p</span></a>)).<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Defined</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<span class="inlinecode"><span class="id" title="var">h₂</span></span> <span class="inlinecode">=</span> <span class="inlinecode"><span class="id" title="var">g</span>^<span class="id" title="var">x₂</span></span>, built directly from <span class="inlinecode"><span class="id" title="var">Zpow_mod</span></span>. Its membership
+      obligation is discharged by a cast of the proof term for <span class="inlinecode"><span class="id" title="var">g</span>^<span class="id" title="var">q</span></span> <span class="inlinecode"><span class="id" title="var">mod</span></span> <span class="inlinecode"><span class="id" title="var">p</span></span> <span class="inlinecode">=</span> <span class="inlinecode">1</span>;
+      the kernel accepts it because both sides compute to the same value. 
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <a id="77c71d81ef7ae45696adf0036fdd8849" class="idref" href="#77c71d81ef7ae45696adf0036fdd8849"><span class="id" title="definition">h₂</span></a> : @<a class="idref" href="Utility.Zpstar.html#Schnorr.Schnorr_group"><span class="id" title="record">Schnorr_group</span></a> <a class="idref" href="Examples.AndSigmaIns.html#p"><span class="id" title="definition">p</span></a> <a class="idref" href="Examples.AndSigmaIns.html#q"><span class="id" title="definition">q</span></a>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">refine</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;{| <a class="idref" href="Utility.Zpstar.html#Schnorr.v"><span class="id" title="projection">Schnorr.v</span></a> := <span class="id" title="definition">Zpow_facts.Zpow_mod</span> (<a class="idref" href="Utility.Zpstar.html#Schnorr.v"><span class="id" title="projection">Schnorr.v</span></a> <a class="idref" href="Examples.AndSigmaIns.html#g"><span class="id" title="definition">g</span></a>) (<a class="idref" href="Utility.Zpstar.html#Zpfield.v"><span class="id" title="projection">Zpfield.v</span></a> <a class="idref" href="Examples.AndSigmaIns.html#e82a155eb364fc2d05d8a81e34f0aac5"><span class="id" title="definition">x₂</span></a>) <a class="idref" href="Examples.AndSigmaIns.html#p"><span class="id" title="definition">p</span></a>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="Utility.Zpstar.html#Schnorr.Ha"><span class="id" title="projection">Ha</span></a> := <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Logic.html#conj"><span class="id" title="constructor">conj</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Logic.html#eq_refl"><span class="id" title="constructor">eq_refl</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Logic.html#eq_refl"><span class="id" title="constructor">eq_refl</span></a> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(0 <span class="id" title="notation">&lt;</span> <span class="id" title="definition">Zpow_facts.Zpow_mod</span> (<a class="idref" href="Utility.Zpstar.html#Schnorr.v"><span class="id" title="projection">Schnorr.v</span></a> <a class="idref" href="Examples.AndSigmaIns.html#g"><span class="id" title="definition">g</span></a>) (<a class="idref" href="Utility.Zpstar.html#Zpfield.v"><span class="id" title="projection">Zpfield.v</span></a> <a class="idref" href="Examples.AndSigmaIns.html#e82a155eb364fc2d05d8a81e34f0aac5"><span class="id" title="definition">x₂</span></a>) <a class="idref" href="Examples.AndSigmaIns.html#p"><span class="id" title="definition">p</span></a> <span class="id" title="notation">&lt;</span> <a class="idref" href="Examples.AndSigmaIns.html#p"><span class="id" title="definition">p</span></a>)%<span class="id" title="var">Z</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="Utility.Zpstar.html#Schnorr.Hb"><span class="id" title="projection">Hb</span></a> := <span class="id" title="var">_</span> |}.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">vm_cast_no_check</span> (<a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Logic.html#eq_refl"><span class="id" title="constructor">eq_refl</span></a> (<span class="id" title="definition">Zpow_facts.Zpow_mod</span> (<a class="idref" href="Utility.Zpstar.html#Schnorr.v"><span class="id" title="projection">Schnorr.v</span></a> <a class="idref" href="Examples.AndSigmaIns.html#g"><span class="id" title="definition">g</span></a>) <a class="idref" href="Examples.AndSigmaIns.html#q"><span class="id" title="definition">q</span></a> <a class="idref" href="Examples.AndSigmaIns.html#p"><span class="id" title="definition">p</span></a>)).<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Defined</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<span class="inlinecode"><span class="id" title="var">h₃</span></span> <span class="inlinecode">=</span> <span class="inlinecode"><span class="id" title="var">g</span>^<span class="id" title="var">x₃</span></span>, built directly from <span class="inlinecode"><span class="id" title="var">Zpow_mod</span></span>. Its membership
+      obligation is discharged by a cast of the proof term for <span class="inlinecode"><span class="id" title="var">g</span>^<span class="id" title="var">q</span></span> <span class="inlinecode"><span class="id" title="var">mod</span></span> <span class="inlinecode"><span class="id" title="var">p</span></span> <span class="inlinecode">=</span> <span class="inlinecode">1</span>;
+      the kernel accepts it because both sides compute to the same value. 
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <a id="75e38b057c4ac2005307a549084ab116" class="idref" href="#75e38b057c4ac2005307a549084ab116"><span class="id" title="definition">h₃</span></a> : @<a class="idref" href="Utility.Zpstar.html#Schnorr.Schnorr_group"><span class="id" title="record">Schnorr_group</span></a> <a class="idref" href="Examples.AndSigmaIns.html#p"><span class="id" title="definition">p</span></a> <a class="idref" href="Examples.AndSigmaIns.html#q"><span class="id" title="definition">q</span></a>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">refine</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;{| <a class="idref" href="Utility.Zpstar.html#Schnorr.v"><span class="id" title="projection">Schnorr.v</span></a> := <span class="id" title="definition">Zpow_facts.Zpow_mod</span> (<a class="idref" href="Utility.Zpstar.html#Schnorr.v"><span class="id" title="projection">Schnorr.v</span></a> <a class="idref" href="Examples.AndSigmaIns.html#g"><span class="id" title="definition">g</span></a>) (<a class="idref" href="Utility.Zpstar.html#Zpfield.v"><span class="id" title="projection">Zpfield.v</span></a> <a class="idref" href="Examples.AndSigmaIns.html#b70d86439f30ac02dd56318565495315"><span class="id" title="definition">x₃</span></a>) <a class="idref" href="Examples.AndSigmaIns.html#p"><span class="id" title="definition">p</span></a>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="Utility.Zpstar.html#Schnorr.Ha"><span class="id" title="projection">Ha</span></a> := <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Logic.html#conj"><span class="id" title="constructor">conj</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Logic.html#eq_refl"><span class="id" title="constructor">eq_refl</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Logic.html#eq_refl"><span class="id" title="constructor">eq_refl</span></a> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(0 <span class="id" title="notation">&lt;</span> <span class="id" title="definition">Zpow_facts.Zpow_mod</span> (<a class="idref" href="Utility.Zpstar.html#Schnorr.v"><span class="id" title="projection">Schnorr.v</span></a> <a class="idref" href="Examples.AndSigmaIns.html#g"><span class="id" title="definition">g</span></a>) (<a class="idref" href="Utility.Zpstar.html#Zpfield.v"><span class="id" title="projection">Zpfield.v</span></a> <a class="idref" href="Examples.AndSigmaIns.html#b70d86439f30ac02dd56318565495315"><span class="id" title="definition">x₃</span></a>) <a class="idref" href="Examples.AndSigmaIns.html#p"><span class="id" title="definition">p</span></a> <span class="id" title="notation">&lt;</span> <a class="idref" href="Examples.AndSigmaIns.html#p"><span class="id" title="definition">p</span></a>)%<span class="id" title="var">Z</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="Utility.Zpstar.html#Schnorr.Hb"><span class="id" title="projection">Hb</span></a> := <span class="id" title="var">_</span> |}.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">vm_cast_no_check</span> (<a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Logic.html#eq_refl"><span class="id" title="constructor">eq_refl</span></a> (<span class="id" title="definition">Zpow_facts.Zpow_mod</span> (<a class="idref" href="Utility.Zpstar.html#Schnorr.v"><span class="id" title="projection">Schnorr.v</span></a> <a class="idref" href="Examples.AndSigmaIns.html#g"><span class="id" title="definition">g</span></a>) <a class="idref" href="Examples.AndSigmaIns.html#q"><span class="id" title="definition">q</span></a> <a class="idref" href="Examples.AndSigmaIns.html#p"><span class="id" title="definition">p</span></a>)).<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Defined</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+The commitments <span class="inlinecode">[<span class="id" title="var">g</span>^<span class="id" title="var">u₁</span>;</span> <span class="inlinecode"><span class="id" title="var">g</span>^<span class="id" title="var">u₂</span>;</span> <span class="inlinecode"><span class="id" title="var">g</span>^<span class="id" title="var">u₃</span>]</span> for the randomness vector <span class="inlinecode"><span class="id" title="var">us</span></span>. 
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <a id="construct_and_conversations_schnorr_commitment_ins" class="idref" href="#construct_and_conversations_schnorr_commitment_ins"><span class="id" title="definition">construct_and_conversations_schnorr_commitment_ins</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<a id="us:1" class="idref" href="#us:1"><span class="id" title="binder">us</span></a> : <span class="id" title="inductive">Vector.t</span> (@<a class="idref" href="Utility.Zpstar.html#Zpfield.Zp"><span class="id" title="record">Zp</span></a> <a class="idref" href="Examples.AndSigmaIns.html#q"><span class="id" title="definition">q</span></a>) 3) : <span class="id" title="inductive">Vector.t</span> (@<a class="idref" href="Utility.Zpstar.html#Schnorr.Schnorr_group"><span class="id" title="record">Schnorr_group</span></a> <a class="idref" href="Examples.AndSigmaIns.html#p"><span class="id" title="definition">p</span></a> <a class="idref" href="Examples.AndSigmaIns.html#q"><span class="id" title="definition">q</span></a>) 3.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">refine</span>(@<a class="idref" href="Crypto.AndSigma.html#construct_and_conversations_schnorr_commitment"><span class="id" title="definition">construct_and_conversations_schnorr_commitment</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(@<a class="idref" href="Utility.Zpstar.html#Zpfield.Zp"><span class="id" title="record">Zp</span></a> <a class="idref" href="Examples.AndSigmaIns.html#q"><span class="id" title="definition">q</span></a>) (@<a class="idref" href="Utility.Zpstar.html#Schnorr.Schnorr_group"><span class="id" title="record">Schnorr_group</span></a> <a class="idref" href="Examples.AndSigmaIns.html#p"><span class="id" title="definition">p</span></a> <a class="idref" href="Examples.AndSigmaIns.html#q"><span class="id" title="definition">q</span></a>) <a class="idref" href="Utility.Zpstar.html#Vspace.pow"><span class="id" title="definition">pow</span></a> <span class="id" title="var">_</span> <a class="idref" href="Examples.AndSigmaIns.html#g"><span class="id" title="definition">g</span></a> <span class="id" title="var">us</span>).<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">exact</span> <a class="idref" href="Examples.AndSigmaIns.html#safe_prime"><span class="id" title="lemma">safe_prime</span></a>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">eapply</span> <a class="idref" href="Examples.AndSigmaIns.html#prime_p"><span class="id" title="lemma">prime_p</span></a>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">eapply</span> <a class="idref" href="Examples.AndSigmaIns.html#prime_q"><span class="id" title="lemma">prime_q</span></a>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Defined</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+The honest transcript: three commitments, the single challenge <span class="inlinecode"><span class="id" title="var">c</span></span> and
+      the three responses <span class="inlinecode"><span class="id" title="var">u</span>ᵢ</span> <span class="inlinecode">+</span> <span class="inlinecode"><span class="id" title="var">c</span>·<span class="id" title="var">x</span>ᵢ</span>. 
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <a id="construct_and_conversations_schnorr_ins" class="idref" href="#construct_and_conversations_schnorr_ins"><span class="id" title="definition">construct_and_conversations_schnorr_ins</span></a> (<a id="us:2" class="idref" href="#us:2"><span class="id" title="binder">us</span></a> : <span class="id" title="inductive">Vector.t</span> (@<a class="idref" href="Utility.Zpstar.html#Zpfield.Zp"><span class="id" title="record">Zp</span></a> <a class="idref" href="Examples.AndSigmaIns.html#q"><span class="id" title="definition">q</span></a>) 3) (<a id="c:3" class="idref" href="#c:3"><span class="id" title="binder">c</span></a> : (@<a class="idref" href="Utility.Zpstar.html#Zpfield.Zp"><span class="id" title="record">Zp</span></a> <a class="idref" href="Examples.AndSigmaIns.html#q"><span class="id" title="definition">q</span></a>)) :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;@<a class="idref" href="Crypto.Sigma.html#sigma_proto"><span class="id" title="record">sigma_proto</span></a> (@<a class="idref" href="Utility.Zpstar.html#Zpfield.Zp"><span class="id" title="record">Zp</span></a> <a class="idref" href="Examples.AndSigmaIns.html#q"><span class="id" title="definition">q</span></a>) (@<a class="idref" href="Utility.Zpstar.html#Schnorr.Schnorr_group"><span class="id" title="record">Schnorr_group</span></a> <a class="idref" href="Examples.AndSigmaIns.html#p"><span class="id" title="definition">p</span></a> <a class="idref" href="Examples.AndSigmaIns.html#q"><span class="id" title="definition">q</span></a>) 3 1 3.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">refine</span>(@<a class="idref" href="Crypto.AndSigma.html#construct_and_conversations_schnorr"><span class="id" title="definition">construct_and_conversations_schnorr</span></a> (@<a class="idref" href="Utility.Zpstar.html#Zpfield.Zp"><span class="id" title="record">Zp</span></a> <a class="idref" href="Examples.AndSigmaIns.html#q"><span class="id" title="definition">q</span></a>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="Utility.Zpstar.html#Zpfield.zp_add"><span class="id" title="definition">zp_add</span></a> <a class="idref" href="Utility.Zpstar.html#Zpfield.zp_mul"><span class="id" title="definition">zp_mul</span></a> (@<a class="idref" href="Utility.Zpstar.html#Schnorr.Schnorr_group"><span class="id" title="record">Schnorr_group</span></a> <a class="idref" href="Examples.AndSigmaIns.html#p"><span class="id" title="definition">p</span></a> <a class="idref" href="Examples.AndSigmaIns.html#q"><span class="id" title="definition">q</span></a>) <a class="idref" href="Utility.Zpstar.html#Vspace.pow"><span class="id" title="definition">pow</span></a> 3 <span class="id" title="notation">[</span><a class="idref" href="Examples.AndSigmaIns.html#a2b3673cec6531323f2e669d630bc7d1"><span class="id" title="definition">x₁</span></a><span class="id" title="notation">;</span> <a class="idref" href="Examples.AndSigmaIns.html#e82a155eb364fc2d05d8a81e34f0aac5"><span class="id" title="definition">x₂</span></a><span class="id" title="notation">;</span> <a class="idref" href="Examples.AndSigmaIns.html#b70d86439f30ac02dd56318565495315"><span class="id" title="definition">x₃</span></a><span class="id" title="notation">]</span> <a class="idref" href="Examples.AndSigmaIns.html#g"><span class="id" title="definition">g</span></a> <span class="id" title="var">us</span> <span class="id" title="var">c</span>).<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">exact</span> <a class="idref" href="Examples.AndSigmaIns.html#safe_prime"><span class="id" title="lemma">safe_prime</span></a>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">eapply</span> <a class="idref" href="Examples.AndSigmaIns.html#prime_p"><span class="id" title="lemma">prime_p</span></a>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">eapply</span> <a class="idref" href="Examples.AndSigmaIns.html#prime_q"><span class="id" title="lemma">prime_q</span></a>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Defined</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+The non-interactive proof: <span class="inlinecode"><span class="id" title="var">c</span></span> is <span class="inlinecode"><span class="id" title="var">fn</span></span> applied to <span class="inlinecode">[<span class="id" title="var">p</span>;</span> <span class="inlinecode"><span class="id" title="var">q</span>;</span> <span class="inlinecode"><span class="id" title="var">g</span>;</span> <span class="inlinecode"><span class="id" title="var">h₁</span>;</span> <span class="inlinecode"><span class="id" title="var">h₂</span>;</span> <span class="inlinecode"><span class="id" title="var">h₃</span>]</span>
+      followed by the commitments; <span class="inlinecode"><span class="id" title="var">fn</span></span> is a hash function supplied by the
+      OCaml caller (strong Fiat–Shamir). 
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <a id="nizk_construct_and_conversations_schnorr_ins" class="idref" href="#nizk_construct_and_conversations_schnorr_ins"><span class="id" title="definition">nizk_construct_and_conversations_schnorr_ins</span></a><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<a id="fn:5" class="idref" href="#fn:5"><span class="id" title="binder">fn</span></a>  : <span class="id" title="notation">∀</span> <span class="id" title="notation">{</span><a id="m:4" class="idref" href="#m:4"><span class="id" title="binder">m</span></a> : <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Datatypes.html#nat"><span class="id" title="inductive">nat</span></a><span class="id" title="notation">},</span> <span class="id" title="inductive">Vector.t</span> (<a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Numbers.BinNums.html#Z"><span class="id" title="inductive">Z</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Datatypes.html#e03f39daf98516fa530d3f6f5a1b4d92"><span class="id" title="notation">+</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Datatypes.html#e03f39daf98516fa530d3f6f5a1b4d92"><span class="id" title="notation">(</span></a>@<a class="idref" href="Utility.Zpstar.html#Schnorr.Schnorr_group"><span class="id" title="record">Schnorr_group</span></a> <a class="idref" href="Examples.AndSigmaIns.html#p"><span class="id" title="definition">p</span></a> <a class="idref" href="Examples.AndSigmaIns.html#q"><span class="id" title="definition">q</span></a><a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Datatypes.html#e03f39daf98516fa530d3f6f5a1b4d92"><span class="id" title="notation">)</span></a>) <a class="idref" href="Examples.AndSigmaIns.html#m:4"><span class="id" title="variable">m</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Notations.html#::type_scope:x_'-&gt;'_x"><span class="id" title="notation">→</span></a> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Notations.html#::type_scope:x_'-&gt;'_x"><span class="id" title="notation">(</span></a>@<a class="idref" href="Utility.Zpstar.html#Zpfield.Zp"><span class="id" title="record">Zp</span></a> <a class="idref" href="Examples.AndSigmaIns.html#q"><span class="id" title="definition">q</span></a><a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Notations.html#::type_scope:x_'-&gt;'_x"><span class="id" title="notation">)</span></a>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<a id="us:6" class="idref" href="#us:6"><span class="id" title="binder">us</span></a> : <span class="id" title="inductive">Vector.t</span> (@<a class="idref" href="Utility.Zpstar.html#Zpfield.Zp"><span class="id" title="record">Zp</span></a> <a class="idref" href="Examples.AndSigmaIns.html#q"><span class="id" title="definition">q</span></a>) 3)  :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;@<a class="idref" href="Crypto.Sigma.html#sigma_proto"><span class="id" title="record">sigma_proto</span></a> (@<a class="idref" href="Utility.Zpstar.html#Zpfield.Zp"><span class="id" title="record">Zp</span></a> <a class="idref" href="Examples.AndSigmaIns.html#q"><span class="id" title="definition">q</span></a>) (@<a class="idref" href="Utility.Zpstar.html#Schnorr.Schnorr_group"><span class="id" title="record">Schnorr_group</span></a> <a class="idref" href="Examples.AndSigmaIns.html#p"><span class="id" title="definition">p</span></a> <a class="idref" href="Examples.AndSigmaIns.html#q"><span class="id" title="definition">q</span></a>) 3 1 3.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">set</span> (<span class="id" title="var">comm</span> := <a class="idref" href="Examples.AndSigmaIns.html#construct_and_conversations_schnorr_commitment_ins"><span class="id" title="definition">construct_and_conversations_schnorr_commitment_ins</span></a> <span class="id" title="var">us</span>).<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">set</span> (<span class="id" title="var">c</span> := <span class="id" title="var">fn</span> <span class="id" title="var">_</span> (<span class="id" title="notation">[</span><a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Datatypes.html#inl"><span class="id" title="constructor">inl</span></a> <a class="idref" href="Examples.AndSigmaIns.html#p"><span class="id" title="definition">p</span></a><span class="id" title="notation">;</span> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Datatypes.html#inl"><span class="id" title="constructor">inl</span></a> <a class="idref" href="Examples.AndSigmaIns.html#q"><span class="id" title="definition">q</span></a><span class="id" title="notation">;</span> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Datatypes.html#inr"><span class="id" title="constructor">inr</span></a> <a class="idref" href="Examples.AndSigmaIns.html#g"><span class="id" title="definition">g</span></a><span class="id" title="notation">;</span> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Datatypes.html#inr"><span class="id" title="constructor">inr</span></a> <a class="idref" href="Examples.AndSigmaIns.html#ab25cf2b5a81c35313967e20911c1f27"><span class="id" title="definition">h₁</span></a><span class="id" title="notation">;</span> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Datatypes.html#inr"><span class="id" title="constructor">inr</span></a> <a class="idref" href="Examples.AndSigmaIns.html#77c71d81ef7ae45696adf0036fdd8849"><span class="id" title="definition">h₂</span></a><span class="id" title="notation">;</span> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Datatypes.html#inr"><span class="id" title="constructor">inr</span></a> <a class="idref" href="Examples.AndSigmaIns.html#75e38b057c4ac2005307a549084ab116"><span class="id" title="definition">h₃</span></a><span class="id" title="notation">]</span> <span class="id" title="notation">++</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="definition">Vector.map</span> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Datatypes.html#inr"><span class="id" title="constructor">inr</span></a> <span class="id" title="var">comm</span>)).<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">refine</span>(<a class="idref" href="Examples.AndSigmaIns.html#construct_and_conversations_schnorr_ins"><span class="id" title="definition">construct_and_conversations_schnorr_ins</span></a> <span class="id" title="var">us</span> <span class="id" title="var">c</span>).<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Defined</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+The verifier: accepts iff <span class="inlinecode"><span class="id" title="var">g</span>^<span class="id" title="var">r</span>ᵢ</span> <span class="inlinecode">=</span> <span class="inlinecode"><span class="id" title="var">a</span>ᵢ·<span class="id" title="var">h</span>ᵢ^<span class="id" title="var">c</span></span> for <span class="inlinecode"><span class="id" title="var">i</span></span> <span class="inlinecode">=</span> <span class="inlinecode">1,</span> <span class="inlinecode">2,</span> <span class="inlinecode">3</span>. 
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <a id="generalised_and_accepting_conversations_ins" class="idref" href="#generalised_and_accepting_conversations_ins"><span class="id" title="definition">generalised_and_accepting_conversations_ins</span></a> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;@<a class="idref" href="Crypto.Sigma.html#sigma_proto"><span class="id" title="record">sigma_proto</span></a> (@<a class="idref" href="Utility.Zpstar.html#Zpfield.Zp"><span class="id" title="record">Zp</span></a> <a class="idref" href="Examples.AndSigmaIns.html#q"><span class="id" title="definition">q</span></a>) (@<a class="idref" href="Utility.Zpstar.html#Schnorr.Schnorr_group"><span class="id" title="record">Schnorr_group</span></a> <a class="idref" href="Examples.AndSigmaIns.html#p"><span class="id" title="definition">p</span></a> <a class="idref" href="Examples.AndSigmaIns.html#q"><span class="id" title="definition">q</span></a>) 3 1 3 <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Notations.html#::type_scope:x_'-&gt;'_x"><span class="id" title="notation">→</span></a>  <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Datatypes.html#bool"><span class="id" title="inductive">bool</span></a>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">intro</span> <span class="id" title="var">proof</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">refine</span> (@<a class="idref" href="Crypto.AndSigma.html#generalised_and_accepting_conversations"><span class="id" title="definition">generalised_and_accepting_conversations</span></a> (@<a class="idref" href="Utility.Zpstar.html#Zpfield.Zp"><span class="id" title="record">Zp</span></a> <a class="idref" href="Examples.AndSigmaIns.html#q"><span class="id" title="definition">q</span></a>) (@<a class="idref" href="Utility.Zpstar.html#Schnorr.Schnorr_group"><span class="id" title="record">Schnorr_group</span></a> <a class="idref" href="Examples.AndSigmaIns.html#p"><span class="id" title="definition">p</span></a> <a class="idref" href="Examples.AndSigmaIns.html#q"><span class="id" title="definition">q</span></a>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="Utility.Zpstar.html#Schnorr.mul_schnorr_group"><span class="id" title="definition">mul_schnorr_group</span></a> <a class="idref" href="Utility.Zpstar.html#Vspace.pow"><span class="id" title="definition">pow</span></a> <a class="idref" href="Utility.Zpstar.html#Schnorr.dec_zpstar"><span class="id" title="lemma">Schnorr.dec_zpstar</span></a> <span class="id" title="var">_</span> <a class="idref" href="Examples.AndSigmaIns.html#g"><span class="id" title="definition">g</span></a> <span class="id" title="notation">[</span><a class="idref" href="Examples.AndSigmaIns.html#ab25cf2b5a81c35313967e20911c1f27"><span class="id" title="definition">h₁</span></a><span class="id" title="notation">;</span> <a class="idref" href="Examples.AndSigmaIns.html#77c71d81ef7ae45696adf0036fdd8849"><span class="id" title="definition">h₂</span></a><span class="id" title="notation">;</span> <a class="idref" href="Examples.AndSigmaIns.html#75e38b057c4ac2005307a549084ab116"><span class="id" title="definition">h₃</span></a><span class="id" title="notation">]</span> <span class="id" title="var">proof</span>).<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">eapply</span> <a class="idref" href="Examples.AndSigmaIns.html#prime_p"><span class="id" title="lemma">prime_p</span></a>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">eapply</span> <a class="idref" href="Examples.AndSigmaIns.html#prime_q"><span class="id" title="lemma">prime_q</span></a>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">exact</span> <a class="idref" href="Examples.AndSigmaIns.html#safe_prime"><span class="id" title="lemma">safe_prime</span></a>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">eapply</span> <a class="idref" href="Examples.AndSigmaIns.html#prime_p"><span class="id" title="lemma">prime_p</span></a>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">eapply</span> <a class="idref" href="Examples.AndSigmaIns.html#prime_q"><span class="id" title="lemma">prime_q</span></a>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Defined</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">End</span> <a class="idref" href="Examples.AndSigmaIns.html#Ins"><span class="id" title="section">Ins</span></a>.<br/>
+</div>
+</div>
+
+<div id="footer">
+<hr/><a href="index_symbols.html">Index</a><hr/>This page has been generated by <a href="http://rocq-prover.org/">coqdoc</a>
+</div>
+
+</div>
+
+</body>
+</html>

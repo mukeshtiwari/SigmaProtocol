@@ -1,36 +1,81 @@
-(* Soundness of the Bayer–Groth arguments (Step 4.2 of
-   plans/ZK_APPLICATIONS_PLAN.md) with the k-special soundness algebra of
-   Crypto/SigmaK.v and the polynomial lemmas of Crypto/PolyPerm.v.
+(** * Soundness of the Bayer–Groth shuffle argument and its sub-arguments
 
-   The statements are in the "witness or binding break" form of the
-   Terelius–Wikström soundness theorem (Crypto/ShuffleTWSound2.v): from
-   accepting transcripts with the same announcements and enough distinct
-   challenges, the extractor computes openings of every commitment by the
-   inverse Vandermonde matrix (geval_openings); the verification equations
-   then hold for the extracted openings at every challenge unless two
-   different openings of one commitment appear (binding_break); and the
-   polynomial identities that follow give the witness. The Pedersen
-   commitment com(a; r) = h^r ∏ g_i^{a_i} only reads the first |gs|
-   coordinates of a, so a binding break is two different openings of full
-   length |gs|; openings of other lengths are padded (pad). The verifiers
-   check that the response vectors have the length of the commitment key
-   and that the Hadamard challenges are non-zero, so the theorems assume
-   nothing about the transcripts beyond their acceptance.
+    This file proves knowledge soundness, in the form of special soundness with
+    respect to a tree of accepting transcripts, for the verifiers defined in
+    [BayerGroth.v]: the zero argument, the Hadamard product argument, the
+    single value product argument, the product argument, the
+    multi-exponentiation argument and the full verifiable shuffle argument of
+    Bayer and Groth (_Efficient Zero-Knowledge Argument for Correctness of a
+    Shuffle_, EUROCRYPT 2012). The protocol messages and the honest prover are
+    in [BayerGroth.v]; the zero-knowledge simulators are in [BayerGrothZK.v].
 
-     zero argument            2m + 1 challenges          zero_soundness (_ext: explicit openings)
-     single value product     n + 1 challenges           svp_soundness
-     Hadamard                 m × n challenge pairs, a zero argument at each   hadamard_soundness
-     product                  Hadamard and single value product              product_soundness
-     multi-exponentiation     2m challenges, Vandermonde in the ciphertext space   multiexp_soundness
-     shuffle                  N values of x, > 2N² of y, > N of z, the sub-arguments at each   shuffle_soundness
+    All results are purely algebraic and deterministic. Nothing is said about
+    probabilities, knowledge error or running time of an extractor; instead
+    every theorem has the shape
 
-   The shuffle theorem: a prover who answers every challenge tuple of these
-   sets acceptingly either breaks the binding of the commitment key or knows
-   a permutation σ and re-encryption exponents ρ with
-   C'_i = Enc(1; ρ_i) · C_{σ(i)} for every i, the witness of the shuffle
-   (PolyPerm.perm_of_products turns the product identity into σ, and
-   coeff_from_evals over the N values of x gives the ρ_i). *)
+[[
+    (enough accepting transcripts with distinct challenges)  ->
+    (a witness for the statement exists)  \/  binding_break h gs
+]]
 
+    where [binding_break h gs] says that two different full-length openings
+    of the same Pedersen commitment under the key [(h, gs)] are known. The
+    reduction from [binding_break] to the discrete-logarithm problem is not
+    part of this file. The witness is constructed explicitly (as Lagrange
+    combinations of the responses), so the proofs are constructive
+    extractors, although they are stated with [exists].
+
+    The Pedersen commitment is [com h gs a r = h^r · ∏ g_i^(a_i)]. It only
+    reads the first [length gs] coordinates of [a], so [binding_break] is
+    stated for openings of exact length [length gs], and openings of other
+    lengths are normalised with [pad]. The verifiers in [BayerGroth.v] check
+    the lengths of the response vectors and (for the Hadamard argument) that
+    the challenges are non-zero, so the theorems assume nothing about the
+    transcripts beyond acceptance, the number of challenges and their
+    distinctness.
+
+    The proof technique is the same throughout:
+
+    - a committed polynomial [geval (c_0 :: … :: c_k) x = ∏ c_i^(x^i)] that
+      is opened at [k+1] distinct challenges is opened coefficientwise by the
+      inverse Vandermonde matrix ([geval_openings], built on
+      [coeff_from_evals] of [PolyRoots.v]);
+    - comparing these extracted openings with the responses gives, unless
+      binding breaks, a polynomial identity at every challenge
+      ([open_eq_or_break]);
+    - a polynomial identity of degree below the number of challenges holds
+      coefficientwise ([agree_nth] of [PolyRoots.v]), and the relevant
+      coefficient is the claim of the statement.
+
+    Summary of the main theorems (m is the number of committed rows, n the
+    length of the commitment key [gs], N = m·n):
+
+    - [zero_soundness] (and [zero_soundness_ext] with explicit openings):
+      2m+1 distinct challenges x; the extracted openings [A], [B] of [cA],
+      [cB] satisfy [Σ_i A_i ⋆_y B_i = 0] for the bilinear map [star] of
+      [BayerGroth.v].
+    - [hadamard_soundness]: m distinct x, n distinct y, and for every pair a
+      full zero-argument tree of 2m+1 challenges; the extracted openings of
+      [cA] and [cb] satisfy [b = A_1 ∘ … ∘ A_m] (entrywise product).
+    - [svp_soundness]: n+1 distinct challenges; the opening [a] of [ca]
+      satisfies [∏ a_i = b].
+    - [product_soundness]: composition of the two previous ones; the openings
+      [A] of [cA] satisfy [∏ (A_1 ∘ … ∘ A_m) = b].
+    - [multiexp_soundness]: 2m distinct challenges; the openings [A] of [cA]
+      satisfy [C = Enc(1; ρ) · ∏_i C_i^(A_i)] for ElGamal-style vector
+      ciphertexts.
+    - [shuffle_soundness]: N distinct x, more than 2N² distinct y, more than
+      N distinct z and the above trees for the sub-arguments at each
+      challenge tuple; then there are a permutation σ and randomisers ρ with
+      [C'_i = Enc(1; ρ_i) · C_(σ(i))] for every i.
+
+    The shuffle theorem additionally assumes that the map [i ↦ fnat i] is
+    injective on [{0, …, N−1}], i.e. the characteristic of the field exceeds N. The
+    permutation is obtained from the product identity by [perm_of_products]
+    of [PolyPerm.v] (a Schwartz–Zippel style root-counting argument, hence
+    the bounds on the numbers of y and z challenges). Other building blocks:
+    [SigmaK.v] (list polynomial arithmetic), [MultiExp.v] ([lmexp], [veval]),
+    [PolyRoots.v] (Lagrange coefficients [lam], [agree_nth]). *)
 From Stdlib Require Import Utf8 Vector Fin Lia Bool List Permutation setoid_ring.Field PeanoNat Arith.
 From Algebra Require Import Hierarchy Group Monoid Field Integral_domain Ring
   Vector_space Vector_product_space.
@@ -38,6 +83,14 @@ From Crypto Require Import Sigma MultiExp OkamotoRows PolyRoots SigmaK PolyPerm 
 From Utility Require Import Util.
 Import ListNotations.
 
+(** ** Setting
+
+    [F] is the scalar field and [G] a group seen as an [F]-vector space
+    (written multiplicatively in the prose: [gop] is the group law and
+    [gpow] exponentiation). Equality on both is decidable, since the
+    verifiers compare group elements. The local notations instantiate the
+    generic polynomial and commitment machinery of [BayerGroth.v],
+    [MultiExp.v] and [SigmaK.v] at this field and group. *)
 Section BayerGrothSound.
 
   Context
@@ -98,16 +151,21 @@ Section BayerGrothSound.
     (gid := gid) (gop := gop) (gpow := gpow) (Gdec := Gdec)).
   Local Notation zero_argument := (@zero_argument F G).
 
-  (* ---------------------------------------------------------------- *)
-  (* booleans                                                          *)
-  (* ---------------------------------------------------------------- *)
+  (** ** Boolean reflection and finite choice *)
 
+  (** [gdec_true], [fdec_true]: a successful equality test of the verifier
+      yields a propositional equality in [G], respectively [F]. *)
   Lemma gdec_true : forall u v : G, (if Gdec u v then true else false) = true -> u = v.
   Proof. intros u v h; destruct (Gdec u v); [assumption | discriminate]. Qed.
 
   Lemma fdec_true : forall u v : F, (if Fdec u v then true else false) = true -> u = v.
   Proof. intros u v h; destruct (Fdec u v); [assumption | discriminate]. Qed.
 
+  (** [forall_or]: a finite conjunction of disjunctions with a common right
+      disjunct [Q] distributes. If every [j < k] satisfies [P j \/ Q], then
+      either all of them satisfy [P] or [Q] holds. This is how a
+      [binding_break] found at any single challenge is propagated out of a
+      quantifier over all challenges. *)
   Lemma forall_or : forall (P : nat -> Prop) (Q : Prop) (k : nat),
     (forall j, (j < k)%nat -> P j \/ Q) -> (forall j, (j < k)%nat -> P j) \/ Q.
   Proof.
@@ -117,18 +175,25 @@ Section BayerGrothSound.
     left; intros j hj. destruct (Nat.eq_dec j k) as [-> | hne]; [exact hk | apply hp; lia].
   Qed.
 
-  (* ---------------------------------------------------------------- *)
-  (* Pedersen commitments: padding and binding                         *)
-  (* ---------------------------------------------------------------- *)
+  (** ** Pedersen commitments: padding and binding
 
+      [com h gs a r] ignores the coordinates of [a] beyond [length gs] and
+      treats missing ones as zero; this section turns any two openings of the
+      same commitment into either equal openings or a [binding_break]. *)
+
+  (** [pad n a] is [a] truncated or zero-extended to length exactly [n]. *)
   Definition pad (n : nat) (a : list F) : list F := map (fun i => nth i a zero) (seq 0 n).
 
+  (** [pad_length], [nth_pad]: [pad n a] has length [n] and agrees with [a]
+      (with default [zero]) on the first [n] positions. *)
   Lemma pad_length : forall n a, length (pad n a) = n.
   Proof. intros; unfold pad; rewrite length_map, length_seq; reflexivity. Qed.
 
   Lemma nth_pad : forall n a i, (i < n)%nat -> nth i (pad n a) zero = nth i a zero.
   Proof. intros n a i hi; unfold pad; exact (PolyPerm.nth_map_seq (fun j => nth j a zero) n i zero hi). Qed.
 
+  (** The multi-exponentiation [∏ g_i^(a_i)] only depends on [pad (length
+      gs) a]. *)
   Lemma gmexp_pad : forall (gs : list G) (a : list F), gmexp gs a = gmexp gs (pad (length gs) a).
   Proof.
     induction gs as [| g gs ih]; intros a; [rewrite !lmexp_nil_l; reflexivity |].
@@ -140,14 +205,22 @@ Section BayerGrothSound.
     + rewrite !lmexp_cons; cbn [nth]. f_equal. unfold pad in ih; apply ih.
   Qed.
 
+  (** Consequently [com h gs a r = com h gs (pad (length gs) a) r]. *)
   Lemma com_pad : forall h gs a r, com h gs a r = com h gs (pad (length gs) a) r.
   Proof. intros; unfold BayerGroth.com; f_equal; apply gmexp_pad. Qed.
 
-  (* two different openings of full length of one commitment *)
+  (** [binding_break h gs]: there are two different openings [(a, r) ≠ (a',
+      r')] with [length a = length a' = length gs] and [com h gs a r = com h
+      gs a' r']. Under the discrete-logarithm assumption for the key [(h,
+      gs)] such a pair is hard to find; every soundness theorem below has
+      this as its escape clause. *)
   Definition binding_break (h : G) (gs : list G) : Prop :=
     exists a r a' r', length a = length gs /\ length a' = length gs /\
       com h gs a r = com h gs a' r' /\ (a <> a' \/ r <> r').
 
+  (** If [com h gs a r = com h gs a' r'] (for arbitrary lengths of [a],
+      [a']), then either [r = r'] and [a], [a'] agree on the first [length
+      gs] positions, or binding breaks (witnessed by the padded openings). *)
   Lemma open_eq_or_break : forall h gs a r a' r', com h gs a r = com h gs a' r' ->
     (r = r' /\ forall i, (i < length gs)%nat -> nth i a zero = nth i a' zero) \/ binding_break h gs.
   Proof.
@@ -166,6 +239,8 @@ Section BayerGrothSound.
       * right; exact hr.
   Qed.
 
+  (** Variant of [open_eq_or_break] for openings of full length [length gs]:
+      either [a = a'] and [r = r'], or binding breaks. *)
   Lemma open_eq_or_break_len : forall h gs a r a' r', length a = length gs -> length a' = length gs ->
     com h gs a r = com h gs a' r' -> (a = a' /\ r = r') \/ binding_break h gs.
   Proof.
@@ -173,14 +248,20 @@ Section BayerGrothSound.
     split; [| exact hr]. apply (nth_ext _ _ zero zero); [lia |]. intros i hi; apply hn; lia.
   Qed.
 
-  (* ---------------------------------------------------------------- *)
-  (* openings of a commitment polynomial from k evaluations            *)
-  (* ---------------------------------------------------------------- *)
+  (** ** Opening a committed polynomial from its evaluations
 
-  (* Σ_{j<k} c_j · A_j, zero-padded *)
+      If [geval cs x_j = com h gs (A_j) (r_j)] for [k = length cs] distinct
+      points [x_j], each coefficient commitment [c_i] is the commitment to the
+      Lagrange combination [Σ_j λ_(i,j) · A_j]. This is the generic extraction
+      step of every sub-argument. *)
+
+  (** [lcomb c A k] is the vector [Σ_(j<k) c_j · A_j], computed with [padd]
+      (so vectors of different lengths are zero-extended). *)
   Fixpoint lcomb (c : nat -> F) (A : nat -> list F) (k : nat) : list F :=
     match k with 0 => [] | S k' => padd (lcomb c A k') (lscale (c k') (A k')) end.
 
+  (** If [k > 0] and every [A_j] (for [j < k]) has length [n], then [lcomb c
+      A k] has length [n]. *)
   Lemma lcomb_length : forall c A k n, (0 < k)%nat -> (forall j, (j < k)%nat -> length (A j) = n) ->
     length (lcomb c A k) = n.
   Proof.
@@ -189,6 +270,7 @@ Section BayerGrothSound.
     destruct k as [| k]; [reflexivity | rewrite ih by (lia || (intros; apply hA; lia)); lia].
   Qed.
 
+  (** On one-element vectors [lcomb] is the scalar sum [Σ_(j<k) c_j · f_j]. *)
   Lemma lcomb_singletons : forall c (f : nat -> F) k, (0 < k)%nat ->
     lcomb c (fun j => [f j]) k = [fsum (fun j => c j * f j) k].
   Proof.
@@ -197,6 +279,8 @@ Section BayerGrothSound.
     rewrite ih by lia; cbn [SigmaK.padd SigmaK.lscale map]; reflexivity.
   Qed.
 
+  (** Homomorphism of Pedersen commitments: [∏_(j<k) com(a_j; r_j)^(c_j) =
+      com(Σ c_j a_j; Σ c_j r_j)]. *)
   Lemma gsum_com : forall h gs (a : nat -> list F) (r c : nat -> F) k,
     gsum (fun j => (com h gs (a j) (r j)) ^ (c j)) k = com h gs (lcomb c a k) (fsum (fun j => c j * r j) k).
   Proof.
@@ -205,7 +289,13 @@ Section BayerGrothSound.
     + rewrite ih, (com_padd (Hvec := Hvec)), (com_scale (Hvec := Hvec)); reflexivity.
   Qed.
 
-  (* the inverse Vandermonde matrix opens every coefficient commitment *)
+  (** Coefficient extraction by the inverse Vandermonde matrix. Let [xs] be
+      distinct ([NoDup]) with [length cs = length xs], and suppose that for
+      every [j] the committed polynomial [geval cs (x_j)] opens to [(A j, r
+      j)]. Then the [i]-th coefficient [c_i] opens to [(Σ_j λ_(i,j) A_j, Σ_j
+      λ_(i,j) r_j)], where [lam xs i j] are the coefficients of the inverse
+      Vandermonde matrix ([PolyRoots.v]). Proof: [coeff_from_evals] writes
+      [c_i] as [∏_j (geval cs x_j)^(λ_(i,j))], then [gsum_com]. *)
   Theorem geval_openings : forall h gs (xs : list F) (cs : list G) (A : nat -> list F) (r : nat -> F),
     NoDup xs -> length cs = length xs ->
     (forall j, (j < length xs)%nat -> geval cs (nth j xs zero) = com h gs (A j) (r j)) ->
@@ -219,7 +309,8 @@ Section BayerGrothSound.
     apply gsum_com.
   Qed.
 
-  (* the openings as lists, and the commitment list they open *)
+  (** A list [cs] of length [k] whose [i]-th entry opens to [(A i, r i)] is
+      exactly [com_list] of the lists of openings. *)
   Lemma com_list_of_openings : forall h gs (cs : list G) (A : nat -> list F) (r : nat -> F) k,
     length cs = k -> (forall i, (i < k)%nat -> nth i cs gid = com h gs (A i) (r i)) ->
     cs = com_list h gs (map A (seq 0 k)) (map r (seq 0 k)).
@@ -230,14 +321,25 @@ Section BayerGrothSound.
       rewrite !PolyPerm.nth_map_seq by exact hi. apply hn; exact hi.
   Qed.
 
-  (* ---------------------------------------------------------------- *)
-  (* zero argument: (2m+1)-special soundness                           *)
-  (* ---------------------------------------------------------------- *)
-
+  (** A successful inequality test [x ≠ y] of the verifier. *)
   Lemma fdec_ne : forall u v : F, (if Fdec u v then false else true) = true -> u <> v.
   Proof. intros u v h e; destruct (Fdec u v) eqn:E; [discriminate | exact (n e)]. Qed.
 
-  (* the verifier checks that the response vectors have the commitment key's length *)
+  (** ** Zero argument: (2m+1)-special soundness
+
+      Statement: two lists of [m] commitments [cA] and [cB] and a challenge
+      [y]. Claim: the position-wise openings [A_1 … A_m] of [cA] and [B_1 …
+      B_m] of [cB] satisfy [Σ_i A_i ⋆_y B_i = 0], where [a ⋆_y b = Σ_j a_j
+      b_j y^(j+1)] ([star] of [BayerGroth.v]). The prover commits to random
+      blinders [A_0] (as [cA0]) and [B_(m+1)] (as [cBm]) and to the [2m+1]
+      coefficients [d_k] of the product of the polynomials [Σ_(i=0..m) x^i
+      A_i] (coefficient list [cA0 :: cA]) and [x^0 B_(m+1) + Σ_(i=1..m)
+      x^(m+1-i) B_i] (coefficient list [cBm :: rev cB]). Matching pairs [A_i
+      ⋆ B_i] land on [x^(m+1)], so [d_(m+1)] is the claimed sum; the verifier
+      checks [c_(d_(m+1)) = 1] and the three opened evaluations at [x]. *)
+
+  (** The zero-argument verifier guarantees that both response vectors have
+      the length of the commitment key. *)
   Lemma zero_verify_lengths {h gs cA cB y x cA0 cBm cd a b r s t} :
     zero_verify h gs cA cB y x (mk_zero cA0 cBm cd a b r s t) = true -> length a = length gs /\ length b = length gs.
   Proof.
@@ -247,6 +349,11 @@ Section BayerGrothSound.
     split; assumption.
   Qed.
 
+  (** Unpacking of an accepting zero-argument transcript: the length
+      conditions, [c_(d_(m+1)) = 1] (index [S m] of [cd]), and the three
+      verification equations [geval (cA0 :: cA) x = com(a; r)],
+      [geval (cBm :: rev cB) x = com(b; s)] and
+      [geval cd x = com([a ⋆_y b]; t)]. *)
   Lemma zero_verify_true : forall h gs cA cB y x cA0 cBm cd a b r s t,
     zero_verify h gs cA cB y x (mk_zero cA0 cBm cd a b r s t) = true ->
     (1 <= length cA)%nat /\ length cB = length cA /\ length cd = (2 * length cA + 1)%nat /\
@@ -264,15 +371,19 @@ Section BayerGrothSound.
     repeat split; assumption.
   Qed.
 
-  (* the extractor's openings of c_{A1..m} (from the first m + 1 challenges) *)
+  (** The extracted statement openings. From the first [m+1] challenges,
+      [zopenA m xs a] are the openings of [A_1 … A_m] (coefficients [1 … m]
+      of [cA0 :: cA]) and [zopenr] their randomness; [zopenB] and [zopens]
+      are the same for [cBm :: rev cB], reversed so that they open [cB] in
+      its stated order [B_0 … B_(m-1)]. *)
   Definition zopenA (m : nat) (xs : list F) (a : nat -> list F) : list (list F) :=
     map (fun i => lcomb (lam (firstn (S m) xs) (S i)) a (S m)) (seq 0 m).
   Definition zopenr (m : nat) (xs : list F) (r : nat -> F) : list F :=
     map (fun i => fsum (fun j => lam (firstn (S m) xs) (S i) j * r j) (S m)) (seq 0 m).
-  (* … and of c_{B0..m−1}, committed in reverse order *)
   Definition zopenB (m : nat) (xs : list F) (b : nat -> list F) : list (list F) := rev (zopenA m xs b).
   Definition zopens (m : nat) (xs : list F) (s : nat -> F) : list F := rev (zopenr m xs s).
 
+  (** The four extracted lists all have length [m]. *)
   Lemma zopenA_length : forall m xs a, length (zopenA m xs a) = m.
   Proof. intros; unfold zopenA; rewrite length_map, length_seq; reflexivity. Qed.
   Lemma zopenr_length : forall m xs r, length (zopenr m xs r) = m.
@@ -282,6 +393,25 @@ Section BayerGrothSound.
   Lemma zopens_length : forall m xs s, length (zopens m xs s) = m.
   Proof. intros; unfold zopens; rewrite length_rev; apply zopenr_length. Qed.
 
+  (** Special soundness of the zero argument, with explicit witnesses.
+      Hypotheses: the key has [length gs ≥ 1]; [xs] is a list of [2m+1]
+      distinct challenges ([m = length cA]); for every [j] the transcript
+      with first message [(cA0, cBm, cd)] (fixed) and challenge [x_j] with
+      responses [(a j, b j, r j, s j, t j)] is accepted for the same [y].
+      Conclusion: either binding breaks, or [cA] and [cB] are the
+      commitment lists of [zopenA]/[zopenr] and [zopenB]/[zopens], all
+      opened vectors have length [length gs], and
+      [Σ_i zopenA_i ⋆_y zopenB_i = 0].
+
+      Proof idea: [geval_openings] on the first [m+1] challenges opens [cA0
+      :: cA] and [cBm :: rev cB], and on all [2m+1] challenges opens [cd].
+      Binding then shows that at every challenge the responses are the
+      evaluations of the extracted polynomials, so the polynomial identity
+      [(Σ x^i A_i) ⋆ (Σ x^i B'_i) = Σ x^i d_i] holds at [2m+1] points and,
+      by degree [2m], coefficientwise ([agree_nth]). The coefficient of
+      [x^(m+1)] is the claimed sum ([conv_middle]), and the middle
+      commitment [c_(d_(m+1)) = 1 = com(0; 0)] forces [d_(m+1) = 0] unless
+      binding breaks. *)
   Theorem zero_soundness_ext : forall (h : G) (gs : list G) (cA cB : list G) (y : F) (cA0 cBm : G) (cd : list G)
     (xs : list F) (a b : nat -> list F) (r s t : nat -> F),
     (1 <= length gs)%nat ->
@@ -297,6 +427,7 @@ Section BayerGrothSound.
     \/ binding_break h gs.
   Proof.
     intros h gs cA cB y cA0 cBm cd xs a b r s t hn hnd hk htr0.
+    (* Record the length facts checked by the verifier at every challenge. *)
     assert (htr : forall j, (j < length xs)%nat -> length (a j) = length gs /\ length (b j) = length gs /\
       zero_verify h gs cA cB y (nth j xs zero) (mk_zero cA0 cBm cd (a j) (b j) (r j) (s j) (t j)) = true)
       by (intros j hj; destruct (zero_verify_lengths (htr0 j hj)); repeat split; auto).
@@ -316,7 +447,8 @@ Section BayerGrothSound.
       by (intros j hj; destruct (htr j ltac:(lia)) as (_ & _ & hv); apply zero_verify_true in hv; tauto).
     assert (hla : forall j, (j < k)%nat -> length (a j) = n) by (intros j hj; destruct (htr j ltac:(lia)); tauto).
     assert (hlb : forall j, (j < k)%nat -> length (b j) = n) by (intros j hj; destruct (htr j ltac:(lia)); tauto).
-    (* the first m + 1 challenges open cA0 :: cA and cBm :: rev cB *)
+    (* The first m + 1 challenges open the commitments cA0 :: cA and
+       cBm :: rev cB coefficientwise by the inverse Vandermonde matrix. *)
     set (X1 := firstn (S m) xs).
     assert (hX1nd : NoDup X1) by (apply NoDup_firstn; exact hnd).
     assert (hX1l : length X1 = S m) by (unfold X1; rewrite length_firstn; lia).
@@ -335,14 +467,13 @@ Section BayerGrothSound.
       apply (geval_openings h gs X1 (cBm :: rev cB) b s hX1nd);
         [rewrite hX1l; cbn [length]; rewrite length_rev; lia | | rewrite hX1l; lia].
       intros j hj; rewrite hX1l in hj; rewrite hX1n by lia; apply hevB; lia. }
-    (* all 2m + 1 challenges open cd *)
+    (* All 2m + 1 challenges open the coefficient commitments cd. *)
     set (dsum := fun i => fsum (fun j => lam xs i j * star y (a j) (b j)) k).
     set (t' := fun i => fsum (fun j => lam xs i j * t j) k).
     assert (hopenD : forall i, (i < k)%nat -> nth i cd gid = com h gs [dsum i] (t' i)).
     { intros i hi. unfold dsum, t'. rewrite <-lcomb_singletons by lia. rewrite <-hk.
       apply (geval_openings h gs xs cd (fun j => [star y (a j) (b j)]) t hnd); [rewrite hk; lia | | rewrite hk; lia].
       intros j hj; rewrite hk in hj; apply hevD; lia. }
-    (* as commitment lists *)
     set (A'' := map A' (seq 0 (S m))). set (r'' := map r' (seq 0 (S m))).
     set (B'' := map B' (seq 0 (S m))). set (s'' := map s' (seq 0 (S m))).
     set (d := map dsum (seq 0 k)). set (t'' := map t' (seq 0 k)).
@@ -362,7 +493,8 @@ Section BayerGrothSound.
     assert (hlenBs : length B'' = length s'') by (unfold B'', s''; rewrite !length_map; reflexivity).
     assert (hlend : length d = k) by (unfold d; rewrite length_map, length_seq; reflexivity).
     assert (hlendt : length (map (fun dk => [dk]) d) = length t'') by (unfold t''; rewrite !length_map, length_seq; exact hlend).
-    (* by binding, the responses are the evaluations of the extracted openings *)
+    (* By binding, the responses at each challenge are the evaluations of
+       the extracted openings. *)
     assert (hresp : (forall j, (j < k)%nat ->
         a j = lveval A'' (nth j xs zero) /\ b j = lveval B'' (nth j xs zero) /\
         star y (a j) (b j) = feval d (nth j xs zero)) \/ binding_break h gs).
@@ -379,7 +511,8 @@ Section BayerGrothSound.
       left; split; [symmetry; exact ea | split; [symmetry; exact eb |]].
       specialize (ed 0%nat ltac:(lia)); cbn [nth] in ed; symmetry; exact ed. }
     destruct hresp as [hresp | hbb]; [| right; exact hbb].
-    (* the polynomial identity (Σ x^i A_i) ⋆ (Σ x^i B_i) = Σ x^i d_i at 2m + 1 points *)
+    (* The product-polynomial identity holds at 2m + 1 distinct points, hence
+       coefficientwise; we keep the coefficient of x^(m+1). *)
     assert (hpoly : forall i, nth i (fpmul (star y) A'' B'') zero = nth i d zero).
     { intros i. apply (agree_nth (Fdec := Fdec) (Hf := Hf) xs).
       + exact hnd.
@@ -389,11 +522,11 @@ Section BayerGrothSound.
       + intros x hx. destruct (In_nth xs x zero hx) as (j & hj & <-).
         rewrite <-!(feval_eval (Hvec := Hvec)), (feval_pmul_star (Hvec := Hvec)).
         destruct (hresp j ltac:(lia)) as (ea & eb & ed). rewrite <-ea, <-eb; exact ed. }
-    (* the coefficient of x^{m+1} *)
     specialize (hpoly (S m)).
     rewrite (nth_pmul (HV := F_vspace (Hvec := Hvec)) _ []) in hpoly by (intro v; apply star_nil_r).
     unfold d in hpoly; rewrite PolyPerm.nth_map_seq in hpoly by lia.
-    (* the statement openings *)
+    (* Split off the random blinders A_0 and B_m, leaving the statement
+       openings, and identify the middle coefficient with the claimed sum. *)
     set (Astmt := map (fun i => A' (S i)) (seq 0 m)).
     set (Bstmt := rev (map (fun i => B' (S i)) (seq 0 m))).
     assert (hA''eq : A'' = A' 0%nat :: Astmt) by (unfold A'', Astmt; cbn [seq map]; rewrite <-seq_shift, map_map; reflexivity).
@@ -405,7 +538,8 @@ Section BayerGrothSound.
     rewrite star_nil_r in hpoly.
     pose proof (conv_middle (zero := zero) (add := add) (mul := mul) y Astmt Bstmt (B' 0%nat) ltac:(lia)) as hcm.
     rewrite hlBstmt in hcm. rewrite hcm in hpoly.
-    (* the middle commitment is com(0; 0) *)
+    (* The middle commitment is the identity, i.e. com(0; 0), so the middle
+       coefficient is zero unless binding breaks. *)
     assert (hzero : dsum (S m) = zero \/ binding_break h gs).
     { pose proof (hopenD (S m) ltac:(lia)) as h0.
       pose proof (eq_trans (com_zero_single (Hvec := Hvec) h gs) (eq_trans (eq_sym hmid) h0)) as h1.
@@ -429,6 +563,12 @@ Section BayerGrothSound.
     match goal with |- ?S0 = zero => transitivity (zero + S0); [field | rewrite hpoly; exact hzero] end.
   Qed.
 
+  (** Special soundness of the zero argument with the witness existentially
+      quantified: under the hypotheses of [zero_soundness_ext], either
+      binding breaks or there are openings [A], [B] (with randomness [ra],
+      [sb]) of [cA], [cB], all of length [m] with vectors of length
+      [length gs], such that [Σ_i A_i ⋆_y B_i = 0]. Immediate from
+      [zero_soundness_ext]. *)
   Theorem zero_soundness : forall (h : G) (gs : list G) (cA cB : list G) (y : F) (cA0 cBm : G) (cd : list G)
     (xs : list F) (a b : nat -> list F) (r s t : nat -> F),
     (1 <= length gs)%nat ->
@@ -449,10 +589,17 @@ Section BayerGrothSound.
     repeat split; try assumption; (apply zopenA_length || apply zopenB_length || apply zopenr_length || apply zopens_length).
   Qed.
 
-  (* ---------------------------------------------------------------- *)
-  (* Hadamard argument: soundness from the zero argument              *)
-  (* ---------------------------------------------------------------- *)
+  (** ** Hadamard argument: soundness from the zero argument
 
+      Statement: commitments [cA = (c_(A_0), …, c_(A_(m-1)))] with [m ≥ 2]
+      and [cb]. Claim: [b = A_0 ∘ A_1 ∘ … ∘ A_(m-1)] (entrywise product,
+      [hprefix A (m-1)]). The prover commits to the partial products [B_i =
+      A_0 ∘ … ∘ A_i] as [cB], with [c_(B_0) = c_(A_0)] and [c_(B_(m-1)) =
+      cb], and uses challenges [x], [y] to batch the [m-1] relations
+      [B_(i+1) = A_(i+1) ∘ B_i] into one zero-argument statement
+      ([hadamard_zero_stmt]): with [⋆_y] the bilinear map,
+      [Σ_i x^(i+1) (A_(i+1) ⋆_y B_i) − (1,…,1) ⋆_y D = 0], where [D] is the
+      committed [Σ_i x^(i+1) B_(i+1)]. *)
   Local Notation hadamard_verify := (hadamard_verify (zero := zero) (one := one) (add := add) (mul := mul)
     (opp := opp) (Fdec := Fdec) (gid := gid) (gop := gop) (gpow := gpow) (Gdec := Gdec)).
   Local Notation mk_had := (@mk_had F G).
@@ -460,6 +607,7 @@ Section BayerGrothSound.
   Local Notation hprefix := (hprefix (mul := mul)).
   Local Notation star_w := (star_w (zero := zero) (add := add) (mul := mul)).
 
+  (** The Hadamard verifier rejects the challenges [x = 0] and [y = 0]. *)
   Lemma hadamard_verify_nonzero {h gs n cA cb x y xz arg} :
     hadamard_verify h gs n cA cb x y xz arg = true -> x <> zero /\ y <> zero.
   Proof.
@@ -468,6 +616,8 @@ Section BayerGrothSound.
     split; apply fdec_ne; assumption.
   Qed.
 
+  (** The Hadamard verifier checks (through the zero argument) that both
+      zero-argument responses have length [length gs]. *)
   Lemma hadamard_verify_lengths {h gs n cA cb x y xz cB cA0 cBm cd a b r s t} :
     hadamard_verify h gs n cA cb x y xz (mk_had cB (mk_zero cA0 cBm cd a b r s t)) = true ->
     length a = length gs /\ length b = length gs.
@@ -477,6 +627,11 @@ Section BayerGrothSound.
     match goal with h : zero_verify _ _ _ _ _ _ _ = true |- _ => exact (zero_verify_lengths h) end.
   Qed.
 
+  (** Unpacking of an accepting Hadamard transcript: [m ≥ 2], [length cB =
+      m], [c_(B_0) = c_(A_0)], [c_(B_(m-1)) = cb], and the zero argument
+      accepts the statement [hadamard_zero_stmt], written out: first list
+      [tl cA ++ [com((−1,…,−1); 0)]], second list [(c_(B_i)^(x^(i+1)))_(i<m-1)
+      ++ [(geval (tl cB) x)^x]]. *)
   Lemma hadamard_verify_true : forall h gs n cA cb x y xz cB zarg,
     hadamard_verify h gs n cA cb x y xz (mk_had cB zarg) = true ->
     (2 <= length cA)%nat /\ length cB = length cA /\ nth 0 cB gid = nth 0 cA gid /\ nth (length cA - 1) cB gid = cb /\
@@ -494,6 +649,9 @@ Section BayerGrothSound.
     repeat split; assumption.
   Qed.
 
+  (** Arithmetic helpers for the Hadamard proof.
+
+      [fsum_shift]: [Σ_(i<k+1) f i = f 0 + Σ_(i<k) f (i+1)]. *)
   Lemma fsum_shift : forall (f : nat -> F) (k : nat), fsum f (S k) = f 0%nat + fsum (fun i => f (S i)) k.
   Proof.
     intros f k; induction k as [| k ih]; [cbn; field |].
@@ -501,6 +659,9 @@ Section BayerGrothSound.
     change (fsum (fun i => f (S i)) (S k)) with (fsum (fun i => f (S i)) k + f (S k)). field.
   Qed.
 
+  (** The zero-argument sum [Σ_i A_i ⋆_y B_i] written with [fold_right] over
+      [combine A B] equals the indexed sum [fsum] when both lists have
+      length [k]. *)
   Lemma fold_combine_fsum : forall (y : F) (A B : list (list F)) (k : nat), length A = k -> length B = k ->
     fold_right add zero (map (fun p => star y (fst p) (snd p)) (combine A B)) = fsum (fun i => star y (nth i A []) (nth i B [])) k.
   Proof.
@@ -516,6 +677,10 @@ Section BayerGrothSound.
       symmetry; apply fsum_shift.
   Qed.
 
+  (** [star_w_ones], [star_ones_feval]: pairing with the all-ones vector
+      evaluates the other vector as a polynomial, [(1,…,1) ⋆_y v = y ·
+      v(y)], provided [length v ≤ n]. This turns the vector identities
+      of the Hadamard argument into polynomial identities in [y]. *)
   Lemma star_w_ones : forall (n : nat) (v : list F) (w y : F), (length v <= n)%nat ->
     star_w w y (repeat one n) v = w * feval v y.
   Proof.
@@ -529,25 +694,31 @@ Section BayerGrothSound.
     star y (repeat one n) v = y * feval v y.
   Proof. intros; unfold BayerGroth.star; apply star_w_ones; assumption. Qed.
 
+  (** [⋆_y] is additive in its right argument. *)
   Lemma star_padd_r : forall y a u v, star y a (padd u v) = star y a u + star y a v.
   Proof. intros; unfold BayerGroth.star; apply (star_w_padd_r (Hvec := Hvec)). Qed.
 
+  (** The entrywise product [hmul] is commutative. *)
   Lemma hmul_comm : forall a b : list F, hmul a b = hmul b a.
   Proof.
     induction a as [| a0 a ih]; intros b; destruct b as [| b0 b]; try reflexivity.
     unfold BayerGroth.hmul in *; cbn [combine map fst snd]; rewrite ih; f_equal; field.
   Qed.
 
+  (** Adding the zero vector of the same length is the identity. *)
   Lemma padd_zeros : forall (n : nat) (v : list F), length v = n -> padd (repeat zero n) v = v.
   Proof.
     induction n as [| n ih]; intros v hl; destruct v as [| v0 v]; try discriminate; [reflexivity |].
     cbn [repeat SigmaK.padd]; rewrite ih by (cbn in hl; lia); f_equal; field.
   Qed.
 
+  (** [com((0,…,0); 0)] is the group identity. *)
   Lemma com_zeros : forall h gs (n : nat), com h gs (repeat zero n) zero = gid.
   Proof. intros; unfold BayerGroth.com; rewrite gpow_zero, (lmexp_repeat_zero (HV := Hvec)), gid_l; reflexivity. Qed.
 
-  (* an opening of c^x for x ≠ 0 is an opening of c *)
+  (** If [c^x = com(v; t)] and [x ≠ 0], then [c = com(x⁻¹ v; x⁻¹ t)]. Used
+      to open [c_(B_0)] from the commitment [c_(B_0)^x] that appears in the
+      zero-argument statement. *)
   Lemma open_pow : forall h gs (c : G) (x : F) (v : list F) (t : F), x <> zero ->
     c ^ x = com h gs v t -> c = com h gs (lscale (inv x) v) (inv x * t).
   Proof.
@@ -555,6 +726,30 @@ Section BayerGrothSound.
     replace (x * inv x) with one by (field; exact hx). rewrite (gpow_one (Hvec := Hvec)); reflexivity.
   Qed.
 
+  (** Special soundness of the Hadamard argument. Hypotheses: [length gs =
+      n ≥ 1], [length cA = m ≥ 2]; [X] is a list of [m] distinct challenges
+      [x] and [Y] a list of [n] distinct challenges [y]; the Hadamard first
+      message [cB] is fixed, and for every pair [(x_p, y_q)] there is a zero
+      argument tree: [2m+1] distinct challenges [zs p q] with fixed first
+      message [(cA0 p q, cBm p q, cd p q)], all accepted. (Non-zeroness of
+      the challenges is checked by the verifier, so it is not assumed.)
+      Conclusion: either binding breaks or there are openings [A] (with
+      randomness [r]) of [cA] and [(b, sb)] of [cb], all vectors of length
+      [n], with [b = hprefix A (m-1) = A_0 ∘ … ∘ A_(m-1)].
+
+      Proof idea: [zero_soundness_ext] at every pair [(p, q)] opens the
+      zero statement. Binding identifies the openings across pairs: the
+      openings of [tl cA] do not depend on [(p, q)]; [c_(B_0)] is opened
+      by [open_pow]; [c_(B_1) … c_(B_(m-1))] are opened by applying
+      [geval_openings] to the last zero-statement commitment [geval (1 ::
+      tl cB) x_p] at the [m] values [x_p]. The zero-argument conclusion then
+      reads [x · Σ_i x^i c_(q,i) = 0] with [c_(q,i) = A_(i+1) ⋆_y B_i −
+      (1,…,1) ⋆_y B_(i+1)]; since [x_p ≠ 0] and the [m] points exceed the
+      degree [m-2], all [c_(q,i) = 0]. By [star_w_hmul] and [star_ones_feval],
+      [c_(q,i) = y_q · D(y_q)] for the vector [D = A_(i+1) ∘ B_i − B_(i+1)]
+      of length [n], and [n] non-zero roots [y_q] force [D = 0]. Hence
+      [B_(i+1) = A_(i+1) ∘ B_i], and induction gives [B_(m-1) = hprefix A
+      (m-1)]. *)
   Theorem hadamard_soundness : forall (h : G) (gs : list G) (cA : list G) (cb : G) (cB : list G) (X Y : list F)
     (cA0 cBm : nat -> nat -> G) (cd : nat -> nat -> list G) (zs : nat -> nat -> list F)
     (za zb : nat -> nat -> nat -> list F) (zr zt zu : nat -> nat -> nat -> F),
@@ -571,7 +766,6 @@ Section BayerGrothSound.
     \/ binding_break h gs.
   Proof.
     intros h gs cA cb cB X Y cA0 cBm cd zs za zb zr zt zu hn hm hXnd hXl hYnd hYl htr0.
-    (* the lengths of the responses and the non-zero challenges are facts of the verifier *)
     assert (htr : forall p q, (p < length cA)%nat -> (q < length gs)%nat ->
       NoDup (zs p q) /\ length (zs p q) = (2 * length cA + 1)%nat /\
       forall j, (j < 2 * length cA + 1)%nat -> length (za p q j) = length gs /\ length (zb p q j) = length gs /\
@@ -591,7 +785,6 @@ Section BayerGrothSound.
     set (cneg := com h gs (repeat (opp one) n) zero).
     set (cDs := fun p => map (fun i => (nth i cB gid) ^ (fpow (x p) (S i))) (seq 0 (m - 1)%nat)).
     set (cD := fun p => (geval (tl cB) (x p)) ^ (x p)).
-    (* the facts of the Hadamard verifier *)
     assert (hcB : length cB = m).
     { destruct (htr 0%nat 0%nat ltac:(lia) ltac:(lia)) as (_ & hl & hj); destruct (hj 0%nat ltac:(lia)) as (_ & _ & hv).
       apply hadamard_verify_true in hv; tauto. }
@@ -601,9 +794,9 @@ Section BayerGrothSound.
     assert (hcBm : nth (m - 1)%nat cB gid = cb).
     { destruct (htr 0%nat 0%nat ltac:(lia) ltac:(lia)) as (_ & hl & hj); destruct (hj 0%nat ltac:(lia)) as (_ & _ & hv).
       apply hadamard_verify_true in hv; tauto. }
-    (* the zero argument at every (x_p, y_q) *)
     set (ZA := fun p q => zopenA m (zs p q) (za p q)). set (ZR := fun p q => zopenr m (zs p q) (zr p q)).
     set (ZB := fun p q => zopenB m (zs p q) (zb p q)). set (ZT := fun p q => zopens m (zs p q) (zt p q)).
+    (* Zero-argument soundness at every pair of challenges (x_p, y_q). *)
     assert (hz : (forall p, (p < m)%nat -> forall q, (q < n)%nat ->
         tl cA ++ [cneg] = com_list h gs (ZA p q) (ZR p q) /\
         cDs p ++ [cD p] = com_list h gs (ZB p q) (ZT p q) /\
@@ -625,7 +818,8 @@ Section BayerGrothSound.
     assert (hZBl : forall p q, length (ZB p q) = m) by (intros; apply zopenB_length).
     assert (hZRl : forall p q, length (ZR p q) = m) by (intros; apply zopenr_length).
     assert (hZTl : forall p q, length (ZT p q) = m) by (intros; apply zopens_length).
-    (* the components *)
+    (* Read off the components: openings of tl cA, of com(−1; 0), of the
+       scaled c_(B_i) and of the last commitment cD. *)
     assert (hA : forall p q i, (p < m)%nat -> (q < n)%nat -> (i < m - 1)%nat ->
       nth (S i) cA gid = com h gs (nth i (ZA p q) []) (nth i (ZR p q) zero)).
     { intros p q i hp hq hi. destruct (hz p hp q hq) as (h1 & _).
@@ -656,10 +850,11 @@ Section BayerGrothSound.
     { intros p q i hp hq hi. destruct (hz p hp q hq) as (_ & _ & h3 & _). apply h3, nth_In; rewrite hZAl; exact hi. }
     assert (hZBn : forall p q i, (p < m)%nat -> (q < n)%nat -> (i < m)%nat -> length (nth i (ZB p q) []) = n).
     { intros p q i hp hq hi. destruct (hz p hp q hq) as (_ & _ & _ & h4 & _). apply h4, nth_In; rewrite hZBl; exact hi. }
-    (* the openings of c_A (from the reference pair) and of c_B *)
     assert (hx0 : x 0%nat <> zero) by (apply hX0; unfold x; apply nth_In; lia).
+    (* Reference openings of tl cA from the pair (0, 0); c_(B_0) from
+       c_(B_0)^(x_0); c_(B_1) … c_(B_(m-1)) from cD(x_p) = geval (1 :: tl cB)
+       x_p at the m values x_p by the inverse Vandermonde matrix. *)
     set (Aop := fun i => nth i (ZA 0 0) []). set (rop := fun i => nth i (ZR 0 0) zero).
-    (* c_{B0} from c_{B0}^{x_0}; c_{B1..m−1} from c_D(x_p) = geval (1 :: tl c_B) x_p at the m challenges *)
     assert (hcDgeval : forall p, cD p = geval (gid :: tl cB) (x p)).
     { intros p; unfold cD; rewrite (veval_cons_vid (HV := Hvec)); reflexivity. }
     set (Bz := fun i => lcomb (lam X i) (fun p => nth (m - 1)%nat (ZB p 0) []) m).
@@ -684,14 +879,14 @@ Section BayerGrothSound.
       + unfold Bop, SigmaK.lscale; rewrite length_map; apply hZBn; lia.
       + unfold Bop, Bz; apply lcomb_length; [lia |]. intros p hp; apply hZBn; lia. }
     assert (hAn : forall i, (i < m - 1)%nat -> length (Aop i) = n) by (intros i hi; unfold Aop; apply hZAn; lia).
-    (* the full opening of c_B and of the tail statement 1 :: tl c_B *)
     assert (hcBl : cB = com_list h gs (map Bop (seq 0 m)) (map sop (seq 0 m))) by (apply com_list_of_openings; [exact hcB | exact hB]).
     assert (htl : gid :: tl cB = com_list h gs (repeat zero n :: map (fun i => Bop (S i)) (seq 0 (m - 1)%nat)) (zero :: map (fun i => sop (S i)) (seq 0 (m - 1)%nat))).
     { rewrite com_list_cons, com_zeros. f_equal.
       assert (hseq : seq 0 m = 0%nat :: map S (seq 0 (m - 1)%nat)).
       { transitivity (seq 0 (S (m - 1)%nat)); [f_equal; lia |]. cbn [seq]. rewrite seq_shift; reflexivity. }
       rewrite hcBl, hseq. cbn [map BayerGroth.com_list combine tl]. rewrite !map_map. reflexivity. }
-    (* by binding at every (p, q): the zero openings in terms of A, B *)
+    (* By binding, at every (p, q) the zero-argument openings are expressed
+       in terms of the reference openings Aop and Bop. *)
     assert (hbind : (forall p, (p < m)%nat -> forall q, (q < n)%nat ->
         (forall i, (i < m - 1)%nat -> nth i (ZA p q) [] = Aop i) /\
         nth (m - 1)%nat (ZA p q) [] = repeat (opp one) n /\
@@ -699,7 +894,6 @@ Section BayerGrothSound.
         nth (m - 1)%nat (ZB p q) [] = lveval (repeat zero n :: map (fun i => Bop (S i)) (seq 0 (m - 1)%nat)) (x p))
       \/ binding_break h gs).
     { apply forall_or; intros p hp. apply forall_or; intros q hq.
-      (* A *)
       assert (hA' : (forall i, (i < m - 1)%nat -> nth i (ZA p q) [] = Aop i) \/ binding_break h gs).
       { apply forall_or; intros i hi.
         pose proof (hA p q i hp hq hi) as e1. rewrite (hA 0%nat 0%nat i ltac:(lia) ltac:(lia) hi) in e1.
@@ -731,11 +925,12 @@ Section BayerGrothSound.
       destruct hD' as [hD' | hbb]; [| right; exact hbb].
       left; repeat split; assumption. }
     destruct hbind as [hbind | hbb]; [| right; exact hbb].
-    (* the relation Σ_i x^{i+1} (A_{i+1} ⋆ B_i − 1 ⋆ B_{i+1}) = 0 at every (x_p, y_q) *)
     assert (hfm : forall (g : nat -> F) (x0 : F) k, x0 * feval (map g (seq 0 k)) x0 = fsum (fun i => fpow x0 (S i) * g i) k).
     { intros g x0 k. rewrite <-sum_pow_feval_w, <-fsum_fold. apply fsum_ext; intros i _; cbn [fpow]; field. }
     assert (hfs : forall (f g : nat -> F) k, fsum (fun i => f i - g i) k = fsum f k - fsum g k).
     { intros f g k; induction k as [| k ihk]; cbn [fsum]; [field | rewrite ihk; field]. }
+    (* The relation x · Σ_i x^i (A_(i+1) ⋆ B_i − 1 ⋆ B_(i+1)) = 0 at every
+       (x_p, y_q). *)
     set (c := fun q i => star (y q) (Aop i) (Bop i) - star (y q) (repeat one n) (Bop (S i))).
     assert (hrel : forall p q, (p < m)%nat -> (q < n)%nat -> x p * feval (map (c q) (seq 0 (m - 1)%nat)) (x p) = zero).
     { intros p q hp hq. destruct (hz p hp q hq) as (_ & _ & _ & _ & h5). destruct (hbind p hp q hq) as (eA & eneg & eB & eD).
@@ -753,7 +948,8 @@ Section BayerGrothSound.
         by (intros; field).
       rewrite hfs.
       match goal with |- ?a - ?b = zero => transitivity (a + opp one * b); [field | exact h5] end. }
-    (* for every y_q the coefficient list (c_q i)_i vanishes *)
+    (* Dividing by x_p ≠ 0, a polynomial of degree below m vanishes at the
+       m distinct x_p, so each coefficient c q i is zero. *)
     assert (hc : forall q i, (q < n)%nat -> (i < m - 1)%nat -> c q i = zero).
     { intros q i hq hi.
       assert (hev : forall p, (p < m)%nat -> feval (map (c q) (seq 0 (m - 1)%nat)) (x p) = zero).
@@ -765,7 +961,9 @@ Section BayerGrothSound.
       assert (hag' : forall x0, In x0 X -> eval (map (c q) (seq 0 (m - 1)%nat)) x0 = eval [] x0).
       { intros x0 hx. destruct (In_nth X x0 zero hx) as (p & hp & <-). rewrite <-(feval_eval (Hvec := Hvec)). cbn [eval]. apply hev; lia. }
       specialize (hag hag' i). rewrite (PolyPerm.nth_map_seq (c q) (m - 1)%nat i zero hi) in hag. destruct i; exact hag. }
-    (* hence B_{i+1} = A_{i+1} ∘ B_i *)
+    (* The vector D = A_(i+1) ∘ B_i − B_(i+1) has n entries and its
+       polynomial vanishes at the n non-zero y_q; hence the Hadamard step
+       B_(i+1) = A_(i+1) ∘ B_i. *)
     assert (hstep : forall i, (i < m - 1)%nat -> Bop (S i) = hmul (Aop i) (Bop i)).
     { intros i hi.
       set (D := padd (hmul (Aop i) (Bop i)) (lscale (opp one) (Bop (S i)))).
@@ -791,7 +989,8 @@ Section BayerGrothSound.
       rewrite (SigmaK.nth_padd (Hf := Hf)), (SigmaK.nth_lscale (Hf := Hf)) in hag.
       assert (hz0 : nth j [] zero = zero) by (destruct j; reflexivity). rewrite hz0 in hag.
       symmetry; apply sub_eq_zero. match goal with |- ?a - ?b = zero => transitivity (a + opp one * b); [field | exact hag] end. }
-    (* the openings of c_A *)
+    (* Assemble the openings of cA and conclude b = hprefix A (m − 1) by
+       induction on the prefix. *)
     set (A := Bop 0%nat :: map Aop (seq 0 (m - 1)%nat)). set (r := sop 0%nat :: map rop (seq 0 (m - 1)%nat)).
     assert (hcAl : cA = com_list h gs A r).
     { apply (nth_ext _ _ gid gid).
@@ -803,7 +1002,6 @@ Section BayerGrothSound.
     assert (hAl : length A = m) by (unfold A; cbn [length]; rewrite length_map, length_seq; lia).
     assert (hAall : forall v, In v A -> length v = n).
     { intros v hv. destruct hv as [<- | hv]; [apply hBn; lia |]. apply in_map_iff in hv; destruct hv as (i & <- & hi); apply in_seq in hi; apply hAn; lia. }
-    (* b = hprefix A (m − 1) *)
     assert (hpref : forall j, (j < m)%nat -> hprefix A j = Bop j).
     { intros j; induction j as [| j ih]; intros hj.
       + rewrite hprefix_0 by (unfold A; discriminate). reflexivity.
@@ -819,14 +1017,19 @@ Section BayerGrothSound.
     symmetry; apply hpref; lia.
   Qed.
 
-  (* ---------------------------------------------------------------- *)
-  (* single value product argument: (n+1)-special soundness           *)
-  (* ---------------------------------------------------------------- *)
+  (** ** Single value product argument: (n+1)-special soundness
 
+      Statement: a commitment [ca] and a scalar [b]. Claim: [ca] opens to a
+      vector [a] of length [n] with [∏_i a_i = b]. The prover commits to
+      a blinder [d] ([cd]), and to [δ], [Δ] ([cδ], [cΔ]) for the running
+      products [b_i = a_0 ⋯ a_i]; the responses are [ã = x a + d], [b̃]
+      with [b̃_0 = ã_0], [b̃_(n-1) = x b], and the verifier checks
+      [x b̃_(i+1) − b̃_i ã_(i+1)] against [x Δ + δ]. *)
   Local Notation svp_verify := (svp_verify (zero := zero) (mul := mul) (sub := sub) (Fdec := Fdec)
     (gid := gid) (gop := gop) (gpow := gpow) (Gdec := Gdec)).
   Local Notation mk_svp := (@mk_svp F G).
 
+  (** The single value product verifier checks [length ã = length gs]. *)
   Lemma svp_verify_length {h gs ca b x cd cδ cΔ ta tb rt st} :
     svp_verify h gs ca b x (mk_svp cd cδ cΔ ta tb rt st) = true -> length ta = length gs.
   Proof.
@@ -835,6 +1038,10 @@ Section BayerGrothSound.
     match goal with h : (length ta =? length gs)%nat = true |- _ => apply Nat.eqb_eq in h; exact h end.
   Qed.
 
+  (** Unpacking of an accepting single value product transcript: [n ≥ 2],
+      [length b̃ = n], [ca^x · cd = com(ã; r̃)], [cΔ^x · cδ = com(e; s̃)]
+      with [e_i = x b̃_(i+1) − b̃_i ã_(i+1)], [b̃_0 = ã_0] and [b̃_(n-1) = x
+      b]. *)
   Lemma svp_verify_true : forall h gs ca b x cd cδ cΔ ta tb rt st,
     svp_verify h gs ca b x (mk_svp cd cδ cΔ ta tb rt st) = true ->
     (2 <= length ta)%nat /\ length tb = length ta /\
@@ -854,16 +1061,21 @@ Section BayerGrothSound.
     repeat split; assumption.
   Qed.
 
+  (** Helpers: [geval_pair] evaluates a committed linear polynomial,
+      [geval [c0; c1] x = c0 · c1^x]. *)
   Lemma geval_pair : forall (c0 c1 : G) (x : F), geval [c0; c1] x = gop c0 (c1 ^ x).
   Proof.
     intros; rewrite !(veval_cons (HV := Hvec)), veval_nil, (smul_vid (HV := Hvec)), gid_r; reflexivity.
   Qed.
 
+  (** Prepending [i] zero coefficients multiplies the polynomial by [x^i]. *)
   Lemma eval_shift : forall (i : nat) (p : list F) (x : F), eval (repeat zero i ++ p) x = fpow x i * eval p x.
   Proof.
     induction i as [| i ih]; intros p x; cbn [repeat app fpow eval]; [field | rewrite ih; field].
   Qed.
 
+  (** The coefficient of [X^(k+1)] in [p · (c0 + c1 X)] for [deg p = k] is
+      [p_k · c1]. *)
   Lemma pmulF_lead : forall (p : list F) (k : nat) (c0 c1 : F), length p = S k ->
     nth (S k) (pmulF p [c0; c1]) zero = nth k p zero * c1.
   Proof.
@@ -875,15 +1087,20 @@ Section BayerGrothSound.
       rewrite ih by lia; field.
   Qed.
 
+  (** [x^n = x · x^(n-1)] for [n > 0]. *)
   Lemma fpow_pred : forall (x : F) (n : nat), (0 < n)%nat -> fpow x n = x * fpow x (n - 1).
   Proof. intros x n hn; destruct n; [lia | replace (S n - 1)%nat with n by lia; reflexivity]. Qed.
 
+  (** The product of a concatenation is the product of the products. *)
   Lemma fold_mul_app : forall l1 l2 : list F,
     fold_right mul one (l1 ++ l2) = fold_right mul one l1 * fold_right mul one l2.
   Proof. induction l1 as [| a l1 ih]; intros l2; cbn [app fold_right]; [field | rewrite ih; field]. Qed.
 
-  (* the polynomials T_i with x^i b̃_i = T_i(x): T_0 = d_0 + a_0 X,
-    T_{i+1} = T_i · (d_{i+1} + a_{i+1} X) + X^i (δ_i + Δ_i X) *)
+  (** The polynomials [T_i] of the single value product argument: with
+      [ã = d + X a] and [e = δ + X Δ] as polynomials in the challenge [X],
+      [T_0 = d_0 + a_0 X] and [T_(i+1) = T_i · (d_(i+1) + a_(i+1) X) +
+      X^i (δ_i + Δ_i X)]. The verification equations give [x^i b̃_i =
+      T_i(x)] ([svpT_eval]). *)
   Fixpoint svpT (a d δ Δ : list F) (i : nat) : list F :=
     match i with
     | 0 => [nth 0 d zero; nth 0 a zero]
@@ -891,6 +1108,7 @@ Section BayerGrothSound.
                 (repeat zero i' ++ [nth i' δ zero; nth i' Δ zero])
     end.
 
+  (** [T_i] has [i+2] coefficients, i.e. degree at most [i+1]. *)
   Lemma svpT_length : forall a d δ Δ i, length (svpT a d δ Δ i) = S (S i).
   Proof.
     intros a d δ Δ i; induction i as [| i ih]; [reflexivity |].
@@ -898,6 +1116,8 @@ Section BayerGrothSound.
     rewrite ih, length_app, repeat_length; cbn [length]; lia.
   Qed.
 
+  (** The leading coefficient of [T_i] (that of [X^(i+1)]) is [a_0 ⋯ a_i].
+      *)
   Lemma svpT_lead : forall a d δ Δ i,
     nth (S i) (svpT a d δ Δ i) zero = fold_right mul one (map (fun k => nth k a zero) (seq 0 (S i))).
   Proof.
@@ -907,7 +1127,9 @@ Section BayerGrothSound.
     rewrite ih, (seq_S (S i)), Nat.add_0_l, map_app, fold_mul_app; cbn [map fold_right]; field.
   Qed.
 
-  (* the recursion of the verification equations *)
+  (** If [ã_i = d_i + x a_i] for [i < n], [b̃_0 = ã_0] and [x b̃_(i+1) −
+      b̃_i ã_(i+1) = δ_i + x Δ_i] for [i < n-1], then [x^i b̃_i = T_i(x)]
+      for [i < n]. Induction on [i]. *)
   Lemma svpT_eval : forall (a d δ Δ ta tb : list F) (x : F) (n : nat),
     (forall i, (i < n)%nat -> nth i ta zero = nth i d zero + x * nth i a zero) ->
     nth 0 tb zero = nth 0 ta zero ->
@@ -923,6 +1145,19 @@ Section BayerGrothSound.
       rewrite hx, (hta (S i) ltac:(lia)). field.
   Qed.
 
+  (** Special soundness of the single value product argument. Hypotheses:
+      [length gs = n ≥ 2]; [xs] is a list of [n+1] distinct challenges; the
+      first message [(cd, cδ, cΔ)] is fixed and all [n+1] transcripts are
+      accepted. Conclusion: either binding breaks or [ca = com(a; ra)] with
+      [length a = n] and [∏_i a_i = b].
+
+      Proof idea: two challenges suffice to open [cd], [ca] and [cδ],
+      [cΔ] ([geval_openings] on [[cd; ca]] and [[cδ; cΔ]]). By binding,
+      [ã = d + x a] and [e = δ + x Δ] at every challenge, so by
+      [svpT_eval] together with [b̃_(n-1) = x b] the polynomial identity [X^n b =
+      T_(n-1)(X)] holds at the [n+1] challenges; both sides have degree at
+      most [n], so the coefficients of [X^n] agree, giving [b = a_0 ⋯
+      a_(n-1)] by [svpT_lead]. *)
   Theorem svp_soundness : forall (h : G) (gs : list G) (ca : G) (b : F) (cd cδ cΔ : G) (xs : list F)
     (ta tb : nat -> list F) (rt st : nat -> F),
     (2 <= length gs)%nat -> NoDup xs -> length xs = S (length gs) ->
@@ -943,7 +1178,7 @@ Section BayerGrothSound.
       nth 0 (tb j) zero = nth 0 (ta j) zero /\ nth (n - 1) (tb j) zero = nth j xs zero * b).
     { intros j hj; destruct (htr j ltac:(lia)) as (hl & hv); apply svp_verify_true in hv.
       rewrite hl in hv; tauto. }
-    (* the first two challenges open c_a, c_d, c_δ, c_Δ *)
+    (* Open cd, ca and cδ, cΔ from the first two challenges. *)
     set (X2 := firstn 2 xs).
     assert (hX2nd : NoDup X2) by (apply NoDup_firstn; exact hnd).
     assert (hX2l : length X2 = 2) by (unfold X2; rewrite length_firstn; lia).
@@ -971,7 +1206,8 @@ Section BayerGrothSound.
     assert (hld : length d = n) by (unfold d; apply lcomb_length; [lia | intros j hj; apply hlta; lia]).
     assert (hlδ : length δ = (n - 1)%nat) by (unfold δ; apply lcomb_length; [lia | intros j hj; apply hle]).
     assert (hlΔ : length Δ = (n - 1)%nat) by (unfold Δ; apply lcomb_length; [lia | intros j hj; apply hle]).
-    (* by binding, ã = d + x a and e = δ + x Δ at every challenge *)
+    (* By binding, the responses are the evaluations of the extracted
+       openings at every challenge. *)
     assert (hresp : (forall j, (j < S n)%nat ->
         (forall i, (i < n)%nat -> nth i (ta j) zero = nth i d zero + nth j xs zero * nth i a zero) /\
         (forall i, (i < n - 1)%nat -> nth i (e j) zero = nth i δ zero + nth j xs zero * nth i Δ zero)) \/ binding_break h gs).
@@ -985,7 +1221,8 @@ Section BayerGrothSound.
       + intros i hi. rewrite <-(e1 i ltac:(lia)), (SigmaK.nth_padd (Hf := Hf)), (SigmaK.nth_lscale (Hf := Hf)); field.
       + intros i hi. rewrite <-(e2 i ltac:(lia)), (SigmaK.nth_padd (Hf := Hf)), (SigmaK.nth_lscale (Hf := Hf)); field. }
     destruct hresp as [hresp | hbb]; [| right; exact hbb].
-    (* the polynomial identity X^n b = T_{n−1}(X) at n + 1 points *)
+    (* The polynomial identity X^n b = T_(n-1)(X) at all n + 1 challenges,
+       hence agreement of the coefficient of X^n. *)
     assert (hid : forall j, (j < S n)%nat ->
       eval (repeat zero n ++ [b]) (nth j xs zero) = eval (svpT a d δ Δ (n - 1)) (nth j xs zero)).
     { intros j hj. destruct (hV j hj) as (_ & _ & hb0 & hbn). destruct (hresp j hj) as (hta' & he').
@@ -1011,14 +1248,21 @@ Section BayerGrothSound.
     f_equal. rewrite <-(map_nth_seq id zero a). apply map_ext; intro k; reflexivity.
   Qed.
 
-  (* ---------------------------------------------------------------- *)
-  (* product argument: composition                                    *)
-  (* ---------------------------------------------------------------- *)
+  (** ** Product argument: composition
 
+      Statement: [cA] (with [m ≥ 1] commitments) and a scalar [b]. Claim:
+      [∏_j (A_0 ∘ … ∘ A_(m-1))_j = b]. For [m > 1] the prover sends a
+      commitment [cb] to [A_0 ∘ … ∘ A_(m-1)], a Hadamard argument for
+      [(cA, cb)] and a single value product argument for [(cb, b)]; for
+      [m = 1] only a single value product argument for [(c_(A_0), b)]. *)
   Local Notation product_verify := (product_verify (zero := zero) (one := one) (add := add) (mul := mul)
     (sub := sub) (opp := opp) (Fdec := Fdec) (gid := gid) (gop := gop) (gpow := gpow) (Gdec := Gdec)).
   Local Notation mk_prod := (@mk_prod F G).
 
+  (** Unpacking of an accepting product transcript whose Hadamard part is
+      present: either [m > 1] and both the Hadamard and the single value
+      product verifiers accept, or [m = 1] and the single value product
+      verifier accepts on [c_(A_0)]. *)
   Lemma product_verify_true : forall h gs n cA b xh yh xz xs cb had svp,
     (1 <= length cA)%nat ->
     product_verify h gs n cA b xh yh xz xs (mk_prod cb (Some had) svp) = true ->
@@ -1031,6 +1275,20 @@ Section BayerGrothSound.
     + apply Nat.ltb_ge in e. right; split; [lia | exact hv].
   Qed.
 
+  (** Special soundness of the product argument. Hypotheses: [length gs =
+      n ≥ 2], [length cA = m ≥ 1]; [X] ([m] distinct), [Y] ([n] distinct)
+      and the zero-argument challenge lists [zs p q] ([2m+1] distinct each)
+      as in [hadamard_soundness]; [XS] a list of [n+1] distinct challenges
+      for the single value product argument; [cb], [cB] and the single
+      value product first message are fixed; and every combination of a
+      Hadamard leaf [(p, q, j)] with a single value product challenge [j']
+      is accepted. Conclusion: either binding breaks or [cA = com_list A r]
+      with vectors of length [n] and [∏ (hprefix A (m-1)) = b].
+
+      Proof: for [m > 1], [hadamard_soundness] gives [cb = com(A_0 ∘ … ∘
+      A_(m-1))] and [svp_soundness] gives [cb = com(a)] with [∏ a = b];
+      binding identifies the two openings. For [m = 1],
+      [svp_soundness] directly. *)
   Theorem product_soundness : forall (h : G) (gs : list G) (cA : list G) (b : F) (cb : G) (cB : list G) (X Y : list F)
     (cA0 cBm : nat -> nat -> G) (cd : nat -> nat -> list G) (zs : nat -> nat -> list F)
     (za zb : nat -> nat -> nat -> list F) (zr zt zu : nat -> nat -> nat -> F)
@@ -1058,7 +1316,7 @@ Section BayerGrothSound.
     pose proof (hj0 0%nat ltac:(lia)) as hj'0.
     pose proof (hj'0 0%nat ltac:(lia)) as hv0.
     destruct (product_verify_true _ _ _ _ _ _ _ _ _ _ _ _ hm hv0) as [(hm1 & _ & _) | (hm1 & _)].
-    + (* m > 1: the Hadamard argument on (c_A, c_b) and the single value product argument on (c_b, b) *)
+    +
       assert (hhad : (exists (A : list (list F)) (r : list F) (b' : list F) (sb : F),
           cA = com_list h gs A r /\ cb = com h gs b' sb /\ length A = m /\ length r = m /\
           (forall v, In v A -> length v = n) /\ length b' = n /\ b' = hprefix A (m - 1)) \/ binding_break h gs).
@@ -1076,7 +1334,7 @@ Section BayerGrothSound.
       rewrite hcb in hcb'.
       destruct (open_eq_or_break_len h gs _ _ _ _ hb'n han hcb') as [[e _] | hbb]; [| right; exact hbb].
       left. exists A, r. repeat split; try assumption. rewrite <-hpref, e; exact hprod.
-    + (* m = 1: the single value product argument on (c_{A1}, b) *)
+    +
       assert (hsvp : (exists (a : list F) (ra : F), nth 0 cA gid = com h gs a ra /\ length a = n /\ fold_right mul one a = b) \/ binding_break h gs).
       { apply (svp_soundness h gs (nth 0 cA gid) b scd scδ scΔ XS ta tb rt st hn hSnd hSl).
         intros j' hj'. rewrite hSl in hj'. pose proof (hj'0 j' hj') as hv.
@@ -1090,10 +1348,20 @@ Section BayerGrothSound.
       replace (m - 1)%nat with 0%nat by lia. rewrite hprefix_0 by discriminate. exact hprod.
   Qed.
 
-  (* ---------------------------------------------------------------- *)
-  (* multi-exponentiation argument: 2m-special soundness              *)
-  (* ---------------------------------------------------------------- *)
+  (** ** Multi-exponentiation argument: 2m-special soundness
 
+      Ciphertexts are vectors [CT] of [l+1] group elements, the ElGamal-style
+      encryptions [enc g pk M τ = (g^τ, pk_1^τ M_1, …, pk_l^τ M_l)] of
+      [BayerGroth.v], with componentwise group law [cmul] and power
+      [cpow]; [encg g pk β τ] encrypts [g^β] in every slot.
+
+      Statement: rows of ciphertexts [Cs = (C_0, …, C_(m-1))] (each a list
+      of [n] ciphertexts), a target ciphertext [C], and commitments [cA] to
+      exponent vectors [A_0 … A_(m-1)]. Claim: [C = Enc(1; ρ) · ∏_i
+      C_i^(A_i)] for some [ρ], where [C_i^(A_i) = ∏_j C_(i,j)^(A_(i,j))]
+      ([cmexp]). The prover commits to a blinder [A_(-1)] ([cA0]), to the
+      [2m] diagonal products [E_k] together with commitments [cB] to scalars
+      [β_k] (with [β_m = 0] enforced by [c_(B_m) = 1]), and [E_m = C]. *)
   Section MultiExpSound.
 
     Context {l : nat}.
@@ -1114,10 +1382,13 @@ Section BayerGrothSound.
       (gpow := gpow) (Gdec := Gdec) (l := l)).
     Local Notation mk_mexp := (@mk_mexp F G l).
 
+    (** Equality test on ciphertexts. *)
     Lemma vdec_true : forall u v : CT, (if vec_dec Gdec u v then true else false) = true -> u = v.
     Proof. intros u v h; destruct (vec_dec Gdec u v); [assumption | discriminate]. Qed.
 
-    (* the ciphertext group *)
+    (** Group identities in the ciphertext space: [cmul_cancel] is [(X ·
+        Y) · Y⁻¹ = X]; [cmul_inv_l] is [Y⁻¹ · Y = 1]; [cancel_inv2] solves
+        [X · Y⁻¹ · Z⁻¹ = W] for [X = W · Z · Y]. *)
     Lemma cmul_cancel : forall X Y : CT, cmul (cmul X Y) (cpow Y (opp one)) = X.
     Proof.
       intros X Y. rewrite <-(vadd_assoc (HV := CTvs)).
@@ -1143,6 +1414,8 @@ Section BayerGrothSound.
         (vadd_vid_r (HV := CTvs)); reflexivity.
     Qed.
 
+    (** Indexing commutes with raising every element of a list to [c]
+        (out-of-range indices give [1]). *)
     Lemma nth_map_cpow : forall (D : list CT) (c : F) k, nth k (map (fun d => cpow d c) D) cone = cpow (nth k D cone) c.
     Proof.
       induction D as [| d D ih]; intros c k.
@@ -1150,6 +1423,8 @@ Section BayerGrothSound.
       + destruct k; cbn [map nth]; [reflexivity | apply ih].
     Qed.
 
+    (** Evaluating the polynomial with coefficients [encg β_k 0] gives
+        [encg (Σ β_k x^k) 0]. *)
     Lemma ceval_encg_zero : forall g pk (bs : list F) x,
       ceval (map (fun β => encg g pk β zero) bs) x = encg g pk (feval bs x) zero.
     Proof.
@@ -1159,6 +1434,7 @@ Section BayerGrothSound.
         rewrite (encg_pow (Hvec := Hvec)), (encg_mul (Hvec := Hvec)). f_equal; field.
     Qed.
 
+    (** [∏_j Enc(1; t_j)^(c_j) = Enc(1; Σ_j c_j t_j)]. *)
     Lemma csum_encg : forall g pk (t c : nat -> F) k,
       csum (fun j => cpow (encg g pk zero (t j)) (c j)) k = encg g pk zero (fsum (fun j => c j * t j) k).
     Proof.
@@ -1167,6 +1443,7 @@ Section BayerGrothSound.
       + rewrite ih, (encg_pow (Hvec := Hvec)), (encg_mul (Hvec := Hvec)). f_equal; field.
     Qed.
 
+    (** The multi-exponentiation verifier checks [length a = length gs]. *)
     Lemma multiexp_verify_length {h gs g pk} {Cs : list (list CT)} {C : CT} {cA x cA0 cB E a r b s τ} :
       multiexp_verify h gs g pk Cs C cA x (mk_mexp cA0 cB E a r b s τ) = true -> length a = length gs.
     Proof.
@@ -1175,6 +1452,10 @@ Section BayerGrothSound.
       match goal with h : (length a =? length gs)%nat = true |- _ => apply Nat.eqb_eq in h; exact h end.
     Qed.
 
+    (** Unpacking of an accepting multi-exponentiation transcript: [m ≥ 1],
+        [length Cs = m], [length cB = length E = 2m], [c_(B_m) = 1], [E_m =
+        C], [geval (cA0 :: cA) x = com(a; r)], [geval cB x = com([b]; s)],
+        and [∏_k E_k^(x^k) = encg b τ · ∏_i C_i^(x^(m-i-1) a)]. *)
     Lemma multiexp_verify_true : forall h gs g pk (Cs : list (list CT)) (C : CT) cA x cA0 cB E a r b s τ,
       multiexp_verify h gs g pk Cs C cA x (mk_mexp cA0 cB E a r b s τ) = true ->
       (1 <= length cA)%nat /\ length Cs = length cA /\ length cB = (2 * length cA)%nat /\ length E = (2 * length cA)%nat /\
@@ -1195,6 +1476,23 @@ Section BayerGrothSound.
       repeat split; assumption.
     Qed.
 
+    (** Special soundness of the multi-exponentiation argument. Hypotheses:
+        [length gs ≥ 1], [length cA = m ≥ 1]; [xs] is a list of [2m]
+        distinct challenges; the first message [(cA0, cB, E)] is fixed and
+        all [2m] transcripts are accepted. Conclusion: either binding breaks
+        or [cA = com_list A ra] with vectors of length [length gs] and [C =
+        Enc(1; ρ) · ∏_i C_i^(A_i)] for some [ρ].
+
+        Proof idea: the first [m+1] challenges open [cA0 :: cA] to [A'_0 …
+        A'_m]; all [2m] challenges open [cB] to scalars [β_k]. By binding the
+        responses are [a = Σ x^i A'_i] and [b = Σ x^k β_k]. The ciphertext
+        polynomial [Q = E · D⁻¹ · Enc(g^β; 0)⁻¹], where [D] is the
+        polynomial of diagonal products ([diagonals]), evaluates to an
+        encryption of 1 at each of the [2m] challenges; [coeff_from_evals]
+        in the ciphertext vector space shows each coefficient is an
+        encryption of 1 as well. Its coefficient [m] gives [C = E_m =
+        Enc(1; ρ_m) · D_m · Enc(g^(β_m); 0)], with [β_m = 0] from [c_(B_m) =
+        1] by binding and [D_m = ∏_i C_i^(A'_(i+1))]. *)
     Theorem multiexp_soundness : forall (h g : G) (gs : list G) (pk : Vector.t G l) (Cs : list (list CT)) (C : CT)
       (cA : list G) (cA0 : G) (cB : list G) (E : list CT) (xs : list F) (a : nat -> list F) (r b s τ : nat -> F),
       (1 <= length gs)%nat -> (1 <= length cA)%nat -> NoDup xs -> length xs = (2 * length cA)%nat ->
@@ -1226,7 +1524,8 @@ Section BayerGrothSound.
         (cprod (map (fun p => cmexp (snd p) (lscale (fpow (nth j xs zero) (m - fst p - 1)) (a j))) (combine (seq 0 m) Cs))))
         by (intros j hj; destruct (htr j ltac:(lia)) as (_ & hv); apply multiexp_verify_true in hv; tauto).
       assert (hla : forall j, (j < k)%nat -> length (a j) = n) by (intros j hj; destruct (htr j ltac:(lia)); tauto).
-      (* the first m + 1 challenges open cA0 :: cA *)
+      (* The first m + 1 challenges open cA0 :: cA; all 2m challenges open
+         the scalar commitments cB. *)
       set (X1 := firstn (S m) xs).
       assert (hX1nd : NoDup X1) by (apply NoDup_firstn; exact hnd).
       assert (hX1l : length X1 = S m) by (unfold X1; rewrite length_firstn; lia).
@@ -1238,7 +1537,6 @@ Section BayerGrothSound.
         apply (geval_openings h gs X1 (cA0 :: cA) a r hX1nd);
           [rewrite hX1l; cbn [length]; lia | | rewrite hX1l; lia].
         intros j hj; rewrite hX1l in hj; rewrite hX1n by lia; apply hevA; lia. }
-      (* all 2m challenges open cB *)
       set (β := fun i => fsum (fun j => lam xs i j * b j) k).
       set (s' := fun i => fsum (fun j => lam xs i j * s j) k).
       assert (hopenB : forall i, (i < k)%nat -> nth i cB gid = com h gs [β i] (s' i)).
@@ -1258,7 +1556,8 @@ Section BayerGrothSound.
       assert (hlenAr : length A'' = length r'') by (unfold A'', r''; rewrite !length_map; reflexivity).
       assert (hlenβ : length βl = k) by (unfold βl; rewrite length_map, length_seq; reflexivity).
       assert (hlenβs : length (map (fun bk => [bk]) βl) = length s'') by (unfold s''; rewrite !length_map, length_seq; exact hlenβ).
-      (* by binding, the responses are the evaluations of the extracted openings *)
+      (* By binding, the responses are evaluations of the extracted
+         openings. *)
       assert (hresp : (forall j, (j < k)%nat -> a j = lveval A'' (nth j xs zero) /\ b j = feval βl (nth j xs zero)) \/ binding_break h gs).
       { apply forall_or. intros j hj.
         pose proof (hevA j hj) as ha; rewrite hcAl, (geval_com_list (Hvec := Hvec)) in ha by exact hlenAr.
@@ -1270,7 +1569,8 @@ Section BayerGrothSound.
         left; split; [symmetry; exact ea |].
         specialize (eb 0%nat ltac:(lia)); cbn [nth] in eb; symmetry; exact eb. }
       destruct hresp as [hresp | hbb]; [| right; exact hbb].
-      (* the diagonal polynomial and the polynomial Q = E · D^{−1} · Enc(g^β; 0)^{−1} *)
+      (* The diagonal polynomial D and Q = E · D⁻¹ · Enc(g^β; 0)⁻¹, an
+         encryption of 1 at every challenge. *)
       set (D := diagonals m Cs A'').
       assert (hlenD : (length D <= k)%nat).
       { unfold D, BayerGroth.diagonals; apply fold_cpadd_length_le.
@@ -1292,7 +1592,8 @@ Section BayerGrothSound.
         destruct (hresp j hj) as (_ & eb); rewrite eb.
         rewrite (vadd_assoc (HV := CTvs)), cmul_cancel, (encg_pow (Hvec := Hvec)), (encg_mul (Hvec := Hvec)).
         f_equal; field. }
-      (* the inverse Vandermonde matrix gives the coefficients of Q *)
+      (* The inverse Vandermonde matrix in the ciphertext space: every
+         coefficient of Q is an encryption of 1; take coefficient m. *)
       set (ρ := fun i => fsum (fun j => lam xs i j * τ j) k).
       assert (hQi : forall i, (i < k)%nat -> nth i Q cone = encg g pk zero (ρ i)).
       { intros i hi. unfold ρ. rewrite <-hk.
@@ -1301,13 +1602,12 @@ Section BayerGrothSound.
         rewrite (vsum_ext _ (fun j => cpow (encg g pk zero (τ j)) (lam xs i j)))
           by (intros j hj; rewrite hQev by lia; reflexivity).
         rewrite hk; apply csum_encg. }
-      (* the coefficient m *)
       specialize (hQi m ltac:(lia)).
       unfold Q in hQi; rewrite !(nth_vpadd (HV := CTvs)), hEm, !nth_map_cpow in hQi.
       unfold Bp, βl in hQi; rewrite map_map in hQi.
       rewrite (PolyPerm.nth_map_seq (fun i => encg g pk (β i) zero)) in hQi by lia.
       apply cancel_inv2 in hQi.
-      (* β_m = 0 *)
+      (* β_m = 0 since c_(B_m) is the identity, unless binding breaks. *)
       assert (hβm : β m = zero \/ binding_break h gs).
       { pose proof (hopenB m ltac:(lia)) as h0.
         pose proof (eq_trans (com_zero_single (Hvec := Hvec) h gs) (eq_trans (eq_sym hcBm) h0)) as h1.
@@ -1315,9 +1615,9 @@ Section BayerGrothSound.
         specialize (e 0%nat ltac:(lia)); cbn [nth] in e; symmetry; exact e. }
       destruct hβm as [hβm | hbb]; [| right; exact hbb].
       rewrite hβm, (encg_zero_zero (Hvec := Hvec)), (vadd_vid_l (HV := CTvs)) in hQi.
-      (* the diagonal D_m = ∏_i C_i^{A_{i+1}} *)
       set (Astmt := map (fun i => A' (S i)) (seq 0 m)).
       assert (hA''eq : A'' = A' 0%nat :: Astmt) by (unfold A'', Astmt; cbn [seq map]; rewrite <-seq_shift, map_map; reflexivity).
+      (* The middle diagonal is D_m = ∏_i C_i^(A_(i+1)). *)
       assert (hDm : nth m D cone = cprod (map (fun p => cmexp (snd p) (nth (fst p) Astmt [])) (combine (seq 0 m) Cs))).
       { unfold D, BayerGroth.diagonals; rewrite (nth_fold_cpadd (Hvec := Hvec)), map_map.
         f_equal; apply map_ext_in; intros (i & Ci) hp; apply in_combine_l in hp; apply in_seq in hp; cbn [fst snd].
@@ -1334,15 +1634,28 @@ Section BayerGrothSound.
       exact hQi.
     Qed.
 
+    (** ** Shuffle argument
 
-    (* ---------------------------------------------------------------- *)
-    (* shuffle argument: helpers                                        *)
-    (* ---------------------------------------------------------------- *)
+        Statement: input ciphertexts [Cs] and output ciphertexts [Cs'], both
+        of length [N = m·n]. The prover commits to [a = (π(0), …, π(N-1))]
+        (as [cA], [m] rows of [n]) and, after the challenge [x], to [b =
+        (x^π(0), …, x^π(N-1))] (as [cB]). After [y], [z] it gives a product
+        argument for [∏_i (y a_i + b_i − z) = ∏_i (y i + x^i − z)] on the
+        commitments [c_A^y · c_B · com(−z, …, −z)], and a
+        multi-exponentiation argument for [∏_i C_i^(x^i) = Enc(1; ρ) ·
+        ∏_i C'_i^(b_i)]. *)
+
+    (** *** Helpers *)
 
     Local Notation shuffle_verify := (shuffle_verify (zero := zero) (one := one) (add := add) (mul := mul)
       (sub := sub) (opp := opp) (Fdec := Fdec) (gid := gid) (gop := gop) (gpow := gpow) (Gdec := Gdec) (l := l)).
     Local Notation mk_shuffle := (@mk_shuffle F G l).
 
+    (** Unpacking of an accepting shuffle transcript: the size conditions
+        [m ≥ 1], [n ≥ 2], [length Cs = length Cs' = N], [length cA = length
+        cB = m], acceptance of the product argument on [shuffle_product_stmt]
+        and of the multi-exponentiation argument on [(chunk n m Cs', ∏_i
+        C_i^(x^i), cB)]. *)
     Lemma shuffle_verify_true : forall h gs g pk m n (Cs Cs' : list CT) x y z xh yh xz xs xm cA cB prod mexp,
       shuffle_verify h gs g pk m n Cs Cs' x y z xh yh xz xs xm (mk_shuffle cA cB prod mexp) = true ->
       (1 <= m)%nat /\ (2 <= n)%nat /\ length Cs = (m * n)%nat /\ length Cs' = (m * n)%nat /\ length cA = m /\ length cB = m /\
@@ -1361,7 +1674,7 @@ Section BayerGrothSound.
       repeat split; assumption.
     Qed.
 
-    (* the rows of a concatenation *)
+    (** [chunk n] inverts [concat] on a list of rows of length [n]. *)
     Lemma chunk_concat : forall (L : list (list F)) (n : nat), Forall (fun v => length v = n) L ->
       chunk n (length L) (concat L) = L.
     Proof.
@@ -1371,6 +1684,7 @@ Section BayerGrothSound.
       rewrite Nat.sub_diag; cbn [firstn skipn app]. rewrite app_nil_r, (ih _ hL'). reflexivity.
     Qed.
 
+    (** A concatenation of [k] rows of length [n] has length [k·n]. *)
     Lemma concat_length_rows : forall (L : list (list F)) (n : nat), Forall (fun v => length v = n) L ->
       length (concat L) = (length L * n)%nat.
     Proof.
@@ -1378,6 +1692,8 @@ Section BayerGrothSound.
       apply Forall_cons_iff in hL; destruct hL as [hv hL]. cbn [concat length]; rewrite length_app, hv, (ih n hL); lia.
     Qed.
 
+    (** [combine] distributes over [++] when the first parts have equal
+        lengths. *)
     Lemma combine_app' : forall {A B : Type} (l1 l2 : list A) (l1' l2' : list B), length l1 = length l1' ->
       combine (l1 ++ l2) (l1' ++ l2') = combine l1 l1' ++ combine l2 l2'.
     Proof.
@@ -1385,6 +1701,8 @@ Section BayerGrothSound.
       cbn [app combine]; rewrite ih by (cbn in hl; lia); reflexivity.
     Qed.
 
+    (** Rowwise application of a binary map followed by [concat] equals the
+        same map applied to the concatenations. *)
     Lemma concat_map_combine : forall (f : F -> F -> F) (A B : list (list F)) (n : nat),
       length A = length B -> Forall (fun v => length v = n) A -> Forall (fun v => length v = n) B ->
       concat (map (fun p => map (fun q => f (fst q) (snd q)) (combine (fst p) (snd p))) (combine A B)) =
@@ -1397,6 +1715,8 @@ Section BayerGrothSound.
       rewrite combine_app' by congruence. rewrite map_app. reflexivity.
     Qed.
 
+    (** [y a + b − (z, …, z)] as vector arithmetic equals the entrywise map
+        [(a_i, b_i) ↦ y a_i + b_i − z]. *)
     Lemma padd_lscale_combine : forall (y z : F) (a b : list F) (n : nat), length a = n -> length b = n ->
       padd (padd (lscale y a) b) (repeat (opp z) n) = map (fun q => y * fst q + snd q - z) (combine a b).
     Proof.
@@ -1406,6 +1726,7 @@ Section BayerGrothSound.
       f_equal; field.
     Qed.
 
+    (** An entrywise map over [combine a b] written by indices. *)
     Lemma map_combine_nth : forall (f : F -> F -> F) (a b : list F) (N : nat), length a = N -> length b = N ->
       map (fun q => f (fst q) (snd q)) (combine a b) = map (fun k => f (nth k a zero) (nth k b zero)) (seq 0 N).
     Proof.
@@ -1417,7 +1738,8 @@ Section BayerGrothSound.
         rewrite (map_nth (fun q => f (fst q) (snd q))), combine_nth by lia. reflexivity.
     Qed.
 
-    (* a finite family of witnesses as a list *)
+    (** Finite choice: from [∀ k < N, ∃ r, P k r] build a list [rs] of length
+        [N] with [P k (rs_k)]. Used to collect the randomisers [ρ_i]. *)
     Lemma forall_exists_list : forall (P : nat -> F -> Prop) (N : nat),
       (forall k, (k < N)%nat -> exists r, P k r) -> exists rs : list F, length rs = N /\ forall k, (k < N)%nat -> P k (nth k rs zero).
     Proof.
@@ -1431,7 +1753,7 @@ Section BayerGrothSound.
         - rewrite app_nth1 by lia; apply hrs; lia.
     Qed.
 
-    (* a Vandermonde combination of encryptions of 1 is an encryption of 1 *)
+    (** A product of powers of encryptions of 1 is an encryption of 1. *)
     Lemma csum_in_enc : forall g pk (f : nat -> CT) (c : nat -> F) (k : nat),
       (forall j, (j < k)%nat -> exists ρ, f j = encg g pk zero ρ) ->
       exists ρ, csum (fun j => cpow (f j) (c j)) k = encg g pk zero ρ.
@@ -1444,10 +1766,14 @@ Section BayerGrothSound.
         f_equal; field.
     Qed.
 
-    (* the inverse of a permutation given as the list of its values *)
+    (** [perm_inv σ N j]: the index [k < N] with [σ_k = j], found by search
+        (returns 0 if there is none). For a permutation given as the list of
+        its values this is the inverse permutation. *)
     Definition perm_inv (σ : list nat) (N : nat) (j : nat) : nat :=
       match find (fun k => Nat.eqb (nth k σ 0%nat) j) (seq 0 N) with Some k => k | None => 0%nat end.
 
+    (** For [σ] a permutation of [0 … N-1] and [j < N]: [perm_inv σ N j < N]
+        and [σ (perm_inv σ N j) = j]. *)
     Lemma perm_inv_spec : forall (σ : list nat) (N j : nat), Permutation σ (seq 0 N) -> (j < N)%nat ->
       (perm_inv σ N j < N)%nat /\ nth (perm_inv σ N j) σ 0%nat = j.
     Proof.
@@ -1461,6 +1787,7 @@ Section BayerGrothSound.
         specialize (h ltac:(apply in_seq; lia)). cbv beta in h. rewrite hnk, Nat.eqb_refl in h; discriminate.
     Qed.
 
+    (** [perm_inv σ N (σ k) = k] for [k < N]. *)
     Lemma perm_inv_nth : forall (σ : list nat) (N k : nat), Permutation σ (seq 0 N) -> (k < N)%nat ->
       perm_inv σ N (nth k σ 0%nat) = k.
     Proof.
@@ -1474,6 +1801,7 @@ Section BayerGrothSound.
       apply (proj1 (NoDup_nth σ 0%nat) hnd); [lia | lia | exact h2].
     Qed.
 
+    (** [perm_inv σ N] is itself a permutation of [0 … N-1]. *)
     Lemma perm_inv_perm : forall (σ : list nat) (N : nat), Permutation σ (seq 0 N) ->
       Permutation (map (perm_inv σ N) (seq 0 N)) (seq 0 N).
     Proof.
@@ -1487,6 +1815,7 @@ Section BayerGrothSound.
         apply in_seq. destruct (perm_inv_spec σ N i hp ltac:(lia)) as (h & _); lia.
     Qed.
 
+    (** [combine] with an indexed list, written by indices. *)
     Lemma combine_nth_seq : forall (L : list CT) (f : nat -> F) (N : nat), length L = N ->
       combine L (map f (seq 0 N)) = map (fun k => (nth k L cone, f k)) (seq 0 N).
     Proof.
@@ -1497,7 +1826,9 @@ Section BayerGrothSound.
         rewrite !PolyPerm.nth_map_seq by lia. reflexivity.
     Qed.
 
-    (* ∏_k C'_k^{x^{σ(k)}} = Σ_j x^j C'_{σ⁻¹(j)}, a reindexing of the multi-exponentiation *)
+    (** Reindexing of a multi-exponentiation along a permutation:
+        [∏_k C'_k^(x^(σ(k))) = Σ_j x^j C'_(σ⁻¹(j))], i.e. the ciphertext
+        polynomial whose [j]-th coefficient is [C'_(σ⁻¹(j))]. *)
     Lemma cmexp_perm : forall (Cs' : list CT) (σ : list nat) (N : nat) (x : F),
       length Cs' = N -> Permutation σ (seq 0 N) ->
       cmexp Cs' (map (fun k => fpow x (nth k σ 0%nat)) (seq 0 N)) =
@@ -1514,22 +1845,24 @@ Section BayerGrothSound.
       apply Permutation_map. apply Permutation_sym. apply perm_inv_perm; exact hp.
     Qed.
 
-    (* ---------------------------------------------------------------- *)
-    (* shuffle argument: soundness                                      *)
-    (* ---------------------------------------------------------------- *)
-
-    (* the product statement (c_D c_{−z}) and the product ∏ (y i + x^i − z) *)
+    (** [sh_pst] and [sh_bprod] are the two components of the product
+        statement of the shuffle ([shuffle_product_stmt]): the commitment
+        list [c_(A_i)^y · c_(B_i) · com((−z, …, −z); 0)] and the public value
+        [∏_(i<N) (y i + x^i − z)]. *)
     Definition sh_pst (h : G) (gs : list G) (n : nat) (cA cB : list G) (y z : F) : list G :=
       map (fun c => gop c (com h gs (repeat (opp z) n) zero)) (map (fun p => gop ((fst p) ^ y) (snd p)) (combine cA cB)).
     Definition sh_bprod (N : nat) (x y z : F) : F :=
       fold_right mul one (map (fun i => y * fnat i + fpow x i - z) (seq 0 N)).
 
+    (** [sh_pst] has [length cA] entries when [length cB = length cA]. *)
     Lemma sh_pst_length : forall h gs n cA cB y z, length cB = length cA -> length (sh_pst h gs n cA cB y z) = length cA.
     Proof. intros; unfold sh_pst; rewrite !length_map, length_combine; lia. Qed.
 
+    (** Rotation [(a · b) · c = (c · a) · b] in the commutative group. *)
     Lemma gop_rot : forall a b c : G, gop (gop a b) c = gop (gop c a) b.
     Proof. intros; rewrite (gcomm (gop a b) c), gassoc; reflexivity. Qed.
 
+    (** The [i]-th entry of [sh_pst]. *)
     Lemma nth_sh_pst : forall h gs n cA cB y z i, length cB = length cA -> (i < length cA)%nat ->
       nth i (sh_pst h gs n cA cB y z) gid = gop (gop ((nth i cA gid) ^ y) (nth i cB gid)) (com h gs (repeat (opp z) n) zero).
     Proof.
@@ -1542,13 +1875,48 @@ Section BayerGrothSound.
       rewrite (map_nth (fun p : G * G => gop ((fst p) ^ y) (snd p))), combine_nth by lia. reflexivity.
     Qed.
 
+    (** [X · Y⁻¹ = W] gives [X = W · Y] in the ciphertext space. *)
     Lemma cancel_inv1' : forall X Y W : CT, cmul X (cpow Y (opp one)) = W -> X = cmul W Y.
     Proof. intros X Y W h. rewrite <-h, <-(vadd_assoc (HV := CTvs)), cmul_inv_l, (vadd_vid_r (HV := CTvs)); reflexivity. Qed.
 
+    (** Distinct positions of a duplicate-free list hold distinct values. *)
     Lemma nth_NoDup_neq : forall (Y : list F) (i j : nat), NoDup Y -> (i < length Y)%nat -> (j < length Y)%nat -> i <> j ->
       nth i Y zero <> nth j Y zero.
     Proof. intros Y i j hnd hi hj hne e; apply hne; apply (proj1 (NoDup_nth Y zero) hnd); assumption. Qed.
 
+    (** *** Soundness of the shuffle
+
+        Special soundness of the Bayer–Groth shuffle argument. Let [n =
+        length gs ≥ 2], [m ≥ 1], [N = m·n]. Hypotheses:
+
+        - [fnat] is injective on [0 … N-1] (field characteristic above N);
+        - [X]: [N] distinct challenges [x]; [Y]: more than [2N²] distinct
+          challenges [y]; [Z]: more than [N] distinct challenges [z];
+        - for the product argument: [Xh] ([m] distinct), [Yh] ([n]
+          distinct), zero-argument lists [Zs p q] ([2m+1] distinct each) and
+          [XS] ([n+1] distinct), as in [product_soundness];
+        - [XM]: [2m] distinct multi-exponentiation challenges;
+        - [cA] is fixed; [cB] depends only on [x]; the product-argument
+          first messages depend on [(x, y, z)] (and the zero-argument ones
+          also on [(p, q)]); the multi-exponentiation first message depends
+          only on [x]; and every transcript in this tree is accepted.
+
+        Conclusion: either binding breaks or there are a permutation [σ] of
+        [0 … N-1] and [ρs] of length [N] with
+        [C'_i = Enc(1; ρ_i) · C_(σ(i))] for every [i < N], which is the
+        shuffle relation (re-encryption and permutation).
+
+        Proof idea: [product_soundness] at every [(x, y, z)] and
+        [multiexp_soundness] at every [x]. Two values of [y] open [cA] to
+        [a] (from [c_A^y c_B]). For each [x] the multi-exponentiation
+        opens [cB] to [b], and binding turns the product argument into the
+        identity [∏_i (y a_i + b_i − z) = ∏_i (y i + x^i − z)] at all [y ∈
+        Y], [z ∈ Z]; [perm_of_products] then gives a permutation [σ] with
+        [a_k = σ(k)] and [b_k = x^(σ(k))]; [σ] is the same for every [x]
+        because [a] is. Hence [∏ C_i^(x^i) = Enc(1; ρ_x) · ∏_k
+        C'_k^(x^(σ(k)))], so the ciphertext polynomial [Q] with coefficients
+        [C_j / C'_(σ⁻¹(j))] is an encryption of 1 at [N] distinct points,
+        and by [coeff_from_evals] each coefficient is an encryption of 1. *)
     Theorem shuffle_soundness : forall (h g : G) (gs : list G) (pk : Vector.t G l) (m : nat) (Cs Cs' : list CT) (cA : list G)
       (X Y Z Xh Yh XS XM : list F) (Zs : nat -> nat -> list F)
       (cB : nat -> list G) (pcb : nat -> nat -> nat -> G) (pcB : nat -> nat -> nat -> list G)
@@ -1582,7 +1950,6 @@ Section BayerGrothSound.
       assert (hn_eq : length gs = n) by reflexivity. assert (hN_eq : (m * n)%nat = N) by reflexivity.
       assert (hN : (1 <= N)%nat) by (unfold N; nia).
       set (x := fun jx => nth jx X zero). set (y := fun jy => nth jy Y zero). set (z := fun jz => nth jz Z zero).
-      (* the facts of the shuffle verifier *)
       assert (hbase : (1 <= m)%nat /\ (2 <= n)%nat /\ length Cs = N /\ length Cs' = N /\ length cA = m).
       { pose proof (htr 0%nat 0%nat 0%nat 0%nat 0%nat 0%nat 0%nat 0%nat ltac:(lia) ltac:(lia) ltac:(lia) ltac:(lia)
           ltac:(lia) ltac:(lia) ltac:(lia) ltac:(lia)) as hv.
@@ -1592,6 +1959,8 @@ Section BayerGrothSound.
       { intros jx hjx. pose proof (htr jx 0%nat 0%nat 0%nat 0%nat 0%nat 0%nat 0%nat hjx ltac:(lia) ltac:(lia) ltac:(lia)
           ltac:(lia) ltac:(lia) ltac:(lia) ltac:(lia)) as hv.
         apply shuffle_verify_true in hv. tauto. }
+      (* The product and multi-exponentiation sub-transcripts at every
+         challenge tuple. *)
       assert (hprod : forall jx jy jz p q j j', (jx < N)%nat -> (jy < length Y)%nat -> (jz < length Z)%nat -> (p < m)%nat -> (q < n)%nat ->
         (j < 2 * m + 1)%nat -> (j' < S n)%nat ->
         product_verify h gs n (sh_pst h gs n cA (cB jx) (y jy) (z jz)) (sh_bprod N (x jx) (y jy) (z jz))
@@ -1609,7 +1978,7 @@ Section BayerGrothSound.
       { intros jx jm hjx hjm.
         pose proof (htr jx 0%nat 0%nat 0%nat 0%nat 0%nat 0%nat jm hjx ltac:(lia) ltac:(lia) ltac:(lia) ltac:(lia) ltac:(lia) ltac:(lia) hjm) as hv.
         apply shuffle_verify_true in hv. destruct hv as (_ & _ & _ & _ & _ & _ & _ & hmx). exact hmx. }
-      (* the product argument at every (x, y, z) *)
+      (* Product-argument soundness at every (x, y, z). *)
       assert (hP : forall jx jy jz, (jx < N)%nat -> (jy < length Y)%nat -> (jz < length Z)%nat ->
         (exists (D : list (list F)) (t : list F),
           sh_pst h gs n cA (cB jx) (y jy) (z jz) = com_list h gs D t /\ length D = m /\ length t = m /\
@@ -1626,7 +1995,7 @@ Section BayerGrothSound.
         + intros p q hp hq. rewrite hl in hp. destruct (hZs p q hp hq) as (hz1 & hz2). split; [exact hz1 | split; [rewrite hl; exact hz2 |]].
           intros j hj. rewrite hl in hj. intros j' hj'. exact (hprod jx jy jz p q j j' hjx hjy hjz hp hq hj hj').
         + left. exists D, t. rewrite hl in h2, h3, h5. repeat split; assumption. }
-      (* the multi-exponentiation argument at every x *)
+      (* Multi-exponentiation soundness at every x. *)
       assert (hM : forall jx, (jx < N)%nat ->
         (exists (B : list (list F)) (sB : list F) (ρ : F),
           cB jx = com_list h gs B sB /\ length B = m /\ length sB = m /\ (forall v, In v B -> length v = n) /\
@@ -1639,7 +2008,8 @@ Section BayerGrothSound.
           [lia | rewrite hcB by exact hjx; exact hm | exact hMnd | rewrite hcB by exact hjx; exact hMl | | | right; exact hbb].
         + intros jm hjm. rewrite hMl in hjm. exact (hmexp jx jm hjx hjm).
         + left. exists B, sB, ρ. rewrite hcB in h2, h3, h5 by exact hjx. repeat split; assumption. }
-      (* the opening of c_A from two values of y *)
+      (* Open cA from two distinct values of y: the i-th product-statement
+         commitment is the linear polynomial c_(B_i) com(−z) · c_(A_i)^y. *)
       assert (hY2 : (2 <= length Y)%nat) by nia.
       assert (hy01 : y 0%nat <> y 1%nat) by (apply nth_NoDup_neq; [exact hYnd | lia | lia | lia]).
       destruct (hP 0%nat 0%nat 0%nat hN ltac:(lia) ltac:(lia)) as [(D0 & t0 & hD0 & hD0l & ht0l & hD0n & _) | hbb]; [| right; exact hbb].
@@ -1674,7 +2044,8 @@ Section BayerGrothSound.
       assert (hAmatn : Forall (fun v => length v = n) Amat).
       { unfold Amat; rewrite Forall_forall; intros v hv; apply in_map_iff in hv; destruct hv as (i & <- & hi); apply in_seq in hi; apply hAn; lia. }
       assert (hal : length a = N) by (unfold a; rewrite (concat_length_rows Amat n hAmatn), hAmatl; exact hN_eq).
-      (* the per-x claim: the openings of c_B are powers of x along a permutation of a *)
+      (* For each x: the openings of cB are x^σ(k) along a permutation σ of
+         the entries of a, via binding and perm_of_products. *)
       assert (hjx : forall jx, (jx < N)%nat ->
         (exists (B : list (list F)) (ρ : F) (σ' : list nat), Permutation σ' (seq 0 N) /\
           (forall k, (k < N)%nat -> nth k a zero = fnat (nth k σ' 0%nat)) /\
@@ -1687,7 +2058,7 @@ Section BayerGrothSound.
         assert (hBf : Forall (fun v => length v = n) B) by (rewrite Forall_forall; exact hBn).
         set (b := concat B).
         assert (hbl : length b = N) by (unfold b; rewrite (concat_length_rows B n hBf), hBl; exact hN_eq).
-        (* the product identity at every (y, z), by binding *)
+        (* The product identity at every (y, z), by binding. *)
         assert (hid : (forall jy, (jy < length Y)%nat -> forall jz, (jz < length Z)%nat ->
             fold_right mul one (map (fun k => y jy * nth k a zero + nth k b zero - z jz) (seq 0 N)) =
             fold_right mul one (map (fun k => y jy * fnat k + fpow (x jx) k - z jz) (seq 0 N))) \/ binding_break h gs).
@@ -1732,13 +2103,15 @@ Section BayerGrothSound.
         split; [exact hBl | split; [exact hBf |]].
         rewrite hC. f_equal. rewrite <-(cmexp_chunks (Hvec := Hvec) n m Cs' (concat B) hCs' hbl).
         rewrite <-hBl, chunk_concat by exact hBf. reflexivity. }
-      (* the permutation *)
+      (* Fix the permutation obtained at the first x. *)
       destruct (hjx 0%nat hN) as [(B0 & ρ0 & σ & hσ & haσ & _) | hbb]; [| right; exact hbb].
       assert (hσl : length σ = N) by (rewrite (Permutation_length hσ), length_seq; reflexivity).
       assert (hσk : forall k, (k < N)%nat -> (nth k σ 0 < N)%nat).
       { intros k hk. assert (hin : In (nth k σ 0%nat) (seq 0 N)) by (eapply Permutation_in; [exact hσ | apply nth_In; lia]).
         apply in_seq in hin; lia. }
-      (* Q(X) = C(X) − Σ_j X^j C'_{σ⁻¹(j)} is an encryption of 1 at every x *)
+      (* Q(X) = C(X) · C''(X)⁻¹ with C''_j = C'_(σ⁻¹(j)) is an encryption
+         of 1 at every x; the permutation is the same for every x since it
+         is determined by a. *)
       set (Cs'' := map (fun j => nth (perm_inv σ N j) Cs' cone) (seq 0 N)).
       set (Q := cpadd Cs (map (fun c => cpow c (opp one)) Cs'')).
       assert (hQ : (forall jx, (jx < N)%nat -> exists ρ, ceval Q (x jx) = encg g pk zero ρ) \/ binding_break h gs).
@@ -1764,7 +2137,8 @@ Section BayerGrothSound.
       destruct hQ as [hQ | hbb]; [| right; exact hbb].
       assert (hCs''l : length Cs'' = N) by (unfold Cs''; rewrite length_map, length_seq; reflexivity).
       assert (hQl : length Q = N) by (unfold Q; rewrite (vpadd_length (vadd := cmul)), length_map, hCs, hCs''l; lia).
-      (* the coefficients of Q *)
+      (* Coefficients of Q, by the inverse Vandermonde matrix in the
+         ciphertext space, are encryptions of 1. *)
       assert (hQk : forall k, (k < N)%nat -> exists ρ, nth k Cs cone = cmul (encg g pk zero ρ) (nth (perm_inv σ N k) Cs' cone)).
       { intros k hk.
         pose proof (coeff_from_evals (Fdec := Fdec) (Hf := Hf) (HV := CTvs) (fun cs x => ceval cs x)
@@ -1774,7 +2148,8 @@ Section BayerGrothSound.
         exists ρ. cbv beta in hc. rewrite hρ in hc. unfold Q in hc. rewrite (nth_vpadd (HV := CTvs)), nth_map_cpow in hc.
         unfold Cs'' in hc; rewrite PolyPerm.nth_map_seq in hc by exact hk.
         apply cancel_inv1' in hc. exact hc. }
-      (* the re-encryption exponents *)
+      (* Re-index to C'_i = Enc(1; −ρ) · C_(σ(i)) and collect the
+         randomisers into a list. *)
       assert (hfin : forall i, (i < N)%nat -> exists ρ, nth i Cs' cone = cmul (encg g pk zero ρ) (nth (nth i σ 0%nat) Cs cone)).
       { intros i hi. destruct (hQk (nth i σ 0%nat) (hσk i hi)) as (ρ & hρ).
         rewrite perm_inv_nth in hρ by (exact hσ || exact hi).
