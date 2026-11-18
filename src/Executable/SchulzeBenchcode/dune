@@ -1,3 +1,3 @@
 (executables
- (names main batched simple)
+ (names main batched simple par)
  (libraries SchulzeBenchlib cryptokit hacl-star unix))
