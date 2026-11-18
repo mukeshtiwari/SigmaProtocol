@@ -253,7 +253,7 @@ We also compiled the same fixed-challenge ballot term (`helios_wasm_ballot_bench
 | CakeML, fully verified to ARM64 | 1.8 s | 49.3 min |
 | CertiCoq-Wasm (next section) | 8.4 s | out of memory |
 
-CakeML is about 4.6 times faster than the wasm backend on identical constructor arithmetic (native code plus a real garbage collector, so the full ballot actually *completes*, in 2959 s), and 4-5 orders of magnitude slower than GMP-backed OCaml. The limb-arithmetic plan in [Wasmcomp](https://github.com/mukeshtiwari/Wasmcomp) would close most of that gap for both verified backends.
+CakeML is about 4.6 times faster than the wasm backend on identical constructor arithmetic (native code plus a real garbage collector, so the full ballot actually *completes*, in 2959 s), and 4-5 orders of magnitude slower than GMP-backed OCaml. A planned limb-arithmetic backend (a separate project, not linked for anonymous review) would close most of that gap for both verified backends.
 
 To reproduce: `opam install rocq-cakeml-extraction` (works with the released MetaRocq on Rocq 9.0/9.1, no commit pinning needed), download `cake-arm8-64.tar.gz` from the [CakeML releases](https://github.com/CakeML/cakeml/releases) and run `make cake` in it, then in [cakeml/](cakeml/):
 
@@ -296,7 +296,7 @@ To show that the WebAssembly client is functional and to locate the exact point 
 | 256-bit p, 128-bit q | out of memory (single vote: 16.7 s, 1274 MB) | out of memory |
 | 2048-bit p, 256-bit q (Helios) | out of memory | out of memory |
 
-So the certified WebAssembly client completes an entire ballot, end to end, at up to 128-bit parameters, and the wasm-compiled verifier accepts the wasm-compiled ballot (the `result` global of the verification module is the encoding of `true`; note the unboxed constructor encoding is `true = 3`, `false = 1`). Memory grows about 8x per parameter doubling (4x per multiplication times 2x exponent length), which extrapolates cleanly to the ~19 GB a 2048-bit exponentiation would need. The limit is purely the constructor representation of integers, not the protocol code: primitive big-integer arithmetic in the verified backend (the [Wasmcomp](https://github.com/mukeshtiwari/Wasmcomp) plan) is the fix.
+So the certified WebAssembly client completes an entire ballot, end to end, at up to 128-bit parameters, and the wasm-compiled verifier accepts the wasm-compiled ballot (the `result` global of the verification module is the encoding of `true`; note the unboxed constructor encoding is `true = 3`, `false = 1`). Memory grows about 8x per parameter doubling (4x per multiplication times 2x exponent length), which extrapolates cleanly to the ~19 GB a 2048-bit exponentiation would need. The limit is purely the constructor representation of integers, not the protocol code: primitive big-integer arithmetic in the verified backend (the same planned limb-arithmetic backend) is the fix.
 
 Because WasmBenchSmallDefs.v does not depend on Coqprime, compiling it needs no quick-compilation trick -- only the dune edit (remove `Coqprime Bignums` from [src/Examples/dune](/src/Examples/dune), since the certirocq switch does not have them). Then, with the toolchain below:
    ```
