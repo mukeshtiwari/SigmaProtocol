@@ -3,7 +3,7 @@
    parameters, voters and verifier in one process (a ballot takes seconds,
    not minutes, so no resumable board is needed):
 
-     gentoo3.exe positions-file board-file [--no-cert]
+     gentoo3.exe positions-file board-file [--no-cert] [--workers=W]
 
    gives voter k the credential voter-k, encrypts every ballot with its
    proofs under the voter-bound oracle H_v = SHAKE-256(v || transcript),
@@ -14,7 +14,11 @@
    winner and verifies the certificate (skipped with --no-cert: the
    certificate does not depend on the ballot protocol). The commitment key
    is hashed to the order-q subgroup from fixed labels. The log lines follow
-   encrypt.exe and main.exe so that bench/gentoo_table.py reads them. *)
+   encrypt.exe and main.exe so that bench/gentoo_table.py reads them.
+   With --workers=W the ballots are verified, and the certificate is
+   verified as the independent tasks of nizk_verify_tally_tasks_bench
+   (whose conjunction is nizk_verify_tally by nizk_verify_tally_tasks_spec),
+   on W forked workers (Parrun); the prover stays sequential. *)
 open SchulzeBenchlib.SchulzeBenchIns
 open Hacl_star.Hacl.Keccak
 open Board
@@ -63,6 +67,10 @@ let () =
   match Array.to_list Sys.argv with
   | _ :: positions_file :: board_file :: rest ->
     let with_cert = not (List.mem "--no-cert" rest) in
+    let workers =
+      match List.find_opt (fun a -> String.length a > 10 && String.sub a 0 10 = "--workers=") rest with
+      | Some a -> int_of_string (String.sub a 10 (String.length a - 10))
+      | None -> 1 in
     let (m, names, rankings) = read_positions positions_file in
     let names = Array.of_list names in
     let nb = List.length rankings in
@@ -97,9 +105,19 @@ let () =
     (* the verifier *)
     Printf.printf "%s: m = %d candidates, N = %d ballots read in 0.0 s\n%!" election m nb;
     let ver_times = ref [] and ver_cpu = ref [] in
-    let accepted = List.filter (fun (vid, b, _) ->
-      let (ok, tv, cv) = time_it2 (fun () -> nizk_verify_ballot3_bench n (big lk) h1 gs1 (oracle3_for vid) b) in
-      ver_times := tv :: !ver_times; ver_cpu := cv :: !ver_cpu; ok) ballots in
+    let accepted =
+      if workers <= 1 then
+        List.filter (fun (vid, b, _) ->
+          let (ok, tv, cv) = time_it2 (fun () -> nizk_verify_ballot3_bench n (big lk) h1 gs1 (oracle3_for vid) b) in
+          ver_times := tv :: !ver_times; ver_cpu := cv :: !ver_cpu; ok) ballots
+      else begin
+        let tasks = Array.of_list (List.map (fun (vid, b, _) () ->
+          time_it2 (fun () -> nizk_verify_ballot3_bench n (big lk) h1 gs1 (oracle3_for vid) b)) ballots) in
+        let (res, tw) = time_it (fun () -> Parrun.par_run workers tasks) in
+        Printf.printf "ballots: verified on %d workers in %.0f s wall-clock\n%!" workers tw;
+        Array.iter (fun (_, tv, cv) -> ver_times := tv :: !ver_times; ver_cpu := cv :: !ver_cpu) res;
+        List.filteri (fun i _ -> let (ok, _, _) = res.(i) in ok) ballots
+      end in
     Printf.printf "ballots: verify median %.1f s, total %.0f s, accepted %d of %d, cpu median %.1f s, cpu total %.0f s\n%!"
       (median !ver_times) (sum !ver_times) (List.length accepted) nb (median !ver_cpu) (sum !ver_cpu);
     let (v0, b0, _) = List.hd ballots in
@@ -116,8 +134,15 @@ let () =
       let (pf, tg, cg) = time_it2 (fun () ->
         nizk_generate_tally_bench n n' tally_hash_oracle encD wn (memo_random_field ())) in
       Printf.printf "certificate generated in %.0f s (cpu %.0f s)\n%!" tg cg;
-      let (ok, tv, cv) = time_it2 (fun () -> nizk_verify_tally_bench n n' tally_hash_oracle encD wn pf) in
+      let (ok, tv, cv) =
+        if workers <= 1 then time_it2 (fun () -> nizk_verify_tally_bench n n' tally_hash_oracle encD wn pf)
+        else begin
+          let tasks = Array.of_list (nizk_verify_tally_tasks_bench n n' tally_hash_oracle encD wn pf) in
+          let (res, tw) = time_it (fun () -> Parrun.par_run workers tasks) in
+          Printf.printf "certificate verified as %d tasks on %d workers\n%!" (Array.length tasks) workers;
+          (Array.for_all (fun b -> b) res, tw, 0.)
+        end in
       Printf.printf "certificate: generation %.0f s, verification %.0f s, verified %b, transcript entries %s, cpu generation %.0f s, cpu verification %.0f s\n%!"
         tg tv ok (z (tally_board_size n n' encD wn pf)) cg cv
     end
-  | _ -> prerr_endline "usage: gentoo3.exe positions-file board-file [--no-cert]"; exit 2
+  | _ -> prerr_endline "usage: gentoo3.exe positions-file board-file [--no-cert] [--workers=W]"; exit 2

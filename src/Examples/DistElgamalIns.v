@@ -145,7 +145,7 @@ Section Ins.
   Proof.
     refine(@DistElgamal.decrypt_value (@Schnorr_group p q)
     (@Schnorr.one p q prime_p prime_q)
-    (@inv_schnorr_group 2 p q safe_prime prime_p prime_q)
+    (@inv_schnorr_group p q prime_p prime_q)
     (@mul_schnorr_group p q prime_p prime_q) _ c [df₁; df₂; df₃]).
   Defined.
 
@@ -198,7 +198,7 @@ Section Ins.
     Vector.t (@Schnorr_group p q) n.
   Proof.
     refine(@DistElgamal.decrypt_ballot_value (@Schnorr_group p q)
-    (@inv_schnorr_group 2 p q safe_prime prime_p prime_q)
+    (@inv_schnorr_group p q prime_p prime_q)
     (@mul_schnorr_group p q prime_p prime_q) _ n cs [dfs₁; dfs₂; dfs₃]).
   Defined.
 

@@ -92,7 +92,7 @@ Module Small64.
     refine(@encrypt_ballot_and_generate_enc_proof (@Zp q)
       Zpfield.zero Zpfield.one zp_add zp_mul zp_sub
       zp_opp zp_dec (@Schnorr_group p q)
-      (@inv_schnorr_group k p q safe_prime prime_p prime_q)
+      (@inv_schnorr_group p q prime_p prime_q)
       (@mul_schnorr_group p q prime_p prime_q)
       (@pow k p q safe_prime prime_p prime_q) _
       g h rs ms uscs c).
@@ -110,7 +110,7 @@ Module Small64.
     refine(@verify_encryption_ballot_proof (@Zp q)
       Zpfield.zero Zpfield.one zp_add zp_dec
       (@Schnorr_group p q)
-      (@inv_schnorr_group k p q safe_prime prime_p prime_q)
+      (@inv_schnorr_group p q prime_p prime_q)
       (@mul_schnorr_group p q prime_p prime_q)
       (@pow k p q safe_prime prime_p prime_q)
       Schnorr.dec_zpstar _ g h proof).
@@ -215,7 +215,7 @@ Module Small128.
     refine(@encrypt_ballot_and_generate_enc_proof (@Zp q)
       Zpfield.zero Zpfield.one zp_add zp_mul zp_sub
       zp_opp zp_dec (@Schnorr_group p q)
-      (@inv_schnorr_group k p q safe_prime prime_p prime_q)
+      (@inv_schnorr_group p q prime_p prime_q)
       (@mul_schnorr_group p q prime_p prime_q)
       (@pow k p q safe_prime prime_p prime_q) _
       g h rs ms uscs c).
@@ -233,7 +233,7 @@ Module Small128.
     refine(@verify_encryption_ballot_proof (@Zp q)
       Zpfield.zero Zpfield.one zp_add zp_dec
       (@Schnorr_group p q)
-      (@inv_schnorr_group k p q safe_prime prime_p prime_q)
+      (@inv_schnorr_group p q prime_p prime_q)
       (@mul_schnorr_group p q prime_p prime_q)
       (@pow k p q safe_prime prime_p prime_q)
       Schnorr.dec_zpstar _ g h proof).
@@ -342,7 +342,7 @@ Module Small256.
     refine(@encrypt_ballot_and_generate_enc_proof (@Zp q)
       Zpfield.zero Zpfield.one zp_add zp_mul zp_sub
       zp_opp zp_dec (@Schnorr_group p q)
-      (@inv_schnorr_group k p q safe_prime prime_p prime_q)
+      (@inv_schnorr_group p q prime_p prime_q)
       (@mul_schnorr_group p q prime_p prime_q)
       (@pow k p q safe_prime prime_p prime_q) _
       g h rs ms uscs c).
@@ -360,7 +360,7 @@ Module Small256.
     refine(@verify_encryption_ballot_proof (@Zp q)
       Zpfield.zero Zpfield.one zp_add zp_dec
       (@Schnorr_group p q)
-      (@inv_schnorr_group k p q safe_prime prime_p prime_q)
+      (@inv_schnorr_group p q prime_p prime_q)
       (@mul_schnorr_group p q prime_p prime_q)
       (@pow k p q safe_prime prime_p prime_q)
       Schnorr.dec_zpstar _ g h proof).

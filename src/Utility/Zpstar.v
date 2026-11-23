@@ -916,7 +916,7 @@ Module Schnorr.
         all: try (abstract nia).
     Defined.
 
-    (** The Fermat inverse [a^(p-2) mod p] lies in [{1, …, p-1}]. *)
+    (** The inverse [a^(q-1) mod p] lies in [{1, …, p-1}]. *)
     Lemma inv_schnorr_group_subproof_first :
       forall au,
       0 < au < p ->
@@ -924,13 +924,15 @@ Module Schnorr.
         Z.of_N
         (Npow_mod
           (Z.to_N au)
-          (Z.to_N (p - 2))
+          (Z.to_N (q - 1))
           (Z.to_N p)) < p.
     Proof.
       intros ? Ha.
+      pose proof @Hp_2_p p Hp.
+      pose proof @Hp_2_p q Hq.
       rewrite zmod_nmod,
       !Z2N.id.
-      apply fermat_bound.
+      apply fermat_bound_gen.
       exact Hp.
       all:try nia.
       rewrite Z2N.id.
@@ -938,8 +940,8 @@ Module Schnorr.
       nia.
     Qed.
 
-    (** The Fermat inverse stays in the subgroup: if [a^q ≡ 1] then
-        [(a^(p-2))^q = (a^q)^(p-2) ≡ 1 (mod p)]. *)
+    (** The inverse stays in the subgroup: if [a^q ≡ 1] then
+        [(a^(q-1))^q = (a^q)^(q-1) ≡ 1 (mod p)]. *)
     Lemma inv_schnorr_group_subproof_second_aux :
       forall au,
       0 < au < p ->
@@ -947,7 +949,7 @@ Module Schnorr.
       Z.of_N
       (Npow_mod
         (Z.to_N au)
-        (Z.to_N (p - 2))
+        (Z.to_N (q - 1))
         (Z.to_N p)) ^ q mod p = 1.
     Proof.
       intros ? Hu Hv.
@@ -976,7 +978,7 @@ Module Schnorr.
       Zpow_mod
       (Z.of_N (Npow_mod
         (Z.to_N au)
-        (Z.to_N (p - 2))
+        (Z.to_N (q - 1))
         (Z.to_N p))) q p = 1.
     Proof.
       intros * ha hb.
@@ -986,12 +988,15 @@ Module Schnorr.
       all:nia.
     Qed.
 
-    (** Group inverse [a ↦ a^(p-2) mod p], computed with [Npow_mod]. *)
+    (** Group inverse [a ↦ a^(q-1) mod p], computed with [Npow_mod]: every
+        element has order dividing [q], so [a · a^(q-1) = a^q ≡ 1].  The
+        exponent has the size of [q], not of [p], which matters for the
+        2048-bit groups with a 256-bit [q]. *)
     Definition inv_schnorr_group (u : Schnorr_group) : Schnorr_group.
       refine(
         match u with
         | mk_schnorr au Hu Hv => mk_schnorr
-            (Z.of_N (Npow_mod (Z.to_N au) (Z.to_N (p - 2)) (Z.to_N p)))
+            (Z.of_N (Npow_mod (Z.to_N au) (Z.to_N (q - 1)) (Z.to_N p)))
             (@inv_schnorr_group_subproof_first au Hu)
             (inv_schnorr_group_subproof_second au Hu Hv)
         end).
@@ -1063,8 +1068,8 @@ Module Schnorr.
       inversion Hxy; inversion Hzu; subst; reflexivity.
     Defined.
 
-    (** Left inverse law [a^(p-2) · a ≡ 1 (mod p)], by Fermat's little theorem
-        as in [Zpgroup.zpstar_left_inv]. *)
+    (** Left inverse law [a^(q-1) · a = a^q ≡ 1 (mod p)], from the subgroup
+        condition. *)
     Lemma schnorr_left_inv :
       forall x, mul_schnorr_group (inv_schnorr_group x) x = one.
     Proof.
@@ -1072,23 +1077,19 @@ Module Schnorr.
       unfold mul_schnorr_group,
       inv_schnorr_group, one.
       apply construct_schnorr_group.
+      pose proof @Hp_2_p p Hp.
+      pose proof @Hp_2_p q Hq.
       rewrite Z.mul_comm.
       rewrite zmod_nmod, Zpow_mod_correct.
       rewrite !Z2N.id.
       rewrite Zmult_mod_idemp_r.
-      pose proof @Hp_2_p p Hp.
-      assert (Hpp : p - 1 = 1 + (p - 2)).
-      nia.
-      assert (Ht : x * x ^ (p - 2) = x ^ (p - 1)).
-      rewrite Hpp.
-      rewrite Z.pow_add_r.
-      all:try nia.
+      assert (Ht : x * x ^ (q - 1) = x ^ q).
+      { replace q with (1 + (q - 1)) at 2 by lia.
+        rewrite Z.pow_add_r, Z.pow_1_r; lia. }
       rewrite Ht.
       rewrite <- Zpow_mod_correct.
-      apply fermat_little_ZZ.
-      exact Hp.
-      exact Hxa.
-      nia.
+      exact Hxb.
+      all: try nia.
       rewrite Z2N.id.
       exact Hp.
       nia.
@@ -1452,7 +1453,7 @@ Module Vspace.
         (@Schnorr.Schnorr_group p q)
         (@eq (@Schnorr.Schnorr_group p q))
         (@Schnorr.one p q Hp Hq)
-        (@Schnorr.inv_schnorr_group k p q Hk Hp Hq)
+        (@Schnorr.inv_schnorr_group p q Hp Hq)
         (@Schnorr.mul_schnorr_group p q Hp Hq)
         pow.
     Proof.

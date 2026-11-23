@@ -107,7 +107,7 @@ Section Ins.
   Proof.
     refine(@generate_enc_proof_commitment (@Zp q) Zpfield.zero Zpfield.one
       zp_opp zp_dec (@Schnorr_group p q)
-      (@inv_schnorr_group 2 p q safe_prime prime_p prime_q)
+      (@inv_schnorr_group p q prime_p prime_q)
       (@mul_schnorr_group p q prime_p prime_q)
       pow g h m uscs (encrypt_vote_ins r m)).
     all:(try (eapply prime_q)).
@@ -126,7 +126,7 @@ Section Ins.
     refine(@generate_enc_proof (@Zp q)
      Zpfield.zero Zpfield.one zp_add zp_mul zp_sub zp_opp zp_dec
      (@Schnorr_group p q)
-     (@inv_schnorr_group 2 p q safe_prime prime_p prime_q)
+     (@inv_schnorr_group p q prime_p prime_q)
      (@mul_schnorr_group p q prime_p prime_q) pow g h r m uscs cp c).
     all:(try (eapply prime_q)).
     all:(try (eapply prime_p)).
@@ -161,7 +161,7 @@ Section Ins.
     refine(@encrypt_vote_and_generate_enc_proof (@Zp q)
      Zpfield.zero Zpfield.one zp_add zp_mul zp_sub zp_opp zp_dec
      (@Schnorr_group p q)
-     (@inv_schnorr_group 2 p q safe_prime prime_p prime_q)
+     (@inv_schnorr_group p q prime_p prime_q)
      (@mul_schnorr_group p q prime_p prime_q) pow
      g h r m uscs c).
     all: (try eapply prime_q).
@@ -178,7 +178,7 @@ Section Ins.
     refine(@verify_encryption_vote_proof (@Zp q)
       Zpfield.zero Zpfield.one zp_add zp_dec
       (@Schnorr_group p q)
-      (@inv_schnorr_group 2 p q safe_prime prime_p prime_q)
+      (@inv_schnorr_group p q prime_p prime_q)
       (@mul_schnorr_group p q prime_p prime_q) pow
       Schnorr.dec_zpstar g h proof).
     all: (try eapply prime_q).
@@ -212,7 +212,7 @@ Section Ins.
   Proof.
     refine(@generate_ballot_commitment (@Zp q) Zpfield.zero Zpfield.one
       zp_opp zp_dec (@Schnorr_group p q)
-      (@inv_schnorr_group 2 p q safe_prime prime_p prime_q)
+      (@inv_schnorr_group p q prime_p prime_q)
       (@mul_schnorr_group p q prime_p prime_q)
       pow n g h rs ms uscs).
     all: (try eapply prime_q).
@@ -232,7 +232,7 @@ Section Ins.
     refine(@generate_enc_proof_ballot (@Zp q)
      Zpfield.zero Zpfield.one zp_add zp_mul zp_sub zp_opp zp_dec
      (@Schnorr_group p q)
-     (@inv_schnorr_group 2 p q safe_prime prime_p prime_q)
+     (@inv_schnorr_group p q prime_p prime_q)
      (@mul_schnorr_group p q prime_p prime_q) pow n
      g h rs ms uscs cp c).
     all: (try eapply prime_q).
@@ -250,7 +250,7 @@ Section Ins.
     refine(@encrypt_ballot_and_generate_enc_proof (@Zp q)
       Zpfield.zero Zpfield.one zp_add zp_mul zp_sub
       zp_opp zp_dec (@Schnorr_group p q)
-      (@inv_schnorr_group 2 p q safe_prime prime_p prime_q)
+      (@inv_schnorr_group p q prime_p prime_q)
       (@mul_schnorr_group p q prime_p prime_q) pow _
       g h rs ms uscs c).
     all: (try eapply prime_q).
@@ -304,7 +304,7 @@ Section Ins.
     refine(@verify_encryption_ballot_proof (@Zp q)
       Zpfield.zero Zpfield.one zp_add zp_dec
       (@Schnorr_group p q)
-      (@inv_schnorr_group 2 p q safe_prime prime_p prime_q)
+      (@inv_schnorr_group p q prime_p prime_q)
       (@mul_schnorr_group p q prime_p prime_q) pow
       Schnorr.dec_zpstar _ g h proof).
     all: (try eapply prime_q).
@@ -328,7 +328,7 @@ Section Ins.
     refine(@generate_overall_proof (@Zp q) Zpfield.zero Zpfield.one
       zp_add zp_mul zp_sub zp_opp zp_dec (@Schnorr_group p q)
       (@Schnorr.one p q prime_p prime_q)
-      (@inv_schnorr_group 2 p q safe_prime prime_p prime_q)
+      (@inv_schnorr_group p q prime_p prime_q)
       (@mul_schnorr_group p q prime_p prime_q) pow n g h rs ms uscs c).
     all: (try eapply prime_q).
     all: (try eapply prime_p).
@@ -343,7 +343,7 @@ Section Ins.
   Proof.
     refine(@verify_overall_proof (@Zp q) Zpfield.zero zp_add zp_dec
       (@Schnorr_group p q) (@Schnorr.one p q prime_p prime_q)
-      (@inv_schnorr_group 2 p q safe_prime prime_p prime_q)
+      (@inv_schnorr_group p q prime_p prime_q)
       (@mul_schnorr_group p q prime_p prime_q) pow Schnorr.dec_zpstar
       n g h cps pf).
     all: (try eapply prime_q).
@@ -361,7 +361,7 @@ Section Ins.
   Proof.
     refine(@verify_ballot (@Zp q) Zpfield.zero Zpfield.one zp_add zp_dec
       (@Schnorr_group p q) (@Schnorr.one p q prime_p prime_q)
-      (@inv_schnorr_group 2 p q safe_prime prime_p prime_q)
+      (@inv_schnorr_group p q prime_p prime_q)
       (@mul_schnorr_group p q prime_p prime_q) pow Schnorr.dec_zpstar
       n g h b).
     all: (try eapply prime_q).

@@ -101,7 +101,7 @@ Section Ins.
       (@Zpfield.one q prime_q) zp_add zp_dec
       (@Schnorr_group p q)
       (@Schnorr.one p q prime_p prime_q)
-      (@inv_schnorr_group 2 p q safe_prime prime_p prime_q)
+      (@inv_schnorr_group p q prime_p prime_q)
       (@mul_schnorr_group p q prime_p prime_q)
       (@pow 2 p q safe_prime prime_p prime_q)
       Schnorr.dec_zpstar n g h
@@ -111,7 +111,7 @@ Section Ins.
       (@Zpfield.one q prime_q) zp_add zp_mul
       zp_sub zp_div zp_opp zp_inv zp_dec
       (@Schnorr_group p q) Schnorr.one
-      (@inv_schnorr_group 2 p q safe_prime prime_p prime_q)
+      (@inv_schnorr_group p q prime_p prime_q)
       (@mul_schnorr_group p q prime_p prime_q)
       (@pow 2 p q safe_prime prime_p prime_q)
        Schnorr.dec_zpstar n g h pow_vspace
