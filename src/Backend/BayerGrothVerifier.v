@@ -1,7 +1,7 @@
 (** * Fiat–Shamir verifier for Bayer–Groth shuffle arguments *)
 
 (** This file makes the interactive Bayer–Groth shuffle argument of
-    [Crypto.BayerGroth] (S. Bayer and J. Groth, ‘Efficient zero-knowledge
+    [Sigma.BayerGroth] (S. Bayer and J. Groth, ‘Efficient zero-knowledge
     argument for correctness of a shuffle’, EUROCRYPT 2012) non-interactive,
     in the format of the Swiss Post e-voting system (crypto-primitives
     specification 1.6.0: Algorithm 9.12 VerifyShuffleArgument and
@@ -15,7 +15,7 @@
     of a product argument and a multi-exponentiation argument; the product
     argument consists (for [m > 1]) of a Hadamard argument and a single
     value product (SVP) argument; the Hadamard argument ends in a zero
-    argument. Each interactive verifier in [Crypto.BayerGroth] takes its
+    argument. Each interactive verifier in [Sigma.BayerGroth] takes its
     challenges as arguments.
 
     How the challenges are derived. Swiss Post computes every challenge with
@@ -57,11 +57,11 @@
       proof), then either the output ciphertexts are a re-encryption and
       permutation of the inputs or the commitment key is broken
       ([binding_break]). It is a direct consequence of [shuffle_soundness]
-      in [Crypto.BayerGrothSound].
+      in [Sigma.BayerGrothSound].
     - One-query soundness error for single-challenge arguments:
       [zero_fs_soundness_error], [svp_fs_soundness_error],
       [multiexp_fs_soundness_error], via [k_special_soundness_error] from
-      [Crypto.SigmaK]: for a prover with fixed announcements answering the
+      [Sigma.SigmaK]: for a prover with fixed announcements answering the
       challenge [c] with responses [resp c], either a witness exists, or the
       binding is broken, or the acceptance probability over a uniform [c] is
       at most [(k − 1)/|lf|].
@@ -78,7 +78,7 @@ From Stdlib Require Import Utf8 Vector Fin Lia Bool List Permutation PArith seto
 From Stdlib Require Import PeanoNat.
 From Algebra Require Import Hierarchy Group Monoid Field Integral_domain Ring
   Vector_space Vector_product_space.
-From Crypto Require Import Sigma MultiExp OkamotoRows SigmaK BayerGroth BayerGrothSound.
+From Sigma Require Import Sigma MultiExp OkamotoRows SigmaK BayerGroth BayerGrothSound.
 From Probability Require Import Prob Distr.
 From Utility Require Import Util.
 Import ListNotations.
@@ -108,7 +108,7 @@ Section BayerGrothVerifier.
   Local Notation cmexp := (lmexp (vid := cone) (vadd := cmul) (smul := cpow)).
   Local Notation cprod := (fold_right cmul cone).
 
-  (** Short names for the argument records of [Crypto.BayerGroth], and
+  (** Short names for the argument records of [Sigma.BayerGroth], and
       versions of its commitment, encryption, prover and verifier functions
       specialised to the operations of this section. *)
   Local Notation svp_argument := (@svp_argument F G).
@@ -812,7 +812,7 @@ Section BayerGrothVerifier.
 
   (** ** The random-oracle step *)
 
-  (** The soundness theorems of [Crypto.BayerGrothSound] are about the
+  (** The soundness theorems of [Sigma.BayerGrothSound] are about the
       interactive verifiers; the theorems below carry them to the
       Fiat–Shamir verifiers. *)
   Local Notation binding_break := (binding_break (gid := gid) (gop := gop) (gpow := gpow)).

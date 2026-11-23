@@ -48,7 +48,7 @@
     emulation argument uses exactly this Vandermonde inversion. *)
 From Stdlib Require Import Utf8 List Lia Bool setoid_ring.Field Permutation PeanoNat Arith PArith.
 From Algebra Require Import Hierarchy Group Monoid Field Integral_domain Ring Vector_space.
-From Crypto Require Import PolyRoots MultiExp.
+From Sigma Require Import PolyRoots MultiExp.
 From Probability Require Import Prob Distr.
 Import ListNotations.
 

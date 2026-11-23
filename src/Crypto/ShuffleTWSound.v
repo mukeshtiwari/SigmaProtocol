@@ -31,7 +31,7 @@
 From Stdlib Require Import Utf8 Vector Fin Lia Bool List setoid_ring.Field.
 From Algebra Require Import Hierarchy Group Monoid Field Integral_domain Ring
   Vector_space Vector_product_space.
-From Crypto Require Import Sigma Okamoto MultiExp ShuffleTW ShuffleTWProps.
+From Sigma Require Import Sigma Okamoto MultiExp ShuffleTW ShuffleTWProps.
 From Utility Require Import Util.
 Import VectorNotations.
 

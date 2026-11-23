@@ -11,7 +11,7 @@ rm -rf doc/html && mkdir -p doc/html
 opam exec --switch=default -- rocq doc --html --utf8 --toc --toc-depth 2 --index index_symbols \
   --title "SigmaProtocol: verified Sigma protocols and e-voting" \
   -R _build/default/src/Algebra Algebra -R _build/default/src/Utility Utility \
-  -R _build/default/src/Probability Probability -R _build/default/src/Crypto Crypto \
+  -R _build/default/src/Probability Probability -R _build/default/src/Crypto Sigma \
   -R _build/default/src/Frontend Frontend -R _build/default/src/Backend Backend \
   -R _build/default/src/Examples Examples -R _build/default/src/Curve Curve \
   -R _build/default/src/Fiat Fiat \

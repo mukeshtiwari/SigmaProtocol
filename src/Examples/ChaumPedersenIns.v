@@ -18,7 +18,7 @@ the extracted code runs instantly.
 
 The generators are [g = 4] and [h = 7] and the witness is [x = 30]. *)
 From Stdlib Require Import Utf8 ZArith Vector.
-From Crypto Require Import Sigma
+From Sigma Require Import Sigma
   ChaumPedersen.
 From Utility Require Import Zpstar.
 From Examples Require Import Prime.

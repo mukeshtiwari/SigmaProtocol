@@ -27,7 +27,7 @@ randomness vector [uscs] holds three commitment randomnesses followed by
 the two simulated challenges. *)
 From Stdlib Require Import Utf8 ZArith
 Vector Fin.
-From Crypto Require Import Sigma OrSigma.
+From Sigma Require Import Sigma OrSigma.
 From Utility Require Import Zpstar.
 From Examples Require Import Prime.
 Import Vspace Schnorr Zpfield Zpgroup

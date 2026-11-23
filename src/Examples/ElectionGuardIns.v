@@ -51,7 +51,7 @@ counting relation. This file restates two of those theorems at the
 concrete parameters. *)
 From Stdlib Require Import Utf8 ZArith Znumtheory Zpow_facts List Lia.
 From Algebra Require Import Hierarchy.
-From Crypto Require Import Sigma OrSigmaGen.
+From Sigma Require Import Sigma OrSigmaGen.
 From Backend Require Import BeleniosTally ElectionGuardTally.
 From Utility Require Import Zpstar Util.
 From Examples Require Import primeQEG primePEG BigNPow.

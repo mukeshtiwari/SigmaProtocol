@@ -4,7 +4,7 @@
     anonymous credentials (Desmoulins, Dumanois, Kane, Traoré, ePrint
     2025/619: Section 3.3 Show/Verify, Section 4 for the pairing-free check,
     Appendix B Figures 6–8) and links each of its checks to an interactive
-    Sigma protocol proved correct in [Crypto.BBSSharp].
+    Sigma protocol proved correct in [Sigma.BBSSharp].
 
     A presentation consists of the disclosed attributes [m_D], a blinded
     holder key [pk_B], the randomised MAC components [Ā], [B̄], [D], and three
@@ -43,10 +43,10 @@
     [verify_presentation] returns [true], then [Ā ≠ 1], each challenge
     equals the oracle value on the reconstructed announcement, and each
     reconstructed triple is an accepting transcript of the corresponding
-    interactive protocol of [Crypto.BBSSharp] ([hb_verify],
+    interactive protocol of [Sigma.BBSSharp] ([hb_verify],
     [validity_verify], [dleq_verify]). The accepting-transcript part holds
     for every challenge and response by construction; the security content
-    therefore comes from the interactive theorems in [Crypto.BBSSharp]
+    therefore comes from the interactive theorems in [Sigma.BBSSharp]
     ([hb_special_soundness], [validity_special_soundness],
     [dleq_special_soundness], [presentation_soundness],
     [credential_extraction], and the SHVZK results), which talk about pairs
@@ -61,7 +61,7 @@
 From Stdlib Require Import Utf8 Vector Fin Lia Bool List setoid_ring.Field.
 From Algebra Require Import Hierarchy Group Monoid Field Integral_domain Ring
   Vector_space Vector_product_space.
-From Crypto Require Import Sigma Okamoto ChaumPedersen EqSigma MultiExp OkamotoRows BBSSharp.
+From Sigma Require Import Sigma Okamoto ChaumPedersen EqSigma MultiExp OkamotoRows BBSSharp.
 From Utility Require Import Util.
 Import VectorNotations.
 
@@ -137,7 +137,7 @@ Section BBSSharpVerifier.
 
   (** If [verify_hb] accepts, then the challenge is the oracle value on the
       reconstruction and the reconstructed transcript is accepted by
-      [hb_verify] (the Schnorr verifier of [Crypto.BBSSharp]). *)
+      [hb_verify] (the Schnorr verifier of [Sigma.BBSSharp]). *)
   Theorem verify_hb_accepting : forall (H3 : G -> F) (g pkB : G) (c ρ : F),
     verify_hb H3 g pkB c ρ = true ->
     c = H3 (schnorr_reconstruct g pkB c ρ) /\
@@ -174,7 +174,7 @@ Section BBSSharpVerifier.
       satisfying [m] linear relations [Ts_j = ∏_i (Bs_j)_i^{rs_i}]: accept iff
       [c = H(A)] where [A = ext_reconstruct c Bs Ts rs] is the vector of [m]
       reconstructed announcements [∏_i (Bs_j)_i^{rs_i} · Ts_j^{−c}]
-      (from [Crypto.OkamotoRows]). *)
+      (from [Sigma.OkamotoRows]). *)
   Definition verify_rows {K m : nat} (H : VG m -> F) (Bs : Vector.t (VG K) m) (Ts : VG m) (c : F)
     (rs : Vector.t F K) : bool :=
     bool_of_dec (Fdec c (H (ext_reconstruct (opp := opp) (gid := gid) (gop := gop) (gpow := gpow) c Bs Ts rs))).
@@ -196,7 +196,7 @@ Section BBSSharpVerifier.
 
   (** The validity check of a presentation: [verify_rows] with the two rows
       [validity_rows Ā D g g_U] and targets [validity_targets B̄ P] defined in
-      [Crypto.BBSSharp]. The response vector has length [4 + u], where [u]
+      [Sigma.BBSSharp]. The response vector has length [4 + u], where [u]
       is the number of undisclosed attributes. *)
   Definition verify_validity {u : nat} (H4 : VG 2 -> F) (Abar D g : G) (gU : VG u) (Bbar P : G) (c : F)
     (rs : Vector.t F (S (S (S (S u))))) : bool :=
@@ -246,11 +246,11 @@ Section BBSSharpVerifier.
       [Ā ≠ 1] and, for each of π_HB, π_validity and π_DLEQ, the published
       challenge equals the oracle value on the reconstructed announcement(s)
       and the reconstructed transcript is accepting for the interactive
-      protocol of [Crypto.BBSSharp]. Proof: split the conjunction computed by
+      protocol of [Sigma.BBSSharp]. Proof: split the conjunction computed by
       [verify_presentation] and apply the three per-proof theorems. Two
       such transcripts with equal announcements and distinct challenges are
       exactly the hypotheses of [presentation_soundness] in
-      [Crypto.BBSSharp]. *)
+      [Sigma.BBSSharp]. *)
   Theorem verify_presentation_accepting : forall (d u : nat) (H2 : G -> G -> F) (H3 : G -> F) (H4 : VG 2 -> F)
     (g gt g0 pkI : G) (gD : VG d) (gU : VG u) (pr : @presentation d u),
     verify_presentation H2 H3 H4 g gt g0 pkI gD gU pr = true ->

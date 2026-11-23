@@ -1,5 +1,5 @@
 From Stdlib Require Import Utf8 ZArith Vector Psatz.
-From Crypto Require Import Sigma EncProof Elgamal.
+From Sigma Require Import Sigma EncProof Elgamal.
 From Frontend Require Import Approval.
 From Utility Require Import Zpstar Util.
 From Examples Require Import HeliosTallyIns.

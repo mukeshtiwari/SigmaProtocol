@@ -4,7 +4,7 @@
     (U-Prove Cryptographic Specification V1.1 Revision 3, Figures 4 and 10;
     the verification equations are unchanged in Revisions 4 and 5 of March
     2023) and links each check to an interactive Sigma protocol proved
-    correct in [Crypto.UProve].
+    correct in [Sigma.UProve].
 
     The verifier sees only published values: the token
     [(h, σ_z', σ_c', σ_r')], the presentation digest [a], the responses
@@ -24,7 +24,7 @@
       attributes disclosed this degenerates to a Schnorr proof.
     - Extensions: pseudonym and commitments add rows sharing the same
       response vector, giving the multi-row Okamoto protocol of
-      [Crypto.OkamotoRows] ([verify_uprove]).
+      [Sigma.OkamotoRows] ([verify_uprove]).
 
     How the challenges are derived. The hash formatting of the
     specification (Section 2.2) is not formalised. The verifier takes three
@@ -44,7 +44,7 @@
     corresponding interactive protocol ([sig_verify], [pres_verify],
     [pres0_verify], [ext_verify]) whose challenge is the oracle value.
     Special soundness and SHVZK of those protocols are proved in
-    [Crypto.UProve] and [Crypto.OkamotoRows].
+    [Sigma.UProve] and [Sigma.OkamotoRows].
 
     What is NOT verified. The step from a hash-consistent accepting
     transcript to soundness of the non-interactive proof (random oracle,
@@ -55,7 +55,7 @@
 From Stdlib Require Import Utf8 Vector Fin Lia Bool List setoid_ring.Field.
 From Algebra Require Import Hierarchy Group Monoid Field Integral_domain Ring
   Vector_space Vector_product_space.
-From Crypto Require Import Sigma Okamoto ChaumPedersen EqSigma MultiExp OkamotoRows UProve.
+From Sigma Require Import Sigma Okamoto ChaumPedersen EqSigma MultiExp OkamotoRows UProve.
 From Utility Require Import Util.
 Import VectorNotations.
 
@@ -151,7 +151,7 @@ Section UProveVerifier.
   (** [pres_announcement c h rest target rs = target^{−c} · ∏ b_i^{r_i}]
       with bases [b = h :: rest] ([pres_bases]): the announcement implied by
       challenge [c] and responses [rs]. [target] is the public part of the
-      token value ([pres_target] in [Crypto.UProve]). *)
+      token value ([pres_target] in [Sigma.UProve]). *)
   Definition pres_announcement {k : nat} (c : F) (h : G) (rest : Vector.t G k) (target : G)
     (rs : Vector.t F (S k)) : G :=
     gop (target ^ (opp c)) (gexp (pres_bases h rest) rs).
@@ -221,7 +221,7 @@ Section UProveVerifier.
 
   (** Generic multi-row check: the challenge is [C ds] computed from all
       published digests, the announcements are reconstructed row by row with
-      [ext_reconstruct] (from [Crypto.OkamotoRows]), and each digest must be
+      [ext_reconstruct] (from [Sigma.OkamotoRows]), and each digest must be
       the hash of its row's announcement. *)
   Definition verify_ext {K m : nat} (Ha : G -> Digest) (C : Vector.t Digest m -> F)
     (Bs : Vector.t (VG K) m) (Ts : VG m) (ds : Vector.t Digest m) (rs : Vector.t F K) : bool :=

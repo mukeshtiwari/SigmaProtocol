@@ -20,7 +20,7 @@ a caller-supplied hash of the statement and the commitments, and the
 verifier, which checks each of the two Schnorr equations. *)
 From Stdlib Require Import Utf8 ZArith
 Vector.
-From Crypto Require Import Sigma
+From Sigma Require Import Sigma
   ParallelSigma.
 From Utility Require Import Zpstar.
 From Examples Require Import Prime.

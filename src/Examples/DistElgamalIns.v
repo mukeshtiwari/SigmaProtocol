@@ -23,7 +23,7 @@ is given for a single value and pointwise for a ballot of [n] values. The
 proofs of correct decryption that normally accompany each factor are not
 part of this file (see [ChaumPedersenIns.v]). *)
 From Stdlib Require Import Utf8 ZArith Vector.
-From Crypto Require Import DistElgamal.
+From Sigma Require Import DistElgamal.
 From Utility Require Import Zpstar.
 From Examples Require Import Prime.
 Import Vspace Schnorr Zpfield Zpgroup

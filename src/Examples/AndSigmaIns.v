@@ -16,7 +16,7 @@ the extracted code runs instantly.
 
 The secrets are [x₁ = 3], [x₂ = 5] and [x₃ = 8]. *)
 From Stdlib Require Import Utf8 ZArith Vector.
-From Crypto Require Import Sigma
+From Sigma Require Import Sigma
   AndSigma.
 From Utility Require Import Zpstar.
 From Examples Require Import Prime.

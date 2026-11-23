@@ -38,7 +38,7 @@
     argument for correctness of a shuffle, EUROCRYPT 2012. *)
 From Stdlib Require Import Utf8 List Lia Bool setoid_ring.Field Permutation PeanoNat Arith.
 From Algebra Require Import Hierarchy Group Monoid Field Integral_domain Ring Vector_space.
-From Crypto Require Import PolyRoots SigmaK.
+From Sigma Require Import PolyRoots SigmaK.
 Import ListNotations.
 
 (** ** Setting

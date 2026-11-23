@@ -1,7 +1,7 @@
 From Stdlib Require Import Setoid setoid_ring.Field Psatz Vector Utf8 Fin Lia ZArith List.
 From Algebra Require Import Hierarchy Group Monoid Field Integral_domain Ring Vector_space.
 From Utility Require Import Util.
-From Crypto Require Import Elgamal BayerGrothSound.
+From Sigma Require Import Elgamal BayerGrothSound.
 From Frontend Require Import Schulze SchulzeBatched.
 From Backend Require Import SchulzeTally.
 Import VectorNotations.

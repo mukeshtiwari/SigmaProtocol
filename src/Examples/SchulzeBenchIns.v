@@ -1,5 +1,5 @@
 From Stdlib Require Import Utf8 ZArith Vector Psatz Fin Lia List.
-From Crypto Require Import Sigma EncProof Elgamal.
+From Sigma Require Import Sigma EncProof Elgamal.
 From Frontend Require Import Approval Schulze SchulzeBatched SchulzeSimple.
 From Backend Require Import SchulzeTally.
 From Utility Require Import Zpstar Util.

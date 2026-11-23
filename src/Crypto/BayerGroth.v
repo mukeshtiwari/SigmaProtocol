@@ -72,7 +72,7 @@ From Stdlib Require Import Utf8 Vector Fin Lia Bool setoid_ring.Field Permutatio
   RelationClasses Morphisms.
 From Algebra Require Import Hierarchy Group Monoid Field Integral_domain Ring
   Vector_space Vector_product_space.
-From Crypto Require Import Sigma MultiExp OkamotoRows PolyRoots SigmaK.
+From Sigma Require Import Sigma MultiExp OkamotoRows PolyRoots SigmaK.
 From Utility Require Import Util.
 Import ListNotations.
 

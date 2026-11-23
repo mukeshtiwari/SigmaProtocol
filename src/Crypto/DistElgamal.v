@@ -48,7 +48,7 @@ From Algebra Require Import
   Ring Vector_space.
 From Utility Require Import
   Util.
-From Crypto Require Import Elgamal.
+From Sigma Require Import Elgamal.
 Import VectorNotations.
 
 (** ** Parameters *)

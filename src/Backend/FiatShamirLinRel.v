@@ -2,7 +2,7 @@
 
 (** This file connects a non-interactive, hash-based verifier for proofs of
     knowledge of a representation to the interactive generalised Okamoto
-    protocol of [Crypto.Okamoto]. The statement is
+    protocol of [Sigma.Okamoto]. The statement is
 
     [[
       h = g_1^{x_1} · … · g_k^{x_k}
@@ -40,7 +40,7 @@
     nothing about soundness in the random-oracle model. Their role is to
     show that the executable verifier computes exactly the announcement the
     Okamoto verification equation demands, so that the special soundness of
-    the Okamoto protocol (proved in [Crypto.Okamoto]) applies to two such
+    the Okamoto protocol (proved in [Sigma.Okamoto]) applies to two such
     transcripts with the same announcement. The hash [H] is abstract here;
     concrete verifiers instantiate it with SHA-256 from [Utility.Sha256].
 
@@ -51,7 +51,7 @@
     with their own protocol-specific reconstruction functions. *)
 From Stdlib Require Import Utf8 Vector List Bool setoid_ring.Field.
 From Algebra Require Import Hierarchy Group Monoid Field Integral_domain Ring Vector_space.
-From Crypto Require Import Sigma Okamoto.
+From Sigma Require Import Sigma Okamoto.
 From Utility Require Import Util.
 Import VectorNotations.
 

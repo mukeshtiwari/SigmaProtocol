@@ -20,7 +20,7 @@ an unrelated element that can be substituted for one of the [hᵢ] to watch
 the verifier reject. *)
 From Stdlib Require Import Utf8 ZArith
 Vector Fin.
-From Crypto Require Import Sigma EqSigma.
+From Sigma Require Import Sigma EqSigma.
 From Utility Require Import Zpstar.
 From Examples Require Import Prime.
 Import Vspace Schnorr Zpfield Zpgroup

@@ -1,6 +1,6 @@
 (include_subdirs qualified)
 (rocq.theory
- (name Crypto)
+ (name Sigma)
  (synopsis "Formalisation of utility functions")
  (modules (:standard))
  (theories Stdlib Algebra Utility Probability))

@@ -1,5 +1,5 @@
 From Stdlib Require Import Utf8 ZArith.
-From Crypto Require Import Sigma  Elgamal.
+From Sigma Require Import Sigma  Elgamal.
 From Utility Require Import Zpstar Util.
 From Frontend Require Import Approval.
 From Backend Require Import HeliosTally.

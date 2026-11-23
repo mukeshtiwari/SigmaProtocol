@@ -42,7 +42,7 @@
 From Stdlib Require Import Utf8 Vector Fin Lia Bool List setoid_ring.Field PeanoNat Permutation.
 From Algebra Require Import Hierarchy Group Monoid Field Integral_domain Ring
   Vector_space Vector_product_space.
-From Crypto Require Import Sigma Okamoto MultiExp ShuffleTW ShuffleTWProps ShuffleTWSound PolyRoots.
+From Sigma Require Import Sigma Okamoto MultiExp ShuffleTW ShuffleTWProps ShuffleTWSound PolyRoots.
 From Probability Require Import Prob Distr.
 From Utility Require Import Util.
 Import VectorNotations.
