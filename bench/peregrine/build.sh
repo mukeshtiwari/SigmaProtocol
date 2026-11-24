@@ -21,7 +21,9 @@
 # integer instead, printed in decimal by main_z.c.  A program p_bedrock is the
 # program p with Ed.fast_smul remapped (remap_const.py) to the verified
 # bedrock2 scalar multiplication of ed25519_bedrock.c, through the glue
-# ed25519_glue.c.
+# ed25519_glue.c; a program p_bedrockl moreover has Zl.add, Zl.sub, Zl.mul
+# and Zl.opp remapped to the verified bedrock2 arithmetic modulo l of
+# fieldl_bedrock.c, through the glue zl_glue.c.
 #
 # With MINIGMP=<dir with mini-gmp.c and mini-gmp.h> set, every program is also
 # compiled to 64-bit WebAssembly with emscripten (EMCC, default emcc; the
@@ -51,7 +53,9 @@
 # Trusted: Peregrine, the GMP remapping (GmpZ.v against z_gmp.c, and
 # splice_gmp_z.py), numeral_hook.c, stub_axioms.py, the CertiRocq C runtime,
 # gcc and GMP; for the *_bedrock programs also remap_const.py, the glue
-# ed25519_glue.c and bedrock2's C printer, which produced ed25519_bedrock.c.
+# ed25519_glue.c and bedrock2's C printer, which produced ed25519_bedrock.c;
+# for the *_bedrockl programs moreover the glue zl_glue.c and the printed
+# fieldl_bedrock.c.
 set -euo pipefail
 : "${F:?set F to the Peregrine frontend directory}"
 : "${M:?set M to the Peregrine tool main.exe}"
@@ -103,7 +107,7 @@ for v in $VFILES; do
 done
 for p in $PROGRAMS; do
   echo "== $p"
-  q=${p%_bedrock}
+  q=${p%_bedrockl}; q=${q%_bedrock}
   case $q in *_digest) MAIN=$HERE/main_z.c ;; *) MAIN=$GMPZ/main_bool.c ;; esac
   python3 "$GMPZ/run_deep.py" "$GMPZ/splice_gmp_z.py" "$q.ast" gmp_z.ast "${p}_z.ast" "${p}_z.attrs" \
     > "$p.splice.log"
@@ -117,6 +121,15 @@ for p in $PROGRAMS; do
       Curve.Ed25519.Ed25519.Ed.fast_smul=ed25519_fast_smul/2 >> "$p.splice.log"
     EXTRA=("$HERE/ed25519_glue.c")
   fi
+  case $p in *_bedrockl)
+    # *_bedrockl: also Zl.add, Zl.sub, Zl.mul, Zl.opp by the bedrock2
+    # arithmetic modulo l of fieldl_bedrock.c
+    GMPZ=$GMPZ python3 "$GMPZ/run_deep.py" "$HERE/remap_const.py" "${p}_zs.ast" "${p}_zs.attrs" \
+      "${p}_zs.ast" "${p}_zs.attrs" zl_glue.h \
+      Curve.Ed25519.Ed25519.Zl.add=zl_add/2 Curve.Ed25519.Ed25519.Zl.sub=zl_sub/2 \
+      Curve.Ed25519.Ed25519.Zl.mul=zl_mul/2 Curve.Ed25519.Ed25519.Zl.opp=zl_opp/1 >> "$p.splice.log"
+    EXTRA+=("$HERE/zl_glue.c") ;;
+  esac
   # custom attributes (the last field): enable the numeral hoisting
   python3 -c 'import sys; a = open(sys.argv[1]).read().rstrip(); assert a.endswith("())"); open(sys.argv[1], "w").write(a[:-3] + "((((MPfile (\"PeregrineNumerals\")) \"threshold\") \"" + sys.argv[2] + "\")))\n")' \
     "${p}_zs.attrs" "$NUM_BITS"
