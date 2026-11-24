@@ -1,6 +1,8 @@
 (** The C code of the verified scalar multiplication
 
-    The bedrock2 functions of [ScalarMult.v] ([scalarmult] and its callees),
+    The constant-time scalar multiplication of [ScalarMultCT.v]
+    ([scalarmult_ct] and its callees, among them [set_identity] of
+    [ScalarMult.v]),
     of [Affine.v] ([from_affine], [to_affine], [fe25519_inv]) and the
     64-bit field operations of AUCurves' [Field25519_64] that they call,
     together with the canonical byte conversions [fe25519_from_bytes] and
@@ -10,17 +12,17 @@
     quoting removed: the text of the string literal, in which Rocq doubles
     every double quote, with each such pair replaced by one double quote.
 
-    [ToCString] makes [scalarmult], the first function, external and the
+    [ToCString] makes [scalarmult_ct], the first function, external and the
     others [static]; it does not rename functions, so the function [double]
     has the name of a C keyword, which the including file renames with the
     preprocessor.  The lemma [field_specs] checks that the field functions
-    emitted here meet the specifications that [ed25519_exec_scalarmult] and
+    emitted here meet the specifications that [ed25519_exec_scalarmult_ct] and
     the theorems of [Affine.v] take as hypotheses. *)
 
 Require Import Bedrock.End2End.Ed25519.EdwardsXYZT64_Imports.
 Require Bedrock.End2End.Ed25519.EdwardsXYZT64.
 Require Import bedrock2.ToCString.
-Require Import Bridge.ToCached2 Bridge.Affine Bridge.ScalarMult.
+Require Import Bridge.ToCached2 Bridge.Affine Bridge.ScalarMult Bridge.ScalarMultCT.
 Import ListNotations.
 
 Module B := Bedrock.End2End.Ed25519.EdwardsXYZT64.Ed25519XYZT64.
@@ -30,10 +32,10 @@ Module EX := Crypto.Bedrock.End2End.X25519.EdwardsXYZT.
 Local Open Scope string_scope.
 
 Definition funcs : list (string * Syntax.func) := [
-  ("scalarmult", ScalarMult.scalarmult);
-  ("step", ScalarMult.step);
+  ("scalarmult_ct", ScalarMultCT.scalarmult_ct);
+  ("step_ct", ScalarMultCT.step_ct);
+  ("cmov", ScalarMultCT.cmov);
   ("set_identity", ScalarMult.set_identity);
-  ("pcopy", ScalarMult.pcopy);
   ("add", ToCached2.add);
   ("to_cached2", ToCached2.to_cached2);
   ("readd", EX.readd);
@@ -53,7 +55,7 @@ Definition funcs : list (string * Syntax.func) := [
   ("fe25519_carry_sub", FE.fe25519_carry_sub)].
 
 (** The field functions of [funcs] meet the 64-bit specifications that
-    [ed25519_exec_scalarmult] ([ScalarMult.v]) and [ed25519_exec_to_affine]
+    [ed25519_exec_scalarmult_ct] ([ScalarMultCT.v]) and [ed25519_exec_to_affine]
     ([Affine.v]) take as hypotheses, and the byte conversions meet
     fiat-crypto's specifications. *)
 Lemma field_specs functions :
