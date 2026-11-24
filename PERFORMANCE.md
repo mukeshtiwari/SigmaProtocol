@@ -103,5 +103,16 @@ constant, the glue (conversion between GMP integers and bytes, the heap
 layout of points, the constant 2d, the bound `0 ≤ n < 2^256` on the scalar),
 the renaming of the C keyword `double`, and bedrock2's C printer. The
 theorems connect the emitted functions to `Ed.gpow_fast` in separate steps;
-no single theorem states the end-to-end result. Only the scalar multiplication is constant
-time: the arithmetic modulo the group order still uses GMP.
+no single theorem states the end-to-end result.
+
+The scalar field `Zl` (integers modulo the group order l) has verified
+bedrock2 arithmetic as well. fiat-crypto's pipeline derives 64-bit Montgomery
+multiplication, addition, subtraction and negation modulo l (`FieldL.v`);
+`ExecFieldL.v` and `ZlBytes.v` prove that byte-level functions
+`zl_add_bytes`, `zl_sub_bytes`, `zl_mul_bytes` and `zl_opp_bytes` compute
+`Zl.add`, `Zl.sub`, `Zl.mul` and `Zl.opp`. The ballot programs with suffix
+`_bedrockl` remap these four constants as well and give the same output; the
+operations take under 0.02% of the instructions, so the running time is
+unchanged. Their glue converts GMP integers below l to 32-byte encodings and
+is trusted in the same way. GMP still handles these conversions and the
+integer code outside the two fields, and that code is not constant time.
