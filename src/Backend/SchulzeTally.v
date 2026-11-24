@@ -91,7 +91,7 @@ From Algebra Require Import
   Ring Vector_space Product_space.
 From Utility Require Import
   Util.
-From Crypto Require Import
+From Sigma Require Import
   Elgamal EncProof OrSigmaGen Sigma ChaumPedersen DecProof.
 From Frontend Require Import Approval Schulze.
 From Probability Require Import Prob Distr.

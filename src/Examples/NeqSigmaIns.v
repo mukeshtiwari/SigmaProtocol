@@ -29,7 +29,7 @@ The bases are [g₁ = 4], [g₂ = 7], [g₃ = 13] and the secrets [x₁ = 3],
 [x₂ = 5], [x₃ = 8]. Replacing [x₂] by [x₁] or [x₃] (so that two secrets
 coincide) makes the honest prover's transcript fail verification. *)
 From Stdlib Require Import Utf8 ZArith Vector.
-From Crypto Require Import Sigma
+From Sigma Require Import Sigma
   NeqSigma.
 From Utility Require Import Zpstar.
 From Examples Require Import Prime.

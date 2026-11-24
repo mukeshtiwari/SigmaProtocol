@@ -40,7 +40,7 @@ Chaum–Pedersen protocols. The unforgeability and unlinkability of the
 credential scheme as a whole are not proved. *)
 From Stdlib Require Import Utf8 ZArith Zmod Vector Fin List Lia.
 From Algebra Require Import Hierarchy Vector_space Vector_product_space.
-From Crypto Require Import Sigma MultiExp OkamotoRows UProve.
+From Sigma Require Import Sigma MultiExp OkamotoRows UProve.
 From Backend Require Import UProveVerifier.
 From Curve Require Import P256.
 From Fiat.Spec Require Import WeierstrassCurve.

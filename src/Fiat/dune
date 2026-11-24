@@ -1,7 +1,7 @@
 ; Specification layer of fiat-crypto (https://github.com/mit-plv/fiat-crypto,
 ; commit f7f2d538, MIT/Apache-2.0/BSD-1), vendored under the logical root
-; Fiat because fiat-crypto's own root Crypto collides with this project's
-; Crypto theory. Only the dependency closure of Spec/Curve25519.v,
+; Fiat; fiat-crypto's own root Crypto was also the name of this project's
+; own theory (now Sigma). Only the dependency closure of Spec/Curve25519.v,
 ; Curves/Edwards/AffineProofs.v, Curves/Edwards/XYZT/Basic.v,
 ; Algebra/ScalarMult.v and Arithmetic/PrimeFieldTheorems.v is included;
 ; Require lines were rewritten (Crypto. -> Fiat., Coq. -> Stdlib.), nothing else.

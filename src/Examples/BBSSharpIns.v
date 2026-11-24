@@ -42,7 +42,7 @@ attributes, or the Issuer's key), and the statistical anonymity of the
 randomised credential. *)
 From Stdlib Require Import Utf8 ZArith Zmod Vector Fin List Lia.
 From Algebra Require Import Hierarchy Vector_space Vector_product_space.
-From Crypto Require Import Sigma Okamoto ChaumPedersen MultiExp OkamotoRows BBSSharp.
+From Sigma Require Import Sigma Okamoto ChaumPedersen MultiExp OkamotoRows BBSSharp.
 From Backend Require Import BBSSharpVerifier.
 From Curve Require Import P256.
 From Examples Require Import UProveIns.

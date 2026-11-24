@@ -61,7 +61,7 @@ From Probability Require Import
   Prob Distr.
 From Utility Require Import Util.
 From ExtLib Require Import Monad.
-From Crypto Require Import Sigma
+From Sigma Require Import Sigma
   AndSigma.
 
 Import MonadNotation

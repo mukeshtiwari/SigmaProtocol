@@ -35,7 +35,7 @@ proof gets the accepting-transcript theorem [verify_zkp_ins_accepting].
 The file is extracted to OCaml by [src/Extraction/SwissPostZkplib]. *)
 From Stdlib Require Import Utf8 Vector.
 From Algebra Require Import Hierarchy Vector_space.
-From Crypto Require Import Sigma OkamotoRows.
+From Sigma Require Import Sigma OkamotoRows.
 From Backend Require Import BBSSharpVerifier.
 From Utility Require Import Zpstar Util.
 From Examples Require Import BayerGrothIns.

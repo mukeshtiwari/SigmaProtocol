@@ -57,7 +57,7 @@ From Algebra Require Import
   Ring Vector_space.
 From Utility Require Import
   Util.
-From Crypto Require Import
+From Sigma Require Import
   Elgamal EncProof Sigma DecProof.
 From Frontend Require Import
   Approval.

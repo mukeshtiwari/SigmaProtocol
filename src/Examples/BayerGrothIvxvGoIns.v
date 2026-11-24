@@ -63,7 +63,7 @@ hold for every oracle. This file only instantiates those definitions; the
 one theorem stated here is completeness at this group. *)
 From Stdlib Require Import Utf8 ZArith Znumtheory Zpow_facts Vector List Lia.
 From Algebra Require Import Hierarchy Vector_space Vector_product_space.
-From Crypto Require Import Sigma MultiExp OkamotoRows BayerGroth.
+From Sigma Require Import Sigma MultiExp OkamotoRows BayerGroth.
 From Backend Require Import BayerGrothVerifier.
 From Utility Require Import Zpstar Util.
 From Examples Require Import BigNPow.

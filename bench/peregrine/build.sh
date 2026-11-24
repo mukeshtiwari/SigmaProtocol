@@ -73,7 +73,7 @@ tm() {  # tm <log-prefix> cmd...: run capped, recording time and peak memory if 
 }
 ROCQ_FLAGS=(
   -Q "$B/Algebra" Algebra -Q "$B/Utility" Utility -Q "$B/Probability" Probability
-  -Q "$B/Crypto" Crypto -Q "$B/Frontend" Frontend -Q "$B/Examples" Examples
+  -Q "$B/Crypto" Sigma -Q "$B/Frontend" Frontend -Q "$B/Examples" Examples
   -Q "$W" Bench
   -Q "$F/theories" Peregrine -Q "$F/plugin/theories" Peregrine.Plugin
   -w -all -native-compiler no

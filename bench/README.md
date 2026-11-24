@@ -261,7 +261,7 @@ To reproduce: `opam install rocq-cakeml-extraction` (works with the released Met
 rocq c -Q ../../_build/default/src/Utility Utility \
   -Q ../../_build/default/src/Algebra Algebra \
   -Q ../../_build/default/src/Probability Probability \
-  -Q ../../_build/default/src/Crypto Crypto \
+  -Q ../../_build/default/src/Crypto Sigma \
   -Q ../../_build/default/src/Frontend Frontend \
   -Q ../../_build/default/src/Backend Backend \
   -Q ../../_build/default/src/Examples Examples Driver.v > ballot.exp
@@ -306,7 +306,7 @@ Because WasmBenchSmallDefs.v does not depend on Coqprime, compiling it needs no 
    B=../../_build/default
    opam exec --switch=certirocq -- rocq c \
      -Q $B/src/Utility Utility -Q $B/src/Algebra Algebra \
-     -Q $B/src/Probability Probability -Q $B/src/Crypto Crypto \
+     -Q $B/src/Probability Probability -Q $B/src/Crypto Sigma \
      -Q $B/src/Frontend Frontend -Q $B/src/Backend Backend \
      -Q $B/src/Examples Examples WasmBenchSmall.v
    node bench_wasm.js Examples.WasmBenchSmallDefs.Small64.ballot_bench.wasm 5
@@ -333,7 +333,7 @@ Then compile this repository in the certirocq switch. Use the quick compilation 
    B=../../_build/default
    opam exec --switch=certirocq -- rocq c \
      -Q $B/src/Utility Utility -Q $B/src/Algebra Algebra \
-     -Q $B/src/Probability Probability -Q $B/src/Crypto Crypto \
+     -Q $B/src/Probability Probability -Q $B/src/Crypto Sigma \
      -Q $B/src/Frontend Frontend -Q $B/src/Backend Backend \
      -Q $B/src/Examples Examples WasmBench.v
    node bench_wasm.js Examples.WasmBenchDefs.helios_wasm_modexp16_bench.wasm 3

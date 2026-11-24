@@ -41,7 +41,7 @@
     verifier boolean. *)
 From Stdlib Require Import Utf8 List Lia Bool setoid_ring.Field Permutation PeanoNat Arith.
 From Algebra Require Import Hierarchy Group Monoid Field Integral_domain Ring Vector_space.
-From Crypto Require Import SigmaK BayerGrothZK.
+From Sigma Require Import SigmaK BayerGrothZK.
 From Probability Require Import Prob Distr.
 Import ListNotations.
 

@@ -24,7 +24,7 @@ For the binding property of the commitments the discrete logarithm of [h]
 to the base [g] must be unknown; here [g = 4] and [h = 7] are simply fixed
 small elements, not generated verifiably. *)
 From Stdlib Require Import Utf8 ZArith Vector.
-From Crypto Require Import Sigma
+From Sigma Require Import Sigma
   PedLinearRel.
 From Utility Require Import Zpstar.
 From Examples Require Import Prime.

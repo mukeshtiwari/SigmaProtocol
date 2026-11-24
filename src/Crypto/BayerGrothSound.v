@@ -79,7 +79,7 @@
 From Stdlib Require Import Utf8 Vector Fin Lia Bool List Permutation setoid_ring.Field PeanoNat Arith.
 From Algebra Require Import Hierarchy Group Monoid Field Integral_domain Ring
   Vector_space Vector_product_space.
-From Crypto Require Import Sigma MultiExp OkamotoRows PolyRoots SigmaK PolyPerm BayerGroth.
+From Sigma Require Import Sigma MultiExp OkamotoRows PolyRoots SigmaK PolyPerm BayerGroth.
 From Utility Require Import Util.
 Import ListNotations.
 

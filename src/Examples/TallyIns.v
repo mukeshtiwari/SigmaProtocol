@@ -1,5 +1,5 @@
 From Stdlib Require Import Utf8 ZArith Vector.
-From Crypto Require Import Sigma EncProof.
+From Sigma Require Import Sigma EncProof.
 From Backend Require Import Tally.
 From Utility Require Import Zpstar Util.
 From Examples Require Import Prime.

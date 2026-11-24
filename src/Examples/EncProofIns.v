@@ -29,7 +29,7 @@ branch 2 ([Fin.FS (Fin.FS Fin.F1)]). The transcript has three commitments
 (pairs of group elements), four challenges and three responses. *)
 From Stdlib Require Import Utf8 ZArith
 Vector Fin.
-From Crypto Require Import Sigma EncProof.
+From Sigma Require Import Sigma EncProof.
 From Utility Require Import Zpstar.
 From Examples Require Import Prime.
 Import Vspace Schnorr Zpfield Zpgroup

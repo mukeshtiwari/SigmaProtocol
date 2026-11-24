@@ -58,7 +58,7 @@
 From Stdlib Require Import Utf8 ZArith Vector List Lia Bool
   setoid_ring.Field Psatz.
 From Algebra Require Import Hierarchy Group Monoid Field Integral_domain Ring Vector_space Product_space.
-From Crypto Require Import Sigma OrSigmaGen.
+From Sigma Require Import Sigma OrSigmaGen.
 From Utility Require Import Util.
 Import VectorNotations.
 

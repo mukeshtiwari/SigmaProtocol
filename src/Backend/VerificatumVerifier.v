@@ -20,14 +20,14 @@
     ]]
 
     These five equations are precisely the generalised Okamoto acceptance
-    test in the product space [V] of [Crypto.ShuffleTW] for the transcript
+    test in the product space [V] of [Sigma.ShuffleTW] for the transcript
     with announcement [(A', C', D', B', F')], challenge [v] and response
     [(k_A, k_C, k_D, k_F, k_B, k_E)]: Verificatum writes responses as
     [ω + v·x], which matches the library convention. So [verify_pos] is
     literally [tw_verify], and [verify_pos_accepting] holds by
     definition. The soundness properties used are [tw_special_soundness]
-    and [tw_relation_iff] ([Crypto.ShuffleTW]) and the idealised
-    extraction theorem [tw_soundness] ([Crypto.ShuffleTWSound2]).
+    and [tw_relation_iff] ([Sigma.ShuffleTW]) and the idealised
+    extraction theorem [tw_soundness] ([Sigma.ShuffleTWSound2]).
 
     Shuffling session (Algorithm 25). [verify_shuffling] runs over all
     mix-servers: each server must either give a valid proof or leave the
@@ -67,7 +67,7 @@
     soundness of the non-interactive proof is not formalised. *)
 From Stdlib Require Import Utf8 Vector List Bool Lia PeanoNat ZArith.
 From Algebra Require Import Hierarchy.
-From Crypto Require Import Sigma Okamoto MultiExp ShuffleTW ChaumPedersen EqSigma.
+From Sigma Require Import Sigma Okamoto MultiExp ShuffleTW ChaumPedersen EqSigma.
 From Utility Require Import Util.
 Import VectorNotations.
 
@@ -89,7 +89,7 @@ Section Verificatum.
   (** [M = N + 1] is the number of ciphertexts, a ciphertext is an
       ElGamal pair [(u, v) = (g^s, y^s·m)], [nwit = 4 + 2M] is the length
       of the response vector, and [V] is the statement space of
-      [Crypto.ShuffleTW]. *)
+      [Sigma.ShuffleTW]. *)
   Local Notation M := (S N).
   Local Notation ciphertext := (G * G)%type.
   Local Notation nwit := (Nat.add 4 (Nat.add M M)).
@@ -140,7 +140,7 @@ Section Verificatum.
   Definition pos_announcement (pf : pos_proof) : V :=
     (pA' pf, (pC' pf, (pD' pf, (pB' pf, pF' pf)))).
 
-  (** The response vector in the coordinate order of [Crypto.ShuffleTW]:
+  (** The response vector in the coordinate order of [Sigma.ShuffleTW]:
       [(k_A, k_C, k_D, k_F) ++ k_B ++ k_E]. *)
   Definition pos_response (pf : pos_proof) : Vector.t F nwit :=
     [kA pf; kC pf; kD pf; kF pf] ++ kB pf ++ kE pf.
@@ -403,7 +403,7 @@ Section Verificatum.
   (** A verified joint decryption gives an accepting Chaum–Pedersen
       transcript for the statement [(y, B⁻¹) = (g, U)^x] with the combined
       announcement, challenge [−v] and combined response. Special soundness
-      of [Crypto.ChaumPedersen] then yields [x] with [y = g^x] and
+      of [Sigma.ChaumPedersen] then yields [x] with [y = g^x] and
       [B = U^{−x}] from two such transcripts. The plaintext equations are
       not restated. *)
   Theorem verify_decryption_accepting : forall g y O L Gamma parties delta m,

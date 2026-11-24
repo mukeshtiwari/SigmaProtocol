@@ -48,7 +48,7 @@ From Stdlib Require Import Utf8 Vector Fin Lia Bool setoid_ring.Field Permutatio
   RelationClasses Morphisms.
 From Algebra Require Import Hierarchy Group Monoid Field Integral_domain Ring
   Vector_space Vector_product_space Product_space.
-From Crypto Require Import Sigma MultiExp SigmaK PolyRoots BayerGroth BayerGrothSound BayerGrothZK LinearSigma Elgamal.
+From Sigma Require Import Sigma MultiExp SigmaK PolyRoots BayerGroth BayerGrothSound BayerGrothZK LinearSigma Elgamal.
 From Frontend Require Import Schulze SchulzeBatched.
 From Utility Require Import Util.
 Import ListNotations.

@@ -20,7 +20,7 @@ the commitment) and the verifier's acceptance check. Nothing is proved
 here: the security properties are those of [Crypto/Sigma.v]. *)
 From Stdlib Require Import Utf8 ZArith
 Vector.
-From Crypto Require Import Sigma.
+From Sigma Require Import Sigma.
 From Utility Require Import Zpstar.
 From Examples Require Import Prime.
 Import Vspace Schnorr Zpfield Zpgroup

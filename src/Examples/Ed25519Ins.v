@@ -29,7 +29,7 @@ Group elements carry a proof of membership in the order-[l] subgroup;
 [point_to_Z] exposes the affine coordinates [(x, y)] of the underlying
 point (fiat-crypto's affine Edwards points). *)
 From Stdlib Require Import Utf8 ZArith Zmod Vector Lia.
-From Crypto Require Import Sigma ChaumPedersen EncProof.
+From Sigma Require Import Sigma ChaumPedersen EncProof.
 From Frontend Require Import Approval.
 From Curve Require Import Ed25519.
 From Utility Require Import Util.

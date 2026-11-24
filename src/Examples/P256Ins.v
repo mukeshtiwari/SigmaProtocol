@@ -27,7 +27,7 @@ tests and benchmarks.
 Group elements are points in Weierstrass form; [point_to_Z] returns their
 affine coordinates or [None] for the point at infinity. *)
 From Stdlib Require Import Utf8 ZArith Zmod Vector Lia.
-From Crypto Require Import Sigma ChaumPedersen EncProof.
+From Sigma Require Import Sigma ChaumPedersen EncProof.
 From Frontend Require Import Approval.
 From Curve Require Import P256.
 From Utility Require Import Util.

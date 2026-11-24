@@ -3,7 +3,7 @@
     This file proves that the Bayer–Groth shuffle argument (Bayer and Groth,
     _Efficient Zero-Knowledge Argument for Correctness of a Shuffle_,
     EUROCRYPT 2012) and its sub-arguments, as formalised in
-    [Crypto.BayerGroth], are _perfect special honest-verifier zero
+    [Sigma.BayerGroth], are _perfect special honest-verifier zero
     knowledge_ in the finite-distribution model of [Probability.Distr].
     The protocols and verifiers live in [BayerGroth.v]; soundness and
     witness extraction are in [BayerGrothSound.v]. The algorithm numbers
@@ -80,7 +80,7 @@
 From Stdlib Require Import Utf8 Vector Fin Lia Bool List Permutation PArith setoid_ring.Field PeanoNat Arith.
 From Algebra Require Import Hierarchy Group Monoid Field Integral_domain Ring
   Vector_space Vector_product_space.
-From Crypto Require Import Sigma MultiExp OkamotoRows PolyRoots SigmaK PolyPerm BayerGroth BayerGrothSound.
+From Sigma Require Import Sigma MultiExp OkamotoRows PolyRoots SigmaK PolyPerm BayerGroth BayerGrothSound.
 From Probability Require Import Prob Distr.
 From Utility Require Import Util.
 Import ListNotations.

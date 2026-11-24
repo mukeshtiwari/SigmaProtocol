@@ -53,7 +53,7 @@ From Algebra Require Import
   Field Integral_domain
   Ring Vector_space.
 From Utility Require Import Util.
-From Crypto Require Import
+From Sigma Require Import
   Elgamal EncProof Sigma
   DistElgamal ChaumPedersen.
 From Frontend Require Import Approval.

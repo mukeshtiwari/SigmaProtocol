@@ -53,7 +53,7 @@ the generators [hᵢ] are computed by the OCaml driver [Executable/Vmnverifier]
 and are trusted; they enter through the [pos_oracles] and [dec_oracles]
 records. *)
 From Stdlib Require Import Utf8 ZArith Vector List.
-From Crypto Require Import Sigma Okamoto MultiExp ShuffleTW.
+From Sigma Require Import Sigma Okamoto MultiExp ShuffleTW.
 From Backend Require Import VerificatumVerifier.
 From Utility Require Import Zpstar Util.
 From Examples Require Import HeliosTallyIns.

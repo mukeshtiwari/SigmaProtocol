@@ -21,7 +21,7 @@ ballots, that is vectors of [n] ciphertexts. Nothing is proved here; the
 correctness lemmas (decryption of an encryption, homomorphism) are in
 [Crypto/Elgamal.v]. *)
 From Stdlib Require Import Utf8 ZArith.
-From Crypto Require Import Elgamal.
+From Sigma Require Import Elgamal.
 From Utility Require Import Zpstar.
 From Examples Require Import Prime.
 Import Vspace Schnorr Zpfield Zpgroup.
