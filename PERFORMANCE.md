@@ -141,3 +141,15 @@ encrypt + prove + verify takes 31 ms against 38 ms for `_bedrockl` (mean of
 100 runs, including process start). The glue of the `_ct` programs is
 trusted: byte layout, allocation, and the precondition that every scalar is
 below l.
+
+The programs with suffix `_jasmin` and `_jasminl` compile the same verified
+bedrock2 functions through Jasmin instead of bedrock2's C printer and gcc.
+A copy of AUCurves' printer from bedrock2 to Jasmin (`bedrock/jasmin/`)
+prints them as Jasmin modules, and jasminc compiles these to x86-64
+assembly. The output is unchanged; encrypt + prove + verify takes about
+30 ms against 26 ms for the gcc build. jasmin-ct checks that
+`ed25519_smul_bytes` and the `zl_*_bytes` functions are constant time with
+the scalar inputs secret, in the source and after the compiler's inlining,
+unrolling, lowering and propagation passes. These programs trust the Jasmin
+printer, which has no proof, jasminc and the assembler in place of
+bedrock2's C printer and gcc.

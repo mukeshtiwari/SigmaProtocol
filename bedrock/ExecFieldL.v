@@ -451,15 +451,3 @@ Proof.
   rewrite phiL_to_Z in Hm'. exact Hm'.
 Qed.
 
-Print Assumptions fl_exec_add.
-Print Assumptions fl_exec_sub.
-Print Assumptions fl_exec_mul.
-Print Assumptions fl_exec_opp.
-Print Assumptions fl_exec_add_raw.
-Print Assumptions fl_exec_sub_raw.
-Print Assumptions fl_exec_opp_raw.
-Print Assumptions fl_exec_mul_raw.
-Print Assumptions fl_exec_to_mont.
-Print Assumptions fl_exec_from_mont.
-Print Assumptions fl_exec_from_bytes.
-Print Assumptions fl_exec_to_bytes.
