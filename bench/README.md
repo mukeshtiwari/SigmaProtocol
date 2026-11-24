@@ -387,6 +387,44 @@ verifies the certificate, which does not depend on the ballot protocol. The
 log format is that of `encrypt.exe` and `main.exe`, so `bench/gentoo_table.py`
 summarises these runs too.
 
+### Faster tally: inverse, fixed-base tables, parallel verification
+
+Three changes speed up the certificate, with proofs:
+
+- The inverse of the Schnorr group is `a^(q-1) mod p` (`Utility/Zpstar.v`):
+  every element has order dividing `q`, so `a · a^(q-1) = a^q ≡ 1` follows
+  from the subgroup condition. Each disjunction branch of a membership proof
+  inverts its message, and the exponent shrinks from 2048 to 256 bits.
+- Fixed-base tables for `g` and `h` (`Utility/FixedBasePow.v`): `pow_fb`
+  computes `c^e` from the powers `c^(j·16^i)` when its base has a table and is
+  equal to the square-and-multiply `pow` (`pow_fb_pow`), so it gives the same
+  vector space (`pow_fb_vspace`). `Examples/SchulzeBenchIns.v` uses tables for
+  `g` and `h`.
+- The verifier as independent tasks (`tally_tasks` and
+  `nizk_verify_tally_tasks` in `Backend/SchulzeTally.v`, the closure check split
+  by its middle candidate); `verify_tally_tasks` and
+  `nizk_verify_tally_tasks_spec` state that their conjunction is the verifier.
+  `par.exe` runs them on its workers, and `gentoo3.exe --workers=W` verifies the
+  ballots and the certificate on `W` forked workers. Only the scheduling is
+  outside the proofs.
+
+`par.exe m N workers check` confirms that the parallel certificate equals the
+extracted sequential prover's and that both verifiers accept it. Measured with
+`par.exe m N W seed=...` against the same driver built from the previous
+version, on one machine (Linux, 16 cores, at most 3 GB):
+
+| m, N, workers | prover before | prover after | verifier (one process) before | after | verifier on the workers after |
+|---|---|---|---|---|---|
+| 5, 16, 4 | 31.9 s | 7.6 s | 50.6 s | 13.4 s | 4.2 s |
+| 5, 64, 4 | 120.0 s | 34.8 s | 193.0 s | 54.1 s | 21.4 s |
+| 10, 64, 2 | 1597.6 s | 556.7 s | 1355.7 s | 457.5 s | 264.6 s |
+
+On the 2023 council election (m = 10, N = 50, `gentoo3.exe`, sequential
+prover): certificate generation 2154 s before and 490 s after; certificate
+verification 1030 s before in one process and 132 s after on two workers
+(`--workers=2`); the whole run 3308 s before and 714 s after. Both runs
+accept all 50 ballots, reject the replayed one, and certify `sam`.
+
 `dune exec src/Executable/SchulzeBenchcode/batched.exe -- m iterations`
 measures the batched ballot (`src/Frontend/SchulzeBatched.v`) at the same
 parameters: one prover pass with the final Fiat–Shamir challenges,

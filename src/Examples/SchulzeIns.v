@@ -113,7 +113,7 @@ Section SchulzeIns.
   Definition Fopp : F -> F := @zp_opp q prime_q.
   Definition Fdec : forall x y : F, {x = y} + {x <> y} := @zp_dec q.
   Definition Gone : G := @Schnorr.one p q prime_p prime_q.
-  Definition Ginv : G -> G := @inv_schnorr_group 2 p q safe_prime prime_p prime_q.
+  Definition Ginv : G -> G := @inv_schnorr_group p q prime_p prime_q.
   Definition Gmul : G -> G -> G := @mul_schnorr_group p q prime_p prime_q.
   Definition Gpow : G -> F -> G := @pow 2 p q safe_prime prime_p prime_q.
   Definition Gdec : forall x y : G, {x = y} + {x <> y} := @Schnorr.dec_zpstar p q.

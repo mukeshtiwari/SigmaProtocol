@@ -81,7 +81,7 @@ Section VerificatumIns.
       [Gdec]. [Ginv] and [Gpow] use the cofactor [k] and [safe_prime] of
       [HeliosTallyIns]. *)
   Definition Gone : G := @Schnorr.one p q HeliosTallyIns.prime_p HeliosTallyIns.prime_q.
-  Definition Ginv : G -> G := @inv_schnorr_group HeliosTallyIns.k p q HeliosTallyIns.safe_prime HeliosTallyIns.prime_p HeliosTallyIns.prime_q.
+  Definition Ginv : G -> G := @inv_schnorr_group p q HeliosTallyIns.prime_p HeliosTallyIns.prime_q.
   Definition Gmul : G -> G -> G := @mul_schnorr_group p q HeliosTallyIns.prime_p HeliosTallyIns.prime_q.
   Definition Gpow : G -> F -> G := @pow HeliosTallyIns.k p q HeliosTallyIns.safe_prime HeliosTallyIns.prime_p HeliosTallyIns.prime_q.
   Definition Gdec : forall x y : G, {x = y} + {x <> y} := @Schnorr.dec_zpstar p q.

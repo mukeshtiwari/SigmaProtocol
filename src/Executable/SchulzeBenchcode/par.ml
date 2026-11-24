@@ -2,6 +2,9 @@
    2048-bit Helios parameters (Examples/SchulzeBenchIns.v).
 
    Usage: par.exe m N workers [onepass] [chunkhash] [check] [noverify] [seed=HEX]
+   Unless `noverify` is given, the certificate is verified twice: by the
+   extracted verifier split into independent tasks on the workers, and by the
+   extracted verifier in one process.
 
    The certificate is a tally_proof of the extracted library. Its sub-proofs
    (one per cell of each part) do not depend on each other, so this driver
@@ -419,6 +422,14 @@ let () =
   let (pairs, _, _) as sz = size_tally pf in
   Printf.printf "  certificate size: %s, %d disjunction branches\n%!" (string_of_size sz) (pairs - 3 * m * m);
   if verify then begin
+    (* The extracted verifier split into independent tasks
+       (nizk_verify_tally_tasks_bench); nizk_verify_tally_tasks_spec states
+       that their conjunction is nizk_verify_tally. Only the scheduling over
+       the workers is outside the proof. *)
+    let tasks = Array.of_list (nizk_verify_tally_tasks_bench n n' oracle encD w pf) in
+    let (vp, tvp) = time_it (fun () -> Array.for_all (fun b -> b) (par_run workers tasks)) in
+    Printf.printf "  extracted verifier, %d tasks on %d workers: %.2f s, verified = %b\n%!"
+      (Array.length tasks) workers tvp vp;
     let (v, tv) = time_it (fun () -> nizk_verify_tally_bench n n' oracle encD w pf) in
     Printf.printf "  extracted verifier (one process): %.2f s, verified = %b\n%!" tv v;
     if not v then begin
