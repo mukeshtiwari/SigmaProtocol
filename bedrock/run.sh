@@ -23,14 +23,23 @@
 # multiplication [scalarmult] over [double] and [add], related to
 # [Ed.gpow_fast], ScalarMultCT.v its constant-time variant [scalarmult_ct]
 # (both the double and the sum are computed each iteration and selected by a
-# masked word-wise copy [cmov]), and EmitC.v prints these functions and the field operations
-# they call as C (ed25519_bedrock.out).
+# masked word-wise copy [cmov]), SmulBytes.v the byte-level entry point
+# [ed25519_smul_bytes] (coordinates and scalar as 32-byte encodings, the
+# constant 2d computed inside by [ed25519_twice_d]), related to
+# [Ed.gpow_fast], and EmitC.v prints these functions and the field operations
+# they call as C (ed25519_bedrock.out), with the theorem
+# [ed25519_smul_bytes_e2e] for the printed list of functions.
 # FieldL.v derives the arithmetic modulo the group order l (64-bit
 # word-by-word Montgomery, fiat-crypto's pipeline), ExecFieldL.v states it on
 # this library's scalar field Zl.F = Zmod l, ZlBytes.v composes it into
 # byte-level operations [zl_add_bytes], [zl_sub_bytes], [zl_mul_bytes],
 # [zl_opp_bytes] on 32-byte encodings, and EmitFieldL.v prints these as C
 # (fieldl_bedrock.out).
+# jasmin/ holds AUCurves' bedrock2-to-Jasmin printer (Core.v,
+# SpillLiveness.v, RegPtrSized.v, copied and extended with byte accesses)
+# and EmitJasmin.v, which prints the functions of EmitC.v and EmitFieldL.v
+# as Jasmin (ed25519_bedrock_jazz.out, fieldl_bedrock_jazz.out); compile
+# them in this order, after EmitC.v and EmitFieldL.v.
 set -euo pipefail
 cd "$(dirname "$0")"
 S=${SIGMA_SRC:-../_build/default/src}

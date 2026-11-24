@@ -4,7 +4,8 @@
    remap_const.py remaps the Rocq constants
        Curve.Ed25519.Ed25519.Zl.{add,sub,mul} : Zl.F -> Zl.F -> Zl.F
        Curve.Ed25519.Ed25519.Zl.opp           : Zl.F -> Zl.F
-   (Zl.F = Zmod l, a record of one integer in [0, l)) to the functions
+   (Zl.F, a record around Zmod l, itself a record of one integer in
+   [0, l)) to the functions
    below, which
 
      1. read the integer of each argument as 32 little-endian bytes and
@@ -25,8 +26,10 @@
    bedrock2's printer ToCString, which produced fieldl_bedrock.c.
 
    Layout of a value of Zl.F after erasure (checked at run time; a mismatch
-   aborts): a block of tag 0 [z] (the record Zmod, its proof field erased),
-   z an integer in the representation of z_gmp.c. */
+   aborts): a block of tag 0 [q] (the record Zl.F), q a block of tag 0 [z]
+   (the record Zmod, its proof field erased), z an integer in the
+   representation of z_gmp.c.  The constant-time build replaces this file
+   by zl_ct_glue.c. */
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
@@ -53,7 +56,9 @@ static void fail(const char *what) {
 /* The integer of a value of Zl.F as 32 little-endian bytes, checked < l. */
 static void zl_to_bytes(value v, uint8_t out[32]) {
   if (!Is_block(v) || Tag_val(v) != 0 || Wosize_val(v) != 1) fail("unexpected representation");
-  value z = Field(v, 0);
+  value q = Field(v, 0);
+  if (!Is_block(q) || Tag_val(q) != 0 || Wosize_val(q) != 1) fail("unexpected representation");
+  value z = Field(q, 0);
   memset(out, 0, 32);
   if (Is_long(z)) {
     intnat n = Long_val(z);
@@ -88,7 +93,7 @@ static value zl_of_bytes(struct thread_info *tinfo, const uint8_t b[32]) {
     if (l) s = i + 1;
   }
   int boxed = !(s == 0 || (s == 1 && limbs[0] <= (mp_limb_t) Max_long));
-  uintnat words = 2 + (boxed ? (uintnat) s + 2 : 0);
+  uintnat words = 4 + (boxed ? (uintnat) s + 2 : 0);
   /* The arguments are dead, so a collection here needs no roots. */
   if ((uintnat) (tinfo->limit - tinfo->alloc) < words) {
     tinfo->nalloc = words;
@@ -106,10 +111,12 @@ static value zl_of_bytes(struct thread_info *tinfo, const uint8_t b[32]) {
     z = (value) (p + 1);
   }
   value *q = tinfo->alloc;
-  tinfo->alloc = q + 2;
-  q[0] = (value) ((header_t) 1 << 10);  /* size 1, tag 0 */
+  tinfo->alloc = q + 4;
+  q[0] = (value) ((header_t) 1 << 10);  /* size 1, tag 0: the record Zmod */
   q[1] = z;
-  return (value) (q + 1);
+  q[2] = (value) ((header_t) 1 << 10);  /* size 1, tag 0: the record Zl.F */
+  q[3] = (value) (q + 1);
+  return (value) (q + 3);
 }
 
 value zl_add(struct thread_info *tinfo, value a, value b) {

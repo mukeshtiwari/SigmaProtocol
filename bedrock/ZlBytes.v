@@ -39,7 +39,7 @@ Local Open Scope Z_scope.
 
 Local Notation word := BasicC64Semantics.word.
 Local Notation "m =* P" := ((P%sep) m) (at level 70, only parsing).
-Local Notation enc a := (le_split 32 (Zmod.unsigned a)).
+Local Notation enc a := (le_split 32 (Zl.to_Z a)).
 
 (** ** The bedrock2 functions *)
 

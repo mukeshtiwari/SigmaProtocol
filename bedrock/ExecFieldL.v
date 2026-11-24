@@ -1,5 +1,5 @@
 (** The bedrock2 arithmetic modulo [l] of [FieldL.v], stated on
-    SigmaProtocol's scalar field [Zl.F = Zmod l].
+    SigmaProtocol's scalar field [Zl.F], a record around [Zmod l].
 
     A residue [a : Zl.F] has two encodings by a fully reduced limb list
     [w] ([valid w], i.e. [bounded_by tight_bounds w]):
@@ -26,7 +26,7 @@
       encodings;
     - [fl_exec_from_bytes], [fl_exec_to_bytes]: the conversions between a
       plain encoding of [a] and the 32 little-endian bytes of
-      [Zmod.unsigned a]. *)
+      [Zl.to_Z a]. *)
 
 From Stdlib Require Import String List ZArith Zmod Lia.
 From Curve Require Ed25519.
@@ -75,33 +75,33 @@ Local Notation feval_raw := (@feval _ _ _ _ _ FieldL.frepL_raw).
 Lemma ML_eq : Z.pos ML = 2^252 + 27742317777372353535851937790883648493.
 Proof. vm_compute. reflexivity. Qed.
 
-Definition phiL (x : Zl.F) : FL := F.of_Z ML (Zmod.unsigned x).
+Definition phiL (x : Zl.F) : FL := F.of_Z ML (Zl.to_Z x).
 
 Lemma of_Z_modl z : F.of_Z ML (z mod (2^252 + 27742317777372353535851937790883648493)) = F.of_Z ML z.
 Proof. rewrite <-ML_eq. symmetry; apply MAT.of_Z_mod. Qed.
 
 Lemma phiL_add x y : phiL (Zl.add x y) = F.add (phiL x) (phiL y).
-Proof. unfold phiL, Zl.add; rewrite Zmod.unsigned_add, of_Z_modl; apply MAT.of_Z_add. Qed.
+Proof. unfold phiL; rewrite Zl.unsigned_add, of_Z_modl; apply MAT.of_Z_add. Qed.
 
 Lemma phiL_sub x y : phiL (Zl.sub x y) = F.sub (phiL x) (phiL y).
-Proof. unfold phiL, Zl.sub; rewrite Zmod.unsigned_sub, of_Z_modl; apply MAT.of_Z_sub. Qed.
+Proof. unfold phiL; rewrite Zl.unsigned_sub, of_Z_modl; apply MAT.of_Z_sub. Qed.
 
 Lemma phiL_mul x y : phiL (Zl.mul x y) = F.mul (phiL x) (phiL y).
-Proof. unfold phiL, Zl.mul; rewrite Zmod.unsigned_mul, of_Z_modl; apply MAT.of_Z_mul. Qed.
+Proof. unfold phiL; rewrite Zl.unsigned_mul, of_Z_modl; apply MAT.of_Z_mul. Qed.
 
 Lemma phiL_opp x : phiL (Zl.opp x) = F.opp (phiL x).
-Proof. unfold phiL, Zl.opp; rewrite Zmod.unsigned_opp, of_Z_modl; apply MAT.of_Z_opp. Qed.
+Proof. unfold phiL; rewrite Zl.unsigned_opp, of_Z_modl; apply MAT.of_Z_opp. Qed.
 
-Lemma phiL_to_Z x : F.to_Z (phiL x) = Zmod.unsigned x.
+Lemma phiL_to_Z x : F.to_Z (phiL x) = Zl.to_Z x.
 Proof.
   unfold phiL; rewrite MAT.to_Z_of_Z, ML_eq.
-  apply Zmod.mod_unsigned.
+  apply Zl.to_Z_mod.
 Qed.
 
 Lemma phiL_inj x y : phiL x = phiL y -> x = y.
 Proof.
   intro h; apply (f_equal F.to_Z) in h; rewrite !phiL_to_Z in h.
-  apply Zmod.unsigned_inj; exact h.
+  apply Zl.to_Z_inj; exact h.
 Qed.
 
 (** ** Plain and Montgomery forms *)
@@ -196,7 +196,7 @@ Section Specs.
     fnspec! "fl_from_bytes" (pout px : word) / (a : Zl.F) out Rr,
     { requires tr mem :=
         (exists Ra, (array ptsto (word.of_Z 1) px
-                       (le_split 32 (Zmod.unsigned a)) * Ra)%sep mem)
+                       (le_split 32 (Zl.to_Z a)) * Ra)%sep mem)
         /\ (out$@pout * Rr)%sep mem
         /\ length out = Z.to_nat felem_size_in_bytes;
       ensures tr' mem' :=
@@ -215,7 +215,7 @@ Section Specs.
         /\ valid x /\ enc_raw x a;
       ensures tr' mem' :=
         tr = tr' /\
-        (array ptsto (word.of_Z 1) pout (le_split 32 (Zmod.unsigned a)) * Rr)%sep mem' }.
+        (array ptsto (word.of_Z 1) pout (le_split 32 (Zl.to_Z a)) * Rr)%sep mem' }.
 End Specs.
 
 (** ** Transport of fiat-crypto's specifications *)
@@ -398,17 +398,17 @@ Proof.
 Qed.
 
 Lemma unsigned_range (a : Zl.F) :
-  0 <= Zmod.unsigned a < 2^252 + 27742317777372353535851937790883648493.
-Proof. apply Zmod.unsigned_pos_bound. lia. Qed.
+  0 <= Zl.to_Z a < 2^252 + 27742317777372353535851937790883648493.
+Proof. apply Zl.to_Z_range. Qed.
 
 (** The 32 little-endian bytes of [unsigned a] are in the bounds of
     [fl_from_bytes] and evaluate to [phiL a]. *)
 Lemma bytes_of_Zl (a : Zl.F) :
-  bytes_in_bounds (FieldRepresentation:=FieldL.frepL_raw) (le_split 32 (Zmod.unsigned a)) /\
-  feval_bytes (FieldRepresentation:=FieldL.frepL_raw) (le_split 32 (Zmod.unsigned a)) = phiL a.
+  bytes_in_bounds (FieldRepresentation:=FieldL.frepL_raw) (le_split 32 (Zl.to_Z a)) /\
+  feval_bytes (FieldRepresentation:=FieldL.frepL_raw) (le_split 32 (Zl.to_Z a)) = phiL a.
 Proof.
   pose proof (unsigned_range a) as ha.
-  assert (hz : 0 <= Zmod.unsigned a < 2^256) by lia.
+  assert (hz : 0 <= Zl.to_Z a < 2^256) by lia.
   cbv [bytes_in_bounds feval_bytes FieldL.frepL_raw field_representation_raw
        Crypto.Bedrock.Field.Synthesis.New.Signature.field_representation
        Crypto.Bedrock.Field.Interface.Representation.frep
@@ -426,7 +426,7 @@ Proof.
   intros H pout px a out Rr tr mem (HRa & Hout & Hlen).
   destruct (bytes_of_Zl a) as [Hb Hv].
   eapply Proper_call; [ | apply (FieldL.fl_from_bytes_correct functions H pout px out
-    (le_split 32 (Zmod.unsigned a)) Rr tr mem); exact (conj HRa (conj Hout (conj Hlen Hb))) ].
+    (le_split 32 (Zl.to_Z a)) Rr tr mem); exact (conj HRa (conj Hout (conj Hlen Hb))) ].
   intros tr' mem' rets (Hrets & Htr & X & HX & HXb & Hm').
   split; [exact Hrets |]. split; [exact Htr |].
   exists X. split; [ | split; assumption].
@@ -451,15 +451,3 @@ Proof.
   rewrite phiL_to_Z in Hm'. exact Hm'.
 Qed.
 
-Print Assumptions fl_exec_add.
-Print Assumptions fl_exec_sub.
-Print Assumptions fl_exec_mul.
-Print Assumptions fl_exec_opp.
-Print Assumptions fl_exec_add_raw.
-Print Assumptions fl_exec_sub_raw.
-Print Assumptions fl_exec_opp_raw.
-Print Assumptions fl_exec_mul_raw.
-Print Assumptions fl_exec_to_mont.
-Print Assumptions fl_exec_from_mont.
-Print Assumptions fl_exec_from_bytes.
-Print Assumptions fl_exec_to_bytes.

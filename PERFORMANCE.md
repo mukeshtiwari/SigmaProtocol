@@ -89,8 +89,16 @@ closed under the global context. `EmitC.v` prints the functions as C with
 bedrock2's printer and proves that the emitted field functions meet the
 specifications the theorems assume.
 
+The function `ed25519_smul_bytes` (`SmulBytes.v`) takes the affine point
+and the scalar as 32-byte encodings, computes the constant 2d itself, and
+chains the byte conversions, `from_affine`, `scalarmult_ct` and `to_affine`.
+The theorem `ed25519_smul_bytes_e2e` (`EmitC.v`) states, for the exact list
+of functions that `EmitC.v` prints, that for every group element x and
+scalar s the call writes the encodings of the coordinates of
+`Ed.gpow_fast x s`; its only premises concern the inputs.
+
 In the Peregrine build of the Ed25519 approval ballot (seven candidates), we
-remap `Ed.fast_smul` to `scalarmult_ct` through a C glue function. The
+remap `Ed.fast_smul` to `ed25519_smul_bytes` through a C glue function. The
 program gives the same output as the GMP build.
 
 | Ed25519 ballot, encrypt + prove + verify | Time |
@@ -100,10 +108,10 @@ program gives the same output as the GMP build.
 
 Trusted, in addition to the Peregrine list: the script that remaps the
 constant, the glue (conversion between GMP integers and bytes, the heap
-layout of points, the constant 2d, the bound `0 ≤ n < 2^256` on the scalar),
-the renaming of the C keyword `double`, and bedrock2's C printer. The
-theorems connect the emitted functions to `Ed.gpow_fast` in separate steps;
-no single theorem states the end-to-end result.
+layout of points, the bound `0 ≤ n < 2^256` on the scalar, and the fact that
+Peregrine calls `fast_smul` only from `Ed.gpow_fast`, which supplies the
+premises of `ed25519_smul_bytes_e2e`), the renaming of the C keyword
+`double`, and bedrock2's C printer.
 
 The scalar field `Zl` (integers modulo the group order l) has verified
 bedrock2 arithmetic as well. fiat-crypto's pipeline derives 64-bit Montgomery
@@ -114,5 +122,34 @@ multiplication, addition, subtraction and negation modulo l (`FieldL.v`);
 `_bedrockl` remap these four constants as well and give the same output; the
 operations take under 0.02% of the instructions, so the running time is
 unchanged. Their glue converts GMP integers below l to 32-byte encodings and
-is trusted in the same way. GMP still handles these conversions and the
-integer code outside the two fields, and that code is not constant time.
+is trusted in the same way.
+
+In the programs with suffix `_ct`, secret scalars never become GMP
+integers. `Zl.F` is a record over `Zmod l`, so Peregrine can remap the type
+and its operations: a scalar is a fixed-size block of 32 bytes, the `Zl`
+operations call `zl_*_bytes`, and `Ed.gpow_fast` calls `ed25519_smul_bytes`
+on the scalar's bytes. The prover `generate_enc_proof_ct` (`Approval.v`)
+computes both branches of the disjunctive proof and combines them with the
+vote as a multiplier, so it has no branch on the vote;
+`generate_enc_proof_ct_eq` proves it equal to the original prover for votes
+in {0, 1}. A test under valgrind's memcheck marks the secrets (randomness,
+votes, decryption key) as undefined memory: the `_ct` programs report no
+branch or address that depends on them, while the control program with the
+branching prover reports one per vote. The test covers one run and does not
+detect variable-time instructions. The output is unchanged, and
+encrypt + prove + verify takes 31 ms against 38 ms for `_bedrockl` (mean of
+100 runs, including process start). The glue of the `_ct` programs is
+trusted: byte layout, allocation, and the precondition that every scalar is
+below l.
+
+The programs with suffix `_jasmin` and `_jasminl` compile the same verified
+bedrock2 functions through Jasmin instead of bedrock2's C printer and gcc.
+A copy of AUCurves' printer from bedrock2 to Jasmin (`bedrock/jasmin/`)
+prints them as Jasmin modules, and jasminc compiles these to x86-64
+assembly. The output is unchanged; encrypt + prove + verify takes about
+30 ms against 26 ms for the gcc build. jasmin-ct checks that
+`ed25519_smul_bytes` and the `zl_*_bytes` functions are constant time with
+the scalar inputs secret, in the source and after the compiler's inlining,
+unrolling, lowering and propagation passes. These programs trust the Jasmin
+printer, which has no proof, jasminc and the assembler in place of
+bedrock2's C printer and gcc.

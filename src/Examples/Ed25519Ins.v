@@ -48,9 +48,9 @@ Section Ed25519Ins.
   (** ** Conversions for the driver
 
       [of_Z] reduces an integer modulo the group order into [F]. *)
-  Definition of_Z (z : Z) : F := Zmod.of_Z l z.
+  Definition of_Z (z : Z) : F := Zl.of_Z z.
   (** The canonical integer representative of a scalar. *)
-  Definition to_Z (k : F) : Z := Zmod.unsigned k.
+  Definition to_Z (k : F) : Z := Zl.to_Z k.
   (** The affine coordinates [(x, y)] of a point, as integers. *)
   Definition point_to_Z (P : G) : Z * Z :=
     (Zmod.unsigned (fst (proj1_sig (proj1_sig P))),
@@ -128,6 +128,29 @@ Section Ed25519Ins.
     Vector.t (G * G * @sigma_proto F (G * G) 2 3 2) n :=
     @encrypt_ballot_and_generate_enc_proof F Zl.zero Zl.one Zl.add Zl.mul
       Zl.sub Zl.opp Zl.Fdec G Ed.ginv Ed.gop Ed.gpow_fast n g h rs ms uscs c.
+
+  (** The same ballot computed without a case analysis on the votes
+      ([encrypt_ballot_and_generate_enc_proof_ct] of [Frontend/Approval.v]);
+      it equals [encrypt_ballot_and_generate_enc_proof_ins] when every vote
+      is [0] or [1] ([encrypt_ballot_and_generate_enc_proof_ct_eq]). *)
+  Definition encrypt_ballot_and_generate_enc_proof_ct_ins {n : nat}
+    (rs ms : Vector.t F n) (uscs : Vector.t (Vector.t F 3) n)
+    (c : Vector.t F n) :
+    Vector.t (G * G * @sigma_proto F (G * G) 2 3 2) n :=
+    @encrypt_ballot_and_generate_enc_proof_ct F Zl.zero Zl.one Zl.add Zl.mul
+      Zl.sub Zl.opp G Ed.ginv Ed.gop Ed.gpow_fast n g h rs ms uscs c.
+
+  Lemma encrypt_ballot_and_generate_enc_proof_ct_ins_eq {n : nat}
+    (rs ms : Vector.t F n) (uscs : Vector.t (Vector.t F 3) n) (c : Vector.t F n) :
+    (∀ i : Fin.t n, Vector.nth ms i = Zl.zero ∨ Vector.nth ms i = Zl.one) ->
+    encrypt_ballot_and_generate_enc_proof_ct_ins rs ms uscs c =
+    encrypt_ballot_and_generate_enc_proof_ins rs ms uscs c.
+  Proof.
+    intro hm.
+    exact (@encrypt_ballot_and_generate_enc_proof_ct_eq F Zl.zero Zl.one Zl.add Zl.mul
+      Zl.sub Zl.div Zl.opp Zl.inv Zl.Fdec G Ed.gid Ed.ginv Ed.gop Ed.gpow_fast
+      Ed.ed25519_vspace_fast n rs g h ms uscs c hm).
+  Qed.
 
   (** Checks every per-vote 0/1 proof of a ballot. *)
   Definition verify_encryption_ballot_proof_ins {n : nat}

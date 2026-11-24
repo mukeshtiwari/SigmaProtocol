@@ -210,12 +210,12 @@ Qed.
 
 (** The result of the loop, stated against [Ed.gpow_fast]. *)
 Lemma gpow_fast_affine (x : SP.G) (s : ZL.F) (A : SP.xpoint) :
-  SP.to_affine A = smul (Zmod.unsigned s) (proj1_sig x) ->
-  SXeq A (xsmul (Zmod.unsigned s) (SP.from_affine (proj1_sig x))) /\
+  SP.to_affine A = smul (ZL.to_Z s) (proj1_sig x) ->
+  SXeq A (xsmul (ZL.to_Z s) (SP.from_affine (proj1_sig x))) /\
   SP.to_affine A = proj1_sig (SP.gpow_fast x s).
 Proof.
   intro h; split.
-  - pose proof (Zmod.unsigned_range s) as hr.
+  - pose proof (ZL.to_Z_range s) as hr.
     apply invariant_iff; [lia |]; rewrite SP.to_from_affine; exact h.
   - unfold SP.gpow_fast; cbn [proj1_sig]; rewrite SP.fast_smul_eq; exact h.
 Qed.
@@ -852,7 +852,7 @@ Theorem ed25519_exec_scalarmult functions :
     m =* out $@ p_out * pP p5@ p_P * kb $@ p_k * FElem p_d d2 * R ->
     Datatypes.length out = Z.to_nat (5 * felem_size) ->
     Datatypes.length kb = 32%nat ->
-    le_combine kb = Zmod.unsigned s ->
+    le_combine kb = ZL.to_Z s ->
     F.add Fd Fd = feval d2 -> bounded_by tight_bounds d2 ->
     B.feval_projective_coords pP = phi5 (proj1_sig (SP.from_affine (proj1_sig x))) ->
     WeakestPrecondition.call functions "scalarmult" t m [p_out; p_P; p_k; p_d]
@@ -860,7 +860,7 @@ Theorem ed25519_exec_scalarmult functions :
          exists (a : B.projective_coords) (A : SP.xpoint),
            m' =* a p5@ p_out * pP p5@ p_P * kb $@ p_k * FElem p_d d2 * R /\
            B.feval_projective_coords a = phi5 (proj1_sig A) /\
-           SXeq A (xsmul (Zmod.unsigned s) (SP.from_affine (proj1_sig x))) /\
+           SXeq A (xsmul (ZL.to_Z s) (SP.from_affine (proj1_sig x))) /\
            SP.to_affine A = proj1_sig (SP.gpow_fast x s)).
 Proof.
   intros Hsm Hst Hid Hpc Hadd_fn Htc Hrd Hdbl Hsq Hcadd Hadd Hcsub Hsub Hmul Hcopy Hfw
