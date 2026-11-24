@@ -24,7 +24,14 @@
 # bedrock2 scalar multiplication of ed25519_bedrock.c, through the glue
 # ed25519_glue.c; a program p_bedrockl moreover has Zl.add, Zl.sub, Zl.mul
 # and Zl.opp remapped to the verified bedrock2 arithmetic modulo l of
-# fieldl_bedrock.c, through the glue zl_glue.c.
+# fieldl_bedrock.c, through the glue zl_glue.c.  The programs p_jasmin and
+# p_jasminl are p_bedrock and p_bedrockl with the same bedrock2 functions
+# printed as Jasmin (ed25519_bedrock.jazz, fieldl_bedrock.jazz;
+# bedrock/jasmin/EmitJasmin.v) and compiled by jasminc -auto-spill (JASMINC,
+# default jasminc) instead of printed as C and compiled by gcc; the glue is
+# compiled from copies in work/jasmin, next to files ed25519_bedrock.c and
+# fieldl_bedrock.c that include bedrock_jasmin.h, the declarations of the
+# Jasmin export functions.
 #
 # A program p_ct (constant-time build; for the Ed25519 programs) represents
 # scalars of Zl.F and points of Ed.G as 32- and 64-byte values: every
@@ -76,6 +83,10 @@
 # fieldl_bedrock.c; for the *_ct programs remap_const.py, check_abstract.py,
 # gen_secrets.py, the glue zl_ct_glue.c and ed25519_ct_glue.c (with
 # ct_values.h), and the printed fieldl_bedrock.c and ed25519_bedrock.c.
+# For the *_jasmin and *_jasminl programs, in place of bedrock2's C printer
+# and gcc on the printed C: the Jasmin printer (bedrock/jasmin, unverified),
+# jasminc and the assembler; bedrock_jasmin.h.  The MINIGMP build does not
+# cover them (jasminc emits x86-64 assembly).
 set -euo pipefail
 : "${F:?set F to the Peregrine frontend directory}"
 # Peregrine with the numeral-hoisting pass (ENumeralHoist), first in commit
@@ -135,9 +146,22 @@ for v in $VFILES; do
   cp "$HERE/$v" "$W/"
   tm "${v%.v}.compile" rocq compile "${ROCQ_FLAGS[@]}" "$v" > "${v%.v}.log" 2>&1
 done
+case " $PROGRAMS " in *_jasmin\ *|*_jasminl\ *)
+  # the Jasmin modules, compiled once; the glue copies next to the files
+  # ed25519_bedrock.c and fieldl_bedrock.c that include bedrock_jasmin.h
+  JW=$W/jasmin
+  mkdir -p "$JW"
+  cp "$HERE/ed25519_glue.c" "$HERE/zl_glue.c" "$JW/"
+  for m in ed25519_bedrock fieldl_bedrock; do
+    printf '#include "bedrock_jasmin.h"\n' > "$JW/$m.c"
+    echo "== $m.jazz"
+    tm "$m.jasminc" "${JASMINC:-jasminc}" -auto-spill "$HERE/$m.jazz" -o "$JW/$m.s" > "$m.jasminc.log" 2>&1 \
+      || { echo "$m.jazz: jasminc failed (see $W/$m.jasminc.log)"; exit 1; }
+  done ;;
+esac
 for p in $PROGRAMS; do
   echo "== $p"
-  q=${p%_bedrockl}; q=${q%_bedrock}; q=${q%_ct}
+  q=${p%_bedrockl}; q=${q%_bedrock}; q=${q%_jasminl}; q=${q%_jasmin}; q=${q%_ct}
   MAINFLAGS=()
   case $q in *_digest) MAIN=$HERE/main_z.c ;; *) MAIN=$GMPZ/main_bool.c ;; esac
   case $p in *_ct)
@@ -149,21 +173,27 @@ for p in $PROGRAMS; do
   python3 "$GMPZ/run_deep.py" "$GMPZ/stub_axioms.py" "${p}_z.ast" "${p}_z.attrs" \
     "${p}_zs.ast" "${p}_zs.attrs" "${p}_stubs" >> "$p.splice.log"
   EXTRA=()
-  case $p in *_bedrock|*_bedrockl)
+  case $p in *_bedrock|*_bedrockl|*_jasmin|*_jasminl)
     # *_bedrock: Ed.fast_smul by the bedrock2 scalar multiplication
     GMPZ=$GMPZ python3 "$GMPZ/run_deep.py" "$HERE/remap_const.py" "${p}_zs.ast" "${p}_zs.attrs" \
       "${p}_zs.ast" "${p}_zs.attrs" ed25519_glue.h \
       Curve.Ed25519.Ed25519.Ed.fast_smul=ed25519_fast_smul/2 >> "$p.splice.log"
-    EXTRA=("$HERE/ed25519_glue.c") ;;
+    case $p in
+      *_jasmin|*_jasminl) EXTRA=("$JW/ed25519_glue.c" "$JW/ed25519_bedrock.s") ;;
+      *) EXTRA=("$HERE/ed25519_glue.c") ;;
+    esac ;;
   esac
-  case $p in *_bedrockl)
+  case $p in *_bedrockl|*_jasminl)
     # *_bedrockl: also Zl.add, Zl.sub, Zl.mul, Zl.opp by the bedrock2
     # arithmetic modulo l of fieldl_bedrock.c
     GMPZ=$GMPZ python3 "$GMPZ/run_deep.py" "$HERE/remap_const.py" "${p}_zs.ast" "${p}_zs.attrs" \
       "${p}_zs.ast" "${p}_zs.attrs" zl_glue.h \
       Curve.Ed25519.Ed25519.Zl.add=zl_add/2 Curve.Ed25519.Ed25519.Zl.sub=zl_sub/2 \
       Curve.Ed25519.Ed25519.Zl.mul=zl_mul/2 Curve.Ed25519.Ed25519.Zl.opp=zl_opp/1 >> "$p.splice.log"
-    EXTRA+=("$HERE/zl_glue.c") ;;
+    case $p in
+      *_jasminl) EXTRA+=("$JW/zl_glue.c" "$JW/fieldl_bedrock.s") ;;
+      *) EXTRA+=("$HERE/zl_glue.c") ;;
+    esac ;;
   esac
   case $p in *_ct)
     # *_ct: scalars and points as fixed-size byte values (zl_ct_glue.c,
@@ -208,7 +238,7 @@ for p in $PROGRAMS; do
     n=$(sed -n 's/.*ERROR SUMMARY: \([0-9]*\) errors.*/\1/p' "$p.memcheck.log")
     echo "$p (memcheck): ${n:-?} errors, output $(cmp -s "$p.out" "$p.memcheck.out" && echo unchanged || echo differs)"
   fi ;; esac
-  if [ -n "${MINIGMP:-}" ]; then
+  if [ -n "${MINIGMP:-}" ] && case $p in *_jasmin|*_jasminl) false ;; *) true ;; esac; then
     mkdir -p inc && printf '#include "mini-gmp.h"\n' > inc/gmp.h
     tm "$p.emcc" "${EMCC:-emcc}" -O2 -w -Wno-error=int-conversion \
       -Wno-error=incompatible-function-pointer-types -sMEMORY64=1 -sALLOW_MEMORY_GROWTH=1 \

@@ -35,6 +35,11 @@
 # byte-level operations [zl_add_bytes], [zl_sub_bytes], [zl_mul_bytes],
 # [zl_opp_bytes] on 32-byte encodings, and EmitFieldL.v prints these as C
 # (fieldl_bedrock.out).
+# jasmin/ holds AUCurves' bedrock2-to-Jasmin printer (Core.v,
+# SpillLiveness.v, RegPtrSized.v, copied and extended with byte accesses)
+# and EmitJasmin.v, which prints the functions of EmitC.v and EmitFieldL.v
+# as Jasmin (ed25519_bedrock_jazz.out, fieldl_bedrock_jazz.out); compile
+# them in this order, after EmitC.v and EmitFieldL.v.
 set -euo pipefail
 cd "$(dirname "$0")"
 S=${SIGMA_SRC:-../_build/default/src}
