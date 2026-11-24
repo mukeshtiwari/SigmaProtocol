@@ -146,12 +146,12 @@ for v in $VFILES; do
   cp "$HERE/$v" "$W/"
   tm "${v%.v}.compile" rocq compile "${ROCQ_FLAGS[@]}" "$v" > "${v%.v}.log" 2>&1
 done
-case " $PROGRAMS " in *_jasmin\ *|*_jasminl\ *)
+case " $PROGRAMS " in *_jasmin\ *|*_jasminl\ *|*_ctj\ *)
   # the Jasmin modules, compiled once; the glue copies next to the files
   # ed25519_bedrock.c and fieldl_bedrock.c that include bedrock_jasmin.h
   JW=$W/jasmin
   mkdir -p "$JW"
-  cp "$HERE/ed25519_glue.c" "$HERE/zl_glue.c" "$JW/"
+  cp "$HERE/ed25519_glue.c" "$HERE/zl_glue.c" "$HERE/ed25519_ct_glue.c" "$HERE/zl_ct_glue.c" "$JW/"
   for m in ed25519_bedrock fieldl_bedrock; do
     printf '#include "bedrock_jasmin.h"\n' > "$JW/$m.c"
     echo "== $m.jazz"
@@ -161,10 +161,10 @@ case " $PROGRAMS " in *_jasmin\ *|*_jasminl\ *)
 esac
 for p in $PROGRAMS; do
   echo "== $p"
-  q=${p%_bedrockl}; q=${q%_bedrock}; q=${q%_jasminl}; q=${q%_jasmin}; q=${q%_ct}
+  q=${p%_bedrockl}; q=${q%_bedrock}; q=${q%_jasminl}; q=${q%_jasmin}; q=${q%_ctj}; q=${q%_ct}
   MAINFLAGS=()
   case $q in *_digest) MAIN=$HERE/main_z.c ;; *) MAIN=$GMPZ/main_bool.c ;; esac
-  case $p in *_ct)
+  case $p in *_ct|*_ctj)
     MAIN=$HERE/main_ct.c
     case $q in *_digest) MAINFLAGS=(-DCT_RESULT_Z) ;; esac ;;
   esac
@@ -195,7 +195,7 @@ for p in $PROGRAMS; do
       *) EXTRA+=("$HERE/zl_glue.c") ;;
     esac ;;
   esac
-  case $p in *_ct)
+  case $p in *_ct|*_ctj)
     # *_ct: scalars and points as fixed-size byte values (zl_ct_glue.c,
     # ed25519_ct_glue.c), the secrets read from a buffer, the published
     # values declared public; then check that no operation on Zmod or on the
@@ -217,7 +217,11 @@ for p in $PROGRAMS; do
     GMPZ=$GMPZ python3 "$GMPZ/run_deep.py" "$HERE/check_abstract.py" "${p}_zs.ast" \
       Stdlib.Zmod Fiat Curve.Ed25519 >> "$p.splice.log" \
       || { echo "$p: check_abstract failed (see $p.splice.log)"; continue; }
-    EXTRA=("$HERE/zl_ct_glue.c" "$HERE/ed25519_ct_glue.c") ;;
+    case $p in
+      # *_ctj: the same glue over the Jasmin build of the bedrock2 functions
+      *_ctj) EXTRA=("$JW/zl_ct_glue.c" "$JW/ed25519_ct_glue.c" "$JW/fieldl_bedrock.s" "$JW/ed25519_bedrock.s") ;;
+      *) EXTRA=("$HERE/zl_ct_glue.c" "$HERE/ed25519_ct_glue.c") ;;
+    esac ;;
   esac
   # custom attributes (the last field): enable the numeral hoisting
   python3 -c 'import sys; a = open(sys.argv[1]).read().rstrip(); assert a.endswith("())"); open(sys.argv[1], "w").write(a[:-3] + "((((MPfile (\"PeregrineNumerals\")) \"threshold\") \"" + sys.argv[2] + "\")))\n")' \
@@ -232,13 +236,13 @@ for p in $PROGRAMS; do
   mem=$(grep -m1 "Maximum resident" "$p.run.time" 2>/dev/null | awk '{print $NF}')
   r=$(cat "$p.out"); [ ${#r} -gt 40 ] && r="${#r} digits, sha256 $(sha256sum < "$p.out" | cut -c1-16)"
   echo "$p: $r (wall ${t:-?}, max RSS ${mem:-?} KB)"
-  case $p in *_ct) if [ -n "${VALGRIND:-}" ]; then
+  case $p in *_ct|*_ctj) if [ -n "${VALGRIND:-}" ]; then
     lim "$VALGRIND" --tool=memcheck --track-origins=yes --error-limit=no "./${p}_z" \
       > "$p.memcheck.out" 2> "$p.memcheck.log" || true
     n=$(sed -n 's/.*ERROR SUMMARY: \([0-9]*\) errors.*/\1/p' "$p.memcheck.log")
     echo "$p (memcheck): ${n:-?} errors, output $(cmp -s "$p.out" "$p.memcheck.out" && echo unchanged || echo differs)"
   fi ;; esac
-  if [ -n "${MINIGMP:-}" ] && case $p in *_jasmin|*_jasminl) false ;; *) true ;; esac; then
+  if [ -n "${MINIGMP:-}" ] && case $p in *_jasmin|*_jasminl|*_ctj) false ;; *) true ;; esac; then
     mkdir -p inc && printf '#include "mini-gmp.h"\n' > inc/gmp.h
     tm "$p.emcc" "${EMCC:-emcc}" -O2 -w -Wno-error=int-conversion \
       -Wno-error=incompatible-function-pointer-types -sMEMORY64=1 -sALLOW_MEMORY_GROWTH=1 \

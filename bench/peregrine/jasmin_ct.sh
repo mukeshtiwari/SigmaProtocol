@@ -9,6 +9,9 @@
 #   jasmin_ed25519_smul_bytes(p_ox, p_oy, p_x, p_y, p_k): the scalar p_k is
 #     secret, the coordinates public, the outputs secret; and, a second time,
 #     every input secret;
+#   the functions the constant-time glue calls (twice_d, from_affine, add,
+#     to_affine, fe25519 byte and word conversions, carry_sub): every input
+#     secret, the output buffer's initial contents public;
 #   jasmin_zl_{add,sub,mul}_bytes(p_out, p_a, p_b), jasmin_zl_opp_bytes(p_out,
 #     p_a): the inputs and the output secret.
 # jasmin-ct then checks that no branch condition and no memory address
@@ -37,9 +40,25 @@ PY
 }
 
 annotate "$HERE/ed25519_bedrock.jazz" "$T/ed25519_k.jazz" \
-  "jasmin_ed25519_smul_bytes=public * public * public * public * secret -> secret * secret"
+  "jasmin_ed25519_smul_bytes=public * public * public * public * secret -> secret * secret" \
+  "jasmin_ed25519_twice_d=public -> secret" \
+  "jasmin_from_affine=public * secret * secret -> secret" \
+  "jasmin_add=public * secret * secret * secret -> secret" \
+  "jasmin_to_affine=public * secret -> secret" \
+  "jasmin_fe25519_from_bytes=public * secret -> secret" \
+  "jasmin_fe25519_to_bytes=public * secret -> secret" \
+  "jasmin_fe25519_from_word=public * secret -> secret" \
+  "jasmin_fe25519_carry_sub=public * secret * secret -> secret"
 annotate "$HERE/ed25519_bedrock.jazz" "$T/ed25519_all.jazz" \
-  "jasmin_ed25519_smul_bytes=secret * secret * secret * secret * secret -> secret * secret"
+  "jasmin_ed25519_smul_bytes=secret * secret * secret * secret * secret -> secret * secret" \
+  "jasmin_ed25519_twice_d=public -> secret" \
+  "jasmin_from_affine=public * secret * secret -> secret" \
+  "jasmin_add=public * secret * secret * secret -> secret" \
+  "jasmin_to_affine=public * secret -> secret" \
+  "jasmin_fe25519_from_bytes=public * secret -> secret" \
+  "jasmin_fe25519_to_bytes=public * secret -> secret" \
+  "jasmin_fe25519_from_word=public * secret -> secret" \
+  "jasmin_fe25519_carry_sub=public * secret * secret -> secret"
 annotate "$HERE/fieldl_bedrock.jazz" "$T/fieldl.jazz" \
   "jasmin_zl_mul_bytes=public * secret * secret -> secret" \
   "jasmin_zl_add_bytes=public * secret * secret -> secret" \

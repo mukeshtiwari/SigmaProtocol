@@ -118,7 +118,16 @@ Definition ed25519_cfg : rp_config := {|
      [scalarmult_ct] reads the 32-byte scalar at offsets [i >> 3] *)
   rpc_widths := [("cmov", [25; 25; 25; 1]); ("scalarmult_ct", [25; 25; 4; 5])];
   rpc_export_all := false;
-  rpc_exports := [("ed25519_smul_bytes", "jasmin_ed25519_smul_bytes")];
+  (* [ed25519_smul_bytes] for the glue of the *_jasmin programs; the others
+     for the constant-time glue (ed25519_ct_glue.c) of the *_ctj programs *)
+  rpc_exports := [("ed25519_smul_bytes", "jasmin_ed25519_smul_bytes");
+                  ("ed25519_twice_d", "jasmin_ed25519_twice_d");
+                  ("from_affine", "jasmin_from_affine"); ("add", "jasmin_add");
+                  ("to_affine", "jasmin_to_affine");
+                  ("fe25519_from_bytes", "jasmin_fe25519_from_bytes");
+                  ("fe25519_to_bytes", "jasmin_fe25519_to_bytes");
+                  ("fe25519_from_word", "jasmin_fe25519_from_word");
+                  ("fe25519_carry_sub", "jasmin_fe25519_carry_sub")];
   rpc_hints := true;
   (* 10 registers: with the default of 16, jasminc -auto-spill runs out of
      registers in fe25519_to_bytes and the fl_* functions *)

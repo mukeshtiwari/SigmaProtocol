@@ -3809,3 +3809,51 @@ export fn jasmin_ed25519_smul_bytes(reg ptr u64[4] p_ox, reg ptr u64[4] p_oy, re
   p_ox, p_oy = ed25519_smul_bytes(p_ox, p_oy, p_x, p_y, p_k);
   return p_ox, p_oy;
 }
+
+
+export fn jasmin_ed25519_twice_d(reg ptr u64[5] p_out) -> reg ptr u64[5] {
+  p_out = ed25519_twice_d(p_out);
+  return p_out;
+}
+
+
+export fn jasmin_from_affine(reg ptr u64[25] p_out, reg const ptr u64[5] p_x, reg const ptr u64[5] p_y) -> reg ptr u64[25] {
+  p_out = from_affine(p_out, p_x, p_y);
+  return p_out;
+}
+
+
+export fn jasmin_add(reg ptr u64[25] p_out, reg const ptr u64[25] p_a, reg const ptr u64[25] p_b, reg const ptr u64[5] p_d) -> reg ptr u64[25] {
+  p_out = add(p_out, p_a, p_b, p_d);
+  return p_out;
+}
+
+
+export fn jasmin_to_affine(reg ptr u64[10] p_out, reg const ptr u64[15] p_a) -> reg ptr u64[10] {
+  p_out = to_affine(p_out, p_a);
+  return p_out;
+}
+
+
+export fn jasmin_fe25519_from_bytes(reg ptr u64[5] out0, reg const ptr u64[4] in0) -> reg ptr u64[5] {
+  out0 = fe25519_from_bytes(out0, in0);
+  return out0;
+}
+
+
+export fn jasmin_fe25519_to_bytes(reg ptr u64[4] out0, reg const ptr u64[5] in0) -> reg ptr u64[4] {
+  out0 = fe25519_to_bytes(out0, in0);
+  return out0;
+}
+
+
+export fn jasmin_fe25519_from_word(reg ptr u64[5] out0, reg u64 in0) -> reg ptr u64[5] {
+  out0 = fe25519_from_word(out0, in0);
+  return out0;
+}
+
+
+export fn jasmin_fe25519_carry_sub(reg ptr u64[5] out0, reg const ptr u64[5] in0, reg const ptr u64[5] in1) -> reg ptr u64[5] {
+  out0 = fe25519_carry_sub(out0, in0, in1);
+  return out0;
+}
