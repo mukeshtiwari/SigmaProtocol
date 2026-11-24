@@ -122,5 +122,22 @@ multiplication, addition, subtraction and negation modulo l (`FieldL.v`);
 `_bedrockl` remap these four constants as well and give the same output; the
 operations take under 0.02% of the instructions, so the running time is
 unchanged. Their glue converts GMP integers below l to 32-byte encodings and
-is trusted in the same way. GMP still handles these conversions and the
-integer code outside the two fields, and that code is not constant time.
+is trusted in the same way.
+
+In the programs with suffix `_ct`, secret scalars never become GMP
+integers. `Zl.F` is a record over `Zmod l`, so Peregrine can remap the type
+and its operations: a scalar is a fixed-size block of 32 bytes, the `Zl`
+operations call `zl_*_bytes`, and `Ed.gpow_fast` calls `ed25519_smul_bytes`
+on the scalar's bytes. The prover `generate_enc_proof_ct` (`Approval.v`)
+computes both branches of the disjunctive proof and combines them with the
+vote as a multiplier, so it has no branch on the vote;
+`generate_enc_proof_ct_eq` proves it equal to the original prover for votes
+in {0, 1}. A test under valgrind's memcheck marks the secrets (randomness,
+votes, decryption key) as undefined memory: the `_ct` programs report no
+branch or address that depends on them, while the control program with the
+branching prover reports one per vote. The test covers one run and does not
+detect variable-time instructions. The output is unchanged, and
+encrypt + prove + verify takes 31 ms against 38 ms for `_bedrockl` (mean of
+100 runs, including process start). The glue of the `_ct` programs is
+trusted: byte layout, allocation, and the precondition that every scalar is
+below l.

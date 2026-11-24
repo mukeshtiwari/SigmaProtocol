@@ -14,7 +14,7 @@
 
     [ed25519_exec_smul_bytes] states that, for a group element [x] of
     SigmaProtocol and a scalar [s] of [Zl.F], a call on the canonical
-    encodings of the coordinates of [x] and on [le_split 32 (unsigned s)]
+    encodings of the coordinates of [x] and on [le_split 32 (Zl.to_Z s)]
     writes the canonical encodings of the coordinates of
     [Ed.gpow_fast x s]. *)
 
@@ -53,6 +53,7 @@ Local Notation "c 'p5@' p" := (let '(X,Y,Z,Ta,Tb) := proj1_sig c in sep (sep (se
                               (at level 10, format "c 'p5@' p").
 Local Notation Fd := Crypto.Spec.Curve25519.E.d.
 Local Notation enc a := (le_split 32 (Zmod.unsigned a)).
+Local Notation encs s := (le_split 32 (Curve.Ed25519.Ed25519.Zl.to_Z s)).
 
 Module ZL := Curve.Ed25519.Ed25519.Zl.
 
@@ -322,15 +323,15 @@ Qed.
     scalar given by its 32-byte encoding. *)
 
 Lemma unsigned_range_l (a : ZL.F) :
-  0 <= Zmod.unsigned a < 2^252 + 27742317777372353535851937790883648493.
-Proof. apply Zmod.unsigned_pos_bound. lia. Qed.
+  0 <= ZL.to_Z a < 2^252 + 27742317777372353535851937790883648493.
+Proof. apply ZL.to_Z_range. Qed.
 
 Definition spec_of_scalarmult_ct_G : spec_of "scalarmult_ct" :=
   fnspec! "scalarmult_ct" (p_out p_P p_k p_d : word) /
     (x : SP.G) (s : ZL.F) (pP : B.projective_coords) (d2 : felem) (out : list byte)
     (R : _ -> Prop), {
     requires t m :=
-      m =* out $@ p_out * pP p5@ p_P * array ptsto (word.of_Z 1) p_k (enc s) *
+      m =* out $@ p_out * pP p5@ p_P * array ptsto (word.of_Z 1) p_k (encs s) *
            FElem p_d d2 * R /\
       Datatypes.length out = Z.to_nat (5 * felem_size) /\
       F.add Fd Fd = feval d2 /\ bounded_by tight_bounds d2 /\
@@ -338,7 +339,7 @@ Definition spec_of_scalarmult_ct_G : spec_of "scalarmult_ct" :=
     ensures t' m' :=
       t = t' /\
       exists (a : B.projective_coords) (A : SP.xpoint),
-        m' =* a p5@ p_out * pP p5@ p_P * array ptsto (word.of_Z 1) p_k (enc s) *
+        m' =* a p5@ p_out * pP p5@ p_P * array ptsto (word.of_Z 1) p_k (encs s) *
               FElem p_d d2 * R /\
         B.feval_projective_coords a = phi5 (proj1_sig A) /\
         SP.to_affine A = proj1_sig (SP.gpow_fast x s)
@@ -375,15 +376,15 @@ Proof.
   pose proof (ed25519_exec_scalarmult_ct functions H1 H2 H3 H4 H5 H6 H7 H8
                 H9 H10 H11 H12 H13 H14 H15) as Hsm.
   intros p_out p_P p_k p_d x s pP d2 out R t m (Hm & Hlo & Hd & Hb & HP).
-  pose proof (length_le_split 32 (Zmod.unsigned s)) as hl.
-  seprewrite_in (array_of_list_word p_k (enc s) hl) Hm.
+  pose proof (length_le_split 32 (ZL.to_Z s)) as hl.
+  seprewrite_in (array_of_list_word p_k (encs s) hl) Hm.
   eapply WeakestPreconditionProperties.Proper_call;
-    [| apply (Hsm p_out p_P p_k p_d x s pP d2 (enc s) out R t m);
+    [| apply (Hsm p_out p_P p_k p_d x s pP d2 (encs s) out R t m);
        [ecancel_assumption | exact Hlo | exact hl | | exact Hd | exact Hb | exact HP] ].
   - intros t' m' rets (Hrets & Ht & a & A & Hm' & Ha & _ & HA).
     split; [exact Hrets |]. split; [symmetry; exact Ht |].
     exists a, A; ssplit; [| exact Ha | exact HA].
-    seprewrite_in (iff1_sym (array_of_list_word p_k (enc s) hl)) Hm'. ecancel_assumption.
+    seprewrite_in (iff1_sym (array_of_list_word p_k (encs s) hl)) Hm'. ecancel_assumption.
   - rewrite le_combine_split. apply Z.mod_small.
     pose proof (unsigned_range_l s). lia.
 Qed.
@@ -416,14 +417,14 @@ Global Instance spec_of_smul_bytes : spec_of "ed25519_smul_bytes" :=
     requires t m :=
       m =* array ptsto (word.of_Z 1) p_x (enc (xc x)) *
            array ptsto (word.of_Z 1) p_y (enc (yc x)) *
-           array ptsto (word.of_Z 1) p_k (enc s) *
+           array ptsto (word.of_Z 1) p_k (encs s) *
            array ptsto (word.of_Z 1) p_ox ox * array ptsto (word.of_Z 1) p_oy oy * R /\
       Datatypes.length ox = 32%nat /\ Datatypes.length oy = 32%nat;
     ensures t' m' :=
       t = t' /\
       m' =* array ptsto (word.of_Z 1) p_x (enc (xc x)) *
             array ptsto (word.of_Z 1) p_y (enc (yc x)) *
-            array ptsto (word.of_Z 1) p_k (enc s) *
+            array ptsto (word.of_Z 1) p_k (encs s) *
             array ptsto (word.of_Z 1) p_ox (enc (xc (SP.gpow_fast x s))) *
             array ptsto (word.of_Z 1) p_oy (enc (yc (SP.gpow_fast x s))) * R
   }.

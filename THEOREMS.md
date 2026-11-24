@@ -118,6 +118,7 @@ zero-knowledge theorem of the same shape as
 | Overall proof that the ballot has between 0 and `n` approvals (a disjunctive encryption proof on the homomorphic product of the ballot) | `Frontend/Approval.v: generate_overall_proof`, `verify_overall_proof`, `verify_ballot` |
 | The overall proof of a well-formed ballot is accepted, and so is the full ballot | `Frontend/Approval.v: overall_proof_valid`, `ballot_with_overall_proof_valid` |
 | Special soundness at the ballot level: two accepting vote proofs (resp. overall proofs) with the same announcement and different challenges show that the ciphertext encrypts 0 or 1 (resp. that the ballot product encrypts `g^m` with `m ≤ n`) | `Frontend/Approval.v: vote_proof_sound`, `overall_proof_sound` (instances of `Crypto/EncProof.v: generalised_accepting_elgamal_soundness_main`) |
+| A prover without a case analysis on the vote (both branches computed as simulated ones, combined by multiplication with `m` and `1 - m`) computes the same proofs and ballots on votes 0 and 1 | `Frontend/Approval.v: generate_enc_proof_ct`, `encrypt_ballot_and_generate_enc_proof_ct`, `generate_enc_proof_ct_eq`, `encrypt_ballot_and_generate_enc_proof_ct_eq` |
 | The announcements hashed by the non-interactive client are exactly the announcements of the proofs it sends | `Frontend/Approval.v: generate_enc_proof_commitment`, `generate_ballot_commitment`, `generate_enc_proof_commitment_announcement`, `ballot_commitment_announcement` |
 | Tallying as an inductive state machine (`ax`, `cvalid`, `cinvalid`, `cfinish`); the final state records whether `g^pt_i = ds_i` was checked for every candidate | `Backend/Tally.v: state`, `count` |
 | A certificate whose flag is true gives, for every candidate, `g^pt_i = ds_i` and accepted decryption proofs | `Backend/Tally.v: finished_true_correct` |
@@ -159,7 +160,7 @@ fiat-crypto (`src/Fiat`, logical root `Fiat`, see `src/Fiat/dune`).
 
 | Claim | Rocq |
 |---|---|
-| `Z/lZ` is a field, with decidable equality | `Curve/Ed25519.v: Zl.zl_field`, `Zl.Fdec` (from `Fiat.Arithmetic.PrimeFieldTheorems` and `Fiat.Spec.Curve25519.prime_l`) |
+| `Z/lZ` is a field, with decidable equality; its type is a record around `Zmod l`, reached through its operations and the conversions `of_Z`, `to_Z` | `Curve/Ed25519.v: Zl.F`, `Zl.zl_field`, `Zl.Fdec`, `Zl.to_Z_inj` (from `Fiat.Arithmetic.PrimeFieldTheorems` and `Fiat.Spec.Curve25519.prime_l`) |
 | Affine points with coordinate equality are Leibniz-equal, and point equality is decidable | `Curve/Ed25519.v: Ed.peq_leibniz`, `Ed.point_dec` |
 | The order-`l` subgroup is a commutative group with decidable equality | `Curve/Ed25519.v: Ed.G`, `Ed.ed25519_comm_group`, `Ed.Gdec` (from `Fiat.Curves.Edwards.AffineProofs.E.edwards_curve_commutative_group`) |
 | Scalar multiplication by `Z/lZ` makes it a vector space | `Curve/Ed25519.v: Ed.gpow`, `Ed.ed25519_vspace` (laws from `Fiat.Algebra.ScalarMult`, exponent reduction by `scalarmult_mod_order`) |
@@ -167,6 +168,7 @@ fiat-crypto (`src/Fiat`, logical root `Fiat`, see `src/Fiat/dune`).
 | The vector-space instance used for extraction, built on the fast multiplication | `Curve/Ed25519.v: Ed.gpow_fast`, `Ed.ed25519_vspace_fast` |
 | The base point has order `l`, by computation | `Curve/Ed25519.v: Ed.B_in_subgroup`, `Ed.B` |
 | Schnorr, Chaum-Pedersen and approval ballots (individual and overall proofs) at Ed25519 | `Examples/Ed25519Ins.v` |
+| The ballot without a case analysis on the votes equals the ballot | `Examples/Ed25519Ins.v: encrypt_ballot_and_generate_enc_proof_ct_ins_eq` |
 
 All of these are closed under the global context. The driver
 `Executable/Ed25519code/main.ml` produces and verifies the proofs, rejects
