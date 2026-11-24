@@ -11,7 +11,7 @@
     [HeliosTallyIns.v] proves all four. Nothing in this file is evidence of
     correctness; it exists for performance measurement only. *)
 From Stdlib Require Import Utf8 ZArith Vector.
-From Crypto Require Import Sigma EncProof Elgamal.
+From Sigma Require Import Sigma EncProof Elgamal.
 From Frontend Require Import Approval.
 From Utility Require Import Zpstar Util.
 Import Vspace Schnorr Zpfield Zpgroup VectorNotations.
