@@ -18,7 +18,9 @@
 # Affine.v the conversions [from_affine] and [to_affine] (the latter with
 # fiat-crypto's verified inversion), ScalarMult.v a double-and-add scalar
 # multiplication [scalarmult] over [double] and [add], related to
-# [Ed.gpow_fast], and EmitC.v prints these functions and the field operations
+# [Ed.gpow_fast], ScalarMultCT.v its constant-time variant [scalarmult_ct]
+# (both the double and the sum are computed each iteration and selected by a
+# masked word-wise copy [cmov]), and EmitC.v prints these functions and the field operations
 # they call as C (ed25519_bedrock.out).
 set -euo pipefail
 cd "$(dirname "$0")"
