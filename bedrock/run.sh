@@ -16,7 +16,9 @@
 # ToCached2.v a halving-free cached-point preparation [to_cached2] and the
 # addition [add] of two run-time points by [to_cached2] and [readd],
 # Affine.v the conversions [from_affine] and [to_affine] (the latter with
-# fiat-crypto's verified inversion).
+# fiat-crypto's verified inversion), ScalarMult.v a double-and-add scalar
+# multiplication [scalarmult] over [double] and [add], related to
+# [Ed.gpow_fast].
 set -euo pipefail
 cd "$(dirname "$0")"
 S=${SIGMA_SRC:-../_build/default/src}
