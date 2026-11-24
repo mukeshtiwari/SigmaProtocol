@@ -3,12 +3,14 @@
 # Ed25519Ballot_LamBox.v (Ed25519) with Peregrine, remap Z, positive and N to
 # GMP integers, compile the C with gcc and run it.
 #
-# deps.sh fetches the pinned CertiRocq runtime, mini-gmp and peregrine-tool
-# and prints RT, MINIGMP and PEREGRINE_TOOL: eval "$(bench/peregrine/deps.sh)".
+# deps.sh fetches the pinned CertiRocq runtime, mini-gmp, peregrine-tool and
+# the Rocq 9.2 extraction frontend, and prints RT, MINIGMP, PEREGRINE_TOOL, F
+# and PEREGRINE_FINDLIB: eval "$(bench/peregrine/deps.sh)".
 #
 # Usage, after `dune build _build/default/src/Examples/WasmBenchSmallDefs.vo
 # _build/default/src/Examples/Ed25519Ins.vo` in the repository root:
-#   F=<peregrine-frontend> RT=<CertiRocq C runtime> \
+#   F=<extraction frontend for Rocq 9.2, branch rocq-9.2-frontend of
+#   peregrine-tool, built> RT=<CertiRocq C runtime> \
 #   PEREGRINE_TOOL=<checkout of https://github.com/peregrine-project/peregrine-tool
 #   at branch numeral-literals (commit 13c701b or a descendant), built with
 #   dune; it has the numeral-hoisting pass> or M=<its main.exe> \

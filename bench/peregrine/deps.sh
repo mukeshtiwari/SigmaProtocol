@@ -15,6 +15,11 @@
 #   with dune in an opam switch with the dependencies of its
 #   rocq-peregrine.opam (Rocq 9.1), so that _build/default/bin/main.exe
 #   exists.
+# - F and PEREGRINE_FINDLIB: the extraction frontend for Rocq 9.2 (branch
+#   rocq-9.2-frontend of peregrine-tool), built here with the rocq of the
+#   current switch, which must be the Rocq 9.2 switch of SigmaProtocol with
+#   the packages that FRONTEND-9.2.md of that branch lists; and a findlib
+#   directory with its META.
 #
 # The GMP remapping (GMPZ) is in bench/peregrine/gmpz and needs no fetch.
 set -euo pipefail
@@ -23,6 +28,7 @@ D=$(mkdir -p "${1:-$HERE/deps}" && cd "${1:-$HERE/deps}" && pwd)
 
 CERTIROCQ_COMMIT=ab66e0164e7ecb63e5af95c90c8e479068bf95c2
 PEREGRINE_TOOL_COMMIT=13c701be7fa272c3e57f7d7211b4ff897095860c
+FRONTEND_COMMIT=e48fa94e038838ad9fe6c57312c8ec48e921bf8b
 GMP_VERSION=6.3.0
 GMP_SHA256=a3c2b80201b89e68616f4ad30bc66aee4927c3ce50e33929ca819d5c43538898
 
@@ -47,6 +53,22 @@ if [ ! -d "$D/peregrine-tool/.git" ]; then
 fi
 git -C "$D/peregrine-tool" checkout -q "$PEREGRINE_TOOL_COMMIT"
 
+if [ ! -d "$D/peregrine-frontend/.git" ]; then
+  git clone -q "$D/peregrine-tool" "$D/peregrine-frontend"
+  git -C "$D/peregrine-frontend" fetch -q https://github.com/peregrine-project/peregrine-tool rocq-9.2-frontend
+fi
+git -C "$D/peregrine-frontend" checkout -q "$FRONTEND_COMMIT"
+if [ ! -f "$D/peregrine-frontend/plugin/src/peregrine_plugin.cmxs" ]; then
+  ( cd "$D/peregrine-frontend" &&
+    rocq makefile -f _CoqProject -o RocqMakefile && make -f RocqMakefile &&
+    make -C plugin ) >&2
+fi
+mkdir -p "$D/findlib/rocq-peregrine"
+sed "s|directory = \".\"|directory = \"$D/peregrine-frontend/plugin/src\"|" \
+  "$D/peregrine-frontend/plugin/src/META.rocq-peregrine" > "$D/findlib/rocq-peregrine/META"
+
 echo "export RT=$D/certirocq/runtime"
 echo "export MINIGMP=$D/mini-gmp"
 echo "export PEREGRINE_TOOL=$D/peregrine-tool"
+echo "export F=$D/peregrine-frontend"
+echo "export PEREGRINE_FINDLIB=$D/findlib"
