@@ -8,7 +8,8 @@
 # The files load this library (root Sigma, vendored fiat-crypto root Fiat) and
 # AUCurves' fiat-crypto (root Crypto) in one session; FieldTransport.v relates
 # their coordinate fields Zmod p and F p, ExecDouble.v states AUCurves'
-# verified bedrock2 doubling in terms of this library's extended points.
+# verified bedrock2 doubling in terms of this library's extended points,
+# ExecReadd.v its readdition (addition up to projective equality).
 set -euo pipefail
 cd "$(dirname "$0")"
 S=${SIGMA_SRC:-../_build/default/src}

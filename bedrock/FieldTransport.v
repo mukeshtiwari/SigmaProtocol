@@ -10,7 +10,7 @@ Require Fiat.Spec.Curve25519 Fiat.Curves.Edwards.XYZT.Basic
 Require Crypto.Spec.ModularArithmetic Crypto.Arithmetic.ModularArithmeticTheorems
         Crypto.Arithmetic.PrimeFieldTheorems Crypto.Spec.Curve25519
         Crypto.Spec.CompleteEdwardsCurve Crypto.Curves.Edwards.XYZT.Basic
-        Crypto.Algebra.Hierarchy Crypto.Algebra.Ring Crypto.Algebra.Field
+        Crypto.Curves.Edwards.XYZT.Readdition Crypto.Algebra.Hierarchy Crypto.Algebra.Ring Crypto.Algebra.Field
         Crypto.Util.Decidable.
 
 Module SP := Curve.Ed25519.Ed25519.Ed.
@@ -22,6 +22,7 @@ Module APF := Crypto.Arithmetic.PrimeFieldTheorems.F.
 Module AC := Crypto.Spec.Curve25519.
 Module AX := Crypto.Curves.Edwards.XYZT.Basic.Extended.
 Module AE := Crypto.Spec.CompleteEdwardsCurve.E.
+Module AR := Crypto.Curves.Edwards.XYZT.Readdition.
 
 Local Open Scope Z_scope.
 
@@ -68,6 +69,12 @@ Proof.
   rewrite !Zmod.mod_unsigned in h; apply Zmod.unsigned_inj; exact h.
 Qed.
 
+(** The inverse of [phi]. *)
+Definition psi (x : Fp) : Zp := Zmod.of_Z SC.p (AF.to_Z x).
+
+Lemma phi_psi x : phi (psi x) = x.
+Proof. unfold psi; rewrite phi_of_Z; apply AFT.of_Z_to_Z. Qed.
+
 Lemma phi_nonzero x : x <> Zmod.zero -> phi x <> AF.zero.
 Proof. intros hx h; apply hx, phi_inj; rewrite h, phi_zero; reflexivity. Qed.
 
@@ -97,7 +104,7 @@ Lemma phi_twice_d : phi SP.twice_d = AF.add AC.E.d AC.E.d.
 Proof. unfold SP.twice_d; rewrite phi_add, phi_d; reflexivity. Qed.
 
 #[local] Hint Rewrite phi_add phi_sub phi_mul phi_opp phi_one phi_zero phi_inv
-  phi_a phi_d : phi.
+  phi_a phi_d phi_psi : phi.
 
 (** ** Maps on coordinate tuples and points *)
 
@@ -105,6 +112,16 @@ Definition phi2 (c : Zp * Zp) : Fp * Fp := let '(x, y) := c in (phi x, phi y).
 
 Definition phi5 (c : Zp * Zp * Zp * Zp * Zp) : Fp * Fp * Fp * Fp * Fp :=
   let '(X, Y, Z, Ta, Tb) := c in (phi X, phi Y, phi Z, phi Ta, phi Tb).
+
+(** Cached coordinates [(half_YmX, half_YpX, Z, Td)] of [Readdition]. *)
+Definition phi4 (c : Zp * Zp * Zp * Zp) : Fp * Fp * Fp * Fp :=
+  let '(hm, hp, Z, Td) := c in (phi hm, phi hp, phi Z, phi Td).
+
+Definition psi5 (c : Fp * Fp * Fp * Fp * Fp) : Zp * Zp * Zp * Zp * Zp :=
+  let '(X, Y, Z, Ta, Tb) := c in (psi X, psi Y, psi Z, psi Ta, psi Tb).
+
+Lemma phi5_psi5 c : phi5 (psi5 c) = c.
+Proof. destruct c as [[[[X Y] Z] Ta] Tb]; cbn [phi5 psi5]; rewrite !phi_psi; reflexivity. Qed.
 
 (** AUCurves' affine and extended point types over [F p]. *)
 Notation Apoint := (@AE.point Fp eq AF.one AF.add AF.mul AC.E.a AC.E.d).
@@ -124,6 +141,44 @@ Proof.
   apply (f_equal phi) in h1, h2; autorewrite with phi in h1, h2.
   split; [exact h1 | split; [exact h2 | apply phi_nonzero; exact h3]].
 Defined.
+
+(** The phi-preimage of an AUCurves extended point. *)
+Definition psiX (Q : Axpoint) : SP.xpoint.
+Proof.
+  refine (exist _ (psi5 (proj1_sig Q)) _).
+  destruct Q as [[[[[X Y] Z] Ta] Tb] (h1 & h2 & h3)]; cbn [psi5 proj1_sig] in h1, h2, h3 |- *.
+  split; [| split].
+  - apply phi_inj; autorewrite with phi; exact h1.
+  - apply phi_inj; autorewrite with phi; exact h2.
+  - intro hz; apply h3; rewrite <-(phi_psi Z), hz; apply phi_zero.
+Defined.
+
+Lemma phiX_psiX Q : proj1_sig (phiX (psiX Q)) = proj1_sig Q.
+Proof. exact (phi5_psi5 (proj1_sig Q)). Qed.
+
+(** Projective equality of extended points in the two libraries. *)
+Notation SXeq := (@SX.eq Zp eq Zmod.zero Zmod.add Zmod.mul SC.E.a SC.E.d).
+Notation AXeq := (@AX.eq Fp eq AF.zero AF.add AF.mul AC.E.a AC.E.d).
+
+Lemma SXeq_of_AXeq (R S : SP.xpoint) : AXeq (phiX R) (phiX S) -> SXeq R S.
+Proof.
+  destruct R as [[[[[X1 Y1] Z1] Ta1] Tb1] h1], S as [[[[[X2 Y2] Z2] Ta2] Tb2] h2].
+  cbv [AX.eq SX.eq phiX phi5 proj1_sig]; intros [e1 e2].
+  rewrite <-!phi_mul in e1, e2; split; apply phi_inj; assumption.
+Qed.
+
+(** [AX.eq] depends on the coordinates only. *)
+Lemma AXeq_coords (P1 P1' P2 P2' : Axpoint) :
+  proj1_sig P1 = proj1_sig P1' -> proj1_sig P2 = proj1_sig P2' ->
+  AXeq P1 P2 -> AXeq P1' P2'.
+Proof.
+  destruct P1 as [c1 h1], P1' as [c1' h1'], P2 as [c2 h2], P2' as [c2' h2'].
+  cbn [proj1_sig]; intros e1 e2; subst; exact (fun h => h).
+Qed.
+
+(** SigmaProtocol's [to_affine] is invariant under projective equality. *)
+Lemma SXeq_to_affine (R S : SP.xpoint) : SXeq R S -> SP.to_affine R = SP.to_affine S.
+Proof. intro h; apply SP.peq_leibniz; exact (SX.Proper_to_affine R S h). Qed.
 
 Lemma phiA_coords P : proj1_sig (phiA P) = phi2 (proj1_sig P).
 Proof. reflexivity. Qed.
@@ -147,7 +202,8 @@ Section Transport.
           {sqa : exists s, AF.mul s s = AC.E.a}
           {nsd : forall x, AF.mul x x <> AC.E.d}
           {am1 : AC.E.a = AF.opp AF.one}
-          {td : Fp} {k2d : td = AF.add AC.E.d AC.E.d}.
+          {td : Fp} {k2d : td = AF.add AC.E.d AC.E.d}
+          {nzd : AC.E.d <> AF.zero}.
 
   Local Notation Am1double :=
     (AX.m1double (field:=fld) (char_ge_3:=c3) (Feq_dec:=dec) (a:=AC.E.a) (d:=AC.E.d)
@@ -310,10 +366,100 @@ Section Transport.
   Corollary to_affine_phiX P :
     proj1_sig (Ato_affine (phiX P)) = proj1_sig (phiA (SP.to_affine P)).
   Proof. apply to_affine_transport; reflexivity. Qed.
+
+  (** ** Readdition
+
+      AUCurves' addition is [m1_readd P (m1_prep Q)] ([Readdition]), which
+      [readd_correct] relates to [m1add P Q] up to projective equality.
+      SigmaProtocol's vendored fiat-crypto has no [Readdition]; the cached
+      coordinates of a SigmaProtocol point are given by [prep_coords]. *)
+  Local Notation Acached :=
+    (@AR.cached Fp eq AF.zero AF.add AF.sub AF.mul AF.div AC.E.a AC.E.d).
+  Local Notation Am1_prep :=
+    (AR.m1_prep (field:=fld) (char_ge_3:=c3) (Feq_dec:=dec) (a:=AC.E.a) (d:=AC.E.d)
+       (nonzero_a:=nza) (a_eq_minus1:=am1) (twice_d:=td) (k_eq_2d:=k2d) (nonzero_d:=nzd)).
+  Local Notation Am1_readd :=
+    (AR.m1_readd (field:=fld) (char_ge_3:=c3) (Feq_dec:=dec) (a:=AC.E.a) (d:=AC.E.d)
+       (nonzero_a:=nza) (square_a:=sqa) (nonsquare_d:=nsd)
+       (a_eq_minus1:=am1) (twice_d:=td) (k_eq_2d:=k2d) (nonzero_d:=nzd)).
+
+  Definition prep_coords {T} (add sub mul div : T -> T -> T) (one d : T)
+    (c : T * T * T * T * T) : T * T * T * T :=
+    let '(X, Y, Z, Ta, Tb) := c in
+    (div (sub Y X) (add one one), div (add Y X) (add one one), Z, mul (mul Ta Tb) d).
+
+  Definition readd_coords {T} (add sub mul : T -> T -> T)
+    (c1 : T * T * T * T * T) (c2 : T * T * T * T) : T * T * T * T * T :=
+    let '(X1, Y1, Z1, Ta1, Tb1) := c1 in
+    let '(hYmX, hYpX, Z2, Td) := c2 in
+    let A := mul (sub Y1 X1) hYmX in
+    let B := mul (add Y1 X1) hYpX in
+    let C := mul (mul Ta1 Tb1) Td in
+    let D := mul Z1 Z2 in
+    let E := sub B A in let F := sub D C in let G := add D C in let H := add B A in
+    (mul E F, mul G H, mul F G, E, H).
+
+  Lemma A_m1_prep_coords (Q : Axpoint) :
+    proj1_sig (Am1_prep Q) =
+    prep_coords AF.add AF.sub AF.mul AF.div AF.one AC.E.d (proj1_sig Q).
+  Proof. destruct Q as [[[[[X Y] Z] Ta] Tb] hQ]; reflexivity. Qed.
+  Lemma A_m1_readd_coords (Q : Axpoint) (C : Acached) :
+    proj1_sig (Am1_readd Q C) = readd_coords AF.add AF.sub AF.mul (proj1_sig Q) (proj1_sig C).
+  Proof.
+    destruct Q as [[[[[X Y] Z] Ta] Tb] hQ], C as [[[[hm hp] Z2] Td] hC]; reflexivity.
+  Qed.
+
+  Lemma prep_coords_phi c :
+    phi4 (prep_coords Zmod.add Zmod.sub Zmod.mul Zmod.mdiv Zmod.one SC.E.d c) =
+    prep_coords AF.add AF.sub AF.mul AF.div AF.one AC.E.d (phi5 c).
+  Proof.
+    destruct c as [[[[X Y] Z] Ta] Tb].
+    cbv beta iota zeta delta [prep_coords phi4 phi5].
+    rewrite !phi_mdiv; autorewrite with phi; reflexivity.
+  Qed.
+
+  (** If [A] represents [P] and [C] holds the cached coordinates of [Q],
+      every extended point [S] with the coordinates of [m1_readd A C] is
+      projectively equal to [phiX (SP.xadd P Q)]. *)
+  Lemma readd_transport (P Q : SP.xpoint) (A : Axpoint) (C : Acached) (S : Axpoint) :
+    proj1_sig A = phi5 (proj1_sig P) ->
+    proj1_sig C =
+      phi4 (prep_coords Zmod.add Zmod.sub Zmod.mul Zmod.mdiv Zmod.one SC.E.d (proj1_sig Q)) ->
+    proj1_sig (Am1_readd A C) = proj1_sig S ->
+    AXeq S (phiX (SP.xadd P Q)).
+  Proof.
+    intros hA hC hS.
+    pose proof (@AR.readd_correct Fp eq AF.zero AF.one AF.opp AF.add AF.sub AF.mul AF.inv
+                  AF.div fld c3 dec AC.E.a AC.E.d nza sqa nsd am1 td k2d nzd
+                  (phiX P) (phiX Q)) as h.
+    eapply AXeq_coords; [ | | exact h].
+    - rewrite <-hS, !A_m1_readd_coords, A_m1_prep_coords, hA, hC, prep_coords_phi.
+      reflexivity.
+    - apply m1add_phiX.
+  Qed.
 End Transport.
+
+(** Cached coordinates of a SigmaProtocol extended point. *)
+Definition xprep (Q : SP.xpoint) : Zp * Zp * Zp * Zp :=
+  prep_coords Zmod.add Zmod.sub Zmod.mul Zmod.mdiv Zmod.one SC.E.d (proj1_sig Q).
+
+(** The affine form: a point projectively equal to [SP.xadd P Q] has the
+    affine image [padd (to_affine P) (to_affine Q)], which is the group
+    operation [gop] on the order-[l] subgroup [G]. *)
+Corollary readd_affine (P Q S : SP.xpoint) :
+  SXeq S (SP.xadd P Q) -> SP.to_affine S = SP.padd (SP.to_affine P) (SP.to_affine Q).
+Proof. intro h; rewrite (SXeq_to_affine _ _ h); apply SP.to_affine_xadd. Qed.
+
+Corollary readd_gop (g h : SP.G) (P Q S : SP.xpoint) :
+  SP.to_affine P = proj1_sig g -> SP.to_affine Q = proj1_sig h ->
+  SXeq S (SP.xadd P Q) -> SP.to_affine S = proj1_sig (SP.gop g h).
+Proof. intros hP hQ hS; rewrite (readd_affine _ _ _ hS), hP, hQ; reflexivity. Qed.
 
 Print Assumptions m1double_transport.
 Print Assumptions m1add_transport.
 Print Assumptions from_affine_transport.
 Print Assumptions to_affine_transport.
 Print Assumptions phi_d.
+Print Assumptions readd_transport.
+Print Assumptions readd_affine.
+Print Assumptions readd_gop.
