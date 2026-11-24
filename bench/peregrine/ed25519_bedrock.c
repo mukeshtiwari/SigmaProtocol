@@ -97,9 +97,9 @@ static inline br_word_t _br_remu(br_word_t a, br_word_t b) {
   return a%b;
 }
 
-static void step(br_word_t p_acc, br_word_t p_t, br_word_t p_P, br_word_t p_d, br_word_t b);
+static void step_ct(br_word_t p_acc, br_word_t p_t, br_word_t p_s, br_word_t p_P, br_word_t p_d, br_word_t b);
+static void cmov(br_word_t p_o, br_word_t p_x, br_word_t p_y, br_word_t b);
 static void set_identity(br_word_t p_out);
-static void pcopy(br_word_t p_out, br_word_t p_a);
 static void add(br_word_t p_out, br_word_t p_a, br_word_t p_b, br_word_t p_d);
 static void to_cached2(br_word_t p_out, br_word_t p_a, br_word_t p_d);
 static void readd(br_word_t p_out, br_word_t p_a, br_word_t p_c);
@@ -118,25 +118,38 @@ static void fe25519_sub(br_word_t out0, br_word_t in0, br_word_t in1);
 static void fe25519_carry_add(br_word_t out0, br_word_t in0, br_word_t in1);
 static void fe25519_carry_sub(br_word_t out0, br_word_t in0, br_word_t in1);
 
-void scalarmult(br_word_t p_out, br_word_t p_P, br_word_t p_k, br_word_t p_d) {
-  br_word_t i, p_t, b;
+void scalarmult_ct(br_word_t p_out, br_word_t p_P, br_word_t p_k, br_word_t p_d) {
+  br_word_t i, p_t, p_s, b;
   uint8_t _br_stackalloc_p_t[200] = {0}; p_t = (br_word_t)&_br_stackalloc_p_t;
+  uint8_t _br_stackalloc_p_s[200] = {0}; p_s = (br_word_t)&_br_stackalloc_p_s;
   set_identity(p_out);
   b = (br_word_t)0;
   i = (br_word_t)0x100;
   while ((br_word_t)((br_word_t)0<i)) {
     i = i-1;
     b = ((_br_load1(p_k+(i>>3)))>>((i&7)&(sizeof(br_word_t)*8-1)))&1;
-    step(p_out, p_t, p_P, p_d, b);
+    step_ct(p_out, p_t, p_s, p_P, p_d, b);
   }
 }
 
-static void step(br_word_t p_acc, br_word_t p_t, br_word_t p_P, br_word_t p_d, br_word_t b) {
+static void step_ct(br_word_t p_acc, br_word_t p_t, br_word_t p_s, br_word_t p_P, br_word_t p_d, br_word_t b) {
   double(p_t, p_acc);
-  if (b) {
-    add(p_acc, p_t, p_P, p_d);
-  } else {
-    pcopy(p_acc, p_t);
+  add(p_s, p_t, p_P, p_d);
+  cmov(p_acc, p_t, p_s, b);
+}
+
+static void cmov(br_word_t p_o, br_word_t p_x, br_word_t p_y, br_word_t b) {
+  br_word_t w, mask, n;
+  mask = (br_word_t)0-b;
+  n = (br_word_t)25;
+  w = (br_word_t)0;
+  while (n) {
+    w = _br_load(p_x);
+    _br_store(p_o, w^((w^(_br_load(p_y)))&mask));
+    p_o = p_o+8;
+    p_x = p_x+8;
+    p_y = p_y+8;
+    n = n-1;
   }
 }
 
@@ -146,14 +159,6 @@ static void set_identity(br_word_t p_out) {
   fe25519_from_word(p_out+80, (br_word_t)1);
   fe25519_from_word(p_out+120, (br_word_t)0);
   fe25519_from_word(p_out+160, (br_word_t)1);
-}
-
-static void pcopy(br_word_t p_out, br_word_t p_a) {
-  fe25519_copy(p_out, p_a);
-  fe25519_copy(p_out+40, p_a+40);
-  fe25519_copy(p_out+80, p_a+80);
-  fe25519_copy(p_out+120, p_a+120);
-  fe25519_copy(p_out+160, p_a+160);
 }
 
 static void add(br_word_t p_out, br_word_t p_a, br_word_t p_b, br_word_t p_d) {

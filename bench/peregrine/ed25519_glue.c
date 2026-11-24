@@ -10,11 +10,12 @@
         (integers in [0, p)) as 32 little-endian bytes each;
      2. converts the coordinates to field elements with fe25519_from_bytes,
         builds the extended point with from_affine, multiplies it by n with
-        scalarmult, converts back with to_affine and fe25519_to_bytes;
+        scalarmult_ct (no branch or memory address depends on the bits of
+        n), converts back with to_affine and fe25519_to_bytes;
      3. builds the resulting point in the CertiRocq heap.
 
    All of step 2 is the bedrock2 code of ed25519_bedrock.c, verified in the
-   Ed25519 bedrock2 bridge (ScalarMult.v, Affine.v) and AUCurves' 64-bit
+   Ed25519 bedrock2 bridge (ScalarMultCT.v, Affine.v) and AUCurves' 64-bit
    field.  Trusted here: the byte conversions and the heap layout of steps
    1 and 3, the constant 2d below, the renaming of the function double, and
    the precondition 0 <= n < 2^256, which every call of fast_smul from
@@ -161,7 +162,7 @@ value ed25519_fast_smul(struct thread_info *tinfo, value n, value P) {
   fe25519_from_bytes((br_word_t) fx, (br_word_t) xb);
   fe25519_from_bytes((br_word_t) fy, (br_word_t) yb);
   from_affine((br_word_t) Pext, (br_word_t) fx, (br_word_t) fy);
-  scalarmult((br_word_t) R, (br_word_t) Pext, (br_word_t) kb, (br_word_t) d2);
+  scalarmult_ct((br_word_t) R, (br_word_t) Pext, (br_word_t) kb, (br_word_t) d2);
   to_affine((br_word_t) aff, (br_word_t) R);
   fe25519_to_bytes((br_word_t) ob[0], (br_word_t) aff);
   fe25519_to_bytes((br_word_t) ob[1], (br_word_t) (aff + 40));
