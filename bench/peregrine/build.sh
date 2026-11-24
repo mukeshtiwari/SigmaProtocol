@@ -5,9 +5,10 @@
 #
 # Usage, after `dune build _build/default/src/Examples/WasmBenchSmallDefs.vo
 # _build/default/src/Examples/Ed25519Ins.vo` in the repository root:
-#   F=<peregrine-frontend> M=<peregrine-tool main.exe, built from branch
-#   numeral-literals of https://github.com/peregrine-project/peregrine-tool,
-#   which has the numeral-hoisting pass> RT=<CertiRocq C runtime> \
+#   F=<peregrine-frontend> RT=<CertiRocq C runtime> \
+#   PEREGRINE_TOOL=<checkout of https://github.com/peregrine-project/peregrine-tool
+#   at branch numeral-literals (commit 13c701b or a descendant), built with
+#   dune; it has the numeral-hoisting pass> or M=<its main.exe> \
 #   GMPZ=<dir with GmpZ.v, z_gmp.c, z_gmp.h, splice_gmp_z.py, splice_locked.py,
 #         stub_axioms.py, run_deep.py, main_bool.c> \
 #   [PEREGRINE_FINDLIB=<findlib dir holding rocq-peregrine/META>] \
@@ -58,7 +59,17 @@
 # fieldl_bedrock.c.
 set -euo pipefail
 : "${F:?set F to the Peregrine frontend directory}"
-: "${M:?set M to the Peregrine tool main.exe}"
+# Peregrine with the numeral-hoisting pass (ENumeralHoist), first in commit
+# 13c701b of branch numeral-literals of peregrine-tool.
+PEREGRINE_NUMERALS_COMMIT=13c701be7fa272c3e57f7d7211b4ff897095860c
+if [ -n "${PEREGRINE_TOOL:-}" ]; then
+  if ! git -C "$PEREGRINE_TOOL" merge-base --is-ancestor "$PEREGRINE_NUMERALS_COMMIT" HEAD 2>/dev/null; then
+    echo "PEREGRINE_TOOL must be at commit $PEREGRINE_NUMERALS_COMMIT (branch numeral-literals) or a descendant" >&2
+    exit 2
+  fi
+  M=${M:-$PEREGRINE_TOOL/_build/default/bin/main.exe}
+fi
+: "${M:?set PEREGRINE_TOOL to a peregrine-tool checkout (branch numeral-literals), or M to its main.exe}"
 : "${RT:?set RT to the CertiRocq C runtime directory}"
 : "${GMPZ:?set GMPZ to the directory of the GMP remapping}"
 RUN_TIMEOUT=${RUN_TIMEOUT:-3600}
