@@ -89,8 +89,16 @@ closed under the global context. `EmitC.v` prints the functions as C with
 bedrock2's printer and proves that the emitted field functions meet the
 specifications the theorems assume.
 
+The function `ed25519_smul_bytes` (`SmulBytes.v`) takes the affine point
+and the scalar as 32-byte encodings, computes the constant 2d itself, and
+chains the byte conversions, `from_affine`, `scalarmult_ct` and `to_affine`.
+The theorem `ed25519_smul_bytes_e2e` (`EmitC.v`) states, for the exact list
+of functions that `EmitC.v` prints, that for every group element x and
+scalar s the call writes the encodings of the coordinates of
+`Ed.gpow_fast x s`; its only premises concern the inputs.
+
 In the Peregrine build of the Ed25519 approval ballot (seven candidates), we
-remap `Ed.fast_smul` to `scalarmult_ct` through a C glue function. The
+remap `Ed.fast_smul` to `ed25519_smul_bytes` through a C glue function. The
 program gives the same output as the GMP build.
 
 | Ed25519 ballot, encrypt + prove + verify | Time |
@@ -100,10 +108,10 @@ program gives the same output as the GMP build.
 
 Trusted, in addition to the Peregrine list: the script that remaps the
 constant, the glue (conversion between GMP integers and bytes, the heap
-layout of points, the constant 2d, the bound `0 ≤ n < 2^256` on the scalar),
-the renaming of the C keyword `double`, and bedrock2's C printer. The
-theorems connect the emitted functions to `Ed.gpow_fast` in separate steps;
-no single theorem states the end-to-end result.
+layout of points, the bound `0 ≤ n < 2^256` on the scalar, and the fact that
+Peregrine calls `fast_smul` only from `Ed.gpow_fast`, which supplies the
+premises of `ed25519_smul_bytes_e2e`), the renaming of the C keyword
+`double`, and bedrock2's C printer.
 
 The scalar field `Zl` (integers modulo the group order l) has verified
 bedrock2 arithmetic as well. fiat-crypto's pipeline derives 64-bit Montgomery

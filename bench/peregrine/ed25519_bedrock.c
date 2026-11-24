@@ -97,6 +97,8 @@ static inline br_word_t _br_remu(br_word_t a, br_word_t b) {
   return a%b;
 }
 
+static void ed25519_twice_d(br_word_t p_out);
+static void scalarmult_ct(br_word_t p_out, br_word_t p_P, br_word_t p_k, br_word_t p_d);
 static void step_ct(br_word_t p_acc, br_word_t p_t, br_word_t p_s, br_word_t p_P, br_word_t p_d, br_word_t b);
 static void cmov(br_word_t p_o, br_word_t p_x, br_word_t p_y, br_word_t b);
 static void set_identity(br_word_t p_out);
@@ -118,7 +120,43 @@ static void fe25519_sub(br_word_t out0, br_word_t in0, br_word_t in1);
 static void fe25519_carry_add(br_word_t out0, br_word_t in0, br_word_t in1);
 static void fe25519_carry_sub(br_word_t out0, br_word_t in0, br_word_t in1);
 
-void scalarmult_ct(br_word_t p_out, br_word_t p_P, br_word_t p_k, br_word_t p_d) {
+void ed25519_smul_bytes(br_word_t p_ox, br_word_t p_oy, br_word_t p_x, br_word_t p_y, br_word_t p_k) {
+  br_word_t p_fx, p_fy, p_P, p_d, p_R, p_a;
+  uint8_t _br_stackalloc_p_d[40] = {0}; p_d = (br_word_t)&_br_stackalloc_p_d;
+  uint8_t _br_stackalloc_p_fx[40] = {0}; p_fx = (br_word_t)&_br_stackalloc_p_fx;
+  uint8_t _br_stackalloc_p_fy[40] = {0}; p_fy = (br_word_t)&_br_stackalloc_p_fy;
+  uint8_t _br_stackalloc_p_P[200] = {0}; p_P = (br_word_t)&_br_stackalloc_p_P;
+  uint8_t _br_stackalloc_p_R[200] = {0}; p_R = (br_word_t)&_br_stackalloc_p_R;
+  uint8_t _br_stackalloc_p_a[80] = {0}; p_a = (br_word_t)&_br_stackalloc_p_a;
+  ed25519_twice_d(p_d);
+  fe25519_from_bytes(p_fx, p_x);
+  fe25519_from_bytes(p_fy, p_y);
+  from_affine(p_P, p_fx, p_fy);
+  scalarmult_ct(p_R, p_P, p_k, p_d);
+  to_affine(p_a, p_R);
+  fe25519_to_bytes(p_ox, p_a);
+  fe25519_to_bytes(p_oy, p_a+40);
+}
+
+static void ed25519_twice_d(br_word_t p_out) {
+  br_word_t p_s, p_t;
+  uint8_t _br_stackalloc_p_s[40] = {0}; p_s = (br_word_t)&_br_stackalloc_p_s;
+  uint8_t _br_stackalloc_p_t[40] = {0}; p_t = (br_word_t)&_br_stackalloc_p_t;
+  fe25519_from_word(p_t, (br_word_t)0x100000000);
+  fe25519_square(p_s, p_t);
+  fe25519_from_word(p_out, (br_word_t)0x2406d9dc56dffce7);
+  fe25519_mul(p_out, p_out, p_s);
+  fe25519_from_word(p_t, (br_word_t)0x198e80f2eef3d130);
+  fe25519_carry_add(p_out, p_out, p_t);
+  fe25519_mul(p_out, p_out, p_s);
+  fe25519_from_word(p_t, (br_word_t)0xe0149a8283b156);
+  fe25519_carry_add(p_out, p_out, p_t);
+  fe25519_mul(p_out, p_out, p_s);
+  fe25519_from_word(p_t, (br_word_t)0xebd69b9426b2f159);
+  fe25519_carry_add(p_out, p_out, p_t);
+}
+
+static void scalarmult_ct(br_word_t p_out, br_word_t p_P, br_word_t p_k, br_word_t p_d) {
   br_word_t i, p_t, p_s, b;
   uint8_t _br_stackalloc_p_t[200] = {0}; p_t = (br_word_t)&_br_stackalloc_p_t;
   uint8_t _br_stackalloc_p_s[200] = {0}; p_s = (br_word_t)&_br_stackalloc_p_s;

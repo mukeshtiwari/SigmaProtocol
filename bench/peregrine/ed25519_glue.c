@@ -5,22 +5,25 @@
    (an affine point: a pair of coordinates in Zmod p with a proof that it is
    on the curve) to ed25519_fast_smul below, which
 
-     1. reads the scalar n (an integer in the representation of z_gmp.c) as
-        32 little-endian bytes, and the coordinates x, y of the point
-        (integers in [0, p)) as 32 little-endian bytes each;
-     2. converts the coordinates to field elements with fe25519_from_bytes,
-        builds the extended point with from_affine, multiplies it by n with
-        scalarmult_ct (no branch or memory address depends on the bits of
-        n), converts back with to_affine and fe25519_to_bytes;
-     3. builds the resulting point in the CertiRocq heap.
+     1. writes the scalar n (an integer in the representation of z_gmp.c)
+        and the coordinates x, y of the point (integers in [0, p)) as 32
+        little-endian bytes each;
+     2. calls ed25519_smul_bytes, which writes the coordinates of n.P as 32
+        little-endian bytes each;
+     3. builds the resulting point in the CertiRocq heap from these bytes.
 
-   All of step 2 is the bedrock2 code of ed25519_bedrock.c, verified in the
-   Ed25519 bedrock2 bridge (ScalarMultCT.v, Affine.v) and AUCurves' 64-bit
-   field.  Trusted here: the byte conversions and the heap layout of steps
-   1 and 3, the constant 2d below, the renaming of the function double, and
-   the precondition 0 <= n < 2^256, which every call of fast_smul from
-   Ed.gpow_fast meets (n = unsigned k < l); any other n aborts.  Outside this
-   file: bedrock2's printer ToCString, which produced ed25519_bedrock.c.
+   Step 2 is the bedrock2 code of ed25519_bedrock.c.  The theorem
+   ed25519_smul_bytes_e2e (bedrock/EmitC.v) states, for the printed list of
+   functions, that on the canonical encodings of the coordinates of a group
+   element x and the 32 bytes of a scalar s it writes the canonical
+   encodings of the coordinates of Ed.gpow_fast x s; the constant 2d is
+   computed inside (ed25519_twice_d), and no branch or memory address
+   depends on the bits of the scalar (ScalarMultCT.v).  Trusted here: the
+   conversions between integers and bytes and the heap layout of steps 1
+   and 3, the renaming of the function double, and the precondition
+   0 <= n < 2^256, which every call of fast_smul from Ed.gpow_fast meets
+   (n = unsigned k < l); any other n aborts.  Outside this file: bedrock2's
+   printer ToCString, which produced ed25519_bedrock.c.
 
    Layout of the values, after erasure (checked at run time; a mismatch
    aborts): Peregrine drops the erased proof fields of constructors, so a
@@ -43,11 +46,6 @@
 
 #define ZSIZE(v) ((mp_size_t) Field(v, 0))
 #define ZLIMBS(v) ((mp_limb_t *) &Field(v, 1))
-
-/* 2d mod p, little-endian (d = -121665/121666 mod p). */
-static const uint8_t d2_bytes[32] = {
-  0x59, 0xf1, 0xb2, 0x26, 0x94, 0x9b, 0xd6, 0xeb, 0x56, 0xb1, 0x83, 0x82, 0x9a, 0x14, 0xe0, 0x00,
-  0x30, 0xd1, 0xf3, 0xee, 0xf2, 0x80, 0x8e, 0x19, 0xe7, 0xfc, 0xdf, 0x56, 0xdc, 0xd9, 0x06, 0x24};
 
 static void fail(const char *what) {
   fprintf(stderr, "ed25519_fast_smul: %s\n", what);
@@ -157,15 +155,9 @@ value ed25519_fast_smul(struct thread_info *tinfo, value n, value P) {
   int_to_bytes(Field(block(vy, 1), 0), yb);
 
   /* step 2: the verified code */
-  uint8_t fx[40], fy[40], d2[40], Pext[200], R[200], aff[80], ob[2][32];
-  fe25519_from_bytes((br_word_t) d2, (br_word_t) d2_bytes);
-  fe25519_from_bytes((br_word_t) fx, (br_word_t) xb);
-  fe25519_from_bytes((br_word_t) fy, (br_word_t) yb);
-  from_affine((br_word_t) Pext, (br_word_t) fx, (br_word_t) fy);
-  scalarmult_ct((br_word_t) R, (br_word_t) Pext, (br_word_t) kb, (br_word_t) d2);
-  to_affine((br_word_t) aff, (br_word_t) R);
-  fe25519_to_bytes((br_word_t) ob[0], (br_word_t) aff);
-  fe25519_to_bytes((br_word_t) ob[1], (br_word_t) (aff + 40));
+  uint8_t ob[2][32];
+  ed25519_smul_bytes((br_word_t) ob[0], (br_word_t) ob[1], (br_word_t) xb, (br_word_t) yb,
+                     (br_word_t) kb);
 
   /* step 3: the result [[[x], [y]]] in the heap.  The inputs are dead, so a
      collection here needs no roots. */
