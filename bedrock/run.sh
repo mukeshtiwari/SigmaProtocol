@@ -18,7 +18,8 @@
 # Affine.v the conversions [from_affine] and [to_affine] (the latter with
 # fiat-crypto's verified inversion), ScalarMult.v a double-and-add scalar
 # multiplication [scalarmult] over [double] and [add], related to
-# [Ed.gpow_fast].
+# [Ed.gpow_fast], and EmitC.v prints these functions and the field operations
+# they call as C (ed25519_bedrock.out).
 set -euo pipefail
 cd "$(dirname "$0")"
 S=${SIGMA_SRC:-../_build/default/src}
