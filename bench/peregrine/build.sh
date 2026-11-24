@@ -3,14 +3,16 @@
 # Ed25519Ballot_LamBox.v (Ed25519) with Peregrine, remap Z, positive and N to
 # GMP integers, compile the C with gcc and run it.
 #
+# deps.sh fetches the pinned CertiRocq runtime, mini-gmp and peregrine-tool
+# and prints RT, MINIGMP and PEREGRINE_TOOL: eval "$(bench/peregrine/deps.sh)".
+#
 # Usage, after `dune build _build/default/src/Examples/WasmBenchSmallDefs.vo
 # _build/default/src/Examples/Ed25519Ins.vo` in the repository root:
 #   F=<peregrine-frontend> RT=<CertiRocq C runtime> \
 #   PEREGRINE_TOOL=<checkout of https://github.com/peregrine-project/peregrine-tool
 #   at branch numeral-literals (commit 13c701b or a descendant), built with
 #   dune; it has the numeral-hoisting pass> or M=<its main.exe> \
-#   GMPZ=<dir with GmpZ.v, z_gmp.c, z_gmp.h, splice_gmp_z.py, splice_locked.py,
-#         stub_axioms.py, run_deep.py, main_bool.c> \
+#   [GMPZ=<the GMP remapping, default bench/peregrine/gmpz>] \
 #   [PEREGRINE_FINDLIB=<findlib dir holding rocq-peregrine/META>] \
 #   [PROGRAMS="small64_verify ..."] [VFILES="Ballot_LamBox.v ..."] \
 #   [SIGMA_BUILD=<dune build of src, default _build/default/src>] \
@@ -101,7 +103,7 @@ if [ -n "${PEREGRINE_TOOL:-}" ]; then
 fi
 : "${M:?set PEREGRINE_TOOL to a peregrine-tool checkout (branch numeral-literals), or M to its main.exe}"
 : "${RT:?set RT to the CertiRocq C runtime directory}"
-: "${GMPZ:?set GMPZ to the directory of the GMP remapping}"
+GMPZ=${GMPZ:-$(cd "$(dirname "$0")" && pwd)/gmpz}
 RUN_TIMEOUT=${RUN_TIMEOUT:-3600}
 MEM_MAX=${MEM_MAX:-5G}
 NUM_BITS=${NUM_BITS:-64}
