@@ -1,17 +1,27 @@
 #!/usr/bin/env bash
-# Extract the approval ballot of Ballot_LamBox.v with Peregrine, remap Z,
-# positive and N to GMP integers, compile the C with gcc and run it.
+# Extract the approval ballots of Ballot_LamBox.v (Schnorr groups) and
+# Ed25519Ballot_LamBox.v (Ed25519) with Peregrine, remap Z, positive and N to
+# GMP integers, compile the C with gcc and run it.
 #
-# Usage, after `dune build _build/default/src/Examples/WasmBenchSmallDefs.vo`
-# in the repository root:
+# Usage, after `dune build _build/default/src/Examples/WasmBenchSmallDefs.vo
+# _build/default/src/Examples/Ed25519Ins.vo` in the repository root:
 #   F=<peregrine-frontend> M=<peregrine-tool main.exe, built from branch
 #   numeral-literals of https://github.com/peregrine-project/peregrine-tool,
 #   which has the numeral-hoisting pass> RT=<CertiRocq C runtime> \
 #   GMPZ=<dir with GmpZ.v, z_gmp.c, z_gmp.h, splice_gmp_z.py, splice_locked.py,
 #         stub_axioms.py, run_deep.py, main_bool.c> \
 #   [PEREGRINE_FINDLIB=<findlib dir holding rocq-peregrine/META>] \
-#   [PROGRAMS="small64_verify ..."] [RUN_TIMEOUT=3600] [MEM_MAX=5G] \
-#   bench/peregrine/build.sh
+#   [PROGRAMS="small64_verify ..."] [VFILES="Ballot_LamBox.v ..."] \
+#   [SIGMA_BUILD=<dune build of src, default _build/default/src>] \
+#   [RUN_TIMEOUT=3600] [MEM_MAX=5G] bench/peregrine/build.sh
+#
+# VFILES lists the extraction files to compile (default: all three; empty
+# reuses earlier extractions), PROGRAMS the extracted programs to compile and
+# run.  A program prints its result, a bool; the programs *_digest return an
+# integer instead, printed in decimal by main_z.c.  A program p_bedrock is the
+# program p with Ed.fast_smul remapped (remap_const.py) to the verified
+# bedrock2 scalar multiplication of ed25519_bedrock.c, through the glue
+# ed25519_glue.c.
 #
 # With MINIGMP=<dir with mini-gmp.c and mini-gmp.h> set, every program is also
 # compiled to 64-bit WebAssembly with emscripten (EMCC, default emcc; the
@@ -40,7 +50,8 @@
 #
 # Trusted: Peregrine, the GMP remapping (GmpZ.v against z_gmp.c, and
 # splice_gmp_z.py), numeral_hook.c, stub_axioms.py, the CertiRocq C runtime,
-# gcc and GMP.
+# gcc and GMP; for the *_bedrock programs also remap_const.py, the glue
+# ed25519_glue.c and bedrock2's C printer, which produced ed25519_bedrock.c.
 set -euo pipefail
 : "${F:?set F to the Peregrine frontend directory}"
 : "${M:?set M to the Peregrine tool main.exe}"
@@ -49,13 +60,14 @@ set -euo pipefail
 RUN_TIMEOUT=${RUN_TIMEOUT:-3600}
 MEM_MAX=${MEM_MAX:-5G}
 NUM_BITS=${NUM_BITS:-64}
-PROGRAMS=${PROGRAMS:-"small64_verify small64_forged small128_verify small256_verify helios2048_verify helios2048_forged"}
+PROGRAMS=${PROGRAMS:-"small64_verify small64_forged small128_verify small256_verify helios2048_verify helios2048_forged ed25519_verify ed25519_forged ed25519_digest"}
+VFILES=${VFILES-"Helios2048Defs.v Ballot_LamBox.v Ed25519Ballot_LamBox.v"}
 if [ -n "${PEREGRINE_FINDLIB:-}" ]; then
   export OCAMLPATH=$PEREGRINE_FINDLIB${OCAMLPATH:+:$OCAMLPATH}
 fi
 HERE=$(cd "$(dirname "$0")" && pwd)
 ROOT=$(cd "$HERE/../.." && pwd)
-B=$ROOT/_build/default/src
+B=${SIGMA_BUILD:-$ROOT/_build/default/src}
 W=$HERE/work
 mkdir -p "$W"
 cd "$W"
@@ -74,44 +86,57 @@ tm() {  # tm <log-prefix> cmd...: run capped, recording time and peak memory if 
 ROCQ_FLAGS=(
   -Q "$B/Algebra" Algebra -Q "$B/Utility" Utility -Q "$B/Probability" Probability
   -Q "$B/Crypto" Sigma -Q "$B/Frontend" Frontend -Q "$B/Examples" Examples
+  -Q "$B/Fiat" Fiat -Q "$B/Curve" Curve
   -Q "$W" Bench
   -Q "$F/theories" Peregrine -Q "$F/plugin/theories" Peregrine.Plugin
   -w -all -native-compiler no
 )
-cp "$GMPZ/GmpZ.v" "$HERE/Helios2048Defs.v" "$HERE/Ballot_LamBox.v" "$W/"
+cp "$GMPZ/GmpZ.v" "$W/"
 if [ ! -f gmp_z.ast ]; then
   echo "== GmpZ.v"
   tm GmpZ.extract rocq compile "${ROCQ_FLAGS[@]}" GmpZ.v > GmpZ.extract.log 2>&1
 fi
-echo "== Helios2048Defs.v"
-tm Helios2048Defs.compile rocq compile "${ROCQ_FLAGS[@]}" Helios2048Defs.v > Helios2048Defs.log 2>&1
-echo "== Ballot_LamBox.v"
-tm Ballot_LamBox.extract rocq compile "${ROCQ_FLAGS[@]}" Ballot_LamBox.v > Ballot_LamBox.extract.log 2>&1
+for v in $VFILES; do
+  echo "== $v"
+  cp "$HERE/$v" "$W/"
+  tm "${v%.v}.compile" rocq compile "${ROCQ_FLAGS[@]}" "$v" > "${v%.v}.log" 2>&1
+done
 for p in $PROGRAMS; do
   echo "== $p"
-  python3 "$GMPZ/run_deep.py" "$GMPZ/splice_gmp_z.py" "$p.ast" gmp_z.ast "${p}_z.ast" "${p}_z.attrs" \
+  q=${p%_bedrock}
+  case $q in *_digest) MAIN=$HERE/main_z.c ;; *) MAIN=$GMPZ/main_bool.c ;; esac
+  python3 "$GMPZ/run_deep.py" "$GMPZ/splice_gmp_z.py" "$q.ast" gmp_z.ast "${p}_z.ast" "${p}_z.attrs" \
     > "$p.splice.log"
   python3 "$GMPZ/run_deep.py" "$GMPZ/stub_axioms.py" "${p}_z.ast" "${p}_z.attrs" \
     "${p}_zs.ast" "${p}_zs.attrs" "${p}_stubs" >> "$p.splice.log"
+  EXTRA=()
+  if [ "$q" != "$p" ]; then
+    # *_bedrock: Ed.fast_smul by the bedrock2 scalar multiplication
+    GMPZ=$GMPZ python3 "$GMPZ/run_deep.py" "$HERE/remap_const.py" "${p}_zs.ast" "${p}_zs.attrs" \
+      "${p}_zs.ast" "${p}_zs.attrs" ed25519_glue.h \
+      Curve.Ed25519.Ed25519.Ed.fast_smul=ed25519_fast_smul/2 >> "$p.splice.log"
+    EXTRA=("$HERE/ed25519_glue.c")
+  fi
   # custom attributes (the last field): enable the numeral hoisting
   python3 -c 'import sys; a = open(sys.argv[1]).read().rstrip(); assert a.endswith("())"); open(sys.argv[1], "w").write(a[:-3] + "((((MPfile (\"PeregrineNumerals\")) \"threshold\") \"" + sys.argv[2] + "\")))\n")' \
     "${p}_zs.attrs" "$NUM_BITS"
   tm "$p.peregrine" "$M" c "${p}_zs.ast" --attributes="${p}_zs.attrs" -o "${p}_z.c" > "$p.peregrine.log" 2>&1 \
     || { echo "$p: peregrine failed (see $p.peregrine.log, $p.peregrine.time)"; continue; }
-  tm "$p.gcc" gcc -O2 -w -I"$RT" -I"$GMPZ" -I. "${p}_z.c" "$RT/gc_stack.c" \
-    "$GMPZ/z_gmp.c" "$HERE/numeral_hook.c" "${p}_stubs.c" "$GMPZ/main_bool.c" -lgmp -o "${p}_z" > "$p.gcc.log" 2>&1 \
+  tm "$p.gcc" gcc -O2 -w -I"$RT" -I"$GMPZ" -I"$HERE" -I. "${p}_z.c" "$RT/gc_stack.c" \
+    "$GMPZ/z_gmp.c" "$HERE/numeral_hook.c" "${p}_stubs.c" "${EXTRA[@]}" "$MAIN" -lgmp -o "${p}_z" > "$p.gcc.log" 2>&1 \
     || { echo "$p: gcc failed (see $p.gcc.log)"; continue; }
   tm "$p.run" timeout "$RUN_TIMEOUT" "./${p}_z" > "$p.out" 2> "$p.run.log" || true
   t=$(grep -m1 "Elapsed (wall" "$p.run.time" 2>/dev/null | awk '{print $NF}')
   mem=$(grep -m1 "Maximum resident" "$p.run.time" 2>/dev/null | awk '{print $NF}')
-  echo "$p: $(cat "$p.out") (wall ${t:-?}, max RSS ${mem:-?} KB)"
+  r=$(cat "$p.out"); [ ${#r} -gt 40 ] && r="${#r} digits, sha256 $(sha256sum < "$p.out" | cut -c1-16)"
+  echo "$p: $r (wall ${t:-?}, max RSS ${mem:-?} KB)"
   if [ -n "${MINIGMP:-}" ]; then
     mkdir -p inc && printf '#include "mini-gmp.h"\n' > inc/gmp.h
     tm "$p.emcc" "${EMCC:-emcc}" -O2 -w -Wno-error=int-conversion \
       -Wno-error=incompatible-function-pointer-types -sMEMORY64=1 -sALLOW_MEMORY_GROWTH=1 \
       -sINITIAL_MEMORY=64MB -sENVIRONMENT=node -sSINGLE_FILE=1 \
-      -I. -Iinc -I"$MINIGMP" -I"$RT" -I"$GMPZ" "${p}_z.c" "$RT/gc_stack.c" "$GMPZ/z_gmp.c" \
-      "$MINIGMP/mini-gmp.c" "$HERE/numeral_hook.c" "${p}_stubs.c" "$GMPZ/main_bool.c" \
+      -I. -Iinc -I"$MINIGMP" -I"$RT" -I"$GMPZ" -I"$HERE" "${p}_z.c" "$RT/gc_stack.c" "$GMPZ/z_gmp.c" \
+      "$MINIGMP/mini-gmp.c" "$HERE/numeral_hook.c" "${p}_stubs.c" "${EXTRA[@]}" "$MAIN" \
       -o "${p}_wasm.js" > "$p.emcc.log" 2>&1 || { echo "$p: emcc failed (see $p.emcc.log)"; continue; }
     sed -i -e 's/function _emscripten_memcpy_big(dest,src,num){/&dest=Number(dest);src=Number(src);num=Number(num);/' \
       -e 's/HEAPU8.copyWithin(dest,src,src+num)}/HEAPU8.copyWithin(dest,src,src+num);return BigInt(dest)}/' \
