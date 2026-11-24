@@ -45,7 +45,7 @@ backend. We remap the integer types `Z`, `positive` and `N` and their
 operations to GMP, as in the KZG demonstrator of the Commitments
 development. The C backend cannot compile a 2048-bit numeral, because it
 builds one constructor per bit. A verified Peregrine pass, `ENumeralHoist`
-(branch `numeral-literals` of peregrine-tool), moves every numeral above a
+(branch [`numeral-literals`](https://github.com/peregrine-project/peregrine-tool/tree/numeral-literals) of peregrine-tool, commit `13c701b`), moves every numeral above a
 size threshold into a named constant. The C backend then emits each such
 constant as a GMP integer parsed from its decimal string. The pass has
 proofs of well-formedness, eta-expansion and inductive lookup, and a proof
