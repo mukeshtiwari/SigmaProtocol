@@ -7,7 +7,10 @@
 #              Field25519_64.v compiled; Affine.v also needs fiat-crypto's
 #              Arithmetic/FLia.v, Bedrock/Field/Interface/Compilation2.v and
 #              Bedrock/Group/AdditionChains.v (the verified fe25519_inv)
-#              compiled under $AUCURVES/fiat
+#              compiled under $AUCURVES/fiat; FieldL.v also needs
+#              fiat-crypto's Bedrock/Field/Synthesis/New/WordByWordMontgomery.v
+#              (with PushButtonSynthesis/WordByWordMontgomery.v and its
+#              reification caches) compiled there
 # The files load this library (root Sigma, vendored fiat-crypto root Fiat) and
 # AUCurves' fiat-crypto (root Crypto) in one session; FieldTransport.v relates
 # their coordinate fields Zmod p and F p, ExecDouble.v states AUCurves'
@@ -22,6 +25,12 @@
 # (both the double and the sum are computed each iteration and selected by a
 # masked word-wise copy [cmov]), and EmitC.v prints these functions and the field operations
 # they call as C (ed25519_bedrock.out).
+# FieldL.v derives the arithmetic modulo the group order l (64-bit
+# word-by-word Montgomery, fiat-crypto's pipeline), ExecFieldL.v states it on
+# this library's scalar field Zl.F = Zmod l, ZlBytes.v composes it into
+# byte-level operations [zl_add_bytes], [zl_sub_bytes], [zl_mul_bytes],
+# [zl_opp_bytes] on 32-byte encodings, and EmitFieldL.v prints these as C
+# (fieldl_bedrock.out).
 set -euo pipefail
 cd "$(dirname "$0")"
 S=${SIGMA_SRC:-../_build/default/src}
