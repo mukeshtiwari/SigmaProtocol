@@ -2,7 +2,7 @@ From Stdlib Require Import Utf8 ZArith Vector Psatz Fin Lia List.
 From Sigma Require Import Sigma EncProof Elgamal.
 From Frontend Require Import Approval Schulze SchulzeBatched SchulzeSimple.
 From Backend Require Import SchulzeTally.
-From Utility Require Import Zpstar Util.
+From Utility Require Import Zpstar Util FixedBasePow.
 From Examples Require Import HeliosTallyIns.
 Import Vspace Schnorr Zpfield Zpgroup VectorNotations.
 
@@ -51,9 +51,11 @@ Section SchulzeBench.
   Definition Fopp : F -> F := @zp_opp q prime_q.
   Definition Fdec : forall x y : F, {x = y} + {x <> y} := @zp_dec q.
   Definition Gone : G := @Schnorr.one p q prime_p prime_q.
-  Definition Ginv : G -> G := @inv_schnorr_group k p q safe_prime prime_p prime_q.
+  Definition Ginv : G -> G := @inv_schnorr_group p q prime_p prime_q.
   Definition Gmul : G -> G -> G := @mul_schnorr_group p q prime_p prime_q.
-  Definition Gpow : G -> F -> G := @pow k p q safe_prime prime_p prime_q.
+  (** Scalar multiplication by square-and-multiply; [Gpow] below uses tables
+      for the fixed bases [g] and [h] and is equal to it ([pow_fb_pow]). *)
+  Definition Gpow_plain : G -> F -> G := @pow k p q safe_prime prime_p prime_q.
   Definition Gdec : forall x y : G, {x = y} + {x <> y} := @Schnorr.dec_zpstar p q.
 
   (** [q ≠ 0], and field elements from integers. *)
@@ -65,7 +67,19 @@ Section SchulzeBench.
   (** A trustee key for the benchmark, [h = g^x] with [x = 123456789]. The
       Helios election key has no known secret, so a fresh key is used. *)
   Definition x : F := zp_of 123456789.
-  Definition h : G := Gpow g x.
+  Definition h : G := Gpow_plain g x.
+
+  (** Fixed-base tables for [g] and [h]: 64 rows of 16 powers cover every
+      exponent below [2^256 > q] ([FixedBasePow.v]). *)
+  Definition fb_tabs : fb_tables :=
+    ((Schnorr.v g, 64%nat, fb_table p (Schnorr.v g) 64) ::
+     (Schnorr.v h, 64%nat, fb_table p (Schnorr.v h) 64) :: nil)%list.
+
+  Lemma fb_tabs_ok : @fb_tables_ok p fb_tabs.
+  Proof. repeat constructor. Qed.
+
+  Definition Gpow : G -> F -> G :=
+    @pow_fb k p q safe_prime prime_p prime_q fb_tabs fb_tabs_ok.
 
   (** *** The per-cell ballot ([m = S n] candidates)
 
@@ -151,6 +165,15 @@ Section SchulzeBench.
     (encD : Vector.t (Vector.t (G * G) (S n)) (S n)) (w : Fin.t (S n))
     (pf : @tally_proof F G (S n) (S n')) : bool :=
     nizk_verify_tally (zero := Fzero) (one := Fone) (add := Fadd) (Fdec := Fdec)
+      (gid := Gone) (ginv := Ginv) (gop := Gmul) (gpow := Gpow) (Gdec := Gdec)
+      (n := n) (n' := n') g h H encD w pf.
+
+  (** The tally verifier as independent tasks for parallel evaluation; their
+      conjunction is [nizk_verify_tally_bench] ([nizk_verify_tally_tasks_spec]). *)
+  Definition nizk_verify_tally_tasks_bench (n n' : nat) (H : list (@tr_item G) -> F)
+    (encD : Vector.t (Vector.t (G * G) (S n)) (S n)) (w : Fin.t (S n))
+    (pf : @tally_proof F G (S n) (S n')) : list (unit -> bool) :=
+    nizk_verify_tally_tasks (zero := Fzero) (one := Fone) (add := Fadd) (Fdec := Fdec)
       (gid := Gone) (ginv := Ginv) (gop := Gmul) (gpow := Gpow) (Gdec := Gdec)
       (n := n) (n' := n') g h H encD w pf.
 

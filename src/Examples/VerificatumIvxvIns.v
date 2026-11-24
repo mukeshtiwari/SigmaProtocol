@@ -81,7 +81,7 @@ Section VerificatumIvxvIns.
       [Gdec]. [Ginv] and [Gpow] use the cofactor [k] and [safe_prime] of
       [IvxvGroupIns]. *)
   Definition Gone : G := @Schnorr.one p q IvxvGroupIns.prime_p IvxvGroupIns.prime_q.
-  Definition Ginv : G -> G := @inv_schnorr_group IvxvGroupIns.k p q IvxvGroupIns.safe_prime IvxvGroupIns.prime_p IvxvGroupIns.prime_q.
+  Definition Ginv : G -> G := @inv_schnorr_group p q IvxvGroupIns.prime_p IvxvGroupIns.prime_q.
   Definition Gmul : G -> G -> G := @mul_schnorr_group p q IvxvGroupIns.prime_p IvxvGroupIns.prime_q.
   Definition Gpow : G -> F -> G := @pow IvxvGroupIns.k p q IvxvGroupIns.safe_prime IvxvGroupIns.prime_p IvxvGroupIns.prime_q.
   Definition Gdec : forall x y : G, {x = y} + {x <> y} := @Schnorr.dec_zpstar p q.

@@ -88,7 +88,7 @@ Section Ins.
   Definition decrypt (c :  @Schnorr_group p q * @Schnorr_group p q) : @Schnorr_group p q.
   Proof.
     refine(@Elgamal.dec (@Zp q) (@Schnorr_group p q)
-    (@inv_schnorr_group 2 p q safe_prime prime_p prime_q)
+    (@inv_schnorr_group p q prime_p prime_q)
     (@mul_schnorr_group p q prime_p prime_q)
     pow x c).
     exact safe_prime.
@@ -135,7 +135,7 @@ Section Ins.
     Vector.t (@Schnorr_group p q) n.
   Proof.
     refine(@Elgamal.decrypted_ballot (@Zp q) (@Schnorr_group p q)
-     (@inv_schnorr_group 2 p q safe_prime prime_p prime_q)
+     (@inv_schnorr_group p q prime_p prime_q)
      (@mul_schnorr_group p q prime_p prime_q) pow x n cs).
     exact safe_prime.
     exact prime_p.

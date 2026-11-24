@@ -115,7 +115,7 @@ Section Helios.
     (@Zpfield.zero q prime_q)
     (@Zpfield.one q prime_q) zp_add zp_dec
     (@Schnorr_group p q)  (@Schnorr.one p q prime_p prime_q)
-    (@inv_schnorr_group _ p q safe_prime prime_p prime_q)
+    (@inv_schnorr_group p q prime_p prime_q)
     (@mul_schnorr_group p q prime_p prime_q)
     (@pow k p q safe_prime prime_p prime_q)
     Schnorr.dec_zpstar n m g h
@@ -125,7 +125,7 @@ Section Helios.
     (@Zpfield.zero q prime_q)
     (@Zpfield.one q prime_q) zp_add zp_dec
     (@Schnorr_group p q) (@Schnorr.one p q prime_p prime_q)
-    (@inv_schnorr_group _ p q safe_prime prime_p prime_q)
+    (@inv_schnorr_group p q prime_p prime_q)
     (@mul_schnorr_group p q prime_p prime_q)
     (@pow k p q safe_prime prime_p prime_q)
     Schnorr.dec_zpstar n m g h bs ts pt).

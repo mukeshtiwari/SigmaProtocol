@@ -157,7 +157,7 @@ Section Ins.
   Proof.
     refine(@construct_encryption_proof_elgamal_commitment
     (@Zp q) zp_opp (@Schnorr_group p q)
-    (@inv_schnorr_group 2 p q safe_prime prime_p prime_q)
+    (@inv_schnorr_group p q prime_p prime_q)
     (@mul_schnorr_group p q prime_p prime_q)
     pow 2 0 (uscs) [m₀; m₁; m₂] g h cp).
     eapply prime_q.
@@ -174,7 +174,7 @@ Section Ins.
   Proof.
     refine(@generalised_construct_encryption_proof_elgamal_real (@Zp q)
       Zpfield.zero zp_add zp_mul zp_sub zp_opp (@Schnorr_group p q)
-      (@inv_schnorr_group 2 p q safe_prime prime_p prime_q)
+      (@inv_schnorr_group p q prime_p prime_q)
       (@mul_schnorr_group p q prime_p prime_q)
       pow 1 (Fin.FS (Fin.FS Fin.F1)) r (uscs)
       [m₀; m₁; m₂] g h cp c).
@@ -210,7 +210,7 @@ Section Ins.
     refine(@generalised_accepting_encryption_proof_elgamal
       (@Zp q) Zpfield.zero zp_add zp_dec
       (@Schnorr_group p q)
-      (@inv_schnorr_group 2 p q safe_prime prime_p prime_q)
+      (@inv_schnorr_group p q prime_p prime_q)
       (@mul_schnorr_group p q prime_p prime_q) pow
       Schnorr.dec_zpstar _  [m₀; m₁; m₂] g h cp proof).
     eapply prime_q.

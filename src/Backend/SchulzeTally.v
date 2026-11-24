@@ -631,6 +631,58 @@ Section SchulzeTally.
     Definition verify_tally (encD : matrix G2) (w : Fin.t m) (pf : tally_proof) : bool :=
       List.forallb (fun b => b) (tally_checks encD w pf).
 
+    (** The checks of [tally_checks] as independent tasks for parallel
+        evaluation, with the closure check, which has [m^3] disjunctions, split
+        by its middle candidate [k]. [verify_tally_tasks] states that they
+        decide [verify_tally]; only the scheduling of the tasks is outside the
+        proof. *)
+    Definition tally_tasks (encD : matrix G2) (w : Fin.t m) (pf : tally_proof) :
+      list (unit -> bool) :=
+      let encD' := tp_encD' pf in
+      let enc_d := tp_enc_d pf in
+      let enc_p := tp_enc_p pf in
+      ((fun _ : unit => forall_pairs (fun i j =>
+          let c := cmul (mget encD' i j) (cinv (mget encD i j)) in
+          decryption_proof_accepting_conversations (F := F) (G := G) (ginv := ginv)
+            (gop := gop) (gpow := gpow) (Gdec := Gdec) g h
+            (fst c) (snd c) gid (mget (tp_dec pf) i j))) ::
+       (fun _ : unit => forall_pairs (fun i j => verify_range (mget enc_d i j) (mget (tp_d_range pf) i j))) ::
+       (fun _ : unit => forall_pairs (fun i j =>
+          verify_or (defeat_statements encD' enc_d i j) (mget (tp_defeat pf) i j))) ::
+       (fun _ : unit => forall_pairs (fun i j =>
+          verify_range (cmul (mget enc_p i j) (cinv (mget enc_d i j))) (mget (tp_lower pf) i j))) ::
+       List.map (fun k => fun _ : unit => forall_pairs (fun i j =>
+          verify_or (upper_statements enc_p k i j) (mget (Vector.nth (tp_upper pf) k) i j)))
+         (Vector.to_list (fin_enum m)) ++
+       (fun _ : unit => forall_pairs (fun i j =>
+          verify_path enc_d enc_p i j (mget (tp_paths pf) i j) (mget (tp_edges pf) i j))) ::
+       (fun _ : unit => forall_fin m (fun j =>
+          verify_range (cmul (mget enc_p w j) (cinv (mget enc_p j w)))
+            (Vector.nth (tp_winner pf) j))) :: List.nil)%list.
+
+    Lemma forall_fin_forallb (k : nat) (f : Fin.t k -> bool) :
+      forall_fin k f = List.forallb f (Vector.to_list (fin_enum k)).
+    Proof.
+      unfold forall_fin. generalize (fin_enum k). intros v.
+      induction v as [|a k' v IH]; [reflexivity|].
+      cbn. rewrite IH. reflexivity.
+    Qed.
+
+    Lemma forallb_thunks {A : Type} (f : A -> bool) (l : list A) :
+      List.forallb (fun t : unit -> bool => t tt) (List.map (fun a => fun _ : unit => f a) l) =
+      List.forallb f l.
+    Proof. induction l as [|a l IH]; [reflexivity|]. cbn. now rewrite IH. Qed.
+
+    Lemma verify_tally_tasks (encD : matrix G2) (w : Fin.t m) (pf : tally_proof) :
+      verify_tally encD w pf = List.forallb (fun t => t tt) (tally_tasks encD w pf).
+    Proof.
+      unfold verify_tally, tally_checks, tally_tasks.
+      cbn [List.forallb List.app].
+      rewrite List.forallb_app. cbn [List.forallb].
+      rewrite forallb_thunks. rewrite (forall_fin_forallb m).
+      rewrite !Bool.andb_true_r, !Bool.andb_assoc. reflexivity.
+    Qed.
+
   End Verifier.
 
   (** *** The honest prover (trustees)
@@ -861,6 +913,20 @@ Section SchulzeTally.
     Definition nizk_verify_tally (encD : matrix G2) (w : Fin.t m) (pf : @tally_proof m N) : bool :=
       (tally_challenges_are (H (tally_transcript encD w pf)) pf &&
        verify_tally (N := N) g h encD w pf)%bool.
+
+    (** [nizk_verify_tally] as independent tasks ([tally_tasks] preceded by the
+        challenge check). *)
+    Definition nizk_verify_tally_tasks (encD : matrix G2) (w : Fin.t m)
+      (pf : @tally_proof m N) : list (unit -> bool) :=
+      ((fun _ : unit => tally_challenges_are (H (tally_transcript encD w pf)) pf) ::
+       tally_tasks (N := N) g h encD w pf)%list.
+
+    Lemma nizk_verify_tally_tasks_spec (encD : matrix G2) (w : Fin.t m) (pf : @tally_proof m N) :
+      nizk_verify_tally encD w pf = List.forallb (fun t => t tt) (nizk_verify_tally_tasks encD w pf).
+    Proof.
+      unfold nizk_verify_tally, nizk_verify_tally_tasks.
+      rewrite verify_tally_tasks. reflexivity.
+    Qed.
 
     (** The non-interactive prover. The announcements do not depend on the
         challenge ([tally_transcript_chal]). The prover therefore first builds
