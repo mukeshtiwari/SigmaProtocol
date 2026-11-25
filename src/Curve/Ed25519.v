@@ -11,8 +11,9 @@
 
     Structure of the file:
 
-    - [Zl]: the scalar field [Z_l], implemented with the standard library's
-      [Zmod l], and its [field] instance [zl_field].
+    - [Zl]: the scalar field [Z_l], a record type around the standard
+      library's [Zmod l], with conversions [of_Z] and [to_Z] and its
+      [field] instance [zl_field].
     - [Ed]: the curve. fiat-crypto's affine points and their commutative
       group (proved there with respect to a coordinate-wise equivalence
       [peq]) are transferred to Leibniz equality ([peq_leibniz]). Scalar
@@ -72,96 +73,147 @@ Module Ed25519.
 
   (** *** The scalar field [Z_l] *)
 
-  (** Integers modulo [l] using the standard library's [Zmod]. The
-      operations are the [Zmod] ones; division is [mdiv]. *)
+  (** Integers modulo [l]: a record [F] around the standard library's
+      [Zmod l]. The record makes [F] a type distinct from [Zmod l], so that
+      code outside this module reaches the representation only through the
+      operations below and [of_Z], [to_Z]; an extraction can therefore
+      replace [F] and these operations together (the Peregrine build of
+      [bench/peregrine] maps them to 32-byte buffers and verified bedrock2
+      code). The operations are the [Zmod] ones; division is [mdiv]. *)
   Module Zl.
 
     (** Carrier and operations of [Z_l]. *)
-    Definition F : Type := Zmod l.
-    Definition zero : F := Zmod.zero.
-    Definition one : F := Zmod.one.
-    Definition add : F -> F -> F := Zmod.add.
-    Definition mul : F -> F -> F := Zmod.mul.
-    Definition sub : F -> F -> F := Zmod.sub.
-    Definition opp : F -> F := Zmod.opp.
-    Definition inv : F -> F := Zmod.inv.
-    Definition div : F -> F -> F := Zmod.mdiv.
+    Record F : Type := mkF { val : Zmod l }.
+    Definition zero : F := mkF Zmod.zero.
+    Definition one : F := mkF Zmod.one.
+    Definition add (x y : F) : F := mkF (Zmod.add (val x) (val y)).
+    Definition mul (x y : F) : F := mkF (Zmod.mul (val x) (val y)).
+    Definition sub (x y : F) : F := mkF (Zmod.sub (val x) (val y)).
+    Definition opp (x : F) : F := mkF (Zmod.opp (val x)).
+    Definition inv (x : F) : F := mkF (Zmod.inv (val x)).
+    Definition div (x y : F) : F := mkF (Zmod.mdiv (val x) (val y)).
+
+    (** Conversions: [of_Z z] is [z mod l], [to_Z x] the canonical
+        representative of [x], in [[0, l)]. *)
+    Definition of_Z (z : Z) : F := mkF (Zmod.of_Z l z).
+    Definition to_Z (x : F) : Z := Zmod.unsigned (val x).
 
     (** Primality of [l], taken from fiat-crypto's Curve25519
         specification. *)
     Definition prime_l : prime l := C.prime_l.
 
+    (** [x] is determined by [val x], and by its representative. *)
+    Lemma val_inj : forall x y : F, val x = val y -> x = y.
+    Proof. intros [x] [y] h; cbn in h; subst; reflexivity. Qed.
+
+    Lemma to_Z_inj : forall x y : F, to_Z x = to_Z y -> x = y.
+    Proof. intros x y h; apply val_inj, (Zmod.unsigned_inj l), h. Qed.
+
     (** Decidable equality, by comparing canonical representatives. *)
     Definition Fdec : forall x y : F, {x = y} + {x <> y}.
     Proof.
       intros x y.
-      destruct (Z.eq_dec (Zmod.unsigned x) (Zmod.unsigned y)) as [h | h].
-      + left; apply (Zmod.unsigned_inj l); exact h.
+      destruct (Z.eq_dec (to_Z x) (to_Z y)) as [h | h].
+      + left; apply to_Z_inj; exact h.
       + right; intro e; apply h; rewrite e; reflexivity.
     Defined.
 
-    (** [unsigned_nonneg], [unsigned_one], [unsigned_zero], [unsigned_add]
-        and [unsigned_mul]: the canonical representative [u] (with [0 ≤ u < l]) of
-        constants, sums and products. Used to relate [gpow] to integer
-        scalar multiplication. *)
-    Lemma unsigned_nonneg : forall x : F, 0 <= Zmod.unsigned x.
+    (** [to_Z_of_Z], [unsigned_nonneg], [unsigned_one], [unsigned_zero],
+        [unsigned_add], [unsigned_mul], [unsigned_sub] and [unsigned_opp]:
+        the canonical representative [u] (with [0 ≤ u < l]) of conversions,
+        constants and the operations.
+        Used to relate [gpow] to integer scalar multiplication. *)
+    Lemma to_Z_of_Z : forall z : Z, to_Z (of_Z z) = z mod l.
+    Proof. intro z; unfold to_Z, of_Z; cbn [val]; apply Zmod.unsigned_of_Z. Qed.
+
+    Lemma unsigned_nonneg : forall x : F, 0 <= to_Z x.
     Proof.
-      intro x. pose proof (Zmod.unsigned_pos_bound x l_pos) as h; lia.
+      intro x. pose proof (Zmod.unsigned_pos_bound (val x) l_pos) as h; unfold to_Z; lia.
     Qed.
 
-    Lemma unsigned_one : Zmod.unsigned one = 1.
-    Proof. unfold one; rewrite Zmod.unsigned_1; vm_compute; reflexivity. Qed.
+    Lemma unsigned_one : to_Z one = 1.
+    Proof. unfold to_Z, one; cbn [val]; rewrite Zmod.unsigned_1; vm_compute; reflexivity. Qed.
 
-    Lemma unsigned_zero : Zmod.unsigned zero = 0.
-    Proof. unfold zero; apply Zmod.unsigned_0. Qed.
+    Lemma unsigned_zero : to_Z zero = 0.
+    Proof. unfold to_Z, zero; cbn [val]; apply Zmod.unsigned_0. Qed.
 
     Lemma unsigned_add : forall x y : F,
-      Zmod.unsigned (add x y) = (Zmod.unsigned x + Zmod.unsigned y) mod l.
-    Proof. intros; apply Zmod.unsigned_add. Qed.
+      to_Z (add x y) = (to_Z x + to_Z y) mod l.
+    Proof. intros; unfold to_Z, add; cbn [val]; apply Zmod.unsigned_add. Qed.
 
     Lemma unsigned_mul : forall x y : F,
-      Zmod.unsigned (mul x y) = (Zmod.unsigned x * Zmod.unsigned y) mod l.
-    Proof. intros; apply Zmod.unsigned_mul. Qed.
+      to_Z (mul x y) = (to_Z x * to_Z y) mod l.
+    Proof. intros; unfold to_Z, mul; cbn [val]; apply Zmod.unsigned_mul. Qed.
+
+    Lemma unsigned_sub : forall x y : F,
+      to_Z (sub x y) = (to_Z x - to_Z y) mod l.
+    Proof. intros; unfold to_Z, sub; cbn [val]; apply Zmod.unsigned_sub. Qed.
+
+    Lemma unsigned_opp : forall x : F, to_Z (opp x) = (- to_Z x) mod l.
+    Proof. intros; unfold to_Z, opp; cbn [val]; apply Zmod.unsigned_opp. Qed.
+
+    (** The representative is in [[0, l)]. *)
+    Lemma to_Z_range : forall x : F, 0 <= to_Z x < l.
+    Proof. intro x; unfold to_Z; apply Zmod.unsigned_pos_bound, l_pos. Qed.
+
+    Lemma to_Z_mod : forall x : F, to_Z x mod l = to_Z x.
+    Proof. intro x; unfold to_Z; apply Zmod.mod_unsigned. Qed.
 
     (** The field axioms of [Z_l], one lemma per axiom, each a direct
         consequence of the corresponding [Zmod] lemma; the inverse axiom
         uses primality of [l] via fiat-crypto's [Zmod.inv_nonzero]. *)
     Lemma add_assoc : @is_associative F eq add.
-    Proof. intros x y z; apply Zmod.add_assoc. Qed.
+    Proof. intros [x] [y] [z]; unfold add; cbn [val]; f_equal; apply Zmod.add_assoc. Qed.
     Lemma add_0_l : @is_left_identity F eq add zero.
-    Proof. intro x; apply Zmod.add_0_l. Qed.
+    Proof. intros [x]; unfold add, zero; cbn [val]; f_equal; apply Zmod.add_0_l. Qed.
     Lemma add_0_r : @is_right_identity F eq add zero.
-    Proof. intro x; unfold add, zero; rewrite Zmod.add_comm; apply Zmod.add_0_l. Qed.
+    Proof.
+      intros [x]; unfold add, zero; cbn [val]; f_equal.
+      rewrite Zmod.add_comm; apply Zmod.add_0_l.
+    Qed.
     Lemma add_opp_l : @is_left_inverse F eq add zero opp.
-    Proof. intro x; unfold add, zero, opp; rewrite Zmod.add_comm; apply Zmod.add_opp_same_r. Qed.
+    Proof.
+      intros [x]; unfold add, zero, opp; cbn [val]; f_equal.
+      rewrite Zmod.add_comm; apply Zmod.add_opp_same_r.
+    Qed.
     Lemma add_opp_r : @is_right_inverse F eq add zero opp.
-    Proof. intro x; apply Zmod.add_opp_same_r. Qed.
+    Proof. intros [x]; unfold add, zero, opp; cbn [val]; f_equal; apply Zmod.add_opp_same_r. Qed.
     Lemma add_comm : @is_commutative F eq add.
-    Proof. intros x y; apply Zmod.add_comm. Qed.
+    Proof. intros [x] [y]; unfold add; cbn [val]; f_equal; apply Zmod.add_comm. Qed.
     Lemma mul_assoc : @is_associative F eq mul.
-    Proof. intros x y z; apply Zmod.mul_assoc. Qed.
+    Proof. intros [x] [y] [z]; unfold mul; cbn [val]; f_equal; apply Zmod.mul_assoc. Qed.
     Lemma mul_1_l : @is_left_identity F eq mul one.
-    Proof. intro x; apply Zmod.mul_1_l. Qed.
+    Proof. intros [x]; unfold mul, one; cbn [val]; f_equal; apply Zmod.mul_1_l. Qed.
     Lemma mul_1_r : @is_right_identity F eq mul one.
-    Proof. intro x; unfold mul, one; rewrite Zmod.mul_comm; apply Zmod.mul_1_l. Qed.
+    Proof.
+      intros [x]; unfold mul, one; cbn [val]; f_equal.
+      rewrite Zmod.mul_comm; apply Zmod.mul_1_l.
+    Qed.
     Lemma mul_comm : @is_commutative F eq mul.
-    Proof. intros x y; apply Zmod.mul_comm. Qed.
+    Proof. intros [x] [y]; unfold mul; cbn [val]; f_equal; apply Zmod.mul_comm. Qed.
     Lemma mul_add_distr_l : @is_left_distributive F eq add mul.
     Proof.
-      intros x y z; unfold add, mul.
+      intros [x] [y] [z]; unfold add, mul; cbn [val]; f_equal.
       rewrite Zmod.mul_comm, Zmod.mul_add_l, (Zmod.mul_comm y), (Zmod.mul_comm z).
       reflexivity.
     Qed.
     Lemma mul_add_distr_r : @is_right_distributive F eq add mul.
-    Proof. intros x y z; apply Zmod.mul_add_l. Qed.
+    Proof. intros [x] [y] [z]; unfold add, mul; cbn [val]; f_equal; apply Zmod.mul_add_l. Qed.
     Lemma sub_def : forall x y : F, sub x y = add x (opp y).
-    Proof. intros; symmetry; apply Zmod.add_opp_r. Qed.
+    Proof. intros [x] [y]; unfold sub, add, opp; cbn [val]; f_equal; symmetry; apply Zmod.add_opp_r. Qed.
     Lemma inv_mul_l : @is_left_multiplicative_inverse F eq zero one mul inv.
-    Proof. intros x hx; apply (@Fiat.Arithmetic.PrimeFieldTheorems.Zmod.inv_nonzero l prime_l x hx). Qed.
+    Proof.
+      intros [x] hx; unfold mul, inv, one; cbn [val]; f_equal.
+      apply (@Fiat.Arithmetic.PrimeFieldTheorems.Zmod.inv_nonzero l prime_l x).
+      intro e; apply hx; unfold zero; f_equal; exact e.
+    Qed.
     Lemma zero_neq_one : @is_zero_neq_one F eq zero one.
-    Proof. intro h; symmetry in h; revert h; apply (Zmod.one_neq_zero l_ge_2). Qed.
+    Proof.
+      intro h; apply (Zmod.one_neq_zero l_ge_2).
+      symmetry; exact (f_equal val h).
+    Qed.
     Lemma div_def : forall x y : F, div x y = mul x (inv y).
-    Proof. intros; symmetry; apply Zmod.mul_inv_r. Qed.
+    Proof. intros [x] [y]; unfold div, mul, inv; cbn [val]; f_equal; symmetry; apply Zmod.mul_inv_r. Qed.
 
     (** [Z_l] is a [field] in the sense of [Algebra/Hierarchy.v]. *)
     Global Instance zl_field :
@@ -404,7 +456,7 @@ Module Ed25519.
     Definition ginv (x : G) : G :=
       exist _ (popp (proj1_sig x)) (closed_opp _ (proj2_sig x)).
     Definition gpow (x : G) (k : Zl.F) : G :=
-      exist _ (smul (Zmod.unsigned k) (proj1_sig x)) (closed_smul _ _ (proj2_sig x)).
+      exist _ (smul (Zl.to_Z k) (proj1_sig x)) (closed_smul _ _ (proj2_sig x)).
 
     (** [G] is a commutative group. *)
     Global Instance ed25519_comm_group : @commutative_group G (@eq G) gop gid ginv.
@@ -558,7 +610,7 @@ Module Ed25519.
     (** The scalar action using [fast_smul], and its agreement with
         [gpow]. *)
     Definition gpow_fast (x : G) (k : Zl.F) : G :=
-      exist _ (fast_smul (Zmod.unsigned k) (proj1_sig x)) (closed_fast_smul _ _ (proj2_sig x)).
+      exist _ (fast_smul (Zl.to_Z k) (proj1_sig x)) (closed_fast_smul _ _ (proj2_sig x)).
 
     Lemma gpow_fast_eq : forall (x : G) (k : Zl.F), gpow_fast x k = gpow x k.
     Proof. intros; apply G_eq; unfold gpow_fast, gpow; cbn [proj1_sig]; apply fast_smul_eq. Qed.

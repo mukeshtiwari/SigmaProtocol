@@ -400,6 +400,65 @@ Section Approval.
         (verify_encryption_ballot_proof g h (fst b) &&
          verify_overall_proof g h (Vector.map fst (fst b)) (snd b))%bool.
 
+      (** *** A prover without a branch on the vote
+
+          [generate_enc_proof] selects the real branch by a case analysis on
+          the vote [m], so a compiled prover branches on a secret. The prover
+          [generate_enc_proof_ct] computes both announcements as simulated
+          ones, with sub-challenge [m · c₁] on the first branch and
+          [(1 - m) · c₁] on the second ([c₁] the simulated challenge of
+          [uscs]); on the real branch the sub-challenge is [0], and the
+          simulated announcement [(g ^ u · c₁' ^ 0, h ^ u · X ^ 0)] is the
+          real one [(g ^ u, h ^ u)]. Challenges and responses are combined
+          in the same way by multiplications with [m] and [1 - m]. Its
+          sequence of field and group operations does not depend on [m]; it
+          agrees with [generate_enc_proof] for [m ∈ {0, 1}]
+          ([generate_enc_proof_ct_eq]) and is meant for those votes only. *)
+      Definition generate_enc_proof_ct
+        (g h : G) (r : F) (m : F)
+        (uscs : Vector.t F 3) (cp : G * G) (c : F) : @Sigma.sigma_proto F (G * G) 2 3 2 :=
+        let u₀ := Vector.hd uscs in
+        let u₁ := Vector.hd (Vector.tl uscs) in
+        let cs := Vector.hd (Vector.tl (Vector.tl uscs)) in
+        let nm := sub one m in
+        let cb := sub c (add cs zero) in
+        let w := cb * r in
+        let sim (u s : F) (mi : G) :=
+          match cp with
+          | (c₁, c₂) =>
+            (gop (g^u) (c₁^(opp s)), gop (h^u) ((gop c₂ (ginv mi))^(opp s)))
+          end in
+        ([sim u₀ (m * cs) (g^zero); sim u₁ (nm * cs) (g^one)];
+         [c; m * cs + nm * cb; nm * cs + m * cb];
+         [u₀ + nm * w; u₁ + m * w]).
+
+      (** [encrypt_vote_and_generate_enc_proof] with [generate_enc_proof_ct]. *)
+      Definition encrypt_vote_and_generate_enc_proof_ct
+        (g h : G) (r : F)  (m : F)
+        (uscs : Vector.t F 3) (c : F) : G * G * @Sigma.sigma_proto F (G * G) 2 3 2 :=
+        let cp := @enc F G gop gpow g h m r in
+        (cp, generate_enc_proof_ct g h r m uscs cp c).
+
+      (** [encrypt_ballot_and_generate_enc_proof] with
+          [generate_enc_proof_ct]. *)
+      Fixpoint encrypt_ballot_and_generate_enc_proof_ct {n : nat}
+        (g h : G) (r : Vector.t F n) (m : Vector.t F n)
+        (uscs : Vector.t (Vector.t F 3) n) (c : Vector.t F n) :
+        Vector.t (G * G * @Sigma.sigma_proto F (G * G) 2 3 2) n.
+      Proof.
+        destruct n as [| n].
+        +
+          exact [].
+        +
+          destruct (vector_inv_S r) as (rh & rt & _).
+          destruct (vector_inv_S m) as (mh & mt & _).
+          destruct (vector_inv_S uscs) as (uscsh & uscst & _).
+          destruct (vector_inv_S c) as (ch & ct & _).
+          exact ((encrypt_vote_and_generate_enc_proof_ct g h rh mh uscsh ch) ::
+            (encrypt_ballot_and_generate_enc_proof_ct n
+            g h rt mt uscst ct)).
+      Defined.
+
     End Definitions.
 
     (** ** Correctness, completeness and soundness
@@ -1355,6 +1414,104 @@ Section Approval.
           { intros * hv; rewrite hv, commutative, <-associative,
               group_is_left_inverse, monoid_is_right_identity; reflexivity. }
           eapply hg; exact hf.
+      Qed.
+
+      (** *** The prover without a branch on the vote
+
+          [generate_enc_proof_ct] computes [generate_enc_proof] on the votes
+          [0] and [1]. The proof unfolds the vector splitting of
+          [generalised_construct_encryption_proof_elgamal_real] as in
+          [generate_enc_proof_commitment_announcement] and then uses
+          [g ^ 0 = 1], [x · 1 = x] and the field laws. *)
+      Theorem generate_enc_proof_ct_eq :
+        forall (g h : G) (r m : F) (uscs : Vector.t F 3) (cp : G * G) (c : F),
+        (m = zero ∨ m = one) ->
+        generate_enc_proof_ct g h r m uscs cp c = generate_enc_proof g h r m uscs cp c.
+      Proof.
+        intros * hm.
+        destruct (vector_inv_S uscs) as (u₁ & ust & ha).
+        destruct (vector_inv_S ust) as (u₂ & ust' & hb).
+        destruct (vector_inv_S ust') as (c₁ & ust'' & hc).
+        pose proof (vector_inv_0 ust'') as hd.
+        subst.
+        assert (hz : forall x : G, x ^ (opp (zero * c₁)) = gid).
+        { intro x. assert (e : opp (zero * c₁) = zero) by field.
+          rewrite e; apply field_zero. }
+        assert (hr : forall x : G, gop x gid = x).
+        { intro x; apply monoid_is_right_identity. }
+        unfold generate_enc_proof, generate_enc_proof_ct.
+        destruct (Fdec m zero) as [fa | fa].
+        - subst m.
+          unfold generalised_construct_encryption_proof_elgamal_real; simpl.
+          destruct (vector_fin_app_pred 1 F1 [u₁; u₂] [c₁]) as
+            (m₁ & m₂ & v₁ & v₃ & vm & v₂ & v₄ & pfaa & pfbb & haa).
+          destruct pfaa as [pfa]; destruct pfbb as [pfb];
+          destruct haa as [ha]; destruct ha as (ha & hb & hc & hd).
+          subst. cbn in * |- *.
+          assert (m₂ = 1) by (destruct m₂ as [|[|m₂]]; try nia; reflexivity).
+          subst.
+          assert (hp : pfa = eq_refl) by apply Stdlib.Logic.Eqdep_dec.UIP_refl_nat.
+          subst pfa. cbn in ha, hc. subst.
+          rewrite !eq_rew_r_dep_refl_nat.
+          destruct cp as (p₁, p₂); cbn.
+          rewrite !hz, !hr.
+          assert (e1 : sub one zero * c₁ = c₁) by field.
+          assert (e2 : zero * c₁ + sub one zero * sub c (c₁ + zero) =
+            sub c (c₁ + zero)) by field.
+          assert (e3 : sub one zero * c₁ + zero * sub c (c₁ + zero) = c₁) by field.
+          assert (e4 : u₁ + sub one zero * (sub c (c₁ + zero) * r) =
+            u₁ + sub c (c₁ + zero) * r) by field.
+          assert (e5 : u₂ + zero * (sub c (c₁ + zero) * r) = u₂) by field.
+          rewrite e2, e3, e4, e5, e1; reflexivity.
+        - destruct hm as [hm | hm]; [congruence | subst m].
+          unfold generalised_construct_encryption_proof_elgamal_real; simpl.
+          destruct (vector_fin_app_pred 1 (FS F1) [u₁; u₂] [c₁]) as
+            (m₁ & m₂ & v₁ & v₃ & vm & v₂ & v₄ & pfaa & pfbb & haa).
+          destruct pfaa as [pfa]; destruct pfbb as [pfb];
+          destruct haa as [ha]; destruct ha as (ha & hb & hc & hd).
+          subst. cbn in * |- *.
+          assert (m₂ = 0) by (destruct m₂ as [|m₂]; try nia; reflexivity).
+          subst.
+          assert (hp : pfa = eq_refl) by apply Stdlib.Logic.Eqdep_dec.UIP_refl_nat.
+          subst pfa. cbn in ha, hc. subst.
+          rewrite !eq_rew_r_dep_refl_nat.
+          assert (hq : pfb = eq_refl) by apply Stdlib.Logic.Eqdep_dec.UIP_refl_nat.
+          subst pfb. cbn in hc. subst.
+          rewrite !eq_rew_r_dep_refl_nat.
+          destruct cp as (p₁, p₂); cbn.
+          assert (e0 : sub one one * c₁ = zero * c₁) by field.
+          assert (e2 : one * c₁ + sub one one * sub c (c₁ + zero) = c₁) by field.
+          assert (e3 : sub one one * c₁ + one * sub c (c₁ + zero) =
+            sub c (c₁ + zero)) by field.
+          assert (e4 : u₁ + sub one one * (sub c (c₁ + zero) * r) = u₁) by field.
+          assert (e5 : u₂ + one * (sub c (c₁ + zero) * r) =
+            u₂ + sub c (c₁ + zero) * r) by field.
+          assert (e1 : one * c₁ = c₁) by field.
+          rewrite e2, e3, e4, e5, e0, e1, !hz, !hr; reflexivity.
+      Qed.
+
+      (** Ballot-level version: [encrypt_ballot_and_generate_enc_proof_ct]
+          computes [encrypt_ballot_and_generate_enc_proof] when every vote
+          is [0] or [1]. *)
+      Theorem encrypt_ballot_and_generate_enc_proof_ct_eq :
+        ∀ (n : nat) (rs : Vector.t F n) (g h : G)
+          (ms : Vector.t F n) (uscs : Vector.t (Vector.t F 3) n) (chs : Vector.t F n),
+          (∀ (i : Fin.t n), Vector.nth ms i = zero ∨ Vector.nth ms i = one) ->
+          encrypt_ballot_and_generate_enc_proof_ct g h rs ms uscs chs =
+          encrypt_ballot_and_generate_enc_proof g h rs ms uscs chs.
+      Proof.
+        induction n as [|n ihn].
+        + intros. reflexivity.
+        + intros * ha.
+          destruct (vector_inv_S rs) as (rsh & rst & hb).
+          destruct (vector_inv_S ms) as (msh & mst & hc).
+          destruct (vector_inv_S uscs) as (uscsh & uscst & hd).
+          destruct (vector_inv_S chs) as (chsh & chst & he).
+          subst. cbn.
+          unfold encrypt_vote_and_generate_enc_proof_ct,
+            encrypt_vote_and_generate_enc_proof.
+          rewrite generate_enc_proof_ct_eq by exact (ha Fin.F1).
+          f_equal. apply ihn. intro f. exact (ha (Fin.FS f)).
       Qed.
 
     End Proofs.
