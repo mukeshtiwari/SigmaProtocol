@@ -1,0 +1,3 @@
+#!/bin/bash
+# Apple clang makes these warnings of the generated C errors
+exec /usr/bin/gcc -Wno-error=int-conversion -Wno-error=incompatible-function-pointer-types -I/opt/homebrew/include -L/opt/homebrew/lib "$@"

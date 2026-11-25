@@ -1,0 +1,7 @@
+simplified batched Schulze ballot at the Helios parameters: p 2048 bits, q 256 bits, m = 7, L = 3, K = 49, W = 60, rows = 6
+commitment key (50 generators, hashed to the group): 0.1 s; derived position key: 0.01 s
+  honest ballot verifies: true; ciphertext (0,0) times Enc(1;0) verifies: false; C_b times g verifies: false; C_X(0) times g verifies: false
+ballot (11 iterations, all verified = true)
+  encryption + proofs (one prover pass): median 0.10 s
+  verification:                          median 0.20 s
+  size: 124 group elements, 161 field elements, 36.0 KB

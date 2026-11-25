@@ -1,0 +1,20 @@
+council-201806.txt: m = 13 candidates, N = 84 ballots read in 1.6 s
+ballots: verify median 6.4 s, total 541 s, accepted 84 of 84, cpu median 6.4 s, cpu total 541 s
+ballot of voter-0 replayed under another credential verifies: false
+aggregation 0.03 s, decryption of the margins 0.1 s
+  0 19 18 18 22 19 19 14 19 20 16 15 13
+  62 0 36 31 33 28 37 32 36 35 25 32 31
+  62 31 0 23 28 27 32 25 26 30 22 24 27
+  65 45 54 0 42 50 44 47 53 47 34 46 45
+  60 37 41 26 0 38 40 35 45 35 26 40 38
+  61 39 36 24 30 0 35 31 32 36 21 33 26
+  60 28 34 22 27 27 0 30 34 28 16 29 26
+  67 38 41 28 34 37 42 0 39 37 28 37 28
+  61 28 31 26 26 27 30 23 0 31 26 27 28
+  61 34 32 25 31 31 38 26 28 0 27 30 29
+  68 50 56 30 39 49 52 45 51 42 0 51 41
+  66 34 33 29 31 33 41 30 38 33 28 0 35
+  69 42 45 29 36 47 47 44 48 41 25 41 0
+Schulze winner: dilfridge
+certificate generated in 1010 s (cpu 1010 s)
+certificate: generation 1010 s, verification 501 s, verified true, transcript entries 449152, cpu generation 1010 s, cpu verification 501 s

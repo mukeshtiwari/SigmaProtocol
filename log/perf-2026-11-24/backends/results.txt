@@ -1,0 +1,87 @@
+## ocaml 23:56:45
+candidates n = 7, iterations = 30, all ballots verified = true
+ballot encryption + NIZK proofs: median 37.49 ms, mean 37.62 ms
+ballot verification:             median 19.76 ms, mean 19.89 ms
+p bits = 2048, q bits = 256
+candidates n = 7, iterations = 30, all ballots verified = true
+ballot encryption + NIZK proofs: median 37.25 ms, mean 37.40 ms
+ballot verification:             median 19.68 ms, mean 19.74 ms
+p bits = 2048, q bits = 256
+candidates n = 7, iterations = 30, all ballots verified = true
+ballot encryption + NIZK proofs: median 37.48 ms, mean 37.41 ms
+ballot verification:             median 19.72 ms, mean 19.72 ms
+p bits = 2048, q bits = 256
+candidates n = 7, iterations = 30, all ballots verified = true
+ballot encryption + NIZK proofs: median 37.53 ms, mean 37.67 ms
+ballot verification:             median 19.81 ms, mean 19.85 ms
+p bits = 2048, q bits = 256
+candidates n = 7, iterations = 30, all ballots verified = true
+ballot encryption + NIZK proofs: median 37.07 ms, mean 37.11 ms
+ballot verification:             median 19.80 ms, mean 19.81 ms
+p bits = 2048, q bits = 256
+## C GMP 23:56:54
+./small64_verify_z runs=5 wall median 0.003 min 0.003 max 0.003 s; peak RSS 2.9 MB; out {(0, 'true')}
+./small64_forged_z runs=5 wall median 0.003 min 0.002 max 0.003 s; peak RSS 2.9 MB; out {(0, 'false')}
+./small128_verify_z runs=5 wall median 0.003 min 0.002 max 0.003 s; peak RSS 2.9 MB; out {(0, 'true')}
+./small256_verify_z runs=5 wall median 0.004 min 0.004 max 0.004 s; peak RSS 2.9 MB; out {(0, 'true')}
+./helios2048_verify_z runs=5 wall median 0.044 min 0.044 max 0.044 s; peak RSS 4.3 MB; out {(0, 'true')}
+./helios2048_forged_z runs=5 wall median 0.042 min 0.042 max 0.042 s; peak RSS 3.8 MB; out {(0, 'false')}
+./ed25519_verify_z runs=5 wall median 0.046 min 0.046 max 0.047 s; peak RSS 3.6 MB; out {(0, 'true')}
+./ed25519_forged_z runs=5 wall median 0.046 min 0.046 max 0.047 s; peak RSS 3.6 MB; out {(0, 'false')}
+./ed25519_digest_z runs=5 wall median 0.024 min 0.024 max 0.024 s; peak RSS 3.7 MB; out {(0, '461949769319894208128256379552725889811025465174127529931671')}
+## wasm64 23:56:55
+node small64_verify_wasm.js runs=5 wall median 0.089 min 0.088 max 0.090 s; peak RSS 84.9 MB; out {(0, 'true')}
+node small64_forged_wasm.js runs=5 wall median 0.090 min 0.090 max 0.091 s; peak RSS 84.9 MB; out {(0, 'false')}
+node small128_verify_wasm.js runs=5 wall median 0.088 min 0.088 max 0.089 s; peak RSS 77.8 MB; out {(0, 'true')}
+node small256_verify_wasm.js runs=5 wall median 0.078 min 0.077 max 0.079 s; peak RSS 53.1 MB; out {(0, 'true')}
+node helios2048_verify_wasm.js runs=5 wall median 0.168 min 0.168 max 0.169 s; peak RSS 51.1 MB; out {(1, 'wasm://wasm/00096676:1\n\n\nRuntimeError: memory access out of')}
+node helios2048_forged_wasm.js runs=5 wall median 0.169 min 0.168 max 0.170 s; peak RSS 51.2 MB; out {(1, 'wasm://wasm/0009717e:1\n\n\nRuntimeError: memory access out of')}
+node ed25519_verify_wasm.js runs=5 wall median 0.191 min 0.189 max 0.192 s; peak RSS 95.8 MB; out {(0, 'true')}
+node ed25519_forged_wasm.js runs=5 wall median 0.189 min 0.188 max 0.189 s; peak RSS 96.0 MB; out {(0, 'false')}
+node ed25519_digest_wasm.js runs=5 wall median 0.162 min 0.159 max 0.163 s; peak RSS 98.0 MB; out {(0, '461949769319894208128256379552725889811025465174127529931671')}
+## certirocq wasm 23:57:03
+- Examples.WasmBenchDefs.helios_wasm_ballot_bench.wasm
+ERR RangeError: Maximum call stack size exceeded
+    at wasm://wasm/002cbcce:wasm-function[14]:0xa53fa
+    at wasm://wasm/002cbcce:wasm-function[14]:0xa5422
+    at wasm://wasm/002cbcce:wasm-function[14]:0xa5422
+    at wasm://wasm/002cbcce:wasm-function[14]:0xa57db
+- Examples.WasmBenchDefs.helios_wasm_modexp16_bench.wasm
+ERR RangeError: Maximum call stack size exceeded
+    at wasm://wasm/000c74de:wasm-function[14]:0x2f4a7
+    at wasm://wasm/000c74de:wasm-function[14]:0x2f888
+    at wasm://wasm/000c74de:wasm-function[14]:0x2f888
+    at wasm://wasm/000c74de:wasm-function[14]:0x2f4cf
+- Examples.WasmBenchDefs.helios_wasm_vote_bench.wasm
+ERR RangeError: Maximum call stack size exceeded
+    at wasm://wasm/002c9e32:wasm-function[14]:0xa4c53
+    at wasm://wasm/002c9e32:wasm-function[14]:0xa5034
+    at wasm://wasm/002c9e32:wasm-function[14]:0xa4c7b
+    at wasm://wasm/002c9e32:wasm-function[14]:0xa4c7b
+- Examples.WasmBenchSmallDefs.Small128.ballot_bench.wasm
+  result: 1206234120
+  mem used: 1150.4 MB
+Examples.WasmBenchSmallDefs.Small128.ballot_bench.wasm: iters=5 median 6347.87 ms, min 6283.98 ms, max 6928.59 ms
+- Examples.WasmBenchSmallDefs.Small128.ballot_verify_bench.wasm
+OUT OF MEMORY on iteration 0
+- Examples.WasmBenchSmallDefs.Small256.ballot_bench.wasm
+OUT OF MEMORY on iteration 0
+- Examples.WasmBenchSmallDefs.Small256.ballot_verify_bench.wasm
+OUT OF MEMORY on iteration 0
+- Examples.WasmBenchSmallDefs.Small256.vote_bench.wasm
+  result: 1330135040
+  mem used: 1268.5 MB
+Examples.WasmBenchSmallDefs.Small256.vote_bench.wasm: iters=5 median 8199.41 ms, min 7957.07 ms, max 8521.41 ms
+- Examples.WasmBenchSmallDefs.Small64.ballot_bench.wasm
+  result: 143691920
+  mem used: 137.0 MB
+Examples.WasmBenchSmallDefs.Small64.ballot_bench.wasm: iters=5 median 257.54 ms, min 257.32 ms, max 267.80 ms
+- Examples.WasmBenchSmallDefs.Small64.ballot_verify_bench.wasm
+  result: 3
+  mem used: 285.5 MB
+Examples.WasmBenchSmallDefs.Small64.ballot_verify_bench.wasm: iters=5 median 694.81 ms, min 687.02 ms, max 706.18 ms
+## cakeml probe 23:59:14
+./modexp16_prog runs=5 wall median 1.090 min 1.089 max 1.098 s; peak RSS 1682.9 MB; out {(0, '')}
+## cakeml ballot 23:59:20
+./ballot_prog runs=1 wall median 1440.589 min 1440.589 max 1440.589 s; peak RSS 6002.6 MB; out {(0, '')}
+## done 00:23:21

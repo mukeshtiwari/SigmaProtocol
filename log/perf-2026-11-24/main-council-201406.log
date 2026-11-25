@@ -1,0 +1,21 @@
+council-201406.txt: m = 14 candidates, N = 81 ballots read in 2.0 s
+ballots: verify median 8.0 s, total 647 s, accepted 81 of 81, cpu median 8.0 s, cpu total 646 s
+ballot of voter-0 replayed under another credential verifies: false
+aggregation 0.03 s, decryption of the margins 0.1 s
+  0 6 11 6 8 18 11 7 7 24 22 5 6 19
+  74 0 42 37 47 59 54 51 37 60 60 38 34 60
+  67 27 0 33 38 45 48 38 31 56 54 22 33 55
+  73 31 35 0 41 54 50 42 32 54 51 23 35 53
+  70 21 29 26 0 48 41 29 23 46 50 20 28 42
+  59 17 27 22 26 0 34 25 23 40 37 16 23 42
+  66 15 24 16 22 38 0 18 18 36 36 14 20 37
+  71 19 34 29 33 47 46 0 24 51 47 19 28 48
+  70 29 32 32 44 49 49 41 0 57 52 23 33 49
+  54 13 17 16 19 31 20 18 14 0 30 12 18 27
+  55 13 20 20 20 33 29 24 14 35 0 17 20 33
+  74 35 43 42 49 59 54 52 42 61 57 0 48 57
+  72 26 34 28 43 51 49 40 29 55 53 22 0 51
+  57 13 21 19 27 27 26 18 19 36 30 13 19 0
+Schulze winner: blueness
+certificate generated in 1200 s (cpu 1200 s)
+certificate: generation 1200 s, verification 596 s, verified true, transcript entries 533478, cpu generation 1200 s, cpu verification 596 s

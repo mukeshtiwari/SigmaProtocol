@@ -1,0 +1,17 @@
+council-202306.txt: m = 10 candidates, N = 50 ballots read in 0.5 s
+ballots: verify median 3.0 s, total 152 s, accepted 50 of 50, cpu median 3.0 s, cpu total 152 s
+ballot of voter-0 replayed under another credential verifies: false
+aggregation 0.01 s, decryption of the margins 0.0 s
+  0 4 6 13 5 7 18 4 4 5
+  45 0 18 29 16 14 30 6 15 16
+  44 25 0 35 26 15 37 13 25 17
+  36 12 12 0 11 10 24 7 9 9
+  44 24 13 33 0 8 34 10 22 18
+  43 29 26 39 31 0 36 12 25 25
+  30 14 10 19 12 14 0 6 8 11
+  46 34 27 40 35 29 43 0 33 29
+  46 23 13 34 18 16 37 9 0 16
+  45 28 17 39 24 16 37 11 25 0
+Schulze winner: sam
+certificate generated in 286 s (cpu 286 s)
+certificate: generation 286 s, verification 143 s, verified true, transcript entries 128711, cpu generation 286 s, cpu verification 143 s

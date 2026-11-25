@@ -1,0 +1,12 @@
+## wasm64 2048, -sSTACK_SIZE=16MB
+node --stack-size=60000 helios2048_verify_wasm.js runs=5 wall median 0.271 min 0.269 max 0.272 s; peak RSS 53.5 MB; out {(0, 'true')}
+node --stack-size=60000 helios2048_forged_wasm.js runs=5 wall median 0.268 min 0.267 max 0.270 s; peak RSS 52.7 MB; out {(0, 'false')}
+## certirocq wasm 2048, node --stack-size=60000
+- modexp16
+  result: 879749784
+  mem used: 839.0 MB
+Examples.WasmBenchDefs.helios_wasm_modexp16_bench.wasm: iters=5 median 4030.22 ms, min 3913.87 ms, max 4039.90 ms
+- vote
+OUT OF MEMORY on iteration 0
+- ballot
+OUT OF MEMORY on iteration 0

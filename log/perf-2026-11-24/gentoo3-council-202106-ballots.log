@@ -1,0 +1,96 @@
+positions-council-202106.txt (simplified batched ballot): m = 15 candidates, N = 73 ballots, L = 4, K = 225
+commitment key: 226 generators hashed to the group in 0.2 s
+  voter-0 encrypted and proved in 1.6 s
+  voter-1 encrypted and proved in 1.6 s
+  voter-2 encrypted and proved in 1.6 s
+  voter-3 encrypted and proved in 1.6 s
+  voter-4 encrypted and proved in 1.6 s
+  voter-5 encrypted and proved in 1.6 s
+  voter-6 encrypted and proved in 1.6 s
+  voter-7 encrypted and proved in 1.6 s
+  voter-8 encrypted and proved in 1.6 s
+  voter-9 encrypted and proved in 1.6 s
+  voter-10 encrypted and proved in 1.6 s
+  voter-11 encrypted and proved in 1.6 s
+  voter-12 encrypted and proved in 1.6 s
+  voter-13 encrypted and proved in 1.6 s
+  voter-14 encrypted and proved in 1.6 s
+  voter-15 encrypted and proved in 1.6 s
+  voter-16 encrypted and proved in 1.6 s
+  voter-17 encrypted and proved in 1.6 s
+  voter-18 encrypted and proved in 1.6 s
+  voter-19 encrypted and proved in 1.6 s
+  voter-20 encrypted and proved in 1.6 s
+  voter-21 encrypted and proved in 1.6 s
+  voter-22 encrypted and proved in 1.6 s
+  voter-23 encrypted and proved in 1.6 s
+  voter-24 encrypted and proved in 1.6 s
+  voter-25 encrypted and proved in 1.6 s
+  voter-26 encrypted and proved in 1.6 s
+  voter-27 encrypted and proved in 1.6 s
+  voter-28 encrypted and proved in 1.6 s
+  voter-29 encrypted and proved in 1.6 s
+  voter-30 encrypted and proved in 1.6 s
+  voter-31 encrypted and proved in 1.6 s
+  voter-32 encrypted and proved in 1.6 s
+  voter-33 encrypted and proved in 1.6 s
+  voter-34 encrypted and proved in 1.6 s
+  voter-35 encrypted and proved in 1.6 s
+  voter-36 encrypted and proved in 1.6 s
+  voter-37 encrypted and proved in 1.6 s
+  voter-38 encrypted and proved in 1.6 s
+  voter-39 encrypted and proved in 1.6 s
+  voter-40 encrypted and proved in 1.6 s
+  voter-41 encrypted and proved in 1.6 s
+  voter-42 encrypted and proved in 1.6 s
+  voter-43 encrypted and proved in 1.6 s
+  voter-44 encrypted and proved in 1.6 s
+  voter-45 encrypted and proved in 1.6 s
+  voter-46 encrypted and proved in 1.6 s
+  voter-47 encrypted and proved in 1.6 s
+  voter-48 encrypted and proved in 1.7 s
+  voter-49 encrypted and proved in 1.7 s
+  voter-50 encrypted and proved in 1.6 s
+  voter-51 encrypted and proved in 1.6 s
+  voter-52 encrypted and proved in 1.6 s
+  voter-53 encrypted and proved in 1.6 s
+  voter-54 encrypted and proved in 1.7 s
+  voter-55 encrypted and proved in 1.6 s
+  voter-56 encrypted and proved in 1.6 s
+  voter-57 encrypted and proved in 1.6 s
+  voter-58 encrypted and proved in 1.6 s
+  voter-59 encrypted and proved in 1.6 s
+  voter-60 encrypted and proved in 1.6 s
+  voter-61 encrypted and proved in 1.6 s
+  voter-62 encrypted and proved in 1.7 s
+  voter-63 encrypted and proved in 1.6 s
+  voter-64 encrypted and proved in 1.6 s
+  voter-65 encrypted and proved in 1.6 s
+  voter-66 encrypted and proved in 1.7 s
+  voter-67 encrypted and proved in 1.6 s
+  voter-68 encrypted and proved in 1.6 s
+  voter-69 encrypted and proved in 1.7 s
+  voter-70 encrypted and proved in 1.6 s
+  voter-71 encrypted and proved in 1.6 s
+  voter-72 encrypted and proved in 1.7 s
+positions-council-202106.txt: 73 ballots encrypted, median 1.6 s per ballot, total 120 s, board bench/gentoo-board3/perf-2026-11-24/council-202106.txt (25503421 bytes)
+positions-council-202106.txt: m = 15 candidates, N = 73 ballots read in 0.0 s
+ballots: verify median 1.1 s, total 79 s, accepted 73 of 73, cpu median 1.1 s, cpu total 79 s
+ballot of voter-0 replayed under another credential verifies: false
+aggregation 0.03 s, decryption of the margins 0.1 s
+  0 12 8 23 7 14 21 28 8 16 8 16 14 19 26
+  58 0 31 50 39 33 31 50 20 42 31 42 40 45 50
+  64 29 0 47 36 27 36 49 16 43 31 41 42 48 50
+  46 14 19 0 18 20 24 32 11 22 16 24 23 26 28
+  65 28 24 49 0 24 29 43 13 36 27 36 38 40 43
+  58 25 29 46 40 0 31 51 16 45 34 45 40 51 49
+  51 29 30 44 41 31 0 47 16 39 31 39 42 45 42
+  40 17 15 26 22 18 23 0 10 13 16 15 15 23 22
+  65 45 47 60 51 47 45 57 0 48 44 53 51 57 53
+  53 26 18 37 21 22 29 43 15 0 23 27 31 33 35
+  63 26 34 50 35 31 34 53 20 42 0 49 44 45 48
+  54 27 24 38 30 25 32 46 17 27 19 0 29 34 37
+  55 25 25 37 28 25 27 47 16 33 21 35 0 43 41
+  50 17 15 35 24 13 22 37 10 23 18 24 23 0 36
+  43 17 16 28 22 17 23 30 13 20 18 23 21 23 0
+Schulze winner: sam

@@ -1,0 +1,22 @@
+council-202106.txt: m = 15 candidates, N = 73 ballots read in 2.1 s
+ballots: verify median 9.7 s, total 710 s, accepted 73 of 73, cpu median 9.7 s, cpu total 710 s
+ballot of voter-0 replayed under another credential verifies: false
+aggregation 0.03 s, decryption of the margins 0.1 s
+  0 12 8 23 7 14 21 28 8 16 8 16 14 19 26
+  58 0 31 50 39 33 31 50 20 42 31 42 40 45 50
+  64 29 0 47 36 27 36 49 16 43 31 41 42 48 50
+  46 14 19 0 18 20 24 32 11 22 16 24 23 26 28
+  65 28 24 49 0 24 29 43 13 36 27 36 38 40 43
+  58 25 29 46 40 0 31 51 16 45 34 45 40 51 49
+  51 29 30 44 41 31 0 47 16 39 31 39 42 45 42
+  40 17 15 26 22 18 23 0 10 13 16 15 15 23 22
+  65 45 47 60 51 47 45 57 0 48 44 53 51 57 53
+  53 26 18 37 21 22 29 43 15 0 23 27 31 33 35
+  63 26 34 50 35 31 34 53 20 42 0 49 44 45 48
+  54 27 24 38 30 25 32 46 17 27 19 0 29 34 37
+  55 25 25 37 28 25 27 47 16 33 21 35 0 43 41
+  50 17 15 35 24 13 22 37 10 23 18 24 23 0 36
+  43 17 16 28 22 17 23 30 13 20 18 23 21 23 0
+Schulze winner: sam
+certificate generated in 1268 s (cpu 1267 s)
+certificate: generation 1268 s, verification 622 s, verified true, transcript entries 585961, cpu generation 1267 s, cpu verification 621 s

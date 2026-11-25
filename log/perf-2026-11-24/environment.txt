@@ -1,0 +1,14 @@
+commit f75062f85b41210c2ecbcdc602040f9447e62eb2
+ProductName:		macOS
+ProductVersion:		27.2.1
+BuildVersion:		26B131
+Apple M5 Max
+51539607552
+5.4.1
+v26.13.1
+db37536da092c11f8d0072a49825271cd07bf07c3a9cc1039481a139cf795369  log/perf-2026-11-24/bin/SchulzeBenchcode/main.exe
+35362c74e6a8fa6e2785aeb8ce155a7cf754d8e2aa634780ee1d70f0d5f3b5f6  log/perf-2026-11-24/bin/SchulzeBenchcode/par.exe
+6c0076d879f44c9c1c44379202c6a371612e94637bace88299afb83d61f1e003  log/perf-2026-11-24/bin/SchulzeBenchcode/simple.exe
+a6b9a3a47efcc3ed5135393f1fe4b57eca1ea29b96c29b2b705c03dabff1bd4a  log/perf-2026-11-24/bin/SchulzeGentoocode/encrypt.exe
+de5bf0c9a0b052f3d1603ae854e0e404d1e099f28c160ce6d44d6d0d2cde5ac9  log/perf-2026-11-24/bin/SchulzeGentoocode/gentoo3.exe
+b015f52cee2aec752a7b2c3660768920ecc4798e42515a5ebd0cdb9ac9d1ffda  log/perf-2026-11-24/bin/SchulzeGentoocode/main.exe

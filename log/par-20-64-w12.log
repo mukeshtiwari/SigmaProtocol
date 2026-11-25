@@ -1,0 +1,8 @@
+Schulze certificate, parallel prover: p 2048 bits, q 256 bits, m = 20 candidates, N = 64 ballots, 12 workers, one pass
+  winner: candidate 4
+  decryption, closure, paths: 1.12 s
+  first pass (challenge zero): 473.63 s
+  hashing the transcript:      5.86 s
+  patching the challenge:      0.17 s
+  certificate generation, wall-clock, 12 workers: 480.78 s
+  certificate size: 2408570 group elements, 2416279 field elements, 677651.2 KB, 1202685 disjunction branches

@@ -1,0 +1,105 @@
+positions-council-201806.txt (simplified batched ballot): m = 13 candidates, N = 84 ballots, L = 4, K = 169
+commitment key: 170 generators hashed to the group in 0.2 s
+  voter-0 encrypted and proved in 1.1 s
+  voter-1 encrypted and proved in 1.1 s
+  voter-2 encrypted and proved in 1.1 s
+  voter-3 encrypted and proved in 1.2 s
+  voter-4 encrypted and proved in 1.1 s
+  voter-5 encrypted and proved in 1.1 s
+  voter-6 encrypted and proved in 1.1 s
+  voter-7 encrypted and proved in 1.1 s
+  voter-8 encrypted and proved in 1.2 s
+  voter-9 encrypted and proved in 1.2 s
+  voter-10 encrypted and proved in 1.2 s
+  voter-11 encrypted and proved in 1.2 s
+  voter-12 encrypted and proved in 1.1 s
+  voter-13 encrypted and proved in 1.2 s
+  voter-14 encrypted and proved in 1.1 s
+  voter-15 encrypted and proved in 1.1 s
+  voter-16 encrypted and proved in 1.1 s
+  voter-17 encrypted and proved in 1.1 s
+  voter-18 encrypted and proved in 1.1 s
+  voter-19 encrypted and proved in 1.1 s
+  voter-20 encrypted and proved in 1.1 s
+  voter-21 encrypted and proved in 1.1 s
+  voter-22 encrypted and proved in 1.1 s
+  voter-23 encrypted and proved in 1.1 s
+  voter-24 encrypted and proved in 1.1 s
+  voter-25 encrypted and proved in 1.1 s
+  voter-26 encrypted and proved in 1.2 s
+  voter-27 encrypted and proved in 1.1 s
+  voter-28 encrypted and proved in 1.1 s
+  voter-29 encrypted and proved in 1.1 s
+  voter-30 encrypted and proved in 1.1 s
+  voter-31 encrypted and proved in 1.1 s
+  voter-32 encrypted and proved in 1.1 s
+  voter-33 encrypted and proved in 1.1 s
+  voter-34 encrypted and proved in 1.1 s
+  voter-35 encrypted and proved in 1.2 s
+  voter-36 encrypted and proved in 1.2 s
+  voter-37 encrypted and proved in 1.2 s
+  voter-38 encrypted and proved in 1.2 s
+  voter-39 encrypted and proved in 1.2 s
+  voter-40 encrypted and proved in 1.1 s
+  voter-41 encrypted and proved in 1.2 s
+  voter-42 encrypted and proved in 1.2 s
+  voter-43 encrypted and proved in 1.2 s
+  voter-44 encrypted and proved in 1.1 s
+  voter-45 encrypted and proved in 1.1 s
+  voter-46 encrypted and proved in 1.1 s
+  voter-47 encrypted and proved in 1.1 s
+  voter-48 encrypted and proved in 1.1 s
+  voter-49 encrypted and proved in 1.1 s
+  voter-50 encrypted and proved in 1.1 s
+  voter-51 encrypted and proved in 1.1 s
+  voter-52 encrypted and proved in 1.1 s
+  voter-53 encrypted and proved in 1.1 s
+  voter-54 encrypted and proved in 1.1 s
+  voter-55 encrypted and proved in 1.1 s
+  voter-56 encrypted and proved in 1.2 s
+  voter-57 encrypted and proved in 1.1 s
+  voter-58 encrypted and proved in 1.1 s
+  voter-59 encrypted and proved in 1.1 s
+  voter-60 encrypted and proved in 1.2 s
+  voter-61 encrypted and proved in 1.2 s
+  voter-62 encrypted and proved in 1.2 s
+  voter-63 encrypted and proved in 1.1 s
+  voter-64 encrypted and proved in 1.1 s
+  voter-65 encrypted and proved in 1.2 s
+  voter-66 encrypted and proved in 1.1 s
+  voter-67 encrypted and proved in 1.2 s
+  voter-68 encrypted and proved in 1.2 s
+  voter-69 encrypted and proved in 1.2 s
+  voter-70 encrypted and proved in 1.1 s
+  voter-71 encrypted and proved in 1.2 s
+  voter-72 encrypted and proved in 1.1 s
+  voter-73 encrypted and proved in 1.1 s
+  voter-74 encrypted and proved in 1.1 s
+  voter-75 encrypted and proved in 1.1 s
+  voter-76 encrypted and proved in 1.1 s
+  voter-77 encrypted and proved in 1.1 s
+  voter-78 encrypted and proved in 1.1 s
+  voter-79 encrypted and proved in 1.1 s
+  voter-80 encrypted and proved in 1.1 s
+  voter-81 encrypted and proved in 1.1 s
+  voter-82 encrypted and proved in 1.1 s
+  voter-83 encrypted and proved in 1.2 s
+positions-council-201806.txt: 84 ballots encrypted, median 1.1 s per ballot, total 97 s, board bench/gentoo-board3/perf-2026-11-24/council-201806.txt (22427559 bytes)
+positions-council-201806.txt: m = 13 candidates, N = 84 ballots read in 0.0 s
+ballots: verify median 0.8 s, total 65 s, accepted 84 of 84, cpu median 0.8 s, cpu total 65 s
+ballot of voter-0 replayed under another credential verifies: false
+aggregation 0.03 s, decryption of the margins 0.1 s
+  0 19 18 18 22 19 19 14 19 20 16 15 13
+  62 0 36 31 33 28 37 32 36 35 25 32 31
+  62 31 0 23 28 27 32 25 26 30 22 24 27
+  65 45 54 0 42 50 44 47 53 47 34 46 45
+  60 37 41 26 0 38 40 35 45 35 26 40 38
+  61 39 36 24 30 0 35 31 32 36 21 33 26
+  60 28 34 22 27 27 0 30 34 28 16 29 26
+  67 38 41 28 34 37 42 0 39 37 28 37 28
+  61 28 31 26 26 27 30 23 0 31 26 27 28
+  61 34 32 25 31 31 38 26 28 0 27 30 29
+  68 50 56 30 39 49 52 45 51 42 0 51 41
+  66 34 33 29 31 33 41 30 38 33 28 0 35
+  69 42 45 29 36 47 47 44 48 41 25 41 0
+Schulze winner: dilfridge

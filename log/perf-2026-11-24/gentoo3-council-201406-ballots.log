@@ -1,0 +1,103 @@
+positions-council-201406.txt (simplified batched ballot): m = 14 candidates, N = 81 ballots, L = 4, K = 196
+commitment key: 197 generators hashed to the group in 0.2 s
+  voter-0 encrypted and proved in 1.4 s
+  voter-1 encrypted and proved in 1.4 s
+  voter-2 encrypted and proved in 1.4 s
+  voter-3 encrypted and proved in 1.4 s
+  voter-4 encrypted and proved in 1.4 s
+  voter-5 encrypted and proved in 1.4 s
+  voter-6 encrypted and proved in 1.4 s
+  voter-7 encrypted and proved in 1.4 s
+  voter-8 encrypted and proved in 1.4 s
+  voter-9 encrypted and proved in 1.4 s
+  voter-10 encrypted and proved in 1.4 s
+  voter-11 encrypted and proved in 1.4 s
+  voter-12 encrypted and proved in 1.4 s
+  voter-13 encrypted and proved in 1.4 s
+  voter-14 encrypted and proved in 1.4 s
+  voter-15 encrypted and proved in 1.4 s
+  voter-16 encrypted and proved in 1.4 s
+  voter-17 encrypted and proved in 1.4 s
+  voter-18 encrypted and proved in 1.4 s
+  voter-19 encrypted and proved in 1.4 s
+  voter-20 encrypted and proved in 1.4 s
+  voter-21 encrypted and proved in 1.4 s
+  voter-22 encrypted and proved in 1.4 s
+  voter-23 encrypted and proved in 1.4 s
+  voter-24 encrypted and proved in 1.4 s
+  voter-25 encrypted and proved in 1.4 s
+  voter-26 encrypted and proved in 1.4 s
+  voter-27 encrypted and proved in 1.4 s
+  voter-28 encrypted and proved in 1.4 s
+  voter-29 encrypted and proved in 1.4 s
+  voter-30 encrypted and proved in 1.4 s
+  voter-31 encrypted and proved in 1.4 s
+  voter-32 encrypted and proved in 1.4 s
+  voter-33 encrypted and proved in 1.4 s
+  voter-34 encrypted and proved in 1.4 s
+  voter-35 encrypted and proved in 1.4 s
+  voter-36 encrypted and proved in 1.4 s
+  voter-37 encrypted and proved in 1.4 s
+  voter-38 encrypted and proved in 1.4 s
+  voter-39 encrypted and proved in 1.4 s
+  voter-40 encrypted and proved in 1.4 s
+  voter-41 encrypted and proved in 1.4 s
+  voter-42 encrypted and proved in 1.4 s
+  voter-43 encrypted and proved in 1.4 s
+  voter-44 encrypted and proved in 1.4 s
+  voter-45 encrypted and proved in 1.4 s
+  voter-46 encrypted and proved in 1.4 s
+  voter-47 encrypted and proved in 1.4 s
+  voter-48 encrypted and proved in 1.4 s
+  voter-49 encrypted and proved in 1.4 s
+  voter-50 encrypted and proved in 1.4 s
+  voter-51 encrypted and proved in 1.4 s
+  voter-52 encrypted and proved in 1.4 s
+  voter-53 encrypted and proved in 1.4 s
+  voter-54 encrypted and proved in 1.4 s
+  voter-55 encrypted and proved in 1.4 s
+  voter-56 encrypted and proved in 1.4 s
+  voter-57 encrypted and proved in 1.4 s
+  voter-58 encrypted and proved in 1.4 s
+  voter-59 encrypted and proved in 1.4 s
+  voter-60 encrypted and proved in 1.4 s
+  voter-61 encrypted and proved in 1.4 s
+  voter-62 encrypted and proved in 1.4 s
+  voter-63 encrypted and proved in 1.4 s
+  voter-64 encrypted and proved in 1.4 s
+  voter-65 encrypted and proved in 1.4 s
+  voter-66 encrypted and proved in 1.4 s
+  voter-67 encrypted and proved in 1.4 s
+  voter-68 encrypted and proved in 1.4 s
+  voter-69 encrypted and proved in 1.4 s
+  voter-70 encrypted and proved in 1.4 s
+  voter-71 encrypted and proved in 1.4 s
+  voter-72 encrypted and proved in 1.4 s
+  voter-73 encrypted and proved in 1.4 s
+  voter-74 encrypted and proved in 1.4 s
+  voter-75 encrypted and proved in 1.4 s
+  voter-76 encrypted and proved in 1.4 s
+  voter-77 encrypted and proved in 1.4 s
+  voter-78 encrypted and proved in 1.4 s
+  voter-79 encrypted and proved in 1.4 s
+  voter-80 encrypted and proved in 1.4 s
+positions-council-201406.txt: 81 ballots encrypted, median 1.4 s per ballot, total 113 s, board bench/gentoo-board3/perf-2026-11-24/council-201406.txt (24843673 bytes)
+positions-council-201406.txt: m = 14 candidates, N = 81 ballots read in 0.0 s
+ballots: verify median 0.9 s, total 75 s, accepted 81 of 81, cpu median 0.9 s, cpu total 75 s
+ballot of voter-0 replayed under another credential verifies: false
+aggregation 0.03 s, decryption of the margins 0.1 s
+  0 6 11 6 8 18 11 7 7 24 22 5 6 19
+  74 0 42 37 47 59 54 51 37 60 60 38 34 60
+  67 27 0 33 38 45 48 38 31 56 54 22 33 55
+  73 31 35 0 41 54 50 42 32 54 51 23 35 53
+  70 21 29 26 0 48 41 29 23 46 50 20 28 42
+  59 17 27 22 26 0 34 25 23 40 37 16 23 42
+  66 15 24 16 22 38 0 18 18 36 36 14 20 37
+  71 19 34 29 33 47 46 0 24 51 47 19 28 48
+  70 29 32 32 44 49 49 41 0 57 52 23 33 49
+  54 13 17 16 19 31 20 18 14 0 30 12 18 27
+  55 13 20 20 20 33 29 24 14 35 0 17 20 33
+  74 35 43 42 49 59 54 52 42 61 57 0 48 57
+  72 26 34 28 43 51 49 40 29 55 53 22 0 51
+  57 13 21 19 27 27 26 18 19 36 30 13 19 0
+Schulze winner: blueness

@@ -1,0 +1,20 @@
+council-201106.txt: m = 13 candidates, N = 110 ballots read in 2.1 s
+ballots: verify median 6.5 s, total 710 s, accepted 110 of 110, cpu median 6.5 s, cpu total 710 s
+ballot of voter-0 replayed under another credential verifies: false
+aggregation 0.04 s, decryption of the margins 0.1 s
+  0 62 49 41 18 66 48 54 33 46 50 45 79
+  31 0 31 30 18 41 29 31 26 29 42 20 84
+  43 52 0 38 22 51 37 40 36 48 49 40 86
+  45 63 52 0 22 68 43 49 37 49 49 49 87
+  79 88 77 72 0 84 71 71 71 79 73 66 97
+  30 33 22 21 18 0 28 30 20 28 33 26 82
+  49 57 57 47 25 63 0 52 43 50 48 44 86
+  46 56 49 46 29 63 39 0 39 45 47 38 78
+  47 74 57 52 21 76 47 60 0 58 57 50 83
+  41 48 38 38 17 53 36 45 30 0 41 33 84
+  40 53 48 39 24 60 45 48 36 49 0 43 78
+  51 68 50 46 29 65 39 56 44 47 53 0 89
+  25 18 18 17 11 20 16 28 22 17 27 16 0
+Schulze winner: dberkholz
+certificate generated in 1324 s (cpu 1324 s)
+certificate: generation 1324 s, verification 655 s, verified true, transcript entries 586172, cpu generation 1324 s, cpu verification 654 s

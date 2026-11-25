@@ -1,0 +1,4 @@
+#!/bin/bash
+# drop the options; no memory cap on macOS
+while [ $# -gt 0 ]; do case $1 in -p) shift 2;; -*) shift;; *) break;; esac; done
+exec "$@"

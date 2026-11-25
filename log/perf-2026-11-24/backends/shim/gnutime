@@ -1,0 +1,7 @@
+#!/usr/bin/python3 -I
+import sys,time,os,resource,subprocess
+assert sys.argv[1:3]==['-v','-o']
+out=sys.argv[3]; t=time.time(); r=subprocess.call(sys.argv[4:]); t=time.time()-t
+u=resource.getrusage(resource.RUSAGE_CHILDREN)
+open(out,'w').write("\tUser time (seconds): %.2f\n\tElapsed (wall clock) time (h:mm:ss or m:ss): %d:%05.2f\n\tMaximum resident set size (kbytes): %d\n"%(u.ru_utime,t//60,t%60,u.ru_maxrss//1024))
+sys.exit(r)

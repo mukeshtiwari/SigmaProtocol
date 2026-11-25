@@ -1,0 +1,19 @@
+council-201906.txt: m = 12 candidates, N = 70 ballots read in 1.1 s
+ballots: verify median 5.1 s, total 358 s, accepted 70 of 70, cpu median 5.1 s, cpu total 358 s
+ballot of voter-0 replayed under another credential verifies: false
+aggregation 0.02 s, decryption of the margins 0.1 s
+  0 17 22 12 10 22 15 10 15 8 11 19
+  51 0 33 31 23 33 24 28 31 21 25 33
+  47 23 0 22 21 31 20 22 22 13 16 29
+  57 32 41 0 31 36 34 36 25 26 30 43
+  59 32 34 34 0 38 33 30 35 21 31 40
+  47 32 30 15 27 0 27 19 16 13 18 34
+  53 36 43 30 30 37 0 29 31 20 30 38
+  60 37 38 25 31 40 37 0 26 21 27 41
+  55 34 43 23 33 36 31 32 0 20 31 40
+  62 45 50 33 43 48 41 42 34 0 37 46
+  58 40 47 30 33 39 36 33 28 26 0 41
+  49 24 25 19 20 26 27 18 24 19 23 0
+Schulze winner: whissi
+certificate generated in 674 s (cpu 674 s)
+certificate: generation 674 s, verification 335 s, verified true, transcript entries 300949, cpu generation 674 s, cpu verification 335 s

@@ -1,0 +1,89 @@
+positions-council-202006.txt (simplified batched ballot): m = 14 candidates, N = 63 ballots, L = 4, K = 196
+commitment key: 197 generators hashed to the group in 0.2 s
+  voter-0 encrypted and proved in 1.4 s
+  voter-1 encrypted and proved in 1.4 s
+  voter-2 encrypted and proved in 1.4 s
+  voter-3 encrypted and proved in 1.4 s
+  voter-4 encrypted and proved in 1.4 s
+  voter-5 encrypted and proved in 1.4 s
+  voter-6 encrypted and proved in 1.4 s
+  voter-7 encrypted and proved in 1.4 s
+  voter-8 encrypted and proved in 1.4 s
+  voter-9 encrypted and proved in 1.4 s
+  voter-10 encrypted and proved in 1.4 s
+  voter-11 encrypted and proved in 1.4 s
+  voter-12 encrypted and proved in 1.4 s
+  voter-13 encrypted and proved in 1.4 s
+  voter-14 encrypted and proved in 1.4 s
+  voter-15 encrypted and proved in 1.4 s
+  voter-16 encrypted and proved in 1.4 s
+  voter-17 encrypted and proved in 1.4 s
+  voter-18 encrypted and proved in 1.4 s
+  voter-19 encrypted and proved in 1.4 s
+  voter-20 encrypted and proved in 1.4 s
+  voter-21 encrypted and proved in 1.4 s
+  voter-22 encrypted and proved in 1.4 s
+  voter-23 encrypted and proved in 1.4 s
+  voter-24 encrypted and proved in 1.4 s
+  voter-25 encrypted and proved in 1.4 s
+  voter-26 encrypted and proved in 1.4 s
+  voter-27 encrypted and proved in 1.4 s
+  voter-28 encrypted and proved in 1.4 s
+  voter-29 encrypted and proved in 1.4 s
+  voter-30 encrypted and proved in 1.4 s
+  voter-31 encrypted and proved in 1.4 s
+  voter-32 encrypted and proved in 1.4 s
+  voter-33 encrypted and proved in 1.4 s
+  voter-34 encrypted and proved in 1.4 s
+  voter-35 encrypted and proved in 1.4 s
+  voter-36 encrypted and proved in 1.4 s
+  voter-37 encrypted and proved in 1.4 s
+  voter-38 encrypted and proved in 1.4 s
+  voter-39 encrypted and proved in 1.4 s
+  voter-40 encrypted and proved in 1.4 s
+  voter-41 encrypted and proved in 1.4 s
+  voter-42 encrypted and proved in 1.4 s
+  voter-43 encrypted and proved in 1.4 s
+  voter-44 encrypted and proved in 1.4 s
+  voter-45 encrypted and proved in 1.4 s
+  voter-46 encrypted and proved in 1.4 s
+  voter-47 encrypted and proved in 1.4 s
+  voter-48 encrypted and proved in 1.4 s
+  voter-49 encrypted and proved in 1.4 s
+  voter-50 encrypted and proved in 1.4 s
+  voter-51 encrypted and proved in 1.4 s
+  voter-52 encrypted and proved in 1.4 s
+  voter-53 encrypted and proved in 1.4 s
+  voter-54 encrypted and proved in 1.4 s
+  voter-55 encrypted and proved in 1.4 s
+  voter-56 encrypted and proved in 1.4 s
+  voter-57 encrypted and proved in 1.4 s
+  voter-58 encrypted and proved in 1.4 s
+  voter-59 encrypted and proved in 1.4 s
+  voter-60 encrypted and proved in 1.4 s
+  voter-61 encrypted and proved in 1.4 s
+  voter-62 encrypted and proved in 1.4 s
+positions-council-202006.txt: 63 ballots encrypted, median 1.4 s per ballot, total 87 s, board bench/gentoo-board3/perf-2026-11-24/cert-council-202006.txt (19323017 bytes)
+positions-council-202006.txt: m = 14 candidates, N = 63 ballots read in 0.0 s
+ballots: verified on 12 workers in 6 s wall-clock
+ballots: verify median 1.1 s, total 67 s, accepted 63 of 63, cpu median 1.1 s, cpu total 67 s
+ballot of voter-0 replayed under another credential verifies: false
+aggregation 0.03 s, decryption of the margins 0.1 s
+  0 7 12 6 13 11 5 18 3 8 6 11 14 13
+  54 0 30 18 26 21 23 32 17 30 23 21 29 26
+  50 26 0 17 28 24 23 31 18 32 19 21 26 29
+  55 40 39 0 40 41 35 39 28 47 23 30 35 37
+  48 26 26 15 0 24 22 32 16 31 11 20 24 25
+  50 26 32 18 32 0 21 31 19 36 21 18 27 26
+  56 30 28 16 34 30 0 35 19 41 20 23 28 33
+  42 26 22 16 16 25 18 0 15 30 15 18 19 25
+  59 40 39 25 41 35 34 39 0 48 26 29 35 39
+  52 15 22 11 20 12 16 24 10 0 12 15 22 24
+  56 36 40 26 44 39 35 44 30 45 0 32 38 39
+  51 37 35 24 36 38 34 37 28 43 23 0 30 34
+  47 29 32 21 29 28 27 35 22 31 16 22 0 30
+  48 28 28 15 27 27 20 30 17 32 13 19 25 0
+Schulze winner: ulm
+certificate generated in 883 s (cpu 883 s)
+certificate verified as 21 tasks on 12 workers
+certificate: generation 883 s, verification 64 s, verified true, transcript entries 417781, cpu generation 883 s, cpu verification 0 s

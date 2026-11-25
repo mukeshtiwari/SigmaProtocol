@@ -1,0 +1,21 @@
+council-202006.txt: m = 14 candidates, N = 63 ballots read in 1.5 s
+ballots: verify median 8.0 s, total 502 s, accepted 63 of 63, cpu median 8.0 s, cpu total 502 s
+ballot of voter-0 replayed under another credential verifies: false
+aggregation 0.02 s, decryption of the margins 0.1 s
+  0 7 12 6 13 11 5 18 3 8 6 11 14 13
+  54 0 30 18 26 21 23 32 17 30 23 21 29 26
+  50 26 0 17 28 24 23 31 18 32 19 21 26 29
+  55 40 39 0 40 41 35 39 28 47 23 30 35 37
+  48 26 26 15 0 24 22 32 16 31 11 20 24 25
+  50 26 32 18 32 0 21 31 19 36 21 18 27 26
+  56 30 28 16 34 30 0 35 19 41 20 23 28 33
+  42 26 22 16 16 25 18 0 15 30 15 18 19 25
+  59 40 39 25 41 35 34 39 0 48 26 29 35 39
+  52 15 22 11 20 12 16 24 10 0 12 15 22 24
+  56 36 40 26 44 39 35 44 30 45 0 32 38 39
+  51 37 35 24 36 38 34 37 28 43 23 0 30 34
+  47 29 32 21 29 28 27 35 22 31 16 22 0 30
+  48 28 28 15 27 27 20 30 17 32 13 19 25 0
+Schulze winner: ulm
+certificate generated in 936 s (cpu 936 s)
+certificate: generation 936 s, verification 462 s, verified true, transcript entries 417781, cpu generation 936 s, cpu verification 462 s

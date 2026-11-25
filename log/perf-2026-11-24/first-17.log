@@ -1,0 +1,5 @@
+Schulze at the Helios parameters: p 2048 bits, q 256 bits, m = 17 candidates, N = 1 ballots
+ballot (3 iterations, all verified = true)
+  encryption + NIZK proofs: median 26.35 s, mean 26.35 s
+  verification:             median 13.79 s, mean 13.81 s
+  size: 22610 group elements, 22593 field elements, 6358.5 KB

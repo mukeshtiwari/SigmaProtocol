@@ -1,0 +1,115 @@
+positions-council-201606.txt (simplified batched ballot): m = 13 candidates, N = 90 ballots, L = 4, K = 169
+commitment key: 170 generators hashed to the group in 0.2 s
+  voter-0 encrypted and proved in 1.2 s
+  voter-1 encrypted and proved in 1.2 s
+  voter-2 encrypted and proved in 1.2 s
+  voter-3 encrypted and proved in 1.2 s
+  voter-4 encrypted and proved in 1.2 s
+  voter-5 encrypted and proved in 1.2 s
+  voter-6 encrypted and proved in 1.2 s
+  voter-7 encrypted and proved in 1.2 s
+  voter-8 encrypted and proved in 1.2 s
+  voter-9 encrypted and proved in 1.2 s
+  voter-10 encrypted and proved in 1.2 s
+  voter-11 encrypted and proved in 1.2 s
+  voter-12 encrypted and proved in 1.2 s
+  voter-13 encrypted and proved in 1.2 s
+  voter-14 encrypted and proved in 1.2 s
+  voter-15 encrypted and proved in 1.2 s
+  voter-16 encrypted and proved in 1.2 s
+  voter-17 encrypted and proved in 1.2 s
+  voter-18 encrypted and proved in 1.2 s
+  voter-19 encrypted and proved in 1.2 s
+  voter-20 encrypted and proved in 1.2 s
+  voter-21 encrypted and proved in 1.2 s
+  voter-22 encrypted and proved in 1.2 s
+  voter-23 encrypted and proved in 1.2 s
+  voter-24 encrypted and proved in 1.2 s
+  voter-25 encrypted and proved in 1.2 s
+  voter-26 encrypted and proved in 1.2 s
+  voter-27 encrypted and proved in 1.2 s
+  voter-28 encrypted and proved in 1.2 s
+  voter-29 encrypted and proved in 1.2 s
+  voter-30 encrypted and proved in 1.2 s
+  voter-31 encrypted and proved in 1.2 s
+  voter-32 encrypted and proved in 1.2 s
+  voter-33 encrypted and proved in 1.2 s
+  voter-34 encrypted and proved in 1.2 s
+  voter-35 encrypted and proved in 1.2 s
+  voter-36 encrypted and proved in 1.2 s
+  voter-37 encrypted and proved in 1.2 s
+  voter-38 encrypted and proved in 1.2 s
+  voter-39 encrypted and proved in 1.2 s
+  voter-40 encrypted and proved in 1.2 s
+  voter-41 encrypted and proved in 1.2 s
+  voter-42 encrypted and proved in 1.2 s
+  voter-43 encrypted and proved in 1.2 s
+  voter-44 encrypted and proved in 1.2 s
+  voter-45 encrypted and proved in 1.2 s
+  voter-46 encrypted and proved in 1.2 s
+  voter-47 encrypted and proved in 1.2 s
+  voter-48 encrypted and proved in 1.2 s
+  voter-49 encrypted and proved in 1.2 s
+  voter-50 encrypted and proved in 1.2 s
+  voter-51 encrypted and proved in 1.2 s
+  voter-52 encrypted and proved in 1.2 s
+  voter-53 encrypted and proved in 1.2 s
+  voter-54 encrypted and proved in 1.2 s
+  voter-55 encrypted and proved in 1.2 s
+  voter-56 encrypted and proved in 1.2 s
+  voter-57 encrypted and proved in 1.2 s
+  voter-58 encrypted and proved in 1.2 s
+  voter-59 encrypted and proved in 1.2 s
+  voter-60 encrypted and proved in 1.2 s
+  voter-61 encrypted and proved in 1.2 s
+  voter-62 encrypted and proved in 1.2 s
+  voter-63 encrypted and proved in 1.2 s
+  voter-64 encrypted and proved in 1.2 s
+  voter-65 encrypted and proved in 1.2 s
+  voter-66 encrypted and proved in 1.2 s
+  voter-67 encrypted and proved in 1.2 s
+  voter-68 encrypted and proved in 1.2 s
+  voter-69 encrypted and proved in 1.2 s
+  voter-70 encrypted and proved in 1.2 s
+  voter-71 encrypted and proved in 1.2 s
+  voter-72 encrypted and proved in 1.2 s
+  voter-73 encrypted and proved in 1.2 s
+  voter-74 encrypted and proved in 1.2 s
+  voter-75 encrypted and proved in 1.2 s
+  voter-76 encrypted and proved in 1.2 s
+  voter-77 encrypted and proved in 1.2 s
+  voter-78 encrypted and proved in 1.2 s
+  voter-79 encrypted and proved in 1.2 s
+  voter-80 encrypted and proved in 1.2 s
+  voter-81 encrypted and proved in 1.2 s
+  voter-82 encrypted and proved in 1.2 s
+  voter-83 encrypted and proved in 1.2 s
+  voter-84 encrypted and proved in 1.2 s
+  voter-85 encrypted and proved in 1.2 s
+  voter-86 encrypted and proved in 1.2 s
+  voter-87 encrypted and proved in 1.2 s
+  voter-88 encrypted and proved in 1.2 s
+  voter-89 encrypted and proved in 1.2 s
+positions-council-201606.txt: 90 ballots encrypted, median 1.2 s per ballot, total 105 s, board bench/gentoo-board3/perf-2026-11-24/cert-council-201606.txt (24029619 bytes)
+positions-council-201606.txt: m = 13 candidates, N = 90 ballots read in 0.0 s
+ballots: verified on 12 workers in 7 s wall-clock
+ballots: verify median 0.9 s, total 81 s, accepted 90 of 90, cpu median 0.9 s, cpu total 81 s
+ballot of voter-0 replayed under another credential verifies: false
+aggregation 0.03 s, decryption of the margins 0.1 s
+  0 8 8 16 8 6 22 28 15 14 10 8 12
+  82 0 32 66 53 45 70 69 68 46 64 35 46
+  82 29 0 65 49 37 64 64 65 49 60 33 46
+  71 14 10 0 18 14 43 46 28 23 26 14 23
+  80 24 25 56 0 29 63 59 55 35 46 30 33
+  83 22 31 55 43 0 58 62 53 38 52 32 37
+  61 12 15 20 15 18 0 37 20 23 25 15 19
+  58 15 18 33 21 23 39 0 34 22 30 19 25
+  73 13 13 31 18 15 42 44 0 25 28 16 21
+  73 22 26 54 38 34 55 58 52 0 47 25 36
+  79 15 15 36 29 17 45 52 34 28 0 18 24
+  82 28 31 60 44 42 66 68 60 42 53 0 41
+  75 21 23 56 37 33 60 58 59 34 51 27 0
+Schulze winner: blueness
+certificate generated in 1028 s (cpu 1027 s)
+certificate verified as 20 tasks on 12 workers
+certificate: generation 1028 s, verification 79 s, verified true, transcript entries 479116, cpu generation 1027 s, cpu verification 0 s

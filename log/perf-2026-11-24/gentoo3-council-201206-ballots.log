@@ -1,0 +1,124 @@
+positions-council-201206.txt (simplified batched ballot): m = 12 candidates, N = 104 ballots, L = 4, K = 144
+commitment key: 145 generators hashed to the group in 0.1 s
+  voter-0 encrypted and proved in 1.0 s
+  voter-1 encrypted and proved in 1.0 s
+  voter-2 encrypted and proved in 1.0 s
+  voter-3 encrypted and proved in 1.0 s
+  voter-4 encrypted and proved in 1.0 s
+  voter-5 encrypted and proved in 1.0 s
+  voter-6 encrypted and proved in 1.0 s
+  voter-7 encrypted and proved in 1.0 s
+  voter-8 encrypted and proved in 1.0 s
+  voter-9 encrypted and proved in 1.0 s
+  voter-10 encrypted and proved in 1.0 s
+  voter-11 encrypted and proved in 1.0 s
+  voter-12 encrypted and proved in 1.0 s
+  voter-13 encrypted and proved in 1.0 s
+  voter-14 encrypted and proved in 1.0 s
+  voter-15 encrypted and proved in 1.0 s
+  voter-16 encrypted and proved in 1.0 s
+  voter-17 encrypted and proved in 1.0 s
+  voter-18 encrypted and proved in 1.0 s
+  voter-19 encrypted and proved in 1.0 s
+  voter-20 encrypted and proved in 1.0 s
+  voter-21 encrypted and proved in 1.0 s
+  voter-22 encrypted and proved in 1.0 s
+  voter-23 encrypted and proved in 1.0 s
+  voter-24 encrypted and proved in 1.0 s
+  voter-25 encrypted and proved in 1.0 s
+  voter-26 encrypted and proved in 1.0 s
+  voter-27 encrypted and proved in 1.0 s
+  voter-28 encrypted and proved in 1.0 s
+  voter-29 encrypted and proved in 1.0 s
+  voter-30 encrypted and proved in 1.0 s
+  voter-31 encrypted and proved in 1.0 s
+  voter-32 encrypted and proved in 1.0 s
+  voter-33 encrypted and proved in 1.0 s
+  voter-34 encrypted and proved in 1.0 s
+  voter-35 encrypted and proved in 1.0 s
+  voter-36 encrypted and proved in 1.0 s
+  voter-37 encrypted and proved in 1.0 s
+  voter-38 encrypted and proved in 1.0 s
+  voter-39 encrypted and proved in 1.0 s
+  voter-40 encrypted and proved in 1.0 s
+  voter-41 encrypted and proved in 1.1 s
+  voter-42 encrypted and proved in 1.1 s
+  voter-43 encrypted and proved in 1.0 s
+  voter-44 encrypted and proved in 1.0 s
+  voter-45 encrypted and proved in 1.0 s
+  voter-46 encrypted and proved in 1.0 s
+  voter-47 encrypted and proved in 1.0 s
+  voter-48 encrypted and proved in 1.0 s
+  voter-49 encrypted and proved in 1.0 s
+  voter-50 encrypted and proved in 1.0 s
+  voter-51 encrypted and proved in 1.0 s
+  voter-52 encrypted and proved in 1.0 s
+  voter-53 encrypted and proved in 1.0 s
+  voter-54 encrypted and proved in 1.0 s
+  voter-55 encrypted and proved in 1.0 s
+  voter-56 encrypted and proved in 1.0 s
+  voter-57 encrypted and proved in 1.0 s
+  voter-58 encrypted and proved in 1.0 s
+  voter-59 encrypted and proved in 1.0 s
+  voter-60 encrypted and proved in 1.0 s
+  voter-61 encrypted and proved in 1.0 s
+  voter-62 encrypted and proved in 1.0 s
+  voter-63 encrypted and proved in 1.0 s
+  voter-64 encrypted and proved in 1.0 s
+  voter-65 encrypted and proved in 1.0 s
+  voter-66 encrypted and proved in 1.0 s
+  voter-67 encrypted and proved in 1.0 s
+  voter-68 encrypted and proved in 1.0 s
+  voter-69 encrypted and proved in 1.0 s
+  voter-70 encrypted and proved in 1.0 s
+  voter-71 encrypted and proved in 1.0 s
+  voter-72 encrypted and proved in 1.0 s
+  voter-73 encrypted and proved in 1.0 s
+  voter-74 encrypted and proved in 1.0 s
+  voter-75 encrypted and proved in 1.0 s
+  voter-76 encrypted and proved in 1.0 s
+  voter-77 encrypted and proved in 1.0 s
+  voter-78 encrypted and proved in 1.0 s
+  voter-79 encrypted and proved in 1.0 s
+  voter-80 encrypted and proved in 1.0 s
+  voter-81 encrypted and proved in 1.0 s
+  voter-82 encrypted and proved in 1.0 s
+  voter-83 encrypted and proved in 1.0 s
+  voter-84 encrypted and proved in 1.0 s
+  voter-85 encrypted and proved in 1.0 s
+  voter-86 encrypted and proved in 1.0 s
+  voter-87 encrypted and proved in 1.0 s
+  voter-88 encrypted and proved in 1.0 s
+  voter-89 encrypted and proved in 1.0 s
+  voter-90 encrypted and proved in 1.0 s
+  voter-91 encrypted and proved in 1.0 s
+  voter-92 encrypted and proved in 1.0 s
+  voter-93 encrypted and proved in 1.0 s
+  voter-94 encrypted and proved in 1.0 s
+  voter-95 encrypted and proved in 1.0 s
+  voter-96 encrypted and proved in 1.0 s
+  voter-97 encrypted and proved in 1.0 s
+  voter-98 encrypted and proved in 1.0 s
+  voter-99 encrypted and proved in 1.0 s
+  voter-100 encrypted and proved in 1.0 s
+  voter-101 encrypted and proved in 1.0 s
+  voter-102 encrypted and proved in 1.0 s
+  voter-103 encrypted and proved in 1.0 s
+positions-council-201206.txt: 104 ballots encrypted, median 1.0 s per ballot, total 104 s, board bench/gentoo-board3/perf-2026-11-24/council-201206.txt (23942441 bytes)
+positions-council-201206.txt: m = 12 candidates, N = 104 ballots read in 0.0 s
+ballots: verify median 0.7 s, total 70 s, accepted 104 of 104, cpu median 0.7 s, cpu total 70 s
+ballot of voter-0 replayed under another credential verifies: false
+aggregation 0.03 s, decryption of the margins 0.1 s
+  0 41 17 34 48 49 48 54 44 38 44 87
+  41 0 28 38 54 61 51 63 44 45 46 87
+  66 56 0 51 72 72 68 75 66 62 65 93
+  52 42 30 0 47 60 57 64 44 48 43 91
+  33 29 20 29 0 52 45 47 33 42 37 87
+  37 32 26 32 37 0 42 38 30 38 39 81
+  43 33 27 32 40 48 0 47 32 39 40 77
+  33 26 21 22 24 41 38 0 22 33 25 83
+  44 42 30 41 52 56 55 59 0 46 49 89
+  42 43 21 32 41 51 50 50 40 0 39 87
+  41 39 28 38 43 48 49 57 37 42 0 88
+  14 13 8 9 11 19 20 15 13 14 12 0
+Schulze winner: dberkholz
