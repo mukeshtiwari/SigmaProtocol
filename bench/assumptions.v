@@ -30,7 +30,7 @@ From Curve Require Import Ed25519 P256 P256Primes.
 (* Schnorr *)
 Print Assumptions Sigma.Sigma.schnorr_completeness.
 Print Assumptions Sigma.Sigma.simulator_completeness.
-Print Assumptions Sigma.Sigma.special_soundness_berry.
+Print Assumptions Sigma.Sigma.special_soundness.
 Print Assumptions Sigma.Sigma.special_honest_verifier_zkp.
 Print Assumptions Sigma.Sigma.special_honest_verifier_zkp_perm.
 Print Assumptions Sigma.Sigma.special_honest_verifier_zkp_enum.

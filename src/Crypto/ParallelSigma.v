@@ -435,7 +435,7 @@ Section DL.
             parallel transcripts [s₁], [s₂] have equal announcement vectors
             (pointwise) and challenge vectors differing in some coordinate,
             then [∃ y, g ^ y = h]. By induction on [n]: if the challenges
-            differ at the head, apply Schnorr's [special_soundness_berry]
+            differ at the head, apply Schnorr's [special_soundness]
             there; otherwise recurse on the tails. *)
         Lemma generalise_parallel_sigma_soundness_supplement (g h : G) :
           ∀ (n : nat) (s₁ s₂ : @sigma_proto F G (S n) (S n) (S n)),
@@ -476,7 +476,7 @@ Section DL.
             destruct (vector_inv_S r₂) as (hr₂ & tr₂ & Hl).
             rewrite Hj, Hk, Hl in Hf;
             cbn in Hf.
-            eapply special_soundness_berry with
+            eapply special_soundness with
             (a := ha₁) (c₁ := hc₁) (r₁ := hr₁)
             (c₂ := hc₂) (r₂ := hr₂).
 
@@ -531,7 +531,7 @@ Section DL.
             destruct (fin_inv_S _ f) as [hf | (hf & Hn)].
             rewrite hf in Hm;
             cbn in Hm.
-            eapply special_soundness_berry with
+            eapply special_soundness with
             (a := ha₁) (c₁ := hc₁) (r₁ := hr₁)
             (c₂ := hc₂) (r₂ := hr₂).
             exact Hm.

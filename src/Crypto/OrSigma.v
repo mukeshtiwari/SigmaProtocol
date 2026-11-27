@@ -56,7 +56,7 @@
     sharing, is not formalised.
 
     The file depends on [Sigma] (the record [sigma_proto], the Schnorr verifier
-    [accepting_conversation], Schnorr special soundness [special_soundness_berry]
+    [accepting_conversation], Schnorr special soundness [special_soundness]
     and the commitment identity [schnorr_commitment_shift]) and on the distribution
     monad of [Probability.Distr]. The file [OrSigmaGen] is the same construction
     with a separate generator per branch; the tally verifiers use that version. This
@@ -1230,7 +1230,7 @@ Section DL.
             Proof idea: since [cᵢ = Σ csᵢ], different top-level challenges force the
             branch challenges to differ somewhere. Either the first branch
             challenges differ, and Schnorr special soundness
-            ([special_soundness_berry]) applies to that branch, or the sums of the
+            ([special_soundness]) applies to that branch, or the sums of the
             remaining branch challenges differ, and the induction hypothesis applies
             to the tail with those sums as top-level challenges. *)
         Lemma generalised_or_sigma_soundness_base_case :
@@ -1285,7 +1285,7 @@ Section DL.
             assert (Hm : csh₁ <> csh₂).
             intros Hm; eapply Hc;
             rewrite Hm; reflexivity.
-            eapply special_soundness_berry; cbn;
+            eapply special_soundness; cbn;
             try (rewrite dec_true);
             [exact Hm | exact Har | exact Hbr].
           +
@@ -1322,7 +1322,7 @@ Section DL.
               exists (Fin.F1).
               cbn in Hj, Hk |- *.
               rewrite dec_true in Hk, Hj.
-              eapply special_soundness_berry; cbn;
+              eapply special_soundness; cbn;
               try (rewrite dec_true);
               [exact Hd | exact Hj | exact Hk].
             ++
@@ -1435,7 +1435,7 @@ Section DL.
               exists (Fin.F1).
               cbn in Hj, Hk |- *.
               rewrite dec_true in Hk, Hj.
-              eapply special_soundness_berry; cbn;
+              eapply special_soundness; cbn;
               try (rewrite dec_true);
               [exact Hd | exact Hj | exact Hk].
             ++

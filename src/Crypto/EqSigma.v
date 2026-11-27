@@ -623,7 +623,7 @@ Section DL.
         (* Case split on [n]. In both cases the witness is
            [(r₁ - r₂) · (c₁ - c₂)⁻¹]. The case [n = 0] treats the two indices
            by explicit algebra; the case [n = S n'] does the head index by
-           hand and delegates other indices to [special_soundness_berry_gen]. *)
+           hand and delegates other indices to [special_soundness_extractor]. *)
         induction n as [|n' IHn].
         +
 
@@ -813,7 +813,7 @@ Section DL.
             cbn in Ha, Hb |- *.
             rewrite Hd in Ha, Hb.
             cbn in Ha, Hb.
-            pose proof @special_soundness_berry_gen
+            pose proof @special_soundness_extractor
             F zero one add mul sub div opp inv
              G gid ginv gop gpow Gdec Hvec
             _ _ _ _ _ _ _ Hc Ha Hb as Hi.

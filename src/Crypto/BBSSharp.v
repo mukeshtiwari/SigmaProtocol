@@ -416,7 +416,7 @@ Section BBSSharp.
       hb_verify g pkB ([a]; [c1]; [r1]) = true ->
       hb_verify g pkB ([a]; [c2]; [r2]) = true ->
       exists skB : F, g ^ skB = pkB.
-    Proof. intros * hc h1 h2; exact (special_soundness_berry g pkB a c1 r1 c2 r2 hc h1 h2). Qed.
+    Proof. intros * hc h1 h2; exact (special_soundness g pkB a c1 r1 c2 r2 hc h1 h2). Qed.
 
     (** Special HVZK of holder binding (distributions equal up to
         permutation). *)

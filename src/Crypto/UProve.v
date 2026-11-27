@@ -284,7 +284,7 @@ Section UProve.
       pres0_verify h target ([a]; [c1]; [r1]) = true ->
       pres0_verify h target ([a]; [c2]; [r2]) = true ->
       exists αinv : F, h ^ αinv = target.
-    Proof. intros * hc h1 h2; exact (special_soundness_berry h target a c1 r1 c2 r2 hc h1 h2). Qed.
+    Proof. intros * hc h1 h2; exact (special_soundness h target a c1 r1 c2 r2 hc h1 h2). Qed.
 
     (** Special HVZK of the fully disclosed presentation, as a permutation of
         distributions when [lf] enumerates the field. *)

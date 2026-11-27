@@ -118,7 +118,7 @@
 <div class="paragraph"> </div>
 
     The file depends on <span class="inlinecode"><span class="id" title="var">Sigma</span></span> (the record <span class="inlinecode"><span class="id" title="var">sigma_proto</span></span>, the Schnorr verifier
-    <span class="inlinecode"><span class="id" title="var">accepting_conversation</span></span>, Schnorr special soundness <span class="inlinecode"><span class="id" title="var">special_soundness_berry</span></span>
+    <span class="inlinecode"><span class="id" title="var">accepting_conversation</span></span>, Schnorr special soundness <span class="inlinecode"><span class="id" title="var">special_soundness</span></span>
     and the commitment identity <span class="inlinecode"><span class="id" title="var">schnorr_commitment_shift</span></span>) and on the distribution
     monad of <span class="inlinecode"><span class="id" title="var">Probability.Distr</span></span>. The file <span class="inlinecode"><span class="id" title="var">OrSigmaGen</span></span> is the same construction
     with a separate generator per branch; the tally verifiers use that version. This
@@ -1531,7 +1531,7 @@ Special soundness, base case of the induction on the left block: for
             Proof idea: since <span class="inlinecode"><span class="id" title="var">c</span>ᵢ</span> <span class="inlinecode">=</span> <span class="inlinecode"><span class="id" title="var">Σ</span></span> <span class="inlinecode"><span class="id" title="var">cs</span>ᵢ</span>, different top-level challenges force the
             branch challenges to differ somewhere. Either the first branch
             challenges differ, and Schnorr special soundness
-            (<span class="inlinecode"><span class="id" title="var">special_soundness_berry</span></span>) applies to that branch, or the sums of the
+            (<span class="inlinecode"><span class="id" title="var">special_soundness</span></span>) applies to that branch, or the sums of the
             remaining branch challenges differ, and the induction hypothesis applies
             to the tail with those sums as top-level challenges. 
 </div>
@@ -1585,7 +1585,7 @@ Special soundness, base case of the induction on the left block: for
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">assert</span> (<span class="id" title="var">Hm</span> : <span class="id" title="var">csh₁</span> <a class="idref" href="http://rocq-prover.org/doc/V9.2/corelib//Corelib.Init.Logic.html#::type_scope:x_'&lt;&gt;'_x"><span class="id" title="notation">≠</span></a> <span class="id" title="var">csh₂</span>).<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">intros</span> <span class="id" title="var">Hm</span>; <span class="id" title="tactic">eapply</span> <span class="id" title="var">Hc</span>;<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">rewrite</span> <span class="id" title="var">Hm</span>; <span class="id" title="tactic">reflexivity</span>.<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">eapply</span> <a class="idref" href="Crypto.Sigma.html#special_soundness_berry"><span class="id" title="lemma">special_soundness_berry</span></a>; <span class="id" title="var">cbn</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">eapply</span> <a class="idref" href="Crypto.Sigma.html#special_soundness"><span class="id" title="lemma">special_soundness</span></a>; <span class="id" title="var">cbn</span>;<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">try</span> (<span class="id" title="tactic">rewrite</span> <a class="idref" href="Utility.Util.html#dec_true"><span class="id" title="lemma">dec_true</span></a>);<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[<span class="id" title="tactic">exact</span> <span class="id" title="var">Hm</span> | <span class="id" title="tactic">exact</span> <span class="id" title="var">Har</span> | <span class="id" title="tactic">exact</span> <span class="id" title="var">Hbr</span>].<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;+<br/>
@@ -1620,7 +1620,7 @@ Special soundness, base case of the induction on the left block: for
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">∃</span> (<span class="id" title="constructor">Fin.F1</span>).<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">cbn</span> <span class="id" title="tactic">in</span> <span class="id" title="var">Hj</span>, <span class="id" title="var">Hk</span> |- ×.<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">rewrite</span> <a class="idref" href="Utility.Util.html#dec_true"><span class="id" title="lemma">dec_true</span></a> <span class="id" title="tactic">in</span> <span class="id" title="var">Hk</span>, <span class="id" title="var">Hj</span>.<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">eapply</span> <a class="idref" href="Crypto.Sigma.html#special_soundness_berry"><span class="id" title="lemma">special_soundness_berry</span></a>; <span class="id" title="var">cbn</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">eapply</span> <a class="idref" href="Crypto.Sigma.html#special_soundness"><span class="id" title="lemma">special_soundness</span></a>; <span class="id" title="var">cbn</span>;<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">try</span> (<span class="id" title="tactic">rewrite</span> <a class="idref" href="Utility.Util.html#dec_true"><span class="id" title="lemma">dec_true</span></a>);<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[<span class="id" title="tactic">exact</span> <span class="id" title="var">Hd</span> | <span class="id" title="tactic">exact</span> <span class="id" title="var">Hj</span> | <span class="id" title="tactic">exact</span> <span class="id" title="var">Hk</span>].<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;++<br/>
@@ -1735,7 +1735,7 @@ Special soundness for <span class="inlinecode"><span class="id" title="var">m</s
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">∃</span> (<span class="id" title="constructor">Fin.F1</span>).<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">cbn</span> <span class="id" title="tactic">in</span> <span class="id" title="var">Hj</span>, <span class="id" title="var">Hk</span> |- ×.<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">rewrite</span> <a class="idref" href="Utility.Util.html#dec_true"><span class="id" title="lemma">dec_true</span></a> <span class="id" title="tactic">in</span> <span class="id" title="var">Hk</span>, <span class="id" title="var">Hj</span>.<br/>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">eapply</span> <a class="idref" href="Crypto.Sigma.html#special_soundness_berry"><span class="id" title="lemma">special_soundness_berry</span></a>; <span class="id" title="var">cbn</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">eapply</span> <a class="idref" href="Crypto.Sigma.html#special_soundness"><span class="id" title="lemma">special_soundness</span></a>; <span class="id" title="var">cbn</span>;<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">try</span> (<span class="id" title="tactic">rewrite</span> <a class="idref" href="Utility.Util.html#dec_true"><span class="id" title="lemma">dec_true</span></a>);<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[<span class="id" title="tactic">exact</span> <span class="id" title="var">Hd</span> | <span class="id" title="tactic">exact</span> <span class="id" title="var">Hj</span> | <span class="id" title="tactic">exact</span> <span class="id" title="var">Hk</span>].<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;++<br/>

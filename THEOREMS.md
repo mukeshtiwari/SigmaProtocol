@@ -20,9 +20,9 @@ implies the map form, and a constant simulator cannot satisfy it.
 | Claim | Rocq |
 |---|---|
 | Prover, simulator, and verification equation | `Crypto/Sigma.v: schnorr_protocol`, `schnorr_simulator`, `accepting_conversation` |
-| Completeness | `Crypto/Sigma.v: schnorr_completeness` (and `schnorr_completeness_berry`) |
-| Completeness of the simulator | `Crypto/Sigma.v: simulator_completeness` (and `simulator_completeness_berry`) |
-| Special soundness with the explicit extractor `(r₁ - r₂) / (c₁ - c₂)` | `Crypto/Sigma.v: special_soundness_berry` (generic version `special_soundness_berry_gen`) |
+| Completeness | `Crypto/Sigma.v: schnorr_completeness` (and `schnorr_completeness_transcript`) |
+| Completeness of the simulator | `Crypto/Sigma.v: simulator_completeness` (and `simulator_completeness_transcript`) |
+| Special soundness with the explicit extractor `(r₁ - r₂) / (c₁ - c₂)` | `Crypto/Sigma.v: special_soundness` (generic version `special_soundness_extractor`) |
 | Special honest-verifier zero-knowledge *(map form)* | `Crypto/Sigma.v: special_honest_verifier_zkp` |
 | Special honest-verifier zero-knowledge *(permutation form)*, for any challenge set closed under `u ↦ u + c·x` | `Crypto/Sigma.v: special_honest_verifier_zkp_perm` |
 | Same, for the whole field (challenge set enumerates `F`) | `Crypto/Sigma.v: special_honest_verifier_zkp_enum` |

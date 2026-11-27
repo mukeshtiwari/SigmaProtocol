@@ -540,7 +540,7 @@ Section DL.
             Proof by induction on [n]: the induction hypothesis gives the
             tail witnesses, and the head witness is
             [(r₁₀ - r₂₀) · (c₁ - c₂)⁻¹], verified with the same algebra as
-            [special_soundness_berry_gen]. *)
+            [special_soundness_extractor]. *)
         Lemma generalise_and_sigma_soundness :
           forall (a : Vector.t G n) (c₁ : Vector.t F 1)
           (r₁ : Vector.t F n) (c₂ : Vector.t F 1) (r₂ : Vector.t F n),

@@ -27,8 +27,8 @@
 
     - Completeness: [schnorr_completeness], [simulator_completeness].
     - Special soundness (2-special soundness with an explicit extractor
-      [(r₁ - r₂) / (c₁ - c₂)]): [special_soundness_berry_gen] and its
-      existential corollary [special_soundness_berry].
+      [(r₁ - r₂) / (c₁ - c₂)]): [special_soundness_extractor] and its
+      existential corollary [special_soundness].
     - Special honest-verifier zero knowledge, in two strengths. The weak
       form [special_honest_verifier_zkp] only says that the multiset of
       pairs (acceptance bit, probability) agrees for real and simulated
@@ -64,8 +64,9 @@
     cards’, J. Cryptology 1991; R. Cramer, ‘Modular design of secure yet
     practical cryptographic protocols’, PhD thesis 1996 (Sigma-protocol
     terminology); B. Schoenmakers, lecture notes ‘Cryptographic
-    Protocols’ (TU Eindhoven, course 2WC13), whose formulations the lemmas
-    with suffix [_berry] follow. *)
+    Protocols’ (TU Eindhoven, course 2WC13), whose formulations
+    [schnorr_completeness_transcript], [simulator_completeness_transcript],
+    [special_soundness_extractor] and [special_soundness] follow. *)
 From Stdlib Require Import Setoid
   setoid_ring.Field Lia Vector Utf8
   Psatz Bool Pnat BinNatDef
@@ -283,7 +284,7 @@ Section DL.
 
       (** Completeness restated for an explicitly named transcript
           [(a₁; c₁; r₁)] equal to the honest one. *)
-      Lemma schnorr_completeness_berry (g h : G) (x : F) (R : h = g^x) :
+      Lemma schnorr_completeness_transcript (g h : G) (x : F) (R : h = g^x) :
         forall (u c : F) (a₁ : t G 1) (c₁ r₁ : t F 1),
         (a₁; c₁; r₁) = (schnorr_protocol x g u c) ->
         accepting_conversation g h (a₁; c₁; r₁) = true.
@@ -339,7 +340,7 @@ Section DL.
 
       (** Simulator completeness restated for an explicitly named transcript
           [(a₁; c₁; r₁)]. *)
-      Lemma simulator_completeness_berry (g h : G) :
+      Lemma simulator_completeness_transcript (g h : G) :
         forall (u c : F) (a₁ : t G 1) (c₁ r₁ : t F 1),
         (a₁; c₁; r₁) = (schnorr_simulator g h u c) ->
         accepting_conversation g h (a₁; c₁; r₁) = true.
@@ -361,7 +362,7 @@ Section DL.
           [g ^ (r₁ - r₂) = h ^ (c₁ - c₂)]; raising both sides to
           [(c₁ - c₂)⁻¹], which exists because [c₁ - c₂ ≠ 0], yields the
           claim. *)
-      Lemma special_soundness_berry_gen (g h : G) :
+      Lemma special_soundness_extractor (g h : G) :
         forall (a : G) (c₁ r₁ c₂ r₂ : F),
         c₁ <> c₂ ->
         accepting_conversation g h ([a]; [c₁]; [r₁]) = true ->
@@ -427,8 +428,8 @@ Section DL.
       (** _Special soundness._ Two accepting transcripts with a common
           announcement and distinct challenges imply the existence of a
           discrete logarithm [y] with [g ^ y = h]. Corollary of
-          [special_soundness_berry_gen]. *)
-      Lemma special_soundness_berry (g h : G) :
+          [special_soundness_extractor]. *)
+      Lemma special_soundness (g h : G) :
         forall (a : G) (c₁ r₁ c₂ r₂ : F),
         c₁ <> c₂ ->
         accepting_conversation g h ([a]; [c₁]; [r₁]) = true ->
@@ -436,7 +437,7 @@ Section DL.
         ∃ y : F, g^y = h.
       Proof.
         intros * Ha Hb Hc.
-        pose proof special_soundness_berry_gen g h
+        pose proof special_soundness_extractor g h
         a c₁ r₁ c₂ r₂ Ha Hb Hc as Hd.
         destruct Hd as (y & Hd & He).
         exists y; exact Hd.
@@ -771,7 +772,7 @@ Section DL.
           probability at most [1/|lf|] (the usual knowledge error of
           Schnorr). Proof: case split on whether the filtered list of
           accepting challenges has length 0, 1, or at least 2; in the last
-          case apply [special_soundness_berry_gen]. *)
+          case apply [special_soundness_extractor]. *)
       Theorem soundness_error_bound (g h a : G) (resp : F -> F) :
         forall (lf : list F) (Hlfn : lf <> List.nil), List.NoDup lf ->
         (∃ c₁ c₂ : F, c₁ <> c₂ ∧ List.In c₁ lf ∧ List.In c₂ lf ∧
@@ -818,7 +819,7 @@ Section DL.
           destruct hc₁ as [hc₁ he₁], hc₂ as [hc₂ he₂].
           assert (hne : c₁ <> c₂) by
             (intro heq; subst; apply hnin; left; reflexivity).
-          destruct (special_soundness_berry_gen g h a c₁ (resp c₁) c₂ (resp c₂)
+          destruct (special_soundness_extractor g h a c₁ (resp c₁) c₂ (resp c₂)
             hne he₁ he₂) as (y & hy & heq).
           exists c₁, c₂.
           repeat split; try assumption.
